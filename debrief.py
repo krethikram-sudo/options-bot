@@ -13,15 +13,31 @@ from zoneinfo import ZoneInfo
 
 import config
 from alerts import PRIORITY_DEFAULT, dispatch
-from chain_trader import (chain_open_positions, chain_realized_pnl_today,
-                          chain_total_value)
 from equity_trader import (rotation_open_positions, rotation_realized_pnl_today,
                            trend_open_positions, trend_realized_pnl_today)
 from news import is_material, load_news_since
 from report import _money, _pct, _signed_money, get_summary
 from spread_trader import load_state as load_spread_state
-from straddle_trader import (straddle_open_positions,
-                             straddle_realized_pnl_today)
+
+# Premium strategies — see premium/README.md
+try:
+    from premium.chain_trader import (chain_open_positions, chain_realized_pnl_today,
+                                      chain_total_value)
+    HAS_CHAIN = True
+except ImportError:
+    HAS_CHAIN = False
+    def chain_open_positions(): return {}
+    def chain_realized_pnl_today(today): return 0.0
+    def chain_total_value(use_last_price=True): return 0.0
+
+try:
+    from premium.straddle_trader import (straddle_open_positions,
+                                          straddle_realized_pnl_today)
+    HAS_STRADDLE = True
+except ImportError:
+    HAS_STRADDLE = False
+    def straddle_open_positions(): return []
+    def straddle_realized_pnl_today(today): return 0.0
 
 ET = ZoneInfo("America/New_York")
 DEBRIEF_PATH = Path("logs/debriefs.jsonl")

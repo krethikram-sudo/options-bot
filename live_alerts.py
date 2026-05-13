@@ -21,7 +21,6 @@ from alerts import (Alert, AlertTracker, ConsoleNotifier, DesktopNotifier,
                     FileLogger, MobilePushNotifier)
 from alerts import (PRIORITY_DEFAULT, dispatch,
                     send_consolidated_morning_summary)
-from chain_trader import daily_chain_scan
 from data_fetcher import fetch_alpaca_bars
 from debrief import send_eod_debrief
 from equity_trader import daily_rotation_scan, daily_trend_scan
@@ -30,8 +29,25 @@ from news import (fetch_and_log, is_material, load_news_since,
 from report import send_report
 from signals import compute_signals
 from spread_trader import daily_entry_scan, monitor_exits, open_positions_from_state
-from straddle_trader import daily_straddle_scan
 from strategy import Strategy
+
+# Premium strategies — paid subscribers receive these via a private companion
+# repo (see premium/README.md). Public bot runs cleanly without them.
+try:
+    from premium.chain_trader import daily_chain_scan
+    HAS_CHAIN = True
+except ImportError:
+    HAS_CHAIN = False
+    def daily_chain_scan(notifiers, push_individual=True):
+        return {"label": "ai full chain (premium — not installed)", "opened": [], "closed": [], "skipped": True}
+
+try:
+    from premium.straddle_trader import daily_straddle_scan
+    HAS_STRADDLE = True
+except ImportError:
+    HAS_STRADDLE = False
+    def daily_straddle_scan(notifiers, push_individual=True):
+        return {"label": "earnings straddles (premium — not installed)", "opened": [], "closed": [], "skipped": True}
 
 load_dotenv()
 

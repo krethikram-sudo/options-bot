@@ -21,3 +21,8 @@ research/strategies/iter_log.jsonl
 # Rendered launchd plist (per-user)
 launchd/*.plist
 !launchd/*.plist.template
+
+# Premium strategy files — distributed via private companion repo to subscribers.
+# The empty premium/ dir + its README + __init__.py stay tracked.
+premium/*.py
+!premium/__init__.py
