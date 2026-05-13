@@ -324,6 +324,16 @@ def send_eod_debrief(notifiers) -> None:
     dispatch(notifiers, title, body, priority=PRIORITY_DEFAULT, tags="brain")
     print(f"  [debrief] {title}")
 
+    # Public summary — always writes a file under logs/public_posts/, posts
+    # to Bluesky if BLUESKY_HANDLE / BLUESKY_APP_PASSWORD are set. Failure
+    # here is non-fatal — the debrief itself already went out above.
+    try:
+        from public_summary import publish_from_debrief
+        status = publish_from_debrief(data)
+        print(f"  [public]  file={status['file']} bluesky={status['bluesky_msg']}")
+    except Exception as e:
+        print(f"  [public]  failed (non-fatal): {e}")
+
 
 if __name__ == "__main__":
     from dotenv import load_dotenv

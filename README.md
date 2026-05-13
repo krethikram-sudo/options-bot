@@ -106,7 +106,30 @@ State files live in `logs/` (gitignored):
 | `chain_positions.json` | AI full-chain basket snapshot |
 | `debriefs.jsonl` | One row per EOD debrief — your historical record |
 | `news.jsonl` | Cached Alpaca news feed |
+| `public_posts/YYYY-MM-DD.txt` | Daily public-summary post text (see below) |
 | `live.out.log` / `live.err.log` | Bot stdout/stderr |
+
+## Public daily summary (optional)
+
+After every EOD debrief the bot generates a ≤300-char public-facing summary
+of the day's P&L per sleeve. It's always written to
+`logs/public_posts/YYYY-MM-DD.txt` so you can copy-paste it anywhere.
+
+If you want it auto-posted to [Bluesky](https://bsky.app) (free API, no Twitter
+$100/mo fee), install the optional dependency and set credentials:
+
+```bash
+./venv/bin/pip install atproto
+# then add to .env:
+#   BLUESKY_HANDLE=yourhandle.bsky.social
+#   BLUESKY_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx   # from bsky.app/settings/app-passwords
+```
+
+Set `BLUESKY_DRY_RUN=1` to test without actually posting.
+
+Why this matters: a public, auto-posted daily P&L is the only credibility
+artifact that can't be faked. After ~90 days of live posts, the record
+becomes the primary evidence for or against the bot's strategies.
 
 ## Configuration
 
