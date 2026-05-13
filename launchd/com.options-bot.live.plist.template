@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.options-bot.live</string>
+
+    <!--
+      Wraps the Python bot in `caffeinate -i` so the Mac doesn't go to idle
+      sleep while the bot is running. On AC this is moot (sleep=0), but on
+      battery with the lid closed this keeps the bot alive without relying
+      on another app (like Claude) holding the no-idle-sleep assertion.
+    -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/caffeinate</string>
+        <string>-i</string>
+        <string>__BOT_DIR__/venv/bin/python</string>
+        <string>-u</string>
+        <string>__BOT_DIR__/run.py</string>
+        <string>live</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__BOT_DIR__</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+
+    <key>StandardOutPath</key>
+    <string>__BOT_DIR__/logs/live.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>__BOT_DIR__/logs/live.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>

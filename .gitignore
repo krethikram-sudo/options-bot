@@ -1,0 +1,23 @@
+venv/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+data_cache/
+backtest_results/
+*.log
+
+# Per-user runtime state — trading history, positions, alerts
+logs/*
+!logs/.gitkeep
+
+# Bulk historical price data (re-fetchable via research/build_dataset_extended.py)
+research/data/
+research/data_extended/
+research/strategies/*.csv
+research/strategies/*.parquet
+research/strategies/iter_log.jsonl
+
+# Rendered launchd plist (per-user)
+launchd/*.plist
+!launchd/*.plist.template
