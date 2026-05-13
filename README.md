@@ -1,15 +1,27 @@
-# options-bot
+# Quiet Edge
+
+> *An edge that doesn't shout.*
 
 A multi-strategy **paper-trading** bot for AI infrastructure stocks
-(NVDA, AMD, AVGO, MU, TSM, MRVL, ARM, SMCI, SNDK, etc.). Runs on macOS
-under `launchd`, monitors Alpaca paper accounts, executes five strategy
-sleeves, and pushes status to your phone via [ntfy.sh](https://ntfy.sh).
+(NVDA, AMD, AVGO, MU, TSM, MRVL, ARM, SMCI, SNDK, plus the wider semi /
+networking / power / hyperscaler chain — ~50 names total).
 
-> ⚠️ **Paper money only. Not financial advice.** This is a personal
-> research project. The strategies have been backtested over ~6 years
-> but have not yet survived a real bear regime in live trading.
-> Track records from backtests routinely fail to replicate live. Do not
-> point this at a funded account without understanding every line.
+Runs unattended on macOS under `launchd`. Monitors Alpaca paper accounts,
+executes five strategy sleeves, and pushes daily debriefs to your phone
+via [ntfy.sh](https://ntfy.sh). All trades are paper money. The point is
+to test, refine, and audit — not to make claims.
+
+- 📊 **What the bot does**: see [Strategy sleeves](#what-it-does) below
+- 📈 **What the strategies have produced in backtest**: see [BACKTEST_RESULTS.md](BACKTEST_RESULTS.md)
+- 🧪 **Full research findings**: see [research/strategies/FINDINGS.md](research/strategies/FINDINGS.md)
+- 📱 **Live paper P&L**: published daily (link coming once 90-day record exists)
+
+> ⚠️ **Paper money only. Not financial advice.** The author is not a
+> registered investment adviser. Strategies have been backtested over a
+> 2-year AI bull market (2024-2026) and have not yet survived a real
+> bear regime in live trading. **Track records from backtests routinely
+> fail to replicate live.** Do not point this at a funded account without
+> understanding every line. See [BACKTEST_RESULTS.md § Limitations](BACKTEST_RESULTS.md#limitations).
 
 ## What it does
 
