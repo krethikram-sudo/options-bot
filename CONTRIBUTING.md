@@ -44,5 +44,6 @@ or credentials in any form. We'll close issues and bans without warning.
 ## Maintainer response time
 
 This is a side project. Expect responses within a few days, not hours.
-Premium subscribers (via Polar.sh, when launched) get priority response in a
-private Discord — that's part of what they pay for.
+Sponsors at the Premium tier (via [GitHub Sponsors](https://github.com/sponsors/krethikram-sudo),
+when launched) get priority response in a private Discord — that's part of
+what they pay for.

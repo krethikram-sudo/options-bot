@@ -112,7 +112,7 @@ trading, that audit-able record (sourced from Alpaca's API, not self-reported)
 becomes the meaningful evidence for or against the strategies. Until then,
 treat everything above as a hypothesis, not a result.
 
-Subscribers to the [Polar.sh tier](https://polar.sh/quietedge) get the
-weekly written debrief, access to additional strategies that haven't yet been
-released to the open-source repo, and a private Discord for setup help and
-discussion.
+[Sponsors of this project on GitHub Sponsors](https://github.com/sponsors/krethikram-sudo)
+get the weekly written debrief, access to additional strategies that haven't
+yet been released to the open-source repo, and a private Discord for setup
+help and discussion.

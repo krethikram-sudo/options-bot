@@ -13,13 +13,14 @@ strategy sleeves are reserved for paid subscribers:
 
 ## How to enable these sleeves
 
-Paid subscribers receive access to a private companion repo
-(`quietedge-premium`) via [Polar.sh](https://polar.sh/quietedge). The
-contents of that repo drop into this `premium/` directory:
+Premium sponsors on [GitHub Sponsors](https://github.com/sponsors/krethikram-sudo)
+are automatically added as collaborators on the private companion repo
+(`quietedge-premium`). The contents of that repo drop into this `premium/`
+directory:
 
 ```bash
-# After you subscribe and get the GitHub collaborator invite:
-git clone https://github.com/quietedge/quietedge-premium.git /tmp/qe-prem
+# After you become a Premium sponsor and accept the GitHub collaborator invite:
+git clone https://github.com/krethikram-sudo/quietedge-premium.git /tmp/qe-prem
 cp /tmp/qe-prem/*.py ~/options-bot/premium/
 # Then restart the bot — it auto-detects the new files at startup
 ./scripts/install_launchd.sh
@@ -35,4 +36,5 @@ The public bot detects whether these files are present and runs either
 - Early access to new strategies before they ship to the public repo
 - Direct line to the maintainer for setup issues
 
-See `https://quietedge.app` for the current subscription tier and pricing.
+See [github.com/sponsors/krethikram-sudo](https://github.com/sponsors/krethikram-sudo)
+for current subscription tiers and pricing.
