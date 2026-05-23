@@ -1,15 +1,8 @@
 """Matplotlib animation — multi-vehicle map view + live stats dashboard.
 
-Layout:
-    +-----------------------------+----------------------+
-    |                             |  Time / conditions   |
-    |        MAP                  |----------------------|
-    |  (N vehicles + drones +     |  Mission counters    |
-    |   capture footprint)        |----------------------|
-    |                             |  Failure breakdown   |
-    |-----------------------------|----------------------|
-    |  Mission timeline strip     |  Unit economics      |
-    +-----------------------------+----------------------+
+When a capture is in progress, an inset in the top-left of the map shows
+the drone's camera view: the scene agents under the FOV at native scale,
+with currently-visible agents highlighted.
 """
 from __future__ import annotations
 
@@ -124,6 +117,16 @@ def run_animation(sim: "Simulation", save_path: str | None = None) -> None:
             "scene_visible": scene_visible,
         })
 
+    # Drone-camera inset on the map (toggled visible during captures).
+    ax_camera = ax_map.inset_axes([0.02, 0.74, 0.24, 0.24])
+    ax_camera.set_facecolor("#1c1f25")
+    for spine in ax_camera.spines.values():
+        spine.set_color("#f5a524")
+        spine.set_linewidth(1.5)
+    ax_camera.set_xticks([])
+    ax_camera.set_yticks([])
+    ax_camera.set_visible(False)
+
     state = {
         "units": unit_artists,
         "ax_timeline": ax_timeline,
@@ -132,6 +135,7 @@ def run_animation(sim: "Simulation", save_path: str | None = None) -> None:
         "ax_aborts": ax_aborts,
         "ax_econ": ax_econ,
         "ax_funnel": ax_funnel,
+        "ax_camera": ax_camera,
     }
 
     def update(frame_idx: int):
@@ -144,6 +148,7 @@ def run_animation(sim: "Simulation", save_path: str | None = None) -> None:
         _update_map(state, snap, cfg)
         _update_timeline(state["ax_timeline"], snap, sim)
         _update_panels(state, snap)
+        _update_camera_inset(state["ax_camera"], snap)
         # Return all updatable artists for blit (we use blit=False but anyway).
         artists = []
         for ua in state["units"]:
@@ -258,6 +263,67 @@ def _update_scene_artists(art, unit, t_s: float) -> None:
         else:
             art[key].set_offsets([[float("nan"), float("nan")]])
             art[key].set_alpha(0.0)
+
+
+def _update_camera_inset(ax, snap: "SimSnapshot") -> None:
+    """Drone-camera inset: show what's under the drone right now."""
+    capturing_unit = None
+    for u in snap.units:
+        if (u.active_mission is not None
+                and u.active_mission.is_capturing
+                and u.active_scene is not None):
+            capturing_unit = u
+            break
+
+    if capturing_unit is None:
+        ax.set_visible(False)
+        return
+
+    ax.set_visible(True)
+    ax.clear()
+    ax.set_facecolor("#1c1f25")
+    for sp in ax.spines.values():
+        sp.set_color("#f5a524")
+        sp.set_linewidth(1.5)
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    u = capturing_unit
+    scene = u.active_scene
+    drone_x, drone_y = u.drone.x, u.drone.y
+    fov_r = u.drone.coverage_radius_m
+    # Inset extent: ~1.5x FOV radius so we see surroundings too.
+    extent = fov_r * 1.5
+    ax.set_xlim(drone_x - extent, drone_x + extent)
+    ax.set_ylim(drone_y - extent, drone_y + extent)
+    ax.set_aspect("equal")
+
+    # FOV circle.
+    from matplotlib.patches import Circle as _Circle
+    fov = _Circle((drone_x, drone_y), fov_r, fill=False,
+                  edgecolor="#f5a524", linewidth=1.2, alpha=0.8)
+    ax.add_patch(fov)
+    ax.plot(drone_x, drone_y, "+", color="#f5a524", markersize=8)
+
+    # Compute current visibility.
+    last_frame = max(0, u.capture_frame_idx - 1)
+    in_fov_now = {aid for aid, frames in scene.visibility.items()
+                  if last_frame in frames}
+
+    positions = scene.positions_now(snap.t_s)
+    for aid, cls, x, y in positions:
+        color = {"passenger_vehicle": "#7ab0d4", "pedestrian": "#9ee37d",
+                 "cyclist": "#e5b85a"}.get(cls, "#aaaaaa")
+        size = 30 if aid in in_fov_now else 10
+        edge = "white" if aid in in_fov_now else color
+        alpha = 1.0 if aid in in_fov_now else 0.55
+        ax.scatter([x], [y], s=size, c=color, edgecolors=edge,
+                   linewidths=0.6 if aid in in_fov_now else 0, alpha=alpha)
+
+    n_seen = len(in_fov_now)
+    n_total = len(scene.agents)
+    title = f"drone cam  {scene.scene_class.replace('_',' ')}  ({n_seen}/{n_total} in view)"
+    ax.set_title(title, color="#e5e7eb", fontsize=8, pad=3, loc="left")
 
 
 def _update_map(state, snap: "SimSnapshot", cfg) -> None:
