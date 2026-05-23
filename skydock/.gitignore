@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+.env
+.DS_Store
+out/
+*.mp4
+*.gif
+*.png
+!docs/*.png
