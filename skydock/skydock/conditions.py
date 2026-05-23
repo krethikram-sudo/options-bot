@@ -55,6 +55,9 @@ class ConditionsModel:
         self._next_weather_resample_t_s = 3600.0
         # Wind direction drifts slowly over the day around a base bearing.
         self._wind_dir_base_rad = rng.uniform(0.0, 2 * math.pi)
+        # Gust state (AR(1) impulse process).
+        self._gust_mag_mph: float = 0.0
+        self._last_gust_check_t: float = 0.0
 
     def current(self, t_s: float) -> Conditions:
         hour = (self.sim.start_hour + t_s / 3600.0) % 24.0
@@ -68,6 +71,22 @@ class ConditionsModel:
         while t_s >= self._next_weather_resample_t_s:
             self._weather_clear = self.rng.random() < self.cfg.weather_clear_prob
             self._next_weather_resample_t_s += 3600.0
+
+        # Gust state (AR(1) decay + occasional impulses).
+        gap = t_s - self._last_gust_check_t
+        if gap > 0:
+            decay = self.cfg.gust_decay_per_second ** gap
+            self._gust_mag_mph *= decay
+            # Independent gust trigger; cumulative prob over the gap.
+            p_no_gust = (1.0 - self.cfg.gust_prob_per_second) ** gap
+            if self.rng.random() > p_no_gust:
+                impulse = self.rng.uniform(
+                    self.cfg.gust_magnitude_mph_min,
+                    self.cfg.gust_magnitude_mph_max,
+                )
+                self._gust_mag_mph = max(self._gust_mag_mph, impulse)
+            self._last_gust_check_t = t_s
+        wind += self._gust_mag_mph
 
         is_day = self.world.daylight_start_hour <= hour <= self.world.daylight_end_hour
         # Slow ±30° wander over the day around a base bearing.

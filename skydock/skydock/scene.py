@@ -253,11 +253,12 @@ class TrafficScene:
                 resolution_factor = max(0.6, 1.0 - (avg_alt - 80.0) / 333.0)
                 base_score *= resolution_factor
 
-        # Wind-shake penalty: high wind shakes the drone, blurring frames.
-        # 0 penalty at ≤10mph, ~15% degradation at 20mph (max).
+        # Wind-shake penalty: high wind shakes the airframe and blurs frames.
+        # Gimbal stabilization absorbs most low/mid-wind motion, so the
+        # penalty only kicks in above 12 mph and is capped at 10%.
         if self.wind_log:
             avg_wind = sum(self.wind_log) / len(self.wind_log)
-            wind_factor = max(0.85, 1.0 - max(0.0, avg_wind - 10.0) * 0.015)
+            wind_factor = max(0.90, 1.0 - max(0.0, avg_wind - 12.0) * 0.010)
             base_score *= wind_factor
 
         return max(0.0, min(100.0, base_score))

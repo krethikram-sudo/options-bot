@@ -54,8 +54,19 @@ conditions:
   # Diurnal wind + weather model — feeds pre_flight_pass.
   wind_mph_base: 6.0
   wind_mph_amplitude: 8.0      # afternoon peak
-  wind_abort_threshold_mph: 20 # spec 1.4
+  wind_abort_threshold_mph: 20 # spec §1.4
   weather_clear_prob: 0.85
+  # Wind gusts (transient impulses on top of steady-state wind).
+  gust_prob_per_second: 0.006
+  gust_magnitude_mph_min: 8.0
+  gust_magnitude_mph_max: 14.0
+  gust_decay_per_second: 0.55
+
+gps:
+  # Spec §3.3 — host vehicle GPS uncertainty. Drone reads this position
+  # to navigate; BLE precision landing bypasses it below 10m AGL.
+  host_position_sigma_m: 1.25     # ~2.5m 2σ
+  resample_interval_s: 2.5
 
 pipeline:
   # Spec 9.2 — cloud processing latency + quality.

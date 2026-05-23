@@ -81,6 +81,24 @@ class ConditionsConfig:
     wind_mph_amplitude: float = 8.0
     wind_abort_threshold_mph: float = 20.0
     weather_clear_prob: float = 0.85
+    # Wind gusts: occasional transient impulses on top of the steady-state wind.
+    # Real-world drones see these regularly even on otherwise calm days.
+    gust_prob_per_second: float = 0.006
+    gust_magnitude_mph_min: float = 8.0
+    gust_magnitude_mph_max: float = 14.0
+    gust_decay_per_second: float = 0.55
+
+
+@dataclass
+class GPSConfig:
+    """GPS uncertainty on the host vehicle's reported position.
+
+    The drone reads host position via comms link; below ~10m AGL the
+    onboard precision-landing system (vision + BLE beacons) takes over
+    and sees the actual dock (bypassing GPS noise).
+    """
+    host_position_sigma_m: float = 1.25     # ~2.5m 2σ — consumer GPS
+    resample_interval_s: float = 2.5        # spatial correlation timescale
 
 
 @dataclass
@@ -159,6 +177,7 @@ class Config:
     failure_cascades: FailureCascadeConfig = field(default_factory=FailureCascadeConfig)
     customer_funnel: CustomerFunnelConfig = field(default_factory=CustomerFunnelConfig)
     dock: DockConfig = field(default_factory=DockConfig)
+    gps: GPSConfig = field(default_factory=GPSConfig)
     animation: AnimationConfig = field(default_factory=AnimationConfig)
 
     @classmethod

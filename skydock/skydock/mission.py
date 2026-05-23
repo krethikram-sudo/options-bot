@@ -57,6 +57,11 @@ class Mission:
     early_rtl_battery: bool = False
     # Capture quality from observed scene; set when CAPTURING ends.
     quality_score_from_scene: Optional[float] = None
+    # GPS state — the drone's noisy reading of the host vehicle's position,
+    # resampled periodically. Bypassed by BLE precision landing below 10m AGL.
+    gps_offset_x: float = 0.0
+    gps_offset_y: float = 0.0
+    next_gps_resample_t_s: float = 0.0
 
     @property
     def is_active(self) -> bool:
@@ -184,8 +189,10 @@ class MissionController:
                 drone.state = DroneState.RETURNING
 
         elif mission.stage == "RETURNING":
-            drone.physics.target_x = host.x
-            drone.physics.target_y = host.y
+            # Drone navigates back via GPS — noisy reading of host position.
+            self._maybe_resample_gps(mission, t_s)
+            drone.physics.target_x = host.x + mission.gps_offset_x
+            drone.physics.target_y = host.y + mission.gps_offset_y
             drone.physics.target_z = mission.target_altitude_m
             drone.physics.step(dt, conditions.wind_mph, wind_dir)
             # Done when horizontally close to the dock.
@@ -199,8 +206,15 @@ class MissionController:
                 self._abort(mission, drone, reason="return_timeout")
 
         elif mission.stage == "LANDING":
-            drone.physics.target_x = host.x
-            drone.physics.target_y = host.y
+            # Above 10m: still GPS-guided. Below 10m: BLE precision landing
+            # takes over and sees the actual dock position.
+            if drone.altitude_m > 10.0:
+                self._maybe_resample_gps(mission, t_s)
+                drone.physics.target_x = host.x + mission.gps_offset_x
+                drone.physics.target_y = host.y + mission.gps_offset_y
+            else:
+                drone.physics.target_x = host.x
+                drone.physics.target_y = host.y
             drone.physics.target_z = 0.0
             drone.physics.step(dt, conditions.wind_mph, wind_dir)
             if drone.altitude_m < 0.5:
@@ -209,6 +223,13 @@ class MissionController:
                 self._abort(mission, drone, reason="landing_timeout")
 
     # -- helpers ------------------------------------------------------------
+
+    def _maybe_resample_gps(self, mission: Mission, t_s: float) -> None:
+        if t_s >= mission.next_gps_resample_t_s:
+            sigma = self.cfg.gps.host_position_sigma_m
+            mission.gps_offset_x = self.rng.gauss(0.0, sigma)
+            mission.gps_offset_y = self.rng.gauss(0.0, sigma)
+            mission.next_gps_resample_t_s = t_s + self.cfg.gps.resample_interval_s
 
     def _enter_stage(self, mission: Mission, stage: str, timeout_s: float) -> None:
         mission.stage = stage
