@@ -49,6 +49,7 @@ class TrafficAgent:
     speed_mps: float
     bbox: tuple[float, float, float]
     spawned_t_s: float
+    culled_at_s: float | None = None    # set when the agent left the scene area
 
     def position_at(self, t_offset: float) -> tuple[float, float]:
         return (self.x0 + math.cos(self.heading_rad) * self.speed_mps * t_offset,
@@ -93,43 +94,63 @@ class TrafficScene:
         return phase >= 0.5
 
     def positions_now(self, t_s: float) -> list[tuple[str, str, float, float]]:
-        """Returns (agent_id, class, x, y) tuples for every agent at sim time t_s.
-
-        Vehicles approaching a red light at a signalized intersection are
-        clamped at the stop line; once their direction turns green they resume.
-        """
+        """Returns (agent_id, class, x, y) tuples for every *live* agent at t_s."""
         out = []
         for a in self.agents:
-            t_offset = t_s - a.spawned_t_s
-            raw_x, raw_y = a.position_at(t_offset)
-            x, y = self._apply_traffic_lights(a, raw_x, raw_y, t_offset)
+            if not self._is_alive(a, t_s):
+                continue
+            x, y = self.agent_position_at(a, t_s)
             out.append((a.agent_id, a.cls, x, y))
         return out
 
+    def agent_position_at(self, agent: TrafficAgent, t_s: float) -> tuple[float, float]:
+        """Position of `agent` at sim time t_s, traffic-light-aware.
+
+        Used both by live observation and by the deliverable emitter so
+        the customer-facing tracks match what the drone actually saw.
+        """
+        t_offset = t_s - agent.spawned_t_s
+        raw_x, raw_y = agent.position_at(t_offset)
+        return self._apply_traffic_lights(agent, raw_x, raw_y, t_offset)
+
+    def is_alive_at(self, agent: TrafficAgent, t_s: float) -> bool:
+        return self._is_alive(agent, t_s)
+
+    def _is_alive(self, agent: TrafficAgent, t_s: float) -> bool:
+        if t_s < agent.spawned_t_s:
+            return False
+        if agent.culled_at_s is not None and t_s > agent.culled_at_s:
+            return False
+        return True
+
     def cull_and_respawn(self, t_s: float, generator: "SceneGenerator") -> None:
-        """Replace agents that have left the scene area to keep density steady
-        through long captures. Called once per observation tick."""
-        replaced: list[TrafficAgent] = []
+        """Mark agents that have left the scene area as culled and spawn fresh
+        agents in their place. Keeps density steady through long captures
+        while preserving the full lifecycle for the deliverable emitter."""
         cull_radius = self.radius_m * 1.4
         cull_sq = cull_radius * cull_radius
+        replacements: list[TrafficAgent] = []
         for a in self.agents:
-            x, y = a.position_at(t_s - a.spawned_t_s)
-            x, y = self._apply_traffic_lights(a, x, y, t_s - a.spawned_t_s)
+            if a.culled_at_s is not None:
+                continue
+            x, y = self.agent_position_at(a, t_s)
             dx = x - self.center_x
             dy = y - self.center_y
             if dx * dx + dy * dy > cull_sq:
-                # Spawn a fresh agent of the same class to replace this one.
+                a.culled_at_s = t_s
                 tpl = SCENE_TEMPLATES.get(self.scene_class) or SCENE_TEMPLATES["intersection_signalized"]
                 if a.cls == "passenger_vehicle":
-                    fresh = generator._spawn_vehicle(self.center_x, self.center_y, t_s, tpl)
+                    replacements.append(
+                        generator._spawn_vehicle(self.center_x, self.center_y, t_s, tpl))
                 elif a.cls == "pedestrian":
-                    fresh = generator._spawn_pedestrian(self.center_x, self.center_y, t_s, tpl)
+                    replacements.append(
+                        generator._spawn_pedestrian(self.center_x, self.center_y, t_s, tpl))
                 else:
-                    fresh = generator._spawn_cyclist(self.center_x, self.center_y, t_s, tpl)
-                replaced.append(fresh)
-            else:
-                replaced.append(a)
-        self.agents = replaced
+                    replacements.append(
+                        generator._spawn_cyclist(self.center_x, self.center_y, t_s, tpl))
+        # Append rather than replace so the dead agents stay in the list with
+        # their lifecycle metadata intact.
+        self.agents.extend(replacements)
 
     def _apply_traffic_lights(
         self, agent: TrafficAgent, raw_x: float, raw_y: float, t_offset_s: float,
