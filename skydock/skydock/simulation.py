@@ -205,10 +205,10 @@ class Simulation:
             and unit.active_mission is None
             and unit.drone.state == DroneState.DOCKED
         ):
-            trig = unit.trigger_gen.poll(dt, self.t_s, unit.vehicle)
+            trig = unit.trigger_gen.poll(dt, self.t_s, unit.vehicle, rate_multiplier=cond.traffic_factor)
             if trig is not None:
                 self._begin_mission(unit, trig)
-        elif operating and unit.trigger_gen.poll(dt, self.t_s, unit.vehicle):
+        elif operating and unit.trigger_gen.poll(dt, self.t_s, unit.vehicle, rate_multiplier=cond.traffic_factor):
             self.metrics.triggers_skipped_drone_busy += 1
 
         # Advance the active mission, which also drives the drone's position.
@@ -287,6 +287,8 @@ class Simulation:
         if mission.stage == "DONE":
             self.metrics.on_mission_success(mission.scene_class)
             self.pipeline.enqueue(mission, self.t_s)
+            if mission.early_rtl_battery:
+                self.metrics.battery_rtl_events += 1
         else:
             reason = mission.aborted_reason or "unknown"
             self.metrics.on_mission_abort(reason)

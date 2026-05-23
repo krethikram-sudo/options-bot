@@ -60,6 +60,11 @@ class MissionConfig:
     return_seconds: float = 25.0
     land_seconds: float = 8.0
     target_altitude_m: float = 80.0
+    # Battery-aware RTL: spec §1.4 has a 40% pre-flight gate but doesn't cover
+    # in-flight low-battery. Realistic drones trigger return-to-launch at ~25%
+    # and crash near 5%.
+    rtl_battery_threshold_pct: float = 25.0
+    crash_battery_threshold_pct: float = 5.0
 
 
 @dataclass

@@ -141,26 +141,35 @@ class SceneGenerator:
         for _ in range(tpl["veh"]):
             scene.agents.append(self._spawn_vehicle(center_x, center_y, t_s, tpl))
         for _ in range(tpl["ped"]):
-            scene.agents.append(self._spawn_pedestrian(center_x, center_y, t_s))
+            scene.agents.append(self._spawn_pedestrian(center_x, center_y, t_s, tpl))
         for _ in range(tpl["cyc"]):
             scene.agents.append(self._spawn_cyclist(center_x, center_y, t_s, tpl))
         return scene
 
     # -- spawning helpers ----------------------------------------------------
 
+    # Lane geometry (relative to road centreline).
+    _LANE_OFFSET_M = 3.5      # vehicles in lanes ±3.5m off centre
+    _BIKE_LANE_OFFSET_M = 6.5  # bike lane 6.5m off centre
+    _SIDEWALK_OFFSET_M = 11.0  # sidewalks at the road edge
+
     def _spawn_vehicle(self, cx: float, cy: float, t_s: float, tpl: dict) -> TrafficAgent:
-        # Vehicles travel along a road axis at scene-typical speed.
+        """Vehicles travel along a road axis in a lane, not jittered around it."""
         axis = self.rng.choice(tpl["road_axes"])
         speed = self.rng.uniform(*tpl["veh_speed"])
+        # Direction-dependent lane offset (right-hand side of the road).
+        direction = 1 if self.rng.random() < 0.5 else -1
+        lane_jitter = self.rng.uniform(-0.6, 0.6)
         if axis == "ns":
-            # N or S bound
-            heading = math.pi / 2 if self.rng.random() < 0.5 else -math.pi / 2
-            x = cx + self.rng.uniform(-6, 6)
-            y = cy + self.rng.uniform(-self.area_radius_m * 0.8, self.area_radius_m * 0.8)
+            heading = math.pi / 2 if direction > 0 else -math.pi / 2
+            x = cx + direction * self._LANE_OFFSET_M + lane_jitter
+            y = cy + self.rng.uniform(-self.area_radius_m * 0.85,
+                                       self.area_radius_m * 0.85)
         else:
-            heading = 0.0 if self.rng.random() < 0.5 else math.pi
-            x = cx + self.rng.uniform(-self.area_radius_m * 0.8, self.area_radius_m * 0.8)
-            y = cy + self.rng.uniform(-6, 6)
+            heading = 0.0 if direction > 0 else math.pi
+            x = cx + self.rng.uniform(-self.area_radius_m * 0.85,
+                                       self.area_radius_m * 0.85)
+            y = cy + direction * self._LANE_OFFSET_M + lane_jitter
         self._counter += 1
         return TrafficAgent(
             agent_id=f"veh_{self._counter:04d}",
@@ -170,14 +179,55 @@ class SceneGenerator:
             spawned_t_s=t_s,
         )
 
-    def _spawn_pedestrian(self, cx: float, cy: float, t_s: float) -> TrafficAgent:
-        # Peds wander randomly within a tighter circle near road intersections.
-        r = self.rng.uniform(8, self.area_radius_m * 0.7)
-        theta = self.rng.uniform(0, 2 * math.pi)
-        x = cx + r * math.cos(theta)
-        y = cy + r * math.sin(theta)
-        heading = self.rng.uniform(0, 2 * math.pi)
-        speed = self.rng.uniform(0.8, 1.8)
+    def _spawn_pedestrian(self, cx: float, cy: float, t_s: float, tpl: dict) -> TrafficAgent:
+        """Two ped patterns: crossing (perpendicular to a road) or sidewalk (along one)."""
+        axes = tpl["road_axes"]
+        crossing = self.rng.random() < 0.65
+        speed = self.rng.uniform(0.8, 1.7)
+        if crossing and "ns" in axes and "ew" in axes:
+            # Walk across one of the two roads at the intersection crosswalk.
+            cross_ns = self.rng.random() < 0.5
+            if cross_ns:
+                # Walking east-west across the N-S road, starting at one curb.
+                start_dir = 1 if self.rng.random() < 0.5 else -1
+                x = cx + start_dir * self._SIDEWALK_OFFSET_M
+                y = cy + self.rng.uniform(-6, 6)
+                heading = math.pi if start_dir > 0 else 0.0
+            else:
+                start_dir = 1 if self.rng.random() < 0.5 else -1
+                x = cx + self.rng.uniform(-6, 6)
+                y = cy + start_dir * self._SIDEWALK_OFFSET_M
+                heading = -math.pi / 2 if start_dir > 0 else math.pi / 2
+        elif crossing:
+            # Single-road scene — peds cross the road.
+            road = axes[0]
+            start_dir = 1 if self.rng.random() < 0.5 else -1
+            if road == "ew":
+                x = cx + self.rng.uniform(-self.area_radius_m * 0.6,
+                                           self.area_radius_m * 0.6)
+                y = cy + start_dir * self._SIDEWALK_OFFSET_M
+                heading = -math.pi / 2 if start_dir > 0 else math.pi / 2
+            else:
+                x = cx + start_dir * self._SIDEWALK_OFFSET_M
+                y = cy + self.rng.uniform(-self.area_radius_m * 0.6,
+                                           self.area_radius_m * 0.6)
+                heading = math.pi if start_dir > 0 else 0.0
+        else:
+            # Sidewalk walker — along the road.
+            road = self.rng.choice(axes)
+            side = 1 if self.rng.random() < 0.5 else -1
+            along_dir = 1 if self.rng.random() < 0.5 else -1
+            if road == "ew":
+                x = cx + self.rng.uniform(-self.area_radius_m * 0.85,
+                                           self.area_radius_m * 0.85)
+                y = cy + side * self._SIDEWALK_OFFSET_M
+                heading = 0.0 if along_dir > 0 else math.pi
+            else:
+                x = cx + side * self._SIDEWALK_OFFSET_M
+                y = cy + self.rng.uniform(-self.area_radius_m * 0.85,
+                                           self.area_radius_m * 0.85)
+                heading = math.pi / 2 if along_dir > 0 else -math.pi / 2
+
         self._counter += 1
         return TrafficAgent(
             agent_id=f"ped_{self._counter:04d}",
@@ -188,17 +238,20 @@ class SceneGenerator:
         )
 
     def _spawn_cyclist(self, cx: float, cy: float, t_s: float, tpl: dict) -> TrafficAgent:
-        # Cyclists travel along a road axis at moderate speed.
+        """Cyclists ride in the bike lane, parallel to the road."""
         axis = self.rng.choice(tpl["road_axes"])
         speed = self.rng.uniform(2.5, 6.0)
+        direction = 1 if self.rng.random() < 0.5 else -1
         if axis == "ns":
-            heading = math.pi / 2 if self.rng.random() < 0.5 else -math.pi / 2
-            x = cx + self.rng.uniform(-12, 12)
-            y = cy + self.rng.uniform(-self.area_radius_m * 0.8, self.area_radius_m * 0.8)
+            heading = math.pi / 2 if direction > 0 else -math.pi / 2
+            x = cx + direction * self._BIKE_LANE_OFFSET_M
+            y = cy + self.rng.uniform(-self.area_radius_m * 0.85,
+                                       self.area_radius_m * 0.85)
         else:
-            heading = 0.0 if self.rng.random() < 0.5 else math.pi
-            x = cx + self.rng.uniform(-self.area_radius_m * 0.8, self.area_radius_m * 0.8)
-            y = cy + self.rng.uniform(-12, 12)
+            heading = 0.0 if direction > 0 else math.pi
+            x = cx + self.rng.uniform(-self.area_radius_m * 0.85,
+                                       self.area_radius_m * 0.85)
+            y = cy + direction * self._BIKE_LANE_OFFSET_M
         self._counter += 1
         return TrafficAgent(
             agent_id=f"cyc_{self._counter:04d}",

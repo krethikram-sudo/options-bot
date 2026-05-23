@@ -19,6 +19,8 @@ class Metrics:
     # Spec §7.1 failure-cascade events that drove unit downtime.
     drone_lost_events: int = 0
     dock_damage_events: int = 0
+    # In-flight low-battery → early return (capture cut short, mission still DONE).
+    battery_rtl_events: int = 0
 
     def on_mission_start(self, trigger_type: str) -> None:
         self.missions_started += 1

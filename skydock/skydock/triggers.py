@@ -27,9 +27,15 @@ class TriggerGenerator:
         self._counter = 0
         self._visited_in_lap: set[int] = set()
 
-    def poll(self, dt: float, t_s: float, vehicle: HostVehicle) -> Trigger | None:
-        # Trigger probability per dt = rate per hour * dt / 3600.
-        p = self.cfg.poisson_rate_per_hour * dt / 3600.0
+    def poll(
+        self,
+        dt: float,
+        t_s: float,
+        vehicle: HostVehicle,
+        rate_multiplier: float = 1.0,
+    ) -> Trigger | None:
+        # Trigger probability per dt = rate per hour * rate_multiplier * dt / 3600.
+        p = self.cfg.poisson_rate_per_hour * rate_multiplier * dt / 3600.0
         if self.rng.random() >= p:
             return None
         return self._make_trigger(t_s, vehicle)

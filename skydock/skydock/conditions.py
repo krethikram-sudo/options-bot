@@ -15,6 +15,22 @@ class Conditions:
     weather_clear: bool
     is_daylight: bool
     hour_of_day: float
+    traffic_factor: float = 1.0    # diurnal rush-hour modulation, multiplies trigger / density
+
+
+def _traffic_factor_for_hour(hour: float) -> float:
+    """Commuter rush pattern. Two peaks (morning + evening) with a midday dip."""
+    if 7.0 <= hour < 9.0:
+        return 1.6
+    if 9.0 <= hour < 11.0:
+        return 1.0
+    if 11.0 <= hour < 14.0:
+        return 0.7
+    if 14.0 <= hour < 16.0:
+        return 1.0
+    if 16.0 <= hour < 18.5:
+        return 1.6
+    return 0.5
 
 
 class ConditionsModel:
@@ -57,4 +73,5 @@ class ConditionsModel:
             weather_clear=self._weather_clear,
             is_daylight=is_day,
             hour_of_day=hour,
+            traffic_factor=_traffic_factor_for_hour(hour),
         )

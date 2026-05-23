@@ -53,6 +53,8 @@ class Mission:
     # Failure cascade outcomes (spec §7.1) — consumed by the Simulation.
     drone_lost: bool = False
     dock_damaged: bool = False
+    # Battery-aware RTL: mission cut short to return to dock before depletion.
+    early_rtl_battery: bool = False
     # Capture quality from observed scene; set when CAPTURING ends.
     quality_score_from_scene: Optional[float] = None
 
@@ -107,6 +109,25 @@ class MissionController:
     ) -> None:
         mission.stage_t_s += dt
         wind_dir = 0.0   # constant wind direction for v0 — east-bound
+
+        # Battery-aware RTL — if the drone is airborne and battery dipped below
+        # the safe-return threshold, cut the capture short and return to dock.
+        # Below the crash threshold, the drone is LOST mid-flight.
+        if drone.is_airborne:
+            if drone.battery_pct <= self.cfg.mission.crash_battery_threshold_pct:
+                mission.drone_lost = True
+                mission.aborted_reason = "drone_lost_low_battery"
+                self._enter_stage(mission, "ABORTED", 0.0)
+                drone.state = DroneState.LOST
+                drone.altitude_m = 0.0
+                return
+            if (drone.battery_pct <= self.cfg.mission.rtl_battery_threshold_pct
+                    and mission.stage in ("CLIMBING", "CAPTURING")):
+                mission.early_rtl_battery = True
+                # End the current stage and start the descent home immediately.
+                self._enter_stage(mission, "RETURNING",
+                                   self.cfg.mission.return_seconds * 3)
+                drone.state = DroneState.RETURNING
 
         if mission.stage == "PRE_FLIGHT":
             # Drone parked on dock — physics body just sits at host position.
