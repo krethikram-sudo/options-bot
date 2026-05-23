@@ -66,6 +66,14 @@ class TrafficScene:
     # Per-agent set of frame indices where the agent was inside the FOV footprint.
     visibility: dict[str, set[int]] = field(default_factory=dict)
     frames_observed: int = 0
+    # Traffic-light cycle. For signalized-intersection scenes, half the cycle
+    # is EW-green, half is NS-green. Vehicles approaching from the red side
+    # stop at the stop line.
+    cycle_period_s: float = 50.0
+    has_signal: bool = False
+    road_axes: tuple = ("ew",)
+
+    _STOP_LINE_M: float = 9.0
 
     def agent_color(self, agent_id: str) -> str:
         for a in self.agents:
@@ -73,13 +81,62 @@ class TrafficScene:
                 return _AGENT_COLORS.get(a.cls, "#aaaaaa")
         return "#aaaaaa"
 
+    def is_green_for(self, axis: str, t_offset_s: float) -> bool:
+        """Returns whether the given road axis is green at the given offset."""
+        if not self.has_signal:
+            return True
+        phase = (t_offset_s % self.cycle_period_s) / self.cycle_period_s
+        if axis == "ew":
+            return phase < 0.5
+        return phase >= 0.5
+
     def positions_now(self, t_s: float) -> list[tuple[str, str, float, float]]:
-        """Returns (agent_id, class, x, y) tuples for every agent at sim time t_s."""
+        """Returns (agent_id, class, x, y) tuples for every agent at sim time t_s.
+
+        Vehicles approaching a red light at a signalized intersection are
+        clamped at the stop line; once their direction turns green they resume.
+        """
         out = []
         for a in self.agents:
-            x, y = a.position_at(t_s - a.spawned_t_s)
+            t_offset = t_s - a.spawned_t_s
+            raw_x, raw_y = a.position_at(t_offset)
+            x, y = self._apply_traffic_lights(a, raw_x, raw_y, t_offset)
             out.append((a.agent_id, a.cls, x, y))
         return out
+
+    def _apply_traffic_lights(
+        self, agent: TrafficAgent, raw_x: float, raw_y: float, t_offset_s: float,
+    ) -> tuple[float, float]:
+        if not self.has_signal or agent.cls != "passenger_vehicle":
+            return raw_x, raw_y
+        # Infer axis from heading.
+        cos_h = math.cos(agent.heading_rad)
+        sin_h = math.sin(agent.heading_rad)
+        is_ew = abs(cos_h) > abs(sin_h)
+        axis = "ew" if is_ew else "ns"
+        if self.is_green_for(axis, t_offset_s):
+            return raw_x, raw_y
+        # Red — stop at the stop line if the agent would otherwise have
+        # crossed past it.
+        if is_ew:
+            if cos_h > 0:   # east-bound
+                stop_x = self.center_x - self._STOP_LINE_M
+                if agent.x0 <= stop_x and raw_x > stop_x:
+                    return stop_x, raw_y
+            else:           # west-bound
+                stop_x = self.center_x + self._STOP_LINE_M
+                if agent.x0 >= stop_x and raw_x < stop_x:
+                    return stop_x, raw_y
+        else:
+            if sin_h > 0:   # north-bound
+                stop_y = self.center_y - self._STOP_LINE_M
+                if agent.y0 <= stop_y and raw_y > stop_y:
+                    return raw_x, stop_y
+            else:           # south-bound
+                stop_y = self.center_y + self._STOP_LINE_M
+                if agent.y0 >= stop_y and raw_y < stop_y:
+                    return raw_x, stop_y
+        return raw_x, raw_y
 
     def record_observation(self, frame_idx: int, visible_agent_ids: set[str]) -> None:
         self.frames_observed = max(self.frames_observed, frame_idx + 1)
@@ -137,6 +194,8 @@ class SceneGenerator:
             center_x=center_x, center_y=center_y,
             radius_m=self.area_radius_m,
             spawned_at_s=t_s,
+            has_signal=(scene_class == "intersection_signalized"),
+            road_axes=tuple(tpl["road_axes"]),
         )
         for _ in range(tpl["veh"]):
             scene.agents.append(self._spawn_vehicle(center_x, center_y, t_s, tpl))
