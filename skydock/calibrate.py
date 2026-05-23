@@ -70,14 +70,17 @@ def _recovery_success_rate(sim: Simulation) -> float:
 
 
 def _captures_per_operating_day(sim: Simulation) -> float:
-    """Spec §1.5 defines an operating day as ~11h. Normalize to that."""
+    """Spec §1.5 defines an operating day as ~11h. Normalize to that
+    using the *actual* daylight seconds the sim observed, not the
+    nominal duration (so multi-day or off-aligned sims report correctly).
+    """
     operating_day_hours = 11.0
-    if sim.cfg.simulation.duration_hours <= 0:
+    operating_hours = sim.operating_seconds / 3600.0
+    if operating_hours <= 0:
         return 0.0
     succeeded = sum(1 for m in sim.completed_missions if m.stage == "DONE")
-    # Per-vehicle captures normalized to one 11h operating day.
     n_vehicles = max(1, len(sim.units))
-    return succeeded * (operating_day_hours / sim.cfg.simulation.duration_hours) / n_vehicles
+    return succeeded * (operating_day_hours / operating_hours) / n_vehicles
 
 
 # Spec §6.1 / §1.5 targets.

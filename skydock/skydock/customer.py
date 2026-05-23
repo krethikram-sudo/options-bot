@@ -75,7 +75,8 @@ class FunnelState:
     revenue_usd: float
     cash_usd: float
     monthly_burn_usd: float
-    runway_months: float
+    monthly_revenue_rate_usd: float    # smoothed pilot rev / elapsed months
+    runway_months: float               # cash / net burn (∞ if revenue ≥ burn)
 
 
 class CustomerFunnel:
@@ -221,7 +222,14 @@ class CustomerFunnel:
         delivered = sum(p.scenarios_delivered for p in self.pilots)
         fulfilled = sum(1 for p in self.pilots if p.is_fulfilled)
         active = len(self.pilots) - fulfilled
-        runway = (self.cash_balance / self.fixed_monthly_burn) if self.fixed_monthly_burn > 0 else 0.0
+
+        elapsed_months = max(1.0 / 30.0, (self._last_day + 1) / 30.0)
+        revenue_rate = self.pilot_revenue / elapsed_months
+        net_burn = self.fixed_monthly_burn - revenue_rate
+        if net_burn <= 0:
+            runway = float("inf") if self.cash_balance > 0 else 0.0
+        else:
+            runway = self.cash_balance / net_burn
         return FunnelState(
             prospects_active=len(self.prospects),
             prospects_lifetime=self._counter,
@@ -233,5 +241,6 @@ class CustomerFunnel:
             revenue_usd=self.pilot_revenue,
             cash_usd=self.cash_balance,
             monthly_burn_usd=self.fixed_monthly_burn,
+            monthly_revenue_rate_usd=revenue_rate,
             runway_months=runway,
         )

@@ -105,8 +105,8 @@ class Simulation:
                     config.trigger.poisson_rate_per_hour * corridor.rate_multiplier
                 ),
                 manual_share=config.trigger.manual_share,
-                waypoint_share=config.trigger.waypoint_share,
                 hard_brake_share=config.trigger.hard_brake_share,
+                waypoint_trigger_prob=config.trigger.waypoint_trigger_prob,
             )
             tg = TriggerGenerator(unit_trigger_cfg, wps, self.rng)
             self.units.append(VehicleUnit(
@@ -131,6 +131,10 @@ class Simulation:
 
         self.completed_missions: list[Mission] = []
         self.completed_jobs: list[PipelineJob] = []
+        # Accumulator for daylight operating seconds — used by calibrate.py to
+        # normalize "captures per vehicle-day" without assuming the whole sim
+        # ran during operating hours.
+        self.operating_seconds: float = 0.0
 
     # -- core loop ----------------------------------------------------------
 
@@ -148,6 +152,8 @@ class Simulation:
         if self.funnel is not None:
             self.funnel.maybe_tick_day(self.t_s)
 
+        if operating:
+            self.operating_seconds += dt
         self.economics.tick(dt, operating=operating)
         self.t_s += dt
         return self.snapshot(cond)

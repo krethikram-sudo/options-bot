@@ -37,10 +37,15 @@ class HostVehicleConfig:
 
 @dataclass
 class TriggerConfig:
-    poisson_rate_per_hour: float = 3.5
-    manual_share: float = 0.55
-    waypoint_share: float = 0.30
-    hard_brake_share: float = 0.15
+    # Spec §1.3 sources:
+    #   - Poisson source covers `manual` + `hard_brake` (continuous, operator-driven)
+    #   - Waypoint source fires when the vehicle reaches a pre-planned scene waypoint
+    # The two are independent (no double-counting). Base rate is per host vehicle
+    # per operating hour, then multiplied by the corridor's rate_multiplier.
+    poisson_rate_per_hour: float = 1.2
+    manual_share: float = 0.78       # of Poisson, share that maps to "manual"
+    hard_brake_share: float = 0.22   # the rest of Poisson is "hard_brake"
+    waypoint_trigger_prob: float = 0.10  # per-waypoint visit, prob of "interesting"
 
 
 @dataclass

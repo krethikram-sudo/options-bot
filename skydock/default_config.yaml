@@ -24,11 +24,13 @@ host_vehicles:
     - urban_dense
 
 trigger:
-  # Spec 1.3 / 9.1 — Poisson trigger arrivals while host vehicle is in the operating envelope.
-  poisson_rate_per_hour: 3.5
-  manual_share: 0.55           # rest split between waypoint and hard-brake
-  waypoint_share: 0.30
-  hard_brake_share: 0.15
+  # Spec §1.3 — two independent sources.
+  # Poisson source = manual + hard_brake (continuous operator-driven).
+  poisson_rate_per_hour: 1.2     # per host vehicle, scaled by corridor rate_multiplier
+  manual_share: 0.78             # of Poisson triggers, share labelled "manual"
+  hard_brake_share: 0.22         # the rest go to "hard_brake"
+  # Waypoint source = pre-planned drop-points the operator drives to.
+  waypoint_trigger_prob: 0.10    # per waypoint visit, prob it's "interesting"
 
 mission:
   # Spec 1.1 mission profile timings (seconds).

@@ -69,15 +69,17 @@ def print_report(sim: Simulation) -> None:
 
     if sim.funnel is not None:
         s = sim.funnel.state()
+        runway_str = "∞ (cash-flow positive)" if s.runway_months == float("inf") else f"{s.runway_months:.1f} months"
         print("\nCustomer funnel (spec §4.1-4.3)")
         print(f"  prospects (active / total).. {s.prospects_active} / {s.prospects_lifetime}")
         print(f"  pilots (active / fulfilled). {s.pilots_active} / {s.pilots_fulfilled}")
         print(f"  scenarios committed ........ {s.scenarios_committed}")
         print(f"  scenarios delivered ........ {s.scenarios_delivered_to_pilots}  (unsold: {s.scenarios_unsold})")
         print(f"  pilot revenue .............. ${s.revenue_usd:,.2f}")
+        print(f"  monthly revenue rate ....... ${s.monthly_revenue_rate_usd:,.2f}")
         print(f"  cash balance ............... ${s.cash_usd:,.2f}")
         print(f"  monthly burn ............... ${s.monthly_burn_usd:,.2f}")
-        print(f"  runway ..................... {s.runway_months:.1f} months")
+        print(f"  runway ..................... {runway_str}")
         if sim.funnel.pilots:
             print("\n  Pilots signed:")
             for p in sim.funnel.pilots:

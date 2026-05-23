@@ -388,15 +388,17 @@ def _draw_funnel_panel(ax, snap: "SimSnapshot") -> None:
                 color="#6b7280", fontsize=9)
         return
     s = snap.funnel.state()
+    runway_str = "  ∞" if s.runway_months == float("inf") else f"{s.runway_months:>5.1f}"
     lines = [
         f"prospects     {s.prospects_active:>3d} active / {s.prospects_lifetime:>3d} total",
         f"pilots        {s.pilots_active:>3d} active / {s.pilots_fulfilled:>3d} done",
         f"committed     {s.scenarios_committed:>5d} scenarios",
         f"delivered     {s.scenarios_delivered_to_pilots:>5d}  unsold {s.scenarios_unsold:>3d}",
         f"pilot rev    ${s.revenue_usd:>10,.0f}",
+        f"rev / mo     ${s.monthly_revenue_rate_usd:>10,.0f}",
         f"cash         ${s.cash_usd:>10,.0f}",
         f"burn / mo    ${s.monthly_burn_usd:>10,.0f}",
-        f"runway        {s.runway_months:>5.1f} months",
+        f"runway        {runway_str:>5} months",
     ]
     ax.text(
         0.04, 0.95, "\n".join(lines),

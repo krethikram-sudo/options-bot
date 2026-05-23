@@ -35,11 +35,19 @@ class TriggerGenerator:
         return self._make_trigger(t_s, vehicle)
 
     def trigger_on_waypoint(self, t_s: float, vehicle: HostVehicle, wp: Waypoint) -> Trigger | None:
-        """Pre-planned waypoint trigger — fires when the vehicle reaches a fresh waypoint."""
+        """Pre-planned waypoint trigger — fires when the vehicle reaches a fresh waypoint.
+
+        Each waypoint is triggerable once per lap; the lap resets automatically
+        when the vehicle has visited every waypoint at least once.
+        """
+        if len(self._visited_in_lap) >= len(self.waypoints):
+            self._visited_in_lap.clear()
         if wp.waypoint_idx in self._visited_in_lap:
             return None
-        if self.rng.random() < 0.6:   # not every waypoint is interesting enough
-            self._visited_in_lap.add(wp.waypoint_idx)
+        # Mark visited so the lap can complete regardless of whether this
+        # particular waypoint fires.
+        self._visited_in_lap.add(wp.waypoint_idx)
+        if self.rng.random() < self.cfg.waypoint_trigger_prob:
             return self._make_trigger(t_s, vehicle, force_type="waypoint", wp=wp)
         return None
 
@@ -57,13 +65,10 @@ class TriggerGenerator:
         if force_type:
             ttype = force_type
         else:
+            # Poisson source covers manual + hard_brake only — waypoint
+            # triggers have their own source (`trigger_on_waypoint`).
             r = self.rng.random()
-            if r < self.cfg.manual_share:
-                ttype = "manual"
-            elif r < self.cfg.manual_share + self.cfg.waypoint_share:
-                ttype = "waypoint"
-            else:
-                ttype = "hard_brake"
+            ttype = "manual" if r < self.cfg.manual_share else "hard_brake"
         scene = wp or self._nearest_waypoint(vehicle.x, vehicle.y)
         return Trigger(
             trigger_id=f"trg_{self._counter:05d}",
