@@ -50,8 +50,11 @@ class Economics:
 
     def tick(self, dt: float, operating: bool) -> None:
         # Per-hour costs only while operating (daylight).
+        # Spec 5.4 assumes one operator per host vehicle, so both costs scale with fleet size.
         if operating:
-            self.ledger.operator_cost_usd += (self.cfg.operator_cost_per_hour_usd / 3600.0) * dt
+            self.ledger.operator_cost_usd += (
+                self.cfg.operator_cost_per_hour_usd / 3600.0
+            ) * dt * self.vehicle_count
             self.ledger.vehicle_cost_usd += (
                 self.cfg.vehicle_cost_per_hour_usd / 3600.0
             ) * dt * self.vehicle_count

@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 
 from .config import PipelineConfig, ProbabilityConfig
+from .deliverable import emit_scenario_package
 from .mission import Mission
 
 
@@ -17,6 +19,7 @@ class PipelineJob:
     quality_score: float
     delivered: bool = False
     failed_reason: Optional[str] = None
+    package_path: Optional[Path] = None
 
 
 class DataPipeline:
@@ -27,10 +30,12 @@ class DataPipeline:
         pipe_cfg: PipelineConfig,
         prob_cfg: ProbabilityConfig,
         rng: random.Random,
+        emit_packages_to: Path | str | None = None,
     ):
         self.cfg = pipe_cfg
         self.prob = prob_cfg
         self.rng = rng
+        self.emit_dir = Path(emit_packages_to) if emit_packages_to else None
         self.queue: list[PipelineJob] = []
         self.completed: list[PipelineJob] = []
         self.delivered_count: int = 0
@@ -68,6 +73,10 @@ class DataPipeline:
                 else:
                     job.delivered = True
                     self.delivered_count += 1
+                    if self.emit_dir is not None:
+                        job.package_path = emit_scenario_package(
+                            job.mission, job.quality_score, self.emit_dir, self.rng,
+                        )
                 self.completed.append(job)
                 finished.append(job)
             else:

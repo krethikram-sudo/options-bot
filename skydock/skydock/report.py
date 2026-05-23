@@ -9,9 +9,10 @@ def print_report(sim: Simulation) -> None:
     e = sim.economics.ledger
     delivered = sum(1 for j in sim.completed_jobs if j.delivered)
 
+    n_units = len(sim.units)
     print()
     print("=" * 60)
-    print(f"Skydock simulation report  ({sim.cfg.simulation.duration_hours:.1f}h simulated)")
+    print(f"Skydock simulation report  ({sim.cfg.simulation.duration_hours:.1f}h, {n_units} vehicle{'s' if n_units != 1 else ''})")
     print("=" * 60)
 
     print("\nOperations (spec 9.1)")
@@ -22,6 +23,8 @@ def print_report(sim: Simulation) -> None:
     print(f"  triggers skipped (envelope)  {m.triggers_skipped_outside_envelope}")
     if m.missions_started:
         print(f"  success rate ............... {m.success_rate() * 100:.1f}%")
+    if n_units > 1 and delivered:
+        print(f"  delivered per vehicle ...... {delivered / n_units:.1f}")
 
     if m.abort_reasons:
         print("\n  Abort reasons:")

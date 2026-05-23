@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 from .conditions import Conditions, ConditionsModel
@@ -18,17 +18,32 @@ from .world import Waypoint, generate_corridor
 
 
 @dataclass
+class VehicleUnit:
+    """One host vehicle + its drone + the trigger generator that schedules its missions."""
+    vehicle: HostVehicle
+    drone: Drone
+    trigger_gen: TriggerGenerator
+    active_mission: Optional[Mission] = None
+    color: str = "#9ee37d"
+
+
+@dataclass
 class SimSnapshot:
     """Read-only view of sim state used by the animation."""
     t_s: float
     conditions: Conditions
-    vehicle: HostVehicle
-    drone: Drone
+    units: list[VehicleUnit]
     waypoints: list[Waypoint]
-    active_mission: Optional[Mission]
     metrics: Metrics
     economics: Economics
     pipeline: DataPipeline
+
+
+# Colour palette for up to 8 host vehicles in the same animation.
+_VEHICLE_COLORS = [
+    "#9ee37d", "#7ab0d4", "#f29ac4", "#e5b85a",
+    "#c39bd3", "#76d7c4", "#f1948a", "#aab7b8",
+]
 
 
 class Simulation:
@@ -45,23 +60,38 @@ class Simulation:
             rng=self.rng,
         )
         speed_mps = config.host_vehicles.speed_mph_cruise / 2.23694
-        self.vehicle = HostVehicle(
-            vehicle_id="host_0",
-            waypoints=self.waypoints,
-            speed_mps=speed_mps,
-        )
-        self.drone = Drone(drone_id="drone_0", x=self.vehicle.x, y=self.vehicle.y)
+        n = max(1, int(config.host_vehicles.count))
+
+        self.units: list[VehicleUnit] = []
+        for i in range(n):
+            # Offset each vehicle's start waypoint so they don't bunch up.
+            start_idx = (i * len(self.waypoints) // n) % len(self.waypoints)
+            v = HostVehicle(
+                vehicle_id=f"host_{i}",
+                waypoints=self.waypoints,
+                speed_mps=speed_mps,
+            )
+            v.x = self.waypoints[start_idx].x
+            v.y = self.waypoints[start_idx].y
+            v.target_idx = (start_idx + 1) % len(self.waypoints)
+            d = Drone(drone_id=f"drone_{i}", x=v.x, y=v.y)
+            tg = TriggerGenerator(config.trigger, self.waypoints, self.rng)
+            self.units.append(VehicleUnit(
+                vehicle=v, drone=d, trigger_gen=tg,
+                color=_VEHICLE_COLORS[i % len(_VEHICLE_COLORS)],
+            ))
 
         self.conditions_model = ConditionsModel(
             config.conditions, config.world, config.simulation, self.rng,
         )
-        self.trigger_gen = TriggerGenerator(config.trigger, self.waypoints, self.rng)
         self.mission_ctrl = MissionController(config, self.rng)
-        self.pipeline = DataPipeline(config.pipeline, config.probabilities, self.rng)
-        self.economics = Economics(config.economics, host_vehicle_count=1)
+        self.pipeline = DataPipeline(
+            config.pipeline, config.probabilities, self.rng,
+            emit_packages_to=config.simulation.emit_packages_to,
+        )
+        self.economics = Economics(config.economics, host_vehicle_count=n)
         self.metrics = Metrics()
 
-        self.active_mission: Optional[Mission] = None
         self.completed_missions: list[Mission] = []
         self.completed_jobs: list[PipelineJob] = []
 
@@ -72,55 +102,63 @@ class Simulation:
         cond = self.conditions_model.current(self.t_s)
         operating = cond.is_daylight
 
-        if operating:
-            reached_wp = self.vehicle.update(dt)
-        else:
-            reached_wp = None
-
-        # When the vehicle arrives at a waypoint, briefly stop — gives a chance
-        # for waypoint-trigger to fire (spec 1.3 pre-planned trigger).
-        if reached_wp is not None and operating:
-            self.vehicle.stop_for(self.cfg.host_vehicles.stop_at_waypoint_seconds)
-            if self.drone.state == DroneState.DOCKED and self.active_mission is None:
-                trig = self.trigger_gen.trigger_on_waypoint(self.t_s, self.vehicle, reached_wp)
-                if trig is not None:
-                    self._begin_mission(trig)
-
-        # Poisson trigger source — only while operating and drone is free.
-        if (
-            operating
-            and self.active_mission is None
-            and self.drone.state == DroneState.DOCKED
-        ):
-            trig = self.trigger_gen.poll(dt, self.t_s, self.vehicle)
-            if trig is not None:
-                self._begin_mission(trig)
-        elif operating and self.trigger_gen.poll(dt, self.t_s, self.vehicle):
-            # Trigger arrived but drone busy / outside envelope — count it as skipped.
-            self.metrics.triggers_skipped_drone_busy += 1
-
-        # Step the active mission (also moves the drone).
-        if self.active_mission is not None:
-            self.mission_ctrl.step(
-                self.active_mission, self.drone, self.vehicle, cond, dt, self.t_s,
-            )
-            if not self.active_mission.is_active:
-                self._finalize_mission(self.active_mission)
-                self.active_mission = None
-        else:
-            # Idle — drone sits on host vehicle.
-            self.drone.x, self.drone.y = self.vehicle.x, self.vehicle.y
-            self.drone.altitude_m = 0.0
-
-        self.drone.charge_or_drain(dt)
+        for unit in self.units:
+            self._step_unit(unit, dt, cond, operating)
 
         for job in self.pipeline.step(self.t_s):
             self._finalize_pipeline_job(job)
 
         self.economics.tick(dt, operating=operating)
         self.t_s += dt
-
         return self.snapshot(cond)
+
+    def _step_unit(
+        self,
+        unit: VehicleUnit,
+        dt: float,
+        cond: Conditions,
+        operating: bool,
+    ) -> None:
+        if operating:
+            reached_wp = unit.vehicle.update(dt)
+        else:
+            reached_wp = None
+
+        # Waypoint trigger: vehicle just rolled onto an interesting scene point.
+        if reached_wp is not None and operating:
+            unit.vehicle.stop_for(self.cfg.host_vehicles.stop_at_waypoint_seconds)
+            if unit.drone.state == DroneState.DOCKED and unit.active_mission is None:
+                trig = unit.trigger_gen.trigger_on_waypoint(
+                    self.t_s, unit.vehicle, reached_wp,
+                )
+                if trig is not None:
+                    self._begin_mission(unit, trig)
+
+        # Poisson trigger arrivals.
+        if (
+            operating
+            and unit.active_mission is None
+            and unit.drone.state == DroneState.DOCKED
+        ):
+            trig = unit.trigger_gen.poll(dt, self.t_s, unit.vehicle)
+            if trig is not None:
+                self._begin_mission(unit, trig)
+        elif operating and unit.trigger_gen.poll(dt, self.t_s, unit.vehicle):
+            self.metrics.triggers_skipped_drone_busy += 1
+
+        # Advance the active mission, which also drives the drone's position.
+        if unit.active_mission is not None:
+            self.mission_ctrl.step(
+                unit.active_mission, unit.drone, unit.vehicle, cond, dt, self.t_s,
+            )
+            if not unit.active_mission.is_active:
+                self._finalize_mission(unit.active_mission)
+                unit.active_mission = None
+        else:
+            unit.drone.x, unit.drone.y = unit.vehicle.x, unit.vehicle.y
+            unit.drone.altitude_m = 0.0
+
+        unit.drone.charge_or_drain(dt)
 
     def run_headless(self) -> None:
         while self.t_s < self.duration_s:
@@ -131,10 +169,8 @@ class Simulation:
         return SimSnapshot(
             t_s=self.t_s,
             conditions=cond,
-            vehicle=self.vehicle,
-            drone=self.drone,
+            units=self.units,
             waypoints=self.waypoints,
-            active_mission=self.active_mission,
             metrics=self.metrics,
             economics=self.economics,
             pipeline=self.pipeline,
@@ -142,13 +178,13 @@ class Simulation:
 
     # -- internals ----------------------------------------------------------
 
-    def _begin_mission(self, trigger: Trigger) -> None:
-        # If the host is moving fast (>5 mph spec 1.4), abort before launch.
-        if self.vehicle.speed_mph > 5.0 and not self.vehicle.stopped:
+    def _begin_mission(self, unit: VehicleUnit, trigger: Trigger) -> None:
+        # Spec 1.4: launch only if vehicle is stationary or <5 mph.
+        if unit.vehicle.speed_mph > 5.0 and not unit.vehicle.stopped:
             self.metrics.triggers_skipped_outside_envelope += 1
             return
-        self.active_mission = self.mission_ctrl.start(
-            trigger, self.vehicle, self.drone, self.t_s,
+        unit.active_mission = self.mission_ctrl.start(
+            trigger, unit.vehicle, unit.drone, self.t_s,
         )
         self.metrics.on_mission_start(trigger.type)
 

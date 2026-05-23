@@ -14,6 +14,7 @@ class SimulationConfig:
     dt_seconds: float = 1.0
     seed: int = 42
     start_hour: float = 7.0    # wall-clock hour the sim begins at (t=0)
+    emit_packages_to: str | None = None   # output dir for per-scenario deliverables; None disables
 
 
 @dataclass

@@ -1,27 +1,26 @@
-"""Matplotlib animation — map view + live stats dashboard.
+"""Matplotlib animation — multi-vehicle map view + live stats dashboard.
 
 Layout:
-    +----------------------------+--------------------+
-    |                            |  Time / conditions |
-    |        MAP                 |--------------------|
-    |  (vehicle + drone +        |  Mission counters  |
-    |   capture footprint)       |--------------------|
-    |                            |  Abort reasons     |
-    |                            |--------------------|
-    |                            |  P&L              |
-    +----------------------------+--------------------+
+    +-----------------------------+----------------------+
+    |                             |  Time / conditions   |
+    |        MAP                  |----------------------|
+    |  (N vehicles + drones +     |  Mission counters    |
+    |   capture footprint)        |----------------------|
+    |                             |  Failure breakdown   |
+    |-----------------------------|----------------------|
+    |  Mission timeline strip     |  Unit economics      |
+    +-----------------------------+----------------------+
 """
 from __future__ import annotations
 
-import math
 from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-from matplotlib.patches import Circle, Rectangle
+from matplotlib.patches import Circle
 
 if TYPE_CHECKING:
-    from .simulation import Simulation
+    from .simulation import Simulation, SimSnapshot, VehicleUnit
 
 
 _ABORT_COLORS = {
@@ -54,52 +53,59 @@ def run_animation(sim: "Simulation", save_path: str | None = None) -> None:
     sim_dt_per_frame = speedup / fps
     total_frames = int((cfg.simulation.duration_hours * 3600.0) / sim_dt_per_frame)
 
-    fig = plt.figure(figsize=(15, 8), facecolor="#0e0f12")
+    fig = plt.figure(figsize=(15, 9), facecolor="#0e0f12")
     gs = fig.add_gridspec(
-        nrows=4,
+        nrows=5,
         ncols=2,
         width_ratios=[3.0, 1.2],
-        height_ratios=[1, 1, 1, 1],
+        height_ratios=[1, 1, 1, 1, 0.5],
         wspace=0.08,
-        hspace=0.35,
+        hspace=0.45,
     )
-    ax_map = fig.add_subplot(gs[:, 0])
+    ax_map = fig.add_subplot(gs[0:4, 0])
+    ax_timeline = fig.add_subplot(gs[4, 0])
     ax_time = fig.add_subplot(gs[0, 1])
     ax_counts = fig.add_subplot(gs[1, 1])
     ax_aborts = fig.add_subplot(gs[2, 1])
-    ax_econ = fig.add_subplot(gs[3, 1])
+    ax_econ = fig.add_subplot(gs[3:5, 1])
 
-    for ax in (ax_map, ax_time, ax_counts, ax_aborts, ax_econ):
+    for ax in (ax_map, ax_timeline, ax_time, ax_counts, ax_aborts, ax_econ):
         ax.set_facecolor("#16181d")
         for spine in ax.spines.values():
             spine.set_color("#3a3f47")
         ax.tick_params(colors="#9ca3af", labelsize=8)
 
     _setup_map(ax_map, sim)
+    _setup_timeline(ax_timeline)
+
+    # Per-unit artists, indexed by unit position.
+    unit_artists = []
+    for unit in sim.units:
+        v_dot = ax_map.plot([], [], "o", color=unit.color, markersize=9, zorder=5)[0]
+        d_dot = ax_map.plot([], [], "^", color="#f5a524", markersize=11, zorder=6,
+                            markeredgecolor=unit.color, markeredgewidth=1.5)[0]
+        tether = ax_map.plot([], [], "-", color="#f5a524", alpha=0.4, linewidth=1)[0]
+        trail = ax_map.plot([], [], "-", color="#f5a524", alpha=0.5, linewidth=1.5)[0]
+        coverage = Circle((0, 0), 0, fill=True, color="#f5a524", alpha=0.0, zorder=3)
+        ax_map.add_patch(coverage)
+        unit_artists.append({
+            "vehicle_dot": v_dot,
+            "drone_dot": d_dot,
+            "tether": tether,
+            "trail": trail,
+            "coverage": coverage,
+            "trail_xs": [],
+            "trail_ys": [],
+        })
 
     state = {
-        "vehicle_dot": ax_map.plot([], [], "o", color="#9ee37d", markersize=9, zorder=5)[0],
-        "drone_dot": ax_map.plot([], [], "^", color="#f5a524", markersize=12, zorder=6)[0],
-        "drone_tether": ax_map.plot([], [], "-", color="#f5a524", alpha=0.4, linewidth=1)[0],
-        "drone_trail": ax_map.plot([], [], "-", color="#f5a524", alpha=0.5, linewidth=1.5)[0],
-        "coverage": Circle((0, 0), 0, fill=True, color="#f5a524", alpha=0.0, zorder=3),
-        "trail_xs": [],
-        "trail_ys": [],
+        "units": unit_artists,
+        "ax_timeline": ax_timeline,
         "ax_time": ax_time,
         "ax_counts": ax_counts,
         "ax_aborts": ax_aborts,
         "ax_econ": ax_econ,
     }
-    ax_map.add_patch(state["coverage"])
-
-    def init():
-        return (
-            state["vehicle_dot"],
-            state["drone_dot"],
-            state["drone_tether"],
-            state["drone_trail"],
-            state["coverage"],
-        )
 
     def update(frame_idx: int):
         # Advance sim by sim_dt_per_frame seconds, in dt-sized steps.
@@ -109,14 +115,14 @@ def run_animation(sim: "Simulation", save_path: str | None = None) -> None:
 
         snap = sim.snapshot()
         _update_map(state, snap, cfg)
-        _update_panels(state, snap, cfg)
-        return (
-            state["vehicle_dot"],
-            state["drone_dot"],
-            state["drone_tether"],
-            state["drone_trail"],
-            state["coverage"],
-        )
+        _update_timeline(state["ax_timeline"], snap, sim)
+        _update_panels(state, snap)
+        # Return all updatable artists for blit (we use blit=False but anyway).
+        artists = []
+        for ua in state["units"]:
+            artists.extend([ua["vehicle_dot"], ua["drone_dot"], ua["tether"],
+                            ua["trail"], ua["coverage"]])
+        return artists
 
     fig.suptitle(
         "Skydock — vehicle-deployed drone simulation",
@@ -128,7 +134,6 @@ def run_animation(sim: "Simulation", save_path: str | None = None) -> None:
     anim = FuncAnimation(
         fig,
         update,
-        init_func=init,
         frames=total_frames,
         interval=1000.0 / fps,
         blit=False,
@@ -142,22 +147,26 @@ def run_animation(sim: "Simulation", save_path: str | None = None) -> None:
         plt.show()
 
 
+# -- map ----------------------------------------------------------------
+
 def _setup_map(ax, sim: "Simulation") -> None:
     cfg = sim.cfg.world
     ax.set_xlim(0, cfg.width_m)
     ax.set_ylim(0, cfg.height_m)
     ax.set_aspect("equal")
-    ax.set_title("Operating corridor", color="#e5e7eb", fontsize=10, pad=6)
+    ax.set_title("Operating corridor", color="#e5e7eb", fontsize=10, pad=6, loc="left")
     ax.set_xticks([])
     ax.set_yticks([])
 
-    # Draw the route as a closed loop polyline.
+    # Streets — the closed-loop axis-aligned route.
     xs = [w.x for w in sim.waypoints] + [sim.waypoints[0].x]
     ys = [w.y for w in sim.waypoints] + [sim.waypoints[0].y]
-    ax.plot(xs, ys, "-", color="#3a3f47", linewidth=2, alpha=0.7)
+    ax.plot(xs, ys, "-", color="#4b5563", linewidth=8, alpha=0.35, solid_capstyle="round")
+    ax.plot(xs, ys, color="#9ca3af", linewidth=1, alpha=0.6,
+            linestyle=(0, (4, 6)))
 
     for w in sim.waypoints:
-        ax.plot(w.x, w.y, "o", color="#586173", markersize=5, alpha=0.8)
+        ax.plot(w.x, w.y, "s", color="#586173", markersize=6, alpha=0.9)
         ax.annotate(
             w.label.replace("_", " "),
             xy=(w.x, w.y),
@@ -169,41 +178,66 @@ def _setup_map(ax, sim: "Simulation") -> None:
         )
 
 
-def _update_map(state, snap, cfg) -> None:
-    v = snap.vehicle
-    d = snap.drone
-    state["vehicle_dot"].set_data([v.x], [v.y])
+def _update_map(state, snap: "SimSnapshot", cfg) -> None:
+    trail_max = int(cfg.animation.trail_length_s * cfg.animation.fps)
+    for unit, art in zip(snap.units, state["units"]):
+        v, d = unit.vehicle, unit.drone
+        art["vehicle_dot"].set_data([v.x], [v.y])
+        if d.is_airborne:
+            art["drone_dot"].set_data([d.x], [d.y])
+            art["tether"].set_data([v.x, d.x], [v.y, d.y])
+            art["trail_xs"].append(d.x)
+            art["trail_ys"].append(d.y)
+            if len(art["trail_xs"]) > trail_max:
+                art["trail_xs"] = art["trail_xs"][-trail_max:]
+                art["trail_ys"] = art["trail_ys"][-trail_max:]
+            art["trail"].set_data(art["trail_xs"], art["trail_ys"])
+        else:
+            art["drone_dot"].set_data([], [])
+            art["tether"].set_data([], [])
+            if art["trail_xs"]:
+                # Fade trail by trimming a few points per frame.
+                art["trail_xs"] = art["trail_xs"][:-1]
+                art["trail_ys"] = art["trail_ys"][:-1]
+                art["trail"].set_data(art["trail_xs"], art["trail_ys"])
 
-    if d.is_airborne:
-        state["drone_dot"].set_data([d.x], [d.y])
-        state["drone_tether"].set_data([v.x, d.x], [v.y, d.y])
-        state["trail_xs"].append(d.x)
-        state["trail_ys"].append(d.y)
-        # Keep trail bounded.
-        max_pts = int(cfg.animation.trail_length_s * cfg.animation.fps)
-        if len(state["trail_xs"]) > max_pts:
-            state["trail_xs"] = state["trail_xs"][-max_pts:]
-            state["trail_ys"] = state["trail_ys"][-max_pts:]
-        state["drone_trail"].set_data(state["trail_xs"], state["trail_ys"])
-    else:
-        state["drone_dot"].set_data([], [])
-        state["drone_tether"].set_data([], [])
-        # Fade old trail by clearing slowly.
-        if state["trail_xs"]:
-            state["trail_xs"] = state["trail_xs"][:-1]
-            state["trail_ys"] = state["trail_ys"][:-1]
-            state["drone_trail"].set_data(state["trail_xs"], state["trail_ys"])
-
-    cov = state["coverage"]
-    if snap.active_mission is not None and snap.active_mission.is_capturing:
-        cov.center = (d.x, d.y)
-        cov.set_radius(d.coverage_radius_m)
-        cov.set_alpha(0.18)
-    else:
-        cov.set_alpha(0.0)
+        cov = art["coverage"]
+        if unit.active_mission is not None and unit.active_mission.is_capturing:
+            cov.center = (d.x, d.y)
+            cov.set_radius(d.coverage_radius_m)
+            cov.set_alpha(0.18)
+        else:
+            cov.set_alpha(0.0)
 
 
-def _update_panels(state, snap, cfg) -> None:
+# -- mission timeline ---------------------------------------------------
+
+def _setup_timeline(ax) -> None:
+    ax.set_facecolor("#16181d")
+    ax.set_title("Recent missions", color="#e5e7eb", fontsize=10, pad=4, loc="left")
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_ylim(0, 1)
+
+
+def _update_timeline(ax, snap: "SimSnapshot", sim: "Simulation") -> None:
+    ax.clear()
+    _setup_timeline(ax)
+    history = sim.completed_missions[-40:]
+    if not history:
+        ax.text(0.5, 0.5, "no completed missions yet",
+                transform=ax.transAxes, ha="center", va="center",
+                color="#6b7280", fontsize=9)
+        return
+    ax.set_xlim(0, max(40, len(history)))
+    for i, m in enumerate(history):
+        color = "#9ee37d" if m.stage == "DONE" else _abort_color(m.aborted_reason or "")
+        ax.add_patch(plt.Rectangle((i, 0.15), 0.85, 0.7, color=color, alpha=0.85))
+
+
+# -- side panels --------------------------------------------------------
+
+def _update_panels(state, snap: "SimSnapshot") -> None:
     _draw_time_panel(state["ax_time"], snap)
     _draw_counts_panel(state["ax_counts"], snap)
     _draw_aborts_panel(state["ax_aborts"], snap)
@@ -221,39 +255,36 @@ def _panel_setup(ax, title: str) -> None:
     ax.set_yticks([])
 
 
-def _draw_time_panel(ax, snap) -> None:
+def _draw_time_panel(ax, snap: "SimSnapshot") -> None:
     _panel_setup(ax, "Time & conditions")
     cond = snap.conditions
-    mission_stage = "—"
-    if snap.active_mission is not None:
-        mission_stage = snap.active_mission.stage
     operating = "✓ daylight" if cond.is_daylight else "✗ off-hours"
     weather = "clear" if cond.weather_clear else "weather"
+    n_units = len(snap.units)
+    active_now = sum(1 for u in snap.units if u.active_mission is not None)
+    avg_batt = sum(u.drone.battery_pct for u in snap.units) / n_units
     lines = [
         f"sim time     {_format_hours(snap.t_s)}",
         f"hour of day  {cond.hour_of_day:5.2f}",
         f"status       {operating}",
         f"wind         {cond.wind_mph:5.1f} mph",
         f"weather      {weather}",
-        f"vehicle spd  {snap.vehicle.speed_mph:5.1f} mph",
-        f"drone batt   {snap.drone.battery_pct:5.1f}%",
-        f"mission      {mission_stage}",
+        f"vehicles     {n_units}",
+        f"missions now {active_now}",
+        f"avg battery  {avg_batt:5.1f}%",
     ]
     ax.text(
         0.04, 0.95, "\n".join(lines),
-        transform=ax.transAxes,
-        color="#e5e7eb",
-        fontsize=9,
-        family="monospace",
-        va="top",
+        transform=ax.transAxes, color="#e5e7eb",
+        fontsize=9, family="monospace", va="top",
     )
 
 
-def _draw_counts_panel(ax, snap) -> None:
+def _draw_counts_panel(ax, snap: "SimSnapshot") -> None:
     _panel_setup(ax, "Mission counters")
     m = snap.metrics
     delivered = sum(1 for j in snap.pipeline.completed if j.delivered)
-    avg_q = snap.metrics.avg_delivered_quality()
+    avg_q = m.avg_delivered_quality()
     lines = [
         f"triggered    {m.missions_started:4d}",
         f"succeeded    {m.missions_succeeded:4d}",
@@ -266,60 +297,61 @@ def _draw_counts_panel(ax, snap) -> None:
     ]
     ax.text(
         0.04, 0.95, "\n".join(lines),
-        transform=ax.transAxes,
-        color="#e5e7eb",
-        fontsize=9,
-        family="monospace",
-        va="top",
+        transform=ax.transAxes, color="#e5e7eb",
+        fontsize=9, family="monospace", va="top",
     )
 
 
-def _draw_aborts_panel(ax, snap) -> None:
+def _draw_aborts_panel(ax, snap: "SimSnapshot") -> None:
     _panel_setup(ax, "Failure breakdown")
     reasons = snap.metrics.abort_reasons
     if not reasons:
         ax.text(
             0.5, 0.5, "no aborts yet",
-            transform=ax.transAxes,
-            ha="center", va="center",
+            transform=ax.transAxes, ha="center", va="center",
             color="#6b7280", fontsize=9,
         )
         return
-    items = reasons.most_common()
+    items = reasons.most_common(6)
     labels = [r for r, _ in items]
     counts = [c for _, c in items]
     colors = [_abort_color(r) for r in labels]
-    ax.barh(range(len(labels)), counts, color=colors)
+    ax.barh(range(len(labels)), counts, color=colors, height=0.55)
+    # Give the largest bar 70% of the panel width so single-value bars don't fill it.
+    ax.set_xlim(0, max(max(counts) * 1.4, 3))
     ax.set_yticks(range(len(labels)))
     ax.set_yticklabels(
         [l.replace("_", " ") for l in labels],
         color="#9ca3af", fontsize=8,
     )
     ax.invert_yaxis()
-    ax.tick_params(axis="x", colors="#9ca3af", labelsize=8)
+    ax.tick_params(axis="x", colors="#9ca3af", labelsize=7)
     for spine in ax.spines.values():
         spine.set_color("#3a3f47")
+    # Annotate counts on the bars.
+    for i, c in enumerate(counts):
+        ax.text(c + 0.1, i, str(c), color="#e5e7eb",
+                fontsize=8, va="center")
 
 
-def _draw_econ_panel(ax, snap) -> None:
+def _draw_econ_panel(ax, snap: "SimSnapshot") -> None:
     _panel_setup(ax, "Unit economics")
     e = snap.economics.ledger
-    margin_pct = snap.economics.ledger.gross_margin * 100.0
+    margin_pct = e.gross_margin * 100.0
     lines = [
-        f"revenue      ${e.revenue_usd:8,.0f}",
-        f"cloud cost   ${e.cloud_cost_usd:8,.2f}",
-        f"drone wear   ${e.drone_wear_cost_usd:8,.2f}",
-        f"operator     ${e.operator_cost_usd:8,.0f}",
-        f"vehicle      ${e.vehicle_cost_usd:8,.2f}",
-        f"overhead     ${e.overhead_cost_usd:8,.0f}",
-        f"gross profit ${e.gross_profit:8,.0f}",
-        f"gross margin {margin_pct:7.1f}%",
+        f"revenue       ${e.revenue_usd:9,.0f}",
+        f"cloud cost    ${e.cloud_cost_usd:9,.2f}",
+        f"drone wear    ${e.drone_wear_cost_usd:9,.2f}",
+        f"operator      ${e.operator_cost_usd:9,.0f}",
+        f"vehicle       ${e.vehicle_cost_usd:9,.2f}",
+        f"overhead      ${e.overhead_cost_usd:9,.0f}",
+        f"-------------------------",
+        f"gross profit  ${e.gross_profit:9,.0f}",
+        f"gross margin   {margin_pct:7.1f} %",
+        f"delivered      {e.scenarios_delivered:9d}",
     ]
     ax.text(
         0.04, 0.95, "\n".join(lines),
-        transform=ax.transAxes,
-        color="#e5e7eb",
-        fontsize=9,
-        family="monospace",
-        va="top",
+        transform=ax.transAxes, color="#e5e7eb",
+        fontsize=9, family="monospace", va="top",
     )
