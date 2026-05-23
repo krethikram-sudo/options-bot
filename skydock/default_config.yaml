@@ -6,6 +6,7 @@ simulation:
   dt_seconds: 1.0
   seed: 42
   start_hour: 7.0            # sim t=0 corresponds to this wall-clock hour
+  emit_packages_to:          # set to a directory to write per-scenario deliverables (spec 3.2)
 
 world:
   width_m: 5000

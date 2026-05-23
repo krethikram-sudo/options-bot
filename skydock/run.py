@@ -68,11 +68,24 @@ def main(argv: list[str] | None = None) -> int:
         "--seed", type=int, default=None,
         help="Override the random seed.",
     )
+    parser.add_argument(
+        "--emit-packages", type=Path, default=None,
+        help="Write a metadata.json + agent_tracks.json + scenario.xosc package "
+             "for every delivered scenario into this directory.",
+    )
+    parser.add_argument(
+        "--vehicles", type=int, default=None,
+        help="Shortcut for --set host_vehicles.count=N",
+    )
     args = parser.parse_args(argv)
 
     cfg = Config.load(args.config) if args.config and args.config.exists() else Config()
     if args.seed is not None:
         cfg.simulation.seed = args.seed
+    if args.emit_packages is not None:
+        cfg.simulation.emit_packages_to = str(args.emit_packages)
+    if args.vehicles is not None:
+        cfg.host_vehicles.count = args.vehicles
     cfg.apply_overrides(_parse_overrides(args.overrides))
 
     sim = Simulation(cfg)
