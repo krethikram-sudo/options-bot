@@ -30,6 +30,9 @@ class HostVehicleConfig:
     count: int = 1
     speed_mph_cruise: float = 25.0
     stop_at_waypoint_seconds: float = 90.0
+    # Per-vehicle corridor types. If shorter than `count`, the list cycles.
+    # Valid types: "urban_dense", "suburban", "highway_mix" (see world.py).
+    corridor_types: list[str] = field(default_factory=lambda: ["urban_dense"])
 
 
 @dataclass
@@ -128,11 +131,24 @@ class Config:
             if "." not in dotted:
                 continue
             section, attr = dotted.split(".", 1)
-            if hasattr(self, section):
-                sub = getattr(self, section)
-                if hasattr(sub, attr):
-                    cast = type(getattr(sub, attr))
-                    setattr(sub, attr, cast(val) if cast is not type(None) else val)
+            if not hasattr(self, section):
+                continue
+            sub = getattr(self, section)
+            if not hasattr(sub, attr):
+                continue
+            existing = getattr(sub, attr)
+            if isinstance(existing, list) and isinstance(val, str):
+                # Accept "[a,b,c]" or "a,b,c" from the CLI.
+                stripped = val.strip().strip("[]")
+                val = [s.strip() for s in stripped.split(",") if s.strip()]
+            elif existing is None or isinstance(val, type(existing)):
+                pass
+            else:
+                try:
+                    val = type(existing)(val)
+                except (TypeError, ValueError):
+                    pass
+            setattr(sub, attr, val)
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)

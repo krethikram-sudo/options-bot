@@ -149,32 +149,49 @@ def run_animation(sim: "Simulation", save_path: str | None = None) -> None:
 
 # -- map ----------------------------------------------------------------
 
+_CORRIDOR_TINT = {
+    "urban_dense": "#4b5563",
+    "suburban": "#3f5b48",
+    "highway_mix": "#5b4a39",
+}
+
+
 def _setup_map(ax, sim: "Simulation") -> None:
     cfg = sim.cfg.world
     ax.set_xlim(0, cfg.width_m)
     ax.set_ylim(0, cfg.height_m)
     ax.set_aspect("equal")
-    ax.set_title("Operating corridor", color="#e5e7eb", fontsize=10, pad=6, loc="left")
+    title = ("Operating corridor" if len(sim.corridors) == 1
+             else f"Operating corridors ({len(sim.corridors)})")
+    ax.set_title(title, color="#e5e7eb", fontsize=10, pad=6, loc="left")
     ax.set_xticks([])
     ax.set_yticks([])
 
-    # Streets — the closed-loop axis-aligned route.
-    xs = [w.x for w in sim.waypoints] + [sim.waypoints[0].x]
-    ys = [w.y for w in sim.waypoints] + [sim.waypoints[0].y]
-    ax.plot(xs, ys, "-", color="#4b5563", linewidth=8, alpha=0.35, solid_capstyle="round")
-    ax.plot(xs, ys, color="#9ca3af", linewidth=1, alpha=0.6,
-            linestyle=(0, (4, 6)))
-
-    for w in sim.waypoints:
-        ax.plot(w.x, w.y, "s", color="#586173", markersize=6, alpha=0.9)
-        ax.annotate(
-            w.label.replace("_", " "),
-            xy=(w.x, w.y),
-            xytext=(8, 8),
-            textcoords="offset points",
-            color="#9ca3af",
-            fontsize=7,
-            alpha=0.8,
+    for corridor in sim.corridors:
+        tint = _CORRIDOR_TINT.get(corridor.corridor_type, "#4b5563")
+        wps = corridor.waypoints
+        xs = [w.x for w in wps] + [wps[0].x]
+        ys = [w.y for w in wps] + [wps[0].y]
+        ax.plot(xs, ys, color=tint, linewidth=8, alpha=0.35, solid_capstyle="round")
+        ax.plot(xs, ys, color="#9ca3af", linewidth=1, alpha=0.6,
+                linestyle=(0, (4, 6)))
+        for w in wps:
+            ax.plot(w.x, w.y, "s", color="#586173", markersize=5, alpha=0.85)
+            ax.annotate(
+                w.label.replace("_", " "),
+                xy=(w.x, w.y),
+                xytext=(7, 7),
+                textcoords="offset points",
+                color="#9ca3af",
+                fontsize=6,
+                alpha=0.75,
+            )
+        # Corridor label in the centre of its bbox.
+        x0, y0, x1, y1 = corridor.bbox
+        ax.text(
+            (x0 + x1) / 2, y1 - (y1 - y0) * 0.04,
+            corridor.corridor_type.replace("_", " "),
+            color="#9ca3af", fontsize=9, ha="center", va="top", alpha=0.7,
         )
 
 

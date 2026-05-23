@@ -14,7 +14,7 @@ from .mission import Mission, MissionController
 from .pipeline import DataPipeline, PipelineJob
 from .triggers import Trigger, TriggerGenerator
 from .vehicle import HostVehicle
-from .world import Waypoint, generate_corridor
+from .world import Corridor, Waypoint, generate_corridor, split_world_into_bboxes
 
 
 @dataclass
@@ -23,6 +23,7 @@ class VehicleUnit:
     vehicle: HostVehicle
     drone: Drone
     trigger_gen: TriggerGenerator
+    corridor: Corridor
     active_mission: Optional[Mission] = None
     color: str = "#9ee37d"
 
@@ -33,7 +34,7 @@ class SimSnapshot:
     t_s: float
     conditions: Conditions
     units: list[VehicleUnit]
-    waypoints: list[Waypoint]
+    corridors: list[Corridor]
     metrics: Metrics
     economics: Economics
     pipeline: DataPipeline
@@ -53,31 +54,54 @@ class Simulation:
         self.t_s: float = 0.0
         self.duration_s: float = config.simulation.duration_hours * 3600.0
 
-        self.waypoints = generate_corridor(
-            width_m=config.world.width_m,
-            height_m=config.world.height_m,
-            n_waypoints=10,
-            rng=self.rng,
-        )
-        speed_mps = config.host_vehicles.speed_mph_cruise / 2.23694
         n = max(1, int(config.host_vehicles.count))
+        types = list(config.host_vehicles.corridor_types) or ["urban_dense"]
 
+        # Build one Corridor per distinct type — vehicles assigned the same
+        # type share a corridor (and its waypoints).
+        unique_types: list[str] = []
+        for t in types:
+            if t not in unique_types:
+                unique_types.append(t)
+        bboxes = split_world_into_bboxes(
+            config.world.width_m, config.world.height_m, len(unique_types),
+        )
+        self.corridors: list[Corridor] = [
+            generate_corridor(
+                bbox=bbox, corridor_type=t, name=f"{t}_{i}", rng=self.rng,
+            )
+            for i, (t, bbox) in enumerate(zip(unique_types, bboxes))
+        ]
+        corridor_by_type = {c.corridor_type: c for c in self.corridors}
+
+        speed_mps = config.host_vehicles.speed_mph_cruise / 2.23694
         self.units: list[VehicleUnit] = []
         for i in range(n):
-            # Offset each vehicle's start waypoint so they don't bunch up.
-            start_idx = (i * len(self.waypoints) // n) % len(self.waypoints)
+            assigned_type = types[i % len(types)]
+            corridor = corridor_by_type[assigned_type]
+            wps = corridor.waypoints
+            start_idx = (i * len(wps) // max(n, 1)) % len(wps)
             v = HostVehicle(
                 vehicle_id=f"host_{i}",
-                waypoints=self.waypoints,
+                waypoints=wps,
                 speed_mps=speed_mps,
             )
-            v.x = self.waypoints[start_idx].x
-            v.y = self.waypoints[start_idx].y
-            v.target_idx = (start_idx + 1) % len(self.waypoints)
+            v.x = wps[start_idx].x
+            v.y = wps[start_idx].y
+            v.target_idx = (start_idx + 1) % len(wps)
             d = Drone(drone_id=f"drone_{i}", x=v.x, y=v.y)
-            tg = TriggerGenerator(config.trigger, self.waypoints, self.rng)
+            # Each unit gets its own trigger generator with the corridor's rate multiplier.
+            unit_trigger_cfg = type(config.trigger)(
+                poisson_rate_per_hour=(
+                    config.trigger.poisson_rate_per_hour * corridor.rate_multiplier
+                ),
+                manual_share=config.trigger.manual_share,
+                waypoint_share=config.trigger.waypoint_share,
+                hard_brake_share=config.trigger.hard_brake_share,
+            )
+            tg = TriggerGenerator(unit_trigger_cfg, wps, self.rng)
             self.units.append(VehicleUnit(
-                vehicle=v, drone=d, trigger_gen=tg,
+                vehicle=v, drone=d, trigger_gen=tg, corridor=corridor,
                 color=_VEHICLE_COLORS[i % len(_VEHICLE_COLORS)],
             ))
 
@@ -170,7 +194,7 @@ class Simulation:
             t_s=self.t_s,
             conditions=cond,
             units=self.units,
-            waypoints=self.waypoints,
+            corridors=self.corridors,
             metrics=self.metrics,
             economics=self.economics,
             pipeline=self.pipeline,
