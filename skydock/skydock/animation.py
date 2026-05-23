@@ -118,7 +118,7 @@ def run_animation(sim: "Simulation", save_path: str | None = None) -> None:
         })
 
     # Drone-camera inset on the map (toggled visible during captures).
-    ax_camera = ax_map.inset_axes([0.02, 0.74, 0.24, 0.24])
+    ax_camera = ax_map.inset_axes([0.02, 0.62, 0.36, 0.36])
     ax_camera.set_facecolor("#1c1f25")
     for spine in ax_camera.spines.values():
         spine.set_color("#f5a524")
@@ -292,18 +292,40 @@ def _update_camera_inset(ax, snap: "SimSnapshot") -> None:
     scene = u.active_scene
     drone_x, drone_y = u.drone.x, u.drone.y
     fov_r = u.drone.coverage_radius_m
-    # Inset extent: ~1.5x FOV radius so we see surroundings too.
-    extent = fov_r * 1.5
-    ax.set_xlim(drone_x - extent, drone_x + extent)
-    ax.set_ylim(drone_y - extent, drone_y + extent)
+    # Inset extent: ~1.4x FOV radius so we see road structure beyond the camera.
+    extent = fov_r * 1.4
+    ax.set_xlim(scene.center_x - extent, scene.center_x + extent)
+    ax.set_ylim(scene.center_y - extent, scene.center_y + extent)
     ax.set_aspect("equal")
+
+    # Road reference lines so the lane structure reads visually.
+    from .scene import SCENE_TEMPLATES
+    tpl = SCENE_TEMPLATES.get(scene.scene_class, {})
+    road_axes = tpl.get("road_axes", ("ew",))
+    cx, cy = scene.center_x, scene.center_y
+    if "ew" in road_axes:
+        # Asphalt band.
+        ax.axhspan(cy - 8, cy + 8, color="#2a2f37", alpha=0.6, zorder=1)
+        # Lane lines.
+        for off in (-3.5, 3.5):
+            ax.plot([cx - extent, cx + extent], [cy + off, cy + off],
+                    "--", color="#6b7280", linewidth=0.5, alpha=0.6, zorder=2)
+        ax.plot([cx - extent, cx + extent], [cy, cy],
+                "-", color="#9ca3af", linewidth=0.6, alpha=0.7, zorder=2)
+    if "ns" in road_axes:
+        ax.axvspan(cx - 8, cx + 8, color="#2a2f37", alpha=0.6, zorder=1)
+        for off in (-3.5, 3.5):
+            ax.plot([cx + off, cx + off], [cy - extent, cy + extent],
+                    "--", color="#6b7280", linewidth=0.5, alpha=0.6, zorder=2)
+        ax.plot([cx, cx], [cy - extent, cy + extent],
+                "-", color="#9ca3af", linewidth=0.6, alpha=0.7, zorder=2)
 
     # FOV circle.
     from matplotlib.patches import Circle as _Circle
     fov = _Circle((drone_x, drone_y), fov_r, fill=False,
-                  edgecolor="#f5a524", linewidth=1.2, alpha=0.8)
+                  edgecolor="#f5a524", linewidth=1.5, alpha=0.85, zorder=10)
     ax.add_patch(fov)
-    ax.plot(drone_x, drone_y, "+", color="#f5a524", markersize=8)
+    ax.plot(drone_x, drone_y, "+", color="#f5a524", markersize=10, zorder=11)
 
     # Compute current visibility.
     last_frame = max(0, u.capture_frame_idx - 1)
@@ -311,14 +333,18 @@ def _update_camera_inset(ax, snap: "SimSnapshot") -> None:
                   if last_frame in frames}
 
     positions = scene.positions_now(snap.t_s)
+    # Marker sizes by class for visual hierarchy.
+    sizes = {"passenger_vehicle": 38, "pedestrian": 12, "cyclist": 16}
     for aid, cls, x, y in positions:
         color = {"passenger_vehicle": "#7ab0d4", "pedestrian": "#9ee37d",
                  "cyclist": "#e5b85a"}.get(cls, "#aaaaaa")
-        size = 30 if aid in in_fov_now else 10
+        base = sizes.get(cls, 15)
+        size = base * 1.6 if aid in in_fov_now else base * 0.7
         edge = "white" if aid in in_fov_now else color
-        alpha = 1.0 if aid in in_fov_now else 0.55
-        ax.scatter([x], [y], s=size, c=color, edgecolors=edge,
-                   linewidths=0.6 if aid in in_fov_now else 0, alpha=alpha)
+        alpha = 1.0 if aid in in_fov_now else 0.5
+        marker = "s" if cls == "passenger_vehicle" else "o"
+        ax.scatter([x], [y], s=size, c=color, edgecolors=edge, marker=marker,
+                   linewidths=0.7 if aid in in_fov_now else 0, alpha=alpha, zorder=5)
 
     n_seen = len(in_fov_now)
     n_total = len(scene.agents)
