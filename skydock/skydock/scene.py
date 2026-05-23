@@ -154,8 +154,9 @@ class TrafficScene:
         """Map visibility coverage + agent diversity → 0..100 quality score.
 
         Weighted blend:
-          - 60 pts from average visibility ratio of agents that were seen at all
+          - 60 pts from average visibility ratio (frames seen / frames observed)
           - 20 pts from how many of the spawned agents were seen at any point
+            (capped at 70% — realistic FOV will never cover 100% of the scene)
           - 20 pts from class diversity (vehicle + ped + cyclist all present)
         """
         if not self.agents or self.frames_observed == 0:
@@ -168,11 +169,18 @@ class TrafficScene:
             avg_visibility = 0.0
         visibility_pts = 60.0 * avg_visibility
 
-        coverage_ratio = len(summary) / len(self.agents)
+        # Coverage saturates at 70%: a single camera at altitude cannot see
+        # 100% of a 90m-radius traffic scene, so capping prevents the formula
+        # from penalising realistic captures for not seeing what's outside FOV.
+        coverage_ratio = min(1.0, len(summary) / max(1, len(self.agents)) / 0.70)
         coverage_pts = 20.0 * coverage_ratio
 
         seen_classes = {a.cls for a in self.agents if a.agent_id in summary}
-        diversity_pts = 20.0 * len(seen_classes) / 3.0  # 3 classes possible
+        # Diversity scales with expected number of classes in this scene
+        # (some scenes don't have cyclists or peds at all).
+        spawned_classes = {a.cls for a in self.agents}
+        denom = max(1, len(spawned_classes))
+        diversity_pts = 20.0 * len(seen_classes) / denom
 
         return max(0.0, min(100.0, visibility_pts + coverage_pts + diversity_pts))
 

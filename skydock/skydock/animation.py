@@ -351,6 +351,26 @@ def _update_camera_inset(ax, snap: "SimSnapshot") -> None:
     title = f"drone cam  {scene.scene_class.replace('_',' ')}  ({n_seen}/{n_total} in view)"
     ax.set_title(title, color="#e5e7eb", fontsize=8, pad=3, loc="left")
 
+    # Live quality readout (visibility-derived, running mid-capture).
+    running_q = scene.derived_quality_score()
+    bar_w = (scene.center_x + extent - 12) - (scene.center_x - extent + 12)
+    bar_y_full = scene.center_y - extent + extent * 0.06
+    bar_y_height = extent * 0.04
+    bar_x0 = scene.center_x - extent + 12
+    # Background bar.
+    ax.add_patch(plt.Rectangle((bar_x0, bar_y_full), bar_w, bar_y_height,
+                                 facecolor="#2a2f37", edgecolor="#3a3f47",
+                                 linewidth=0.5, zorder=8))
+    # Foreground (filled to running quality).
+    fill_w = bar_w * (running_q / 100.0)
+    fill_color = "#9ee37d" if running_q >= 70 else "#e5b85a" if running_q >= 50 else "#d97757"
+    ax.add_patch(plt.Rectangle((bar_x0, bar_y_full), fill_w, bar_y_height,
+                                 facecolor=fill_color, edgecolor="none", zorder=9))
+    ax.text(bar_x0 + bar_w * 0.5, bar_y_full + bar_y_height * 0.5,
+             f"quality {running_q:.0f}", color="#0e0f12",
+             fontsize=7, ha="center", va="center", zorder=10,
+             fontweight="bold")
+
 
 def _update_map(state, snap: "SimSnapshot", cfg) -> None:
     trail_max = int(cfg.animation.trail_length_s * cfg.animation.fps)
