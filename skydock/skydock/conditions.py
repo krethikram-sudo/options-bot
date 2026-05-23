@@ -18,7 +18,10 @@ class Conditions:
 
 
 class ConditionsModel:
-    """Generates time-varying conditions. Weather is sampled once per sim hour."""
+    """Generates time-varying conditions. Weather is resampled once per sim hour
+    using elapsed sim time (not wall-clock hour-of-day), so multi-day sims
+    correctly cycle through new weather instead of locking to day-1's roll.
+    """
 
     def __init__(
         self,
@@ -32,7 +35,8 @@ class ConditionsModel:
         self.sim = sim_cfg
         self.rng = rng
         self._weather_clear = rng.random() < cond_cfg.weather_clear_prob
-        self._next_weather_resample_hour = sim_cfg.start_hour + 1.0
+        # Track resample boundary in elapsed sim seconds, not wall hour-of-day.
+        self._next_weather_resample_t_s = 3600.0
 
     def current(self, t_s: float) -> Conditions:
         hour = (self.sim.start_hour + t_s / 3600.0) % 24.0
@@ -42,9 +46,10 @@ class ConditionsModel:
         wind += self.rng.gauss(0, 1.5)
         wind = max(0.0, wind)
 
-        if hour >= self._next_weather_resample_hour:
+        # Resample weather hourly using elapsed time so day-2+ cycles correctly.
+        while t_s >= self._next_weather_resample_t_s:
             self._weather_clear = self.rng.random() < self.cfg.weather_clear_prob
-            self._next_weather_resample_hour = math.floor(hour) + 1.0
+            self._next_weather_resample_t_s += 3600.0
 
         is_day = self.world.daylight_start_hour <= hour <= self.world.daylight_end_hour
         return Conditions(
