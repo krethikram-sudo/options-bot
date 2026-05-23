@@ -199,6 +199,14 @@ def _update_map(state, snap: "SimSnapshot", cfg) -> None:
     trail_max = int(cfg.animation.trail_length_s * cfg.animation.fps)
     for unit, art in zip(snap.units, state["units"]):
         v, d = unit.vehicle, unit.drone
+        # Dim offline vehicles (drone lost / dock damaged) so it's obvious which units are out.
+        if unit.is_offline(snap.t_s):
+            art["vehicle_dot"].set_color("#4a4f57")
+            art["vehicle_dot"].set_markeredgecolor("#6b7280")
+            art["vehicle_dot"].set_markeredgewidth(1.5)
+        else:
+            art["vehicle_dot"].set_color(unit.color)
+            art["vehicle_dot"].set_markeredgewidth(0)
         art["vehicle_dot"].set_data([v.x], [v.y])
         if d.is_airborne:
             art["drone_dot"].set_data([d.x], [d.y])
@@ -278,17 +286,20 @@ def _draw_time_panel(ax, snap: "SimSnapshot") -> None:
     operating = "✓ daylight" if cond.is_daylight else "✗ off-hours"
     weather = "clear" if cond.weather_clear else "weather"
     n_units = len(snap.units)
+    online = sum(1 for u in snap.units if not u.is_offline(snap.t_s))
     active_now = sum(1 for u in snap.units if u.active_mission is not None)
     avg_batt = sum(u.drone.battery_pct for u in snap.units) / n_units
+    avg_capacity = sum(u.drone.battery_capacity_pct for u in snap.units) / n_units
     lines = [
         f"sim time     {_format_hours(snap.t_s)}",
         f"hour of day  {cond.hour_of_day:5.2f}",
         f"status       {operating}",
         f"wind         {cond.wind_mph:5.1f} mph",
         f"weather      {weather}",
-        f"vehicles     {n_units}",
+        f"online       {online}/{n_units}",
         f"missions now {active_now}",
         f"avg battery  {avg_batt:5.1f}%",
+        f"avg capacity {avg_capacity:5.1f}%",
     ]
     ax.text(
         0.04, 0.95, "\n".join(lines),

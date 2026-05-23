@@ -16,6 +16,9 @@ class Metrics:
     triggers_skipped_drone_busy: int = 0
     triggers_skipped_outside_envelope: int = 0
     delivered_quality_scores: list[float] = field(default_factory=list)
+    # Spec §7.1 failure-cascade events that drove unit downtime.
+    drone_lost_events: int = 0
+    dock_damage_events: int = 0
 
     def on_mission_start(self, trigger_type: str) -> None:
         self.missions_started += 1

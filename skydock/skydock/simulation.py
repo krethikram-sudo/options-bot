@@ -26,6 +26,13 @@ class VehicleUnit:
     corridor: Corridor
     active_mission: Optional[Mission] = None
     color: str = "#9ee37d"
+    # Spec §7.1 — when set, unit is offline (no triggers / no missions) until t_s
+    # reaches this value. Reason explains the downtime in the dashboard.
+    offline_until_s: float = 0.0
+    offline_reason: Optional[str] = None
+
+    def is_offline(self, t_s: float) -> bool:
+        return t_s < self.offline_until_s
 
 
 @dataclass
@@ -143,6 +150,21 @@ class Simulation:
         cond: Conditions,
         operating: bool,
     ) -> None:
+        # Spec §7.1 — if the unit is offline (drone lost / dock damaged),
+        # the host vehicle returns to a depot and waits. No driving, no triggers.
+        if unit.is_offline(self.t_s):
+            unit.drone.x, unit.drone.y = unit.vehicle.x, unit.vehicle.y
+            unit.drone.altitude_m = 0.0
+            return
+        if unit.offline_reason is not None and self.t_s >= unit.offline_until_s:
+            # Coming back online — if the drone was lost, swap in a replacement.
+            if unit.drone.state == DroneState.LOST:
+                replacement_id = f"{unit.drone.drone_id}_r{unit.drone.flight_count}"
+                unit.drone = Drone(
+                    drone_id=replacement_id, x=unit.vehicle.x, y=unit.vehicle.y,
+                )
+            unit.offline_reason = None
+
         if operating:
             reached_wp = unit.vehicle.update(dt)
         else:
@@ -176,7 +198,7 @@ class Simulation:
                 unit.active_mission, unit.drone, unit.vehicle, cond, dt, self.t_s,
             )
             if not unit.active_mission.is_active:
-                self._finalize_mission(unit.active_mission)
+                self._finalize_mission(unit.active_mission, unit)
                 unit.active_mission = None
         else:
             unit.drone.x, unit.drone.y = unit.vehicle.x, unit.vehicle.y
@@ -212,7 +234,7 @@ class Simulation:
         )
         self.metrics.on_mission_start(trigger.type)
 
-    def _finalize_mission(self, mission: Mission) -> None:
+    def _finalize_mission(self, mission: Mission, unit: VehicleUnit) -> None:
         self.completed_missions.append(mission)
         if mission.stage == "DONE":
             self.metrics.on_mission_success(mission.scene_class)
@@ -220,6 +242,17 @@ class Simulation:
         else:
             reason = mission.aborted_reason or "unknown"
             self.metrics.on_mission_abort(reason)
+
+        # Apply failure-cascade outcomes (spec §7.1) — set unit downtime.
+        cascades = self.cfg.failure_cascades
+        if mission.drone_lost:
+            unit.offline_until_s = self.t_s + cascades.drone_replacement_hours * 3600
+            unit.offline_reason = "drone_lost"
+            self.metrics.drone_lost_events += 1
+        elif mission.dock_damaged:
+            unit.offline_until_s = self.t_s + cascades.dock_repair_hours * 3600
+            unit.offline_reason = "dock_damaged"
+            self.metrics.dock_damage_events += 1
 
     def _finalize_pipeline_job(self, job: PipelineJob) -> None:
         self.completed_jobs.append(job)

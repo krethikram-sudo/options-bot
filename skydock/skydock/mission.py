@@ -49,6 +49,10 @@ class Mission:
     # Where the drone starts when returning (set on capture end).
     return_origin_x: float = 0.0
     return_origin_y: float = 0.0
+    # Failure cascade outcomes (spec §7.1). Set by MissionController and
+    # consumed by the Simulation to apply unit-level downtime.
+    drone_lost: bool = False
+    dock_damaged: bool = False
 
     @property
     def is_active(self) -> bool:
@@ -154,13 +158,7 @@ class MissionController:
             progress = min(1.0, mission.stage_t_s / mission.stage_duration_s)
             drone.altitude_m = mission.target_altitude_m * (1.0 - progress)
             if stage_done:
-                if self.rng.random() < self.cfg.probabilities.recovery_success:
-                    self._enter_stage(mission, "DONE", 0.0)
-                    drone.state = DroneState.DOCKED
-                    drone.altitude_m = 0.0
-                    mission.completed_at_s = t_s
-                else:
-                    self._abort(mission, drone, reason="dock_latch_fail")
+                self._resolve_landing(mission, drone, t_s)
 
     # -- helpers ------------------------------------------------------------
 
@@ -172,9 +170,43 @@ class MissionController:
     def _abort(self, mission: Mission, drone: Drone, reason: str) -> None:
         mission.aborted_reason = reason
         self._enter_stage(mission, "ABORTED", 0.0)
-        # Drone is always recoverable to dock in v0 — alternative would be LOST.
         drone.state = DroneState.DOCKED
         drone.altitude_m = 0.0
+
+    def _resolve_landing(self, mission: Mission, drone: Drone, t_s: float) -> None:
+        """Final landing — apply recovery + failure-cascade rolls (spec §7.1).
+
+        Outcomes (in priority order):
+          1. Flyaway during flight → drone LOST, mission ABORTED.
+          2. Dock latch fail → recovered but logged abort.
+          3. Successful recovery, optional dock damage (drone fine, dock offline).
+        """
+        cascades = self.cfg.failure_cascades
+
+        if (cascades.enabled
+                and self.rng.random() < cascades.drone_flyaway_prob_per_mission):
+            mission.drone_lost = True
+            mission.aborted_reason = "drone_lost"
+            self._enter_stage(mission, "ABORTED", 0.0)
+            drone.state = DroneState.LOST
+            drone.altitude_m = 0.0
+            return
+
+        if self.rng.random() >= self.cfg.probabilities.recovery_success:
+            self._abort(mission, drone, reason="dock_latch_fail")
+            return
+
+        # Successful recovery.
+        self._enter_stage(mission, "DONE", 0.0)
+        drone.state = DroneState.DOCKED
+        drone.altitude_m = 0.0
+        mission.completed_at_s = t_s
+        drone.register_flight_complete(cascades.battery_degradation_per_flight_pct
+                                       if cascades.enabled else 0.0)
+
+        if (cascades.enabled
+                and self.rng.random() < cascades.dock_damage_prob_per_landing):
+            mission.dock_damaged = True
 
     def _pass_pre_flight(self, c: Conditions, drone: Drone) -> bool:
         # Hard gates from spec 1.4.

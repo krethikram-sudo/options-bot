@@ -42,6 +42,16 @@ def print_report(sim: Simulation) -> None:
         for cls, count in m.scenes_by_class.most_common():
             print(f"    {cls:.<28} {count}")
 
+    if m.drone_lost_events or m.dock_damage_events:
+        print("\n  Failure cascades (spec §7.1):")
+        print(f"    drones lost (flyaway)....... {m.drone_lost_events}")
+        print(f"    dock damage events.......... {m.dock_damage_events}")
+        total_downtime_hours = (
+            m.drone_lost_events * sim.cfg.failure_cascades.drone_replacement_hours
+            + m.dock_damage_events * sim.cfg.failure_cascades.dock_repair_hours
+        )
+        print(f"    aggregated downtime......... {total_downtime_hours:.1f} h")
+
     print("\nData pipeline (spec 9.2)")
     print(f"  delivered scenarios ........ {delivered}")
     print(f"  rejected (quality) ......... {sim.pipeline.rejected_count}")

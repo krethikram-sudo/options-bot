@@ -72,6 +72,15 @@ economics:
   drone_wear_per_scenario_usd: 1.00
   fixed_daily_overhead_usd: 220.0
 
+failure_cascades:
+  # Rare but consequential failures (spec §7.1) that take a unit offline.
+  enabled: true
+  drone_flyaway_prob_per_mission: 0.002      # ~1 in 500 missions
+  drone_replacement_hours: 12.0              # downtime to procure + swap backup drone
+  dock_damage_prob_per_landing: 0.015        # ~1.5% per landing
+  dock_repair_hours: 6.0
+  battery_degradation_per_flight_pct: 0.04   # capacity loss per flight cycle
+
 animation:
   fps: 15
   speed_multiplier: 90.0       # 1 real second = 90 sim seconds (1 sim day in ~5 min)

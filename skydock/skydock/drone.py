@@ -24,6 +24,8 @@ class Drone:
     y: float = 0.0
     altitude_m: float = 0.0
     battery_pct: float = 100.0
+    battery_capacity_pct: float = 100.0    # degrades over flight cycles
+    flight_count: int = 0
     coverage_radius_m: float = 110.0   # ~80m alt + 50deg FOV gives ~70-110m ground radius
 
     @property
@@ -42,8 +44,19 @@ class Drone:
 
     def charge_or_drain(self, dt: float) -> None:
         if self.state == DroneState.DOCKED:
-            # ~60 min from empty to full.
-            self.battery_pct = min(100.0, self.battery_pct + (100.0 / 3600.0) * dt)
+            # ~60 min from empty to full, capped at current capacity.
+            self.battery_pct = min(
+                self.battery_capacity_pct,
+                self.battery_pct + (100.0 / 3600.0) * dt,
+            )
         elif self.is_airborne:
             # ~34 min flight time at full draw.
             self.battery_pct = max(0.0, self.battery_pct - (100.0 / (34 * 60)) * dt)
+
+    def register_flight_complete(self, capacity_loss_pct: float) -> None:
+        """Mark a completed flight cycle and degrade max battery capacity."""
+        self.flight_count += 1
+        # Floor capacity at 60% — represents end-of-life when we'd replace anyway.
+        self.battery_capacity_pct = max(60.0, self.battery_capacity_pct - capacity_loss_pct)
+        if self.battery_pct > self.battery_capacity_pct:
+            self.battery_pct = self.battery_capacity_pct

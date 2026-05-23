@@ -91,6 +91,22 @@ class EconomicsConfig:
 
 
 @dataclass
+class FailureCascadeConfig:
+    """Rare but consequential failures from spec §7.1.
+
+    Each event takes a unit offline for a recovery period — the dominant
+    operational risk these model is *fleet downtime*, not per-mission
+    failures (which are covered by ProbabilityConfig).
+    """
+    enabled: bool = True
+    drone_flyaway_prob_per_mission: float = 0.002    # spec §7.1: rare flyaway
+    drone_replacement_hours: float = 12.0
+    dock_damage_prob_per_landing: float = 0.015      # ~1.5% per landing
+    dock_repair_hours: float = 6.0
+    battery_degradation_per_flight_pct: float = 0.04
+
+
+@dataclass
 class AnimationConfig:
     fps: int = 15
     speed_multiplier: float = 90.0
@@ -108,6 +124,7 @@ class Config:
     conditions: ConditionsConfig = field(default_factory=ConditionsConfig)
     pipeline: PipelineConfig = field(default_factory=PipelineConfig)
     economics: EconomicsConfig = field(default_factory=EconomicsConfig)
+    failure_cascades: FailureCascadeConfig = field(default_factory=FailureCascadeConfig)
     animation: AnimationConfig = field(default_factory=AnimationConfig)
 
     @classmethod
