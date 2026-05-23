@@ -66,6 +66,7 @@ class TrafficScene:
     # Per-agent set of frame indices where the agent was inside the FOV footprint.
     visibility: dict[str, set[int]] = field(default_factory=dict)
     frames_observed: int = 0
+    altitude_log: list[float] = field(default_factory=list)
     # Traffic-light cycle. For signalized-intersection scenes, half the cycle
     # is EW-green, half is NS-green. Vehicles approaching from the red side
     # stop at the stop line.
@@ -138,10 +139,17 @@ class TrafficScene:
                     return raw_x, stop_y
         return raw_x, raw_y
 
-    def record_observation(self, frame_idx: int, visible_agent_ids: set[str]) -> None:
+    def record_observation(
+        self,
+        frame_idx: int,
+        visible_agent_ids: set[str],
+        drone_altitude_m: float | None = None,
+    ) -> None:
         self.frames_observed = max(self.frames_observed, frame_idx + 1)
         for aid in visible_agent_ids:
             self.visibility.setdefault(aid, set()).add(frame_idx)
+        if drone_altitude_m is not None:
+            self.altitude_log.append(drone_altitude_m)
 
     def visibility_summary(self) -> dict[str, float]:
         """Per-agent visibility ratio (frames seen / total frames)."""
@@ -182,7 +190,20 @@ class TrafficScene:
         denom = max(1, len(spawned_classes))
         diversity_pts = 20.0 * len(seen_classes) / denom
 
-        return max(0.0, min(100.0, visibility_pts + coverage_pts + diversity_pts))
+        base_score = visibility_pts + coverage_pts + diversity_pts
+
+        # Resolution-vs-altitude penalty: higher altitude = wider FOV but
+        # smaller per-agent pixel size in the captured image, so per-agent
+        # quality drops. Baseline 80m AGL gets full quality; above that the
+        # score scales down.
+        if self.altitude_log:
+            avg_alt = sum(self.altitude_log) / len(self.altitude_log)
+            if avg_alt > 80.0:
+                # Linear taper: 80m → 1.0, 130m → 0.85, 180m → 0.70
+                resolution_factor = max(0.6, 1.0 - (avg_alt - 80.0) / 333.0)
+                base_score *= resolution_factor
+
+        return max(0.0, min(100.0, base_score))
 
 
 class SceneGenerator:
@@ -211,7 +232,96 @@ class SceneGenerator:
             scene.agents.append(self._spawn_pedestrian(center_x, center_y, t_s, tpl))
         for _ in range(tpl["cyc"]):
             scene.agents.append(self._spawn_cyclist(center_x, center_y, t_s, tpl))
+        self._add_class_specifics(scene, scene_class, center_x, center_y, t_s)
         return scene
+
+    def _add_class_specifics(
+        self, scene: TrafficScene, scene_class: str,
+        cx: float, cy: float, t_s: float,
+    ) -> None:
+        """Per-scene-class signature features so each class reads differently."""
+        if scene_class == "unprotected_left_turn":
+            # A vehicle paused at the intersection waiting to turn left
+            # across oncoming north-bound traffic.
+            self._counter += 1
+            scene.agents.append(TrafficAgent(
+                agent_id=f"veh_{self._counter:04d}",
+                cls="passenger_vehicle",
+                x0=cx - self._LANE_OFFSET_M, y0=cy,
+                heading_rad=math.pi / 2,
+                speed_mps=0.0,
+                bbox=(4.6, 1.8, 1.5),
+                spawned_t_s=t_s,
+            ))
+        elif scene_class == "construction_zone":
+            # A construction vehicle blocking one lane.
+            self._counter += 1
+            scene.agents.append(TrafficAgent(
+                agent_id=f"veh_{self._counter:04d}",
+                cls="passenger_vehicle",
+                x0=cx + self.rng.uniform(-8, 8),
+                y0=cy + self._LANE_OFFSET_M,
+                heading_rad=0.0,
+                speed_mps=0.0,
+                bbox=(8.0, 2.4, 3.0),   # larger — represents a work truck
+                spawned_t_s=t_s,
+            ))
+            # A few peds at the edge (work crew).
+            for _ in range(3):
+                self._counter += 1
+                px = cx + self.rng.uniform(-10, 10)
+                py = cy + self._LANE_OFFSET_M + self.rng.uniform(2, 6)
+                scene.agents.append(TrafficAgent(
+                    agent_id=f"ped_{self._counter:04d}",
+                    cls="pedestrian",
+                    x0=px, y0=py,
+                    heading_rad=self.rng.uniform(0, 2 * math.pi),
+                    speed_mps=self.rng.uniform(0.1, 0.6),    # crew moving slowly
+                    bbox=(0.5, 0.5, 1.7),
+                    spawned_t_s=t_s,
+                ))
+        elif scene_class == "school_zone":
+            # Extra peds clustered at a single corner (a school entrance).
+            corner_x = cx + self.rng.choice([-1, 1]) * 22.0
+            corner_y = cy + self.rng.choice([-1, 1]) * 22.0
+            for _ in range(8):
+                self._counter += 1
+                px = corner_x + self.rng.uniform(-4, 4)
+                py = corner_y + self.rng.uniform(-4, 4)
+                # Walking toward the road (crossing or queueing).
+                heading = math.atan2(cy - py, cx - px) + self.rng.uniform(-0.3, 0.3)
+                scene.agents.append(TrafficAgent(
+                    agent_id=f"ped_{self._counter:04d}",
+                    cls="pedestrian",
+                    x0=px, y0=py,
+                    heading_rad=heading,
+                    speed_mps=self.rng.uniform(0.6, 1.4),
+                    bbox=(0.4, 0.4, 1.4),
+                    spawned_t_s=t_s,
+                ))
+        elif scene_class == "vru_interaction":
+            # A cyclist on a path that will intersect a vehicle's path —
+            # the kind of edge case AV training data targets.
+            self._counter += 1
+            scene.agents.append(TrafficAgent(
+                agent_id=f"cyc_{self._counter:04d}",
+                cls="cyclist",
+                x0=cx - 30.0, y0=cy - 2.0,
+                heading_rad=0.0,
+                speed_mps=4.5,
+                bbox=(1.7, 0.6, 1.6),
+                spawned_t_s=t_s,
+            ))
+            self._counter += 1
+            scene.agents.append(TrafficAgent(
+                agent_id=f"veh_{self._counter:04d}",
+                cls="passenger_vehicle",
+                x0=cx, y0=cy - 30.0,
+                heading_rad=math.pi / 2,
+                speed_mps=6.0,
+                bbox=(4.6, 1.8, 1.5),
+                spawned_t_s=t_s,
+            ))
 
     # -- spawning helpers ----------------------------------------------------
 

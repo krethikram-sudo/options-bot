@@ -70,14 +70,19 @@ class FlightDynamics:
             desired_vz = 0.0
 
         # First-order approach to desired velocity (bounded acceleration).
-        alpha = _clamp(dt * self.accel_gain, 0.0, 1.0)
+        # Below 10m we're in "precision landing" mode (vision + BLE beacon
+        # guidance kicks in): gain doubles, wind coupling halves.
+        precision = self.z < 10.0
+        gain = self.accel_gain * (2.0 if precision else 1.0)
+        alpha = _clamp(dt * gain, 0.0, 1.0)
         self.vx += (desired_vx - self.vx) * alpha
         self.vy += (desired_vy - self.vy) * alpha
         self.vz += (desired_vz - self.vz) * alpha
 
         # Horizontal wind disturbance — steady-state push on the airframe.
-        wind_vx = wind_mph * self.wind_coupling_mps_per_mph * math.cos(wind_dir_rad)
-        wind_vy = wind_mph * self.wind_coupling_mps_per_mph * math.sin(wind_dir_rad)
+        wind_coupling = self.wind_coupling_mps_per_mph * (0.5 if precision else 1.0)
+        wind_vx = wind_mph * wind_coupling * math.cos(wind_dir_rad)
+        wind_vy = wind_mph * wind_coupling * math.sin(wind_dir_rad)
 
         # Integrate.
         self.x += (self.vx + wind_vx) * dt

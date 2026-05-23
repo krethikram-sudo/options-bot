@@ -327,6 +327,27 @@ def _update_camera_inset(ax, snap: "SimSnapshot") -> None:
     ax.add_patch(fov)
     ax.plot(drone_x, drone_y, "+", color="#f5a524", markersize=10, zorder=11)
 
+    # Altitude indicator — thin vertical bar on the right edge of the inset.
+    alt = u.drone.altitude_m
+    max_alt = 130.0  # display ceiling
+    bar_x = scene.center_x + extent - extent * 0.08
+    bar_y0 = scene.center_y - extent + extent * 0.15
+    bar_h = extent * 0.55
+    bar_w = extent * 0.05
+    ax.add_patch(plt.Rectangle((bar_x, bar_y0), bar_w, bar_h,
+                                 facecolor="#2a2f37", edgecolor="#3a3f47",
+                                 linewidth=0.5, zorder=8))
+    fill_h = bar_h * min(1.0, max(0.0, alt) / max_alt)
+    ax.add_patch(plt.Rectangle((bar_x, bar_y0), bar_w, fill_h,
+                                 facecolor="#f5a524", edgecolor="none", zorder=9))
+    # 80m reference tick.
+    ref_y = bar_y0 + bar_h * (80.0 / max_alt)
+    ax.plot([bar_x - bar_w * 0.4, bar_x + bar_w * 1.4], [ref_y, ref_y],
+             color="#9ca3af", linewidth=0.8, alpha=0.6, zorder=10)
+    ax.text(bar_x + bar_w * 0.5, bar_y0 + bar_h + extent * 0.02,
+             f"alt {alt:.0f}m", color="#e5e7eb",
+             fontsize=7, ha="center", va="bottom", zorder=10)
+
     # Compute current visibility.
     last_frame = max(0, u.capture_frame_idx - 1)
     in_fov_now = {aid for aid, frames in scene.visibility.items()

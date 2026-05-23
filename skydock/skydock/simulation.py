@@ -329,7 +329,8 @@ class Simulation:
             unit.drone.physics.x, unit.drone.physics.y,
             unit.drone.coverage_radius_m, positions,
         )
-        scene.record_observation(unit.capture_frame_idx, visible)
+        scene.record_observation(unit.capture_frame_idx, visible,
+                                  drone_altitude_m=unit.drone.altitude_m)
         unit.capture_frame_idx += 1
 
     def _finalize_scene(self, unit: VehicleUnit) -> None:
