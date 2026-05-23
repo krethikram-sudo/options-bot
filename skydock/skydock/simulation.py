@@ -329,9 +329,16 @@ class Simulation:
             unit.drone.physics.x, unit.drone.physics.y,
             unit.drone.coverage_radius_m, positions,
         )
-        scene.record_observation(unit.capture_frame_idx, visible,
-                                  drone_altitude_m=unit.drone.altitude_m)
+        cond = self.conditions_model.current(self.t_s)
+        scene.record_observation(
+            unit.capture_frame_idx, visible,
+            drone_altitude_m=unit.drone.altitude_m,
+            wind_mph=cond.wind_mph,
+        )
         unit.capture_frame_idx += 1
+        # Top up agents that have left the scene so density stays steady
+        # through long captures (otherwise FOV slowly drains over time).
+        scene.cull_and_respawn(self.t_s, self.scene_gen)
 
     def _finalize_scene(self, unit: VehicleUnit) -> None:
         scene = unit.active_scene

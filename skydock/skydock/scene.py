@@ -67,6 +67,7 @@ class TrafficScene:
     visibility: dict[str, set[int]] = field(default_factory=dict)
     frames_observed: int = 0
     altitude_log: list[float] = field(default_factory=list)
+    wind_log: list[float] = field(default_factory=list)
     # Traffic-light cycle. For signalized-intersection scenes, half the cycle
     # is EW-green, half is NS-green. Vehicles approaching from the red side
     # stop at the stop line.
@@ -104,6 +105,31 @@ class TrafficScene:
             x, y = self._apply_traffic_lights(a, raw_x, raw_y, t_offset)
             out.append((a.agent_id, a.cls, x, y))
         return out
+
+    def cull_and_respawn(self, t_s: float, generator: "SceneGenerator") -> None:
+        """Replace agents that have left the scene area to keep density steady
+        through long captures. Called once per observation tick."""
+        replaced: list[TrafficAgent] = []
+        cull_radius = self.radius_m * 1.4
+        cull_sq = cull_radius * cull_radius
+        for a in self.agents:
+            x, y = a.position_at(t_s - a.spawned_t_s)
+            x, y = self._apply_traffic_lights(a, x, y, t_s - a.spawned_t_s)
+            dx = x - self.center_x
+            dy = y - self.center_y
+            if dx * dx + dy * dy > cull_sq:
+                # Spawn a fresh agent of the same class to replace this one.
+                tpl = SCENE_TEMPLATES.get(self.scene_class) or SCENE_TEMPLATES["intersection_signalized"]
+                if a.cls == "passenger_vehicle":
+                    fresh = generator._spawn_vehicle(self.center_x, self.center_y, t_s, tpl)
+                elif a.cls == "pedestrian":
+                    fresh = generator._spawn_pedestrian(self.center_x, self.center_y, t_s, tpl)
+                else:
+                    fresh = generator._spawn_cyclist(self.center_x, self.center_y, t_s, tpl)
+                replaced.append(fresh)
+            else:
+                replaced.append(a)
+        self.agents = replaced
 
     def _apply_traffic_lights(
         self, agent: TrafficAgent, raw_x: float, raw_y: float, t_offset_s: float,
@@ -144,12 +170,15 @@ class TrafficScene:
         frame_idx: int,
         visible_agent_ids: set[str],
         drone_altitude_m: float | None = None,
+        wind_mph: float | None = None,
     ) -> None:
         self.frames_observed = max(self.frames_observed, frame_idx + 1)
         for aid in visible_agent_ids:
             self.visibility.setdefault(aid, set()).add(frame_idx)
         if drone_altitude_m is not None:
             self.altitude_log.append(drone_altitude_m)
+        if wind_mph is not None:
+            self.wind_log.append(wind_mph)
 
     def visibility_summary(self) -> dict[str, float]:
         """Per-agent visibility ratio (frames seen / total frames)."""
@@ -202,6 +231,13 @@ class TrafficScene:
                 # Linear taper: 80m → 1.0, 130m → 0.85, 180m → 0.70
                 resolution_factor = max(0.6, 1.0 - (avg_alt - 80.0) / 333.0)
                 base_score *= resolution_factor
+
+        # Wind-shake penalty: high wind shakes the drone, blurring frames.
+        # 0 penalty at ≤10mph, ~15% degradation at 20mph (max).
+        if self.wind_log:
+            avg_wind = sum(self.wind_log) / len(self.wind_log)
+            wind_factor = max(0.85, 1.0 - max(0.0, avg_wind - 10.0) * 0.015)
+            base_score *= wind_factor
 
         return max(0.0, min(100.0, base_score))
 
