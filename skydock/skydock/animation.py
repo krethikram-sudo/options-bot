@@ -53,23 +53,38 @@ def run_animation(sim: "Simulation", save_path: str | None = None) -> None:
     sim_dt_per_frame = speedup / fps
     total_frames = int((cfg.simulation.duration_hours * 3600.0) / sim_dt_per_frame)
 
-    fig = plt.figure(figsize=(15, 9), facecolor="#0e0f12")
-    gs = fig.add_gridspec(
-        nrows=5,
-        ncols=2,
-        width_ratios=[3.0, 1.2],
-        height_ratios=[1, 1, 1, 1, 0.5],
-        wspace=0.08,
-        hspace=0.45,
-    )
-    ax_map = fig.add_subplot(gs[0:4, 0])
-    ax_timeline = fig.add_subplot(gs[4, 0])
-    ax_time = fig.add_subplot(gs[0, 1])
-    ax_counts = fig.add_subplot(gs[1, 1])
-    ax_aborts = fig.add_subplot(gs[2, 1])
-    ax_econ = fig.add_subplot(gs[3:5, 1])
+    funnel_enabled = sim.funnel is not None
+    fig = plt.figure(figsize=(15, 9.5 if funnel_enabled else 9), facecolor="#0e0f12")
+    if funnel_enabled:
+        gs = fig.add_gridspec(
+            nrows=6, ncols=2, width_ratios=[3.0, 1.2],
+            height_ratios=[1, 1, 1, 1, 1, 0.5],
+            wspace=0.08, hspace=0.45,
+        )
+        ax_map = fig.add_subplot(gs[0:5, 0])
+        ax_timeline = fig.add_subplot(gs[5, 0])
+        ax_time = fig.add_subplot(gs[0, 1])
+        ax_counts = fig.add_subplot(gs[1, 1])
+        ax_aborts = fig.add_subplot(gs[2, 1])
+        ax_econ = fig.add_subplot(gs[3, 1])
+        ax_funnel = fig.add_subplot(gs[4:6, 1])
+        extra_axes = (ax_funnel,)
+    else:
+        gs = fig.add_gridspec(
+            nrows=5, ncols=2, width_ratios=[3.0, 1.2],
+            height_ratios=[1, 1, 1, 1, 0.5],
+            wspace=0.08, hspace=0.45,
+        )
+        ax_map = fig.add_subplot(gs[0:4, 0])
+        ax_timeline = fig.add_subplot(gs[4, 0])
+        ax_time = fig.add_subplot(gs[0, 1])
+        ax_counts = fig.add_subplot(gs[1, 1])
+        ax_aborts = fig.add_subplot(gs[2, 1])
+        ax_econ = fig.add_subplot(gs[3:5, 1])
+        ax_funnel = None
+        extra_axes = ()
 
-    for ax in (ax_map, ax_timeline, ax_time, ax_counts, ax_aborts, ax_econ):
+    for ax in (ax_map, ax_timeline, ax_time, ax_counts, ax_aborts, ax_econ, *extra_axes):
         ax.set_facecolor("#16181d")
         for spine in ax.spines.values():
             spine.set_color("#3a3f47")
@@ -105,6 +120,7 @@ def run_animation(sim: "Simulation", save_path: str | None = None) -> None:
         "ax_counts": ax_counts,
         "ax_aborts": ax_aborts,
         "ax_econ": ax_econ,
+        "ax_funnel": ax_funnel,
     }
 
     def update(frame_idx: int):
@@ -267,6 +283,8 @@ def _update_panels(state, snap: "SimSnapshot") -> None:
     _draw_counts_panel(state["ax_counts"], snap)
     _draw_aborts_panel(state["ax_aborts"], snap)
     _draw_econ_panel(state["ax_econ"], snap)
+    if "ax_funnel" in state and state["ax_funnel"] is not None:
+        _draw_funnel_panel(state["ax_funnel"], snap)
 
 
 def _panel_setup(ax, title: str) -> None:
@@ -360,6 +378,31 @@ def _draw_aborts_panel(ax, snap: "SimSnapshot") -> None:
     for i, c in enumerate(counts):
         ax.text(c + 0.1, i, str(c), color="#e5e7eb",
                 fontsize=8, va="center")
+
+
+def _draw_funnel_panel(ax, snap: "SimSnapshot") -> None:
+    _panel_setup(ax, "Customer funnel (§4.1)")
+    if snap.funnel is None:
+        ax.text(0.5, 0.5, "funnel disabled",
+                transform=ax.transAxes, ha="center", va="center",
+                color="#6b7280", fontsize=9)
+        return
+    s = snap.funnel.state()
+    lines = [
+        f"prospects     {s.prospects_active:>3d} active / {s.prospects_lifetime:>3d} total",
+        f"pilots        {s.pilots_active:>3d} active / {s.pilots_fulfilled:>3d} done",
+        f"committed     {s.scenarios_committed:>5d} scenarios",
+        f"delivered     {s.scenarios_delivered_to_pilots:>5d}  unsold {s.scenarios_unsold:>3d}",
+        f"pilot rev    ${s.revenue_usd:>10,.0f}",
+        f"cash         ${s.cash_usd:>10,.0f}",
+        f"burn / mo    ${s.monthly_burn_usd:>10,.0f}",
+        f"runway        {s.runway_months:>5.1f} months",
+    ]
+    ax.text(
+        0.04, 0.95, "\n".join(lines),
+        transform=ax.transAxes, color="#e5e7eb",
+        fontsize=9, family="monospace", va="top",
+    )
 
 
 def _draw_econ_panel(ax, snap: "SimSnapshot") -> None:

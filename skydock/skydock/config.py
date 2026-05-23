@@ -91,6 +91,26 @@ class EconomicsConfig:
 
 
 @dataclass
+class CustomerFunnelConfig:
+    """Spec §4.1-4.3 — prospect → pilot → paid scenarios pipeline.
+
+    When `enabled=True`, scenario revenue comes from allocating deliveries
+    against active pilot commitments at each pilot's negotiated price.
+    When disabled (default), revenue is flat per spec §4.2 base tier.
+    """
+    enabled: bool = False
+    prospect_arrival_per_month: float = 2.0       # leads / month from outreach
+    prospect_lifetime_days: float = 60.0          # how long a lead stays warm
+    prospect_quality_min: float = 78.0            # picky vs not-picky prospects
+    prospect_quality_max: float = 88.0
+    daily_conversion_prob: float = 0.05           # ~75% over 30 days if quality OK
+    scenarios_per_pilot_min: int = 100            # spec §4.2 volume tiers
+    scenarios_per_pilot_max: int = 600
+    starting_cash_usd: float = 700_000.0          # spec §5.5 MVP budget upper
+    fixed_monthly_burn_usd: float = 40_000.0      # spec §5.4 Phase-3 burn
+
+
+@dataclass
 class FailureCascadeConfig:
     """Rare but consequential failures from spec §7.1.
 
@@ -125,6 +145,7 @@ class Config:
     pipeline: PipelineConfig = field(default_factory=PipelineConfig)
     economics: EconomicsConfig = field(default_factory=EconomicsConfig)
     failure_cascades: FailureCascadeConfig = field(default_factory=FailureCascadeConfig)
+    customer_funnel: CustomerFunnelConfig = field(default_factory=CustomerFunnelConfig)
     animation: AnimationConfig = field(default_factory=AnimationConfig)
 
     @classmethod

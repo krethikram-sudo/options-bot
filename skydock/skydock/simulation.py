@@ -7,6 +7,7 @@ from typing import Optional
 
 from .conditions import Conditions, ConditionsModel
 from .config import Config
+from .customer import CustomerFunnel
 from .drone import Drone, DroneState
 from .economics import Economics
 from .metrics import Metrics
@@ -45,6 +46,7 @@ class SimSnapshot:
     metrics: Metrics
     economics: Economics
     pipeline: DataPipeline
+    funnel: Optional[CustomerFunnel] = None
 
 
 # Colour palette for up to 8 host vehicles in the same animation.
@@ -122,6 +124,10 @@ class Simulation:
         )
         self.economics = Economics(config.economics, host_vehicle_count=n)
         self.metrics = Metrics()
+        self.funnel: Optional[CustomerFunnel] = (
+            CustomerFunnel(config.customer_funnel, self.rng)
+            if config.customer_funnel.enabled else None
+        )
 
         self.completed_missions: list[Mission] = []
         self.completed_jobs: list[PipelineJob] = []
@@ -138,6 +144,9 @@ class Simulation:
 
         for job in self.pipeline.step(self.t_s):
             self._finalize_pipeline_job(job)
+
+        if self.funnel is not None:
+            self.funnel.maybe_tick_day(self.t_s)
 
         self.economics.tick(dt, operating=operating)
         self.t_s += dt
@@ -220,6 +229,7 @@ class Simulation:
             metrics=self.metrics,
             economics=self.economics,
             pipeline=self.pipeline,
+            funnel=self.funnel,
         )
 
     # -- internals ----------------------------------------------------------
@@ -256,6 +266,15 @@ class Simulation:
 
     def _finalize_pipeline_job(self, job: PipelineJob) -> None:
         self.completed_jobs.append(job)
-        if job.delivered:
-            self.metrics.on_delivery(job.quality_score)
+        if not job.delivered:
+            return
+        self.metrics.on_delivery(job.quality_score)
+        if self.funnel is None:
             self.economics.record_delivery()
+            return
+        pilot = self.funnel.allocate_delivery(job.quality_score)
+        if pilot is not None:
+            self.economics.record_delivery(price=pilot.price_per_scenario)
+        else:
+            # Generated and processed, but no active pilot to buy it.
+            self.economics.record_unsold_delivery()

@@ -60,8 +60,16 @@ class Economics:
             ) * dt * self.vehicle_count
         self.ledger.overhead_cost_usd += self._overhead_per_second * dt
 
-    def record_delivery(self) -> None:
-        self.ledger.revenue_usd += self.cfg.price_per_scenario_usd
+    def record_delivery(self, price: float | None = None) -> None:
+        if price is None:
+            price = self.cfg.price_per_scenario_usd
+        self.ledger.revenue_usd += price
+        self.ledger.cloud_cost_usd += self.cfg.cloud_cost_per_scenario_usd
+        self.ledger.drone_wear_cost_usd += self.cfg.drone_wear_per_scenario_usd
+        self.ledger.scenarios_delivered += 1
+
+    def record_unsold_delivery(self) -> None:
+        """Scenario was generated but no buyer — costs incurred, no revenue."""
         self.ledger.cloud_cost_usd += self.cfg.cloud_cost_per_scenario_usd
         self.ledger.drone_wear_cost_usd += self.cfg.drone_wear_per_scenario_usd
         self.ledger.scenarios_delivered += 1
