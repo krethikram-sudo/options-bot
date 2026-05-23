@@ -503,6 +503,19 @@ def _draw_time_panel(ax, snap: "SimSnapshot") -> None:
     deg = math.degrees(cond.wind_dir_rad) % 360.0
     dirs = ["E", "NE", "N", "NW", "W", "SW", "S", "SE"]
     bearing = dirs[int((deg + 22.5) // 45) % 8]
+    # Stage counts for active missions.
+    from collections import Counter
+    stage_counter: Counter = Counter()
+    for u in snap.units:
+        if u.active_mission is not None:
+            stage_counter[u.active_mission.stage] += 1
+    if stage_counter:
+        stages_line = "  ".join(
+            f"{cnt}{stage[:3].lower()}" for stage, cnt in stage_counter.most_common(3)
+        )
+    else:
+        stages_line = "—"
+
     lines = [
         f"sim time     {_format_hours(snap.t_s)}",
         f"hour of day  {cond.hour_of_day:5.2f}",
@@ -510,7 +523,7 @@ def _draw_time_panel(ax, snap: "SimSnapshot") -> None:
         f"wind         {cond.wind_mph:5.1f} mph {bearing}",
         f"weather      {weather}",
         f"online       {online}/{n_units}",
-        f"missions now {active_now}",
+        f"missions now {active_now}  ({stages_line})",
         f"avg battery  {avg_batt:5.1f}%",
         f"avg capacity {avg_capacity:5.1f}%",
     ]
@@ -599,16 +612,24 @@ def _draw_funnel_panel(ax, snap: "SimSnapshot") -> None:
         f"pilots        {s.pilots_active:>3d} active / {s.pilots_fulfilled:>3d} done",
         f"committed     {s.scenarios_committed:>5d} scenarios",
         f"delivered     {s.scenarios_delivered_to_pilots:>5d}  unsold {s.scenarios_unsold:>3d}",
-        f"pilot rev    ${s.revenue_usd:>10,.0f}",
         f"rev / mo     ${s.monthly_revenue_rate_usd:>10,.0f}",
         f"cash         ${s.cash_usd:>10,.0f}",
-        f"burn / mo    ${s.monthly_burn_usd:>10,.0f}",
         f"runway        {runway_str:>5} months",
     ]
+    # Show up to 3 most-recently-active pilots with their progress.
+    if snap.funnel.pilots:
+        recent = sorted(snap.funnel.pilots, key=lambda p: p.signed_at_s, reverse=True)[:3]
+        lines.append("─" * 28)
+        for p in recent:
+            name = p.name[:14]
+            tag = "✓" if p.is_fulfilled else " "
+            lines.append(
+                f"{tag} {name:<14} {p.scenarios_delivered:>3d}/{p.scenarios_committed:<3d}"
+            )
     ax.text(
         0.04, 0.95, "\n".join(lines),
         transform=ax.transAxes, color="#e5e7eb",
-        fontsize=9, family="monospace", va="top",
+        fontsize=8, family="monospace", va="top",
     )
 
 
