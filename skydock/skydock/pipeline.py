@@ -47,9 +47,18 @@ class DataPipeline:
             self.cfg.process_minutes_min, self.cfg.process_minutes_max
         )
         finish_at = t_s + process_min * 60.0
-        # Quality scoring — clipped 0..100.
-        quality = self.rng.gauss(self.cfg.quality_mean, self.cfg.quality_std)
-        quality = max(0.0, min(100.0, quality))
+
+        # Prefer the visibility-derived score from the actual scene if present,
+        # then blend lightly with sensor / pipeline noise. Otherwise fall back
+        # to the legacy Gaussian when no scene was attached.
+        scene_q = getattr(mission, "quality_score_from_scene", None)
+        if scene_q is not None:
+            # Add small processing noise so two identical scenes don't collide.
+            quality = max(0.0, min(100.0, scene_q + self.rng.gauss(0.0, 3.0)))
+        else:
+            quality = self.rng.gauss(self.cfg.quality_mean, self.cfg.quality_std)
+            quality = max(0.0, min(100.0, quality))
+
         job = PipelineJob(
             mission=mission,
             received_at_s=t_s,

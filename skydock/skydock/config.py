@@ -7,6 +7,8 @@ from typing import Any
 
 import yaml
 
+from .dock import DockConfig
+
 
 @dataclass
 class SimulationConfig:
@@ -151,6 +153,7 @@ class Config:
     economics: EconomicsConfig = field(default_factory=EconomicsConfig)
     failure_cascades: FailureCascadeConfig = field(default_factory=FailureCascadeConfig)
     customer_funnel: CustomerFunnelConfig = field(default_factory=CustomerFunnelConfig)
+    dock: DockConfig = field(default_factory=DockConfig)
     animation: AnimationConfig = field(default_factory=AnimationConfig)
 
     @classmethod

@@ -13,6 +13,7 @@ from .economics import Economics
 from .metrics import Metrics
 from .mission import Mission, MissionController
 from .pipeline import DataPipeline, PipelineJob
+from .scene import SceneGenerator, TrafficScene, agents_in_footprint
 from .triggers import Trigger, TriggerGenerator
 from .vehicle import HostVehicle
 from .world import Corridor, Waypoint, generate_corridor, split_world_into_bboxes
@@ -26,6 +27,8 @@ class VehicleUnit:
     trigger_gen: TriggerGenerator
     corridor: Corridor
     active_mission: Optional[Mission] = None
+    active_scene: Optional[TrafficScene] = None    # populated during CAPTURING
+    capture_frame_idx: int = 0
     color: str = "#9ee37d"
     # Spec §7.1 — when set, unit is offline (no triggers / no missions) until t_s
     # reaches this value. Reason explains the downtime in the dashboard.
@@ -98,7 +101,8 @@ class Simulation:
             v.x = wps[start_idx].x
             v.y = wps[start_idx].y
             v.target_idx = (start_idx + 1) % len(wps)
-            d = Drone(drone_id=f"drone_{i}", x=v.x, y=v.y)
+            d = Drone(drone_id=f"drone_{i}")
+            d.physics.snap_to(v.x, v.y, 0.0)
             # Each unit gets its own trigger generator with the corridor's rate multiplier.
             unit_trigger_cfg = type(config.trigger)(
                 poisson_rate_per_hour=(
@@ -128,6 +132,7 @@ class Simulation:
             CustomerFunnel(config.customer_funnel, self.rng)
             if config.customer_funnel.enabled else None
         )
+        self.scene_gen = SceneGenerator(self.rng)
 
         self.completed_missions: list[Mission] = []
         self.completed_jobs: list[PipelineJob] = []
@@ -175,9 +180,8 @@ class Simulation:
             # Coming back online — if the drone was lost, swap in a replacement.
             if unit.drone.state == DroneState.LOST:
                 replacement_id = f"{unit.drone.drone_id}_r{unit.drone.flight_count}"
-                unit.drone = Drone(
-                    drone_id=replacement_id, x=unit.vehicle.x, y=unit.vehicle.y,
-                )
+                unit.drone = Drone(drone_id=replacement_id)
+                unit.drone.physics.snap_to(unit.vehicle.x, unit.vehicle.y, 0.0)
             unit.offline_reason = None
 
         if operating:
@@ -209,15 +213,27 @@ class Simulation:
 
         # Advance the active mission, which also drives the drone's position.
         if unit.active_mission is not None:
+            prev_stage = unit.active_mission.stage
             self.mission_ctrl.step(
                 unit.active_mission, unit.drone, unit.vehicle, cond, dt, self.t_s,
             )
+            cur_stage = unit.active_mission.stage
+
+            # Scene lifecycle: spawn at CAPTURING entry, observe each tick,
+            # finalize at CAPTURING exit.
+            if prev_stage != "CAPTURING" and cur_stage == "CAPTURING":
+                self._spawn_scene(unit)
+            if cur_stage == "CAPTURING" and unit.active_scene is not None:
+                self._observe_scene(unit)
+            if prev_stage == "CAPTURING" and cur_stage != "CAPTURING":
+                self._finalize_scene(unit)
+
             if not unit.active_mission.is_active:
                 self._finalize_mission(unit.active_mission, unit)
                 unit.active_mission = None
         else:
-            unit.drone.x, unit.drone.y = unit.vehicle.x, unit.vehicle.y
-            unit.drone.altitude_m = 0.0
+            # Idle — drone sits on the vehicle dock.
+            unit.drone.physics.snap_to(unit.vehicle.x, unit.vehicle.y, 0.0)
 
         unit.drone.charge_or_drain(dt)
 
@@ -249,9 +265,25 @@ class Simulation:
             trigger, unit.vehicle, unit.drone, self.t_s,
         )
         self.metrics.on_mission_start(trigger.type)
+        # Spec §1.2 V1 envelope: vehicle must be stationary throughout the
+        # mission. Pin it in place until the mission terminates.
+        mission_budget_s = (
+            self.cfg.mission.decision_seconds
+            + self.cfg.mission.launch_seconds * 2
+            + self.cfg.mission.climb_seconds * 3
+            + self.cfg.mission.capture_seconds_max
+            + self.cfg.mission.return_seconds * 3
+            + self.cfg.mission.land_seconds * 3
+            + 30.0
+        )
+        unit.vehicle.stop_for(mission_budget_s)
 
     def _finalize_mission(self, mission: Mission, unit: VehicleUnit) -> None:
         self.completed_missions.append(mission)
+        # Vehicle is free to drive again now that the drone is docked / lost.
+        unit.vehicle.stopped = False
+        unit.vehicle.stop_seconds_remaining = 0.0
+
         if mission.stage == "DONE":
             self.metrics.on_mission_success(mission.scene_class)
             self.pipeline.enqueue(mission, self.t_s)
@@ -269,6 +301,52 @@ class Simulation:
             unit.offline_until_s = self.t_s + cascades.dock_repair_hours * 3600
             unit.offline_reason = "dock_damaged"
             self.metrics.dock_damage_events += 1
+
+    # -- scene lifecycle ----------------------------------------------------
+
+    def _spawn_scene(self, unit: VehicleUnit) -> None:
+        m = unit.active_mission
+        if m is None:
+            return
+        unit.active_scene = self.scene_gen.generate(
+            scene_class=m.scene_class,
+            center_x=m.capture_x,
+            center_y=m.capture_y,
+            t_s=self.t_s,
+        )
+        unit.capture_frame_idx = 0
+
+    def _observe_scene(self, unit: VehicleUnit) -> None:
+        scene = unit.active_scene
+        if scene is None:
+            return
+        # 1 sim-tick == 1 "frame" for FOV bookkeeping (lower than 30fps real
+        # video but enough for visibility accounting at 1 Hz).
+        positions = scene.positions_now(self.t_s)
+        visible = agents_in_footprint(
+            unit.drone.physics.x, unit.drone.physics.y,
+            unit.drone.coverage_radius_m, positions,
+        )
+        scene.record_observation(unit.capture_frame_idx, visible)
+        unit.capture_frame_idx += 1
+
+    def _finalize_scene(self, unit: VehicleUnit) -> None:
+        scene = unit.active_scene
+        if scene is None:
+            return
+        q = scene.derived_quality_score()
+        if unit.active_mission is not None:
+            unit.active_mission.quality_score_from_scene = q
+        # Hand scene to the mission for the deliverable payload.
+        self._attach_scene_to_mission(unit.active_mission, scene)
+        unit.active_scene = None
+
+    def _attach_scene_to_mission(self, mission: Optional[Mission], scene: TrafficScene) -> None:
+        if mission is None:
+            return
+        # Stash the scene on the mission object so the pipeline / deliverable
+        # emitter can read it. Using setattr to avoid a frozen-field dataclass concern.
+        mission.captured_scene = scene  # type: ignore[attr-defined]
 
     def _finalize_pipeline_job(self, job: PipelineJob) -> None:
         self.completed_jobs.append(job)

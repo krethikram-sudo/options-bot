@@ -28,6 +28,8 @@ class HostVehicle:
 
     @property
     def speed_mph(self) -> float:
+        if self.stopped:
+            return 0.0
         return self.speed_mps * 2.23694
 
     @property

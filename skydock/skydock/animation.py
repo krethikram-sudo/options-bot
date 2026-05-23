@@ -103,6 +103,13 @@ def run_animation(sim: "Simulation", save_path: str | None = None) -> None:
         trail = ax_map.plot([], [], "-", color="#f5a524", alpha=0.5, linewidth=1.5)[0]
         coverage = Circle((0, 0), 0, fill=True, color="#f5a524", alpha=0.0, zorder=3)
         ax_map.add_patch(coverage)
+        # Ground-scene scatter artists (cars, peds, cyclists) populated during capture.
+        scene_vehicles = ax_map.scatter([], [], s=8, c="#7ab0d4", alpha=0.0, zorder=4)
+        scene_peds = ax_map.scatter([], [], s=5, c="#9ee37d", alpha=0.0, zorder=4)
+        scene_cyclists = ax_map.scatter([], [], s=6, c="#e5b85a", alpha=0.0, zorder=4)
+        scene_visible = ax_map.scatter([], [], s=18, c="#f5a524", alpha=0.0,
+                                       marker="o", edgecolors="white", linewidths=0.5,
+                                       zorder=7)
         unit_artists.append({
             "vehicle_dot": v_dot,
             "drone_dot": d_dot,
@@ -111,6 +118,10 @@ def run_animation(sim: "Simulation", save_path: str | None = None) -> None:
             "coverage": coverage,
             "trail_xs": [],
             "trail_ys": [],
+            "scene_vehicles": scene_vehicles,
+            "scene_peds": scene_peds,
+            "scene_cyclists": scene_cyclists,
+            "scene_visible": scene_visible,
         })
 
     state = {
@@ -211,6 +222,44 @@ def _setup_map(ax, sim: "Simulation") -> None:
         )
 
 
+def _update_scene_artists(art, unit, t_s: float) -> None:
+    scene = unit.active_scene
+    if scene is None:
+        return
+    positions = scene.positions_now(t_s)
+    in_fov = set()
+    if unit.capture_frame_idx > 0:
+        # Use the just-recorded frame's visible set; if no log yet, recompute.
+        last_frame = unit.capture_frame_idx - 1
+        for aid, frames in scene.visibility.items():
+            if last_frame in frames:
+                in_fov.add(aid)
+
+    veh_xy, ped_xy, cyc_xy, vis_xy = [], [], [], []
+    for aid, cls, x, y in positions:
+        if aid in in_fov:
+            vis_xy.append((x, y))
+        if cls == "passenger_vehicle":
+            veh_xy.append((x, y))
+        elif cls == "pedestrian":
+            ped_xy.append((x, y))
+        else:
+            cyc_xy.append((x, y))
+
+    for key, xys, alpha in (
+        ("scene_vehicles", veh_xy, 0.75),
+        ("scene_peds", ped_xy, 0.65),
+        ("scene_cyclists", cyc_xy, 0.75),
+        ("scene_visible", vis_xy, 0.95),
+    ):
+        if xys:
+            art[key].set_offsets(xys)
+            art[key].set_alpha(alpha)
+        else:
+            art[key].set_offsets([[float("nan"), float("nan")]])
+            art[key].set_alpha(0.0)
+
+
 def _update_map(state, snap: "SimSnapshot", cfg) -> None:
     trail_max = int(cfg.animation.trail_length_s * cfg.animation.fps)
     for unit, art in zip(snap.units, state["units"]):
@@ -243,12 +292,20 @@ def _update_map(state, snap: "SimSnapshot", cfg) -> None:
                 art["trail"].set_data(art["trail_xs"], art["trail_ys"])
 
         cov = art["coverage"]
-        if unit.active_mission is not None and unit.active_mission.is_capturing:
+        scene = unit.active_scene
+        capturing = (unit.active_mission is not None
+                     and unit.active_mission.is_capturing
+                     and scene is not None)
+        if capturing:
             cov.center = (d.x, d.y)
             cov.set_radius(d.coverage_radius_m)
             cov.set_alpha(0.18)
+            _update_scene_artists(art, unit, snap.t_s)
         else:
             cov.set_alpha(0.0)
+            for key in ("scene_vehicles", "scene_peds", "scene_cyclists", "scene_visible"):
+                art[key].set_offsets([[float("nan"), float("nan")]])
+                art[key].set_alpha(0.0)
 
 
 # -- mission timeline ---------------------------------------------------

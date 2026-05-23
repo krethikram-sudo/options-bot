@@ -42,7 +42,12 @@ def emit_scenario_package(
         seconds=mission.started_at_s
     )
 
-    agents = _synthesize_agents(mission, rng)
+    # Prefer the agents that were actually inside the FOV during capture.
+    captured_scene = getattr(mission, "captured_scene", None)
+    if captured_scene is not None and captured_scene.visibility:
+        agents = _agents_from_scene(captured_scene)
+    else:
+        agents = _synthesize_agents(mission, rng)
     tracks_payload = _build_tracks_payload(mission, agents, captured_at)
     metadata = _build_metadata(mission, quality_score, captured_at, agents)
 
@@ -111,6 +116,26 @@ def _secondary_modifiers(primary: str) -> list[str]:
         "lane_change_complex": [],
     }
     return table.get(primary, [])
+
+
+def _agents_from_scene(scene) -> list[dict[str, Any]]:
+    """Convert a TrafficScene's *visible* agents into the deliverable payload."""
+    seen_ids = set(scene.visibility.keys())
+    out: list[dict[str, Any]] = []
+    for a in scene.agents:
+        if a.agent_id not in seen_ids:
+            continue
+        # Local ENU position relative to the capture centre.
+        out.append({
+            "track_id": a.agent_id,
+            "class": a.cls,
+            "x0": a.x0 - scene.center_x,
+            "y0": a.y0 - scene.center_y,
+            "heading_rad": a.heading_rad,
+            "speed_mps": a.speed_mps,
+            "bbox": list(a.bbox),
+        })
+    return out
 
 
 # -- agent_tracks.json (spec 3.4) ---------------------------------------
