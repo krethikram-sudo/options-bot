@@ -468,6 +468,7 @@ def _panel_setup(ax, title: str) -> None:
 
 
 def _draw_time_panel(ax, snap: "SimSnapshot") -> None:
+    import math
     _panel_setup(ax, "Time & conditions")
     cond = snap.conditions
     operating = "✓ daylight" if cond.is_daylight else "✗ off-hours"
@@ -477,11 +478,15 @@ def _draw_time_panel(ax, snap: "SimSnapshot") -> None:
     active_now = sum(1 for u in snap.units if u.active_mission is not None)
     avg_batt = sum(u.drone.battery_pct for u in snap.units) / n_units
     avg_capacity = sum(u.drone.battery_capacity_pct for u in snap.units) / n_units
+    # Wind bearing as compass abbreviation.
+    deg = math.degrees(cond.wind_dir_rad) % 360.0
+    dirs = ["E", "NE", "N", "NW", "W", "SW", "S", "SE"]
+    bearing = dirs[int((deg + 22.5) // 45) % 8]
     lines = [
         f"sim time     {_format_hours(snap.t_s)}",
         f"hour of day  {cond.hour_of_day:5.2f}",
         f"status       {operating}",
-        f"wind         {cond.wind_mph:5.1f} mph",
+        f"wind         {cond.wind_mph:5.1f} mph {bearing}",
         f"weather      {weather}",
         f"online       {online}/{n_units}",
         f"missions now {active_now}",
@@ -493,6 +498,16 @@ def _draw_time_panel(ax, snap: "SimSnapshot") -> None:
         transform=ax.transAxes, color="#e5e7eb",
         fontsize=9, family="monospace", va="top",
     )
+    # Small wind compass arrow in the panel's lower-right corner.
+    cx, cy = 0.88, 0.18
+    arrow_len = 0.10
+    dx = arrow_len * math.cos(cond.wind_dir_rad)
+    dy = arrow_len * math.sin(cond.wind_dir_rad)
+    ax.annotate("", xy=(cx + dx, cy + dy), xytext=(cx - dx, cy - dy),
+                xycoords="axes fraction",
+                arrowprops=dict(arrowstyle="->", color="#7ab0d4", lw=1.5))
+    ax.text(cx, cy - 0.13, "wind", transform=ax.transAxes,
+             color="#7ab0d4", fontsize=7, ha="center")
 
 
 def _draw_counts_panel(ax, snap: "SimSnapshot") -> None:

@@ -108,7 +108,7 @@ class MissionController:
         t_s: float,
     ) -> None:
         mission.stage_t_s += dt
-        wind_dir = 0.0   # constant wind direction for v0 — east-bound
+        wind_dir = conditions.wind_dir_rad
 
         # Battery-aware RTL — if the drone is airborne and battery dipped below
         # the safe-return threshold, cut the capture short and return to dock.

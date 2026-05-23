@@ -12,6 +12,7 @@ from .config import ConditionsConfig, SimulationConfig, WorldConfig
 class Conditions:
     """Snapshot of environmental state at a given sim time."""
     wind_mph: float
+    wind_dir_rad: float            # 0 = wind blowing east, pi/2 = blowing north
     weather_clear: bool
     is_daylight: bool
     hour_of_day: float
@@ -51,8 +52,9 @@ class ConditionsModel:
         self.sim = sim_cfg
         self.rng = rng
         self._weather_clear = rng.random() < cond_cfg.weather_clear_prob
-        # Track resample boundary in elapsed sim seconds, not wall hour-of-day.
         self._next_weather_resample_t_s = 3600.0
+        # Wind direction drifts slowly over the day around a base bearing.
+        self._wind_dir_base_rad = rng.uniform(0.0, 2 * math.pi)
 
     def current(self, t_s: float) -> Conditions:
         hour = (self.sim.start_hour + t_s / 3600.0) % 24.0
@@ -68,8 +70,12 @@ class ConditionsModel:
             self._next_weather_resample_t_s += 3600.0
 
         is_day = self.world.daylight_start_hour <= hour <= self.world.daylight_end_hour
+        # Slow ±30° wander over the day around a base bearing.
+        wander = math.sin(t_s / 3600.0 * 0.6) * math.radians(30)
+        wind_dir = (self._wind_dir_base_rad + wander) % (2 * math.pi)
         return Conditions(
             wind_mph=wind,
+            wind_dir_rad=wind_dir,
             weather_clear=self._weather_clear,
             is_daylight=is_day,
             hour_of_day=hour,
