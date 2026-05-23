@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Any
 
 from skydock.config import Config
+from skydock.pricing import derive_pricing, format_breakdown_markdown
 from skydock.simulation import Simulation
 
 # Operational maturity overrides duplicated from calibrate.py for self-containment.
@@ -212,6 +213,55 @@ def _ci_table(label: str, agg: dict) -> str:
     return f"{header}\n{body}"
 
 
+def _pricing_section(cfg: Config) -> str:
+    """Cost-to-replicate breakdown — the defensibility story behind revenue."""
+    p = derive_pricing(cfg.replication_cost)
+    body = format_breakdown_markdown(p)
+    return f"""\
+## Pricing methodology (cost-to-replicate)
+
+Revenue in this brief is **not** asserted from the MVP spec's §4.2 volume
+tiers — those numbers are unsourced. Instead, the per-scenario price is
+derived bottoms-up from what it would cost an AV customer to produce one
+equivalent scenario in-house, then multiplied by a documented vendor
+markup band.
+
+{body}
+
+**What this means for an investor:**
+
+  - The \\${p.price_low:,.0f}–\\${p.price_high:,.0f} band is grounded in inputs that are
+    independently checkable (BLS comp data for operator labour, Scale AI
+    public filings for annotation rates, DJI retail pricing for drone
+    capex, etc.). See the pricing.py docstring for source references.
+  - The simulation defaults to the mid-band (\\${p.price_mid:,.0f}) for revenue
+    calculations. The KPI distributions and CIs in the next section use
+    this number.
+  - To test a more conservative case, override
+    `replication_cost.markup_low=1.2` (commodity margin) or
+    `replication_cost.annotation_labor_usd_per_scenario_high=80` (tight
+    annotation cost ceiling) and re-run the brief.
+  - The spec's $150/scenario assumption sits at the low end of this
+    derived band — broadly consistent with a "tight commodity margin"
+    interpretation. The model does not assert that $150 is right; it
+    asserts that **anywhere in the band is defensible**.
+
+**Caveats the model does not capture:**
+
+  - This is a cost-plus pricing model. Real-world price discovery will
+    happen through customer conversations (LOIs, pilot negotiations),
+    and the actual realised price may diverge from the cost-plus
+    estimate. Premium edge-case scenarios may command above the
+    markup_high ceiling; commodity-style data may compress below
+    markup_low.
+  - The model assumes Skydock is comparable on quality to an in-house
+    operation. If quality is materially worse (FOV gaps, occlusion,
+    sensor limits), the markup band compresses. Quality scoring in
+    the sim (see methodology section) is the proxy for this.
+
+"""
+
+
 def _methodology() -> str:
     return """\
 ## Methodology
@@ -320,12 +370,14 @@ def _build_markdown(
     n_seeds: int,
     elapsed_s: float,
 ) -> str:
+    cfg = Config.load(Path(__file__).parent / "default_config.yaml")
     lines = [
         "# Skydock simulation brief",
         "",
         f"Generated from {n_seeds} Monte Carlo seeds per configuration; "
         f"sim wall-time {elapsed_s:.1f}s.",
         "",
+        _pricing_section(cfg),
         "## Executive summary",
         "",
         f"At v0 day-1 capability (current default priors), a single host "

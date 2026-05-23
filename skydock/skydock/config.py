@@ -8,6 +8,7 @@ from typing import Any
 import yaml
 
 from .dock import DockConfig
+from .pricing import ReplicationCostConfig
 
 
 @dataclass
@@ -112,7 +113,12 @@ class PipelineConfig:
 
 @dataclass
 class EconomicsConfig:
+    # Direct price override (used when pricing_mode = "flat").
     price_per_scenario_usd: float = 150.0
+    # "derived" → compute price from skydock.pricing.derive_pricing using the
+    # ReplicationCostConfig at the top-level config. "flat" → use the value
+    # above directly (legacy behaviour for sweeps / overrides).
+    pricing_mode: str = "derived"
     operator_cost_per_hour_usd: float = 30.0
     vehicle_cost_per_hour_usd: float = 5.0
     cloud_cost_per_scenario_usd: float = 0.80
@@ -178,6 +184,7 @@ class Config:
     customer_funnel: CustomerFunnelConfig = field(default_factory=CustomerFunnelConfig)
     dock: DockConfig = field(default_factory=DockConfig)
     gps: GPSConfig = field(default_factory=GPSConfig)
+    replication_cost: ReplicationCostConfig = field(default_factory=ReplicationCostConfig)
     animation: AnimationConfig = field(default_factory=AnimationConfig)
 
     @classmethod

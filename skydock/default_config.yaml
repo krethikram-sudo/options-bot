@@ -77,13 +77,33 @@ pipeline:
   quality_threshold: 70.0      # below this, scenario is not delivered
 
 economics:
-  # Spec 4.2 / 4.3.
-  price_per_scenario_usd: 150.0
+  # Per-scenario price is derived by default via the cost-to-replicate model
+  # in skydock.pricing (see replication_cost block below). Set pricing_mode
+  # to "flat" to use price_per_scenario_usd directly (useful for sensitivity
+  # sweeps where you want to fix the price).
+  pricing_mode: derived
+  price_per_scenario_usd: 150.0    # used only when pricing_mode = flat
   operator_cost_per_hour_usd: 30.0
   vehicle_cost_per_hour_usd: 5.0
   cloud_cost_per_scenario_usd: 0.80
   drone_wear_per_scenario_usd: 1.00
   fixed_daily_overhead_usd: 220.0
+
+replication_cost:
+  # Bottoms-up inputs the derived price is built from. Every field has an
+  # external reference (see skydock/pricing.py docstring for sources).
+  operator_loaded_hourly_usd: 100.0     # AV-eng total comp (BLS / Glassdoor)
+  scenarios_per_operator_hour: 2.0       # spec §1.5: 12-20 captures / 8h shift
+  annotation_labor_usd_per_scenario_low: 30.0    # Scale AI public filings (lower)
+  annotation_labor_usd_per_scenario_high: 150.0  # Scale AI public filings (upper)
+  drone_capex_amortized_usd_per_scenario: 1.50   # DJI Mini 4 Pro $760 / 500 missions
+  vehicle_capex_amortized_usd_per_scenario: 2.00
+  dock_capex_amortized_usd_per_scenario: 2.50
+  cloud_processing_usd_per_scenario: 0.80
+  bev_tooling_amortized_usd_per_scenario: 3.00
+  delivery_tooling_amortized_usd_per_scenario: 1.00
+  markup_low: 1.5         # tight commodity vendor margin
+  markup_high: 3.0        # premium edge-case curation margin
 
 failure_cascades:
   # Rare but consequential failures (spec §7.1) that take a unit offline.

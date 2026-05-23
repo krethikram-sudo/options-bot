@@ -126,7 +126,18 @@ class Simulation:
             config.pipeline, config.probabilities, self.rng,
             emit_packages_to=config.simulation.emit_packages_to,
         )
-        self.economics = Economics(config.economics, host_vehicle_count=n)
+        # Resolve per-scenario price: either the flat config value (legacy)
+        # or the bottoms-up cost-to-replicate derivation (default).
+        econ_cfg = config.economics
+        if econ_cfg.pricing_mode == "derived":
+            from .pricing import derive_pricing
+            self.pricing_breakdown = derive_pricing(config.replication_cost)
+            # Mutate the dataclass field so downstream code (and the report)
+            # sees the derived price uniformly.
+            econ_cfg.price_per_scenario_usd = self.pricing_breakdown.price_mid
+        else:
+            self.pricing_breakdown = None
+        self.economics = Economics(econ_cfg, host_vehicle_count=n)
         self.metrics = Metrics()
         self.funnel: Optional[CustomerFunnel] = (
             CustomerFunnel(config.customer_funnel, self.rng)
