@@ -1,0 +1,297 @@
+---
+const tagline = "Aerial ground-truth capture for autonomous-vehicle perception.";
+const subline = "A vehicle-mounted drone platform that captures bird's-eye-view footage at the locations AV fleets actually operate — feeding perception validation, scenario libraries, and training data pipelines.";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href={`${import.meta.env.BASE_URL}/favicon.svg`} />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={tagline} />
+    <meta property="og:title" content="Skydock" />
+    <meta property="og:description" content={tagline} />
+    <meta property="og:type" content="website" />
+    <title>Skydock — Aerial ground-truth for AV perception</title>
+    <style is:global>
+      :root {
+        --bg: #0a0e1a;
+        --bg-elev: #111827;
+        --border: #1f2937;
+        --text: #e5e7eb;
+        --text-dim: #9ca3af;
+        --accent: #60a5fa;
+        --accent-dim: #1e3a8a;
+        --mono: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', Menlo, Consolas, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        line-height: 1.6;
+        font-size: 17px;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: border-color 0.15s ease;
+      }
+      a:hover { border-bottom-color: var(--accent); }
+      .container {
+        max-width: 780px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      header.site-header {
+        padding: 28px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .brand {
+        font-family: var(--mono);
+        font-size: 18px;
+        letter-spacing: 0.02em;
+        color: var(--text);
+      }
+      .brand::before {
+        content: '◆ ';
+        color: var(--accent);
+      }
+      section.hero {
+        padding: 80px 0 64px;
+      }
+      h1 {
+        font-size: clamp(36px, 6vw, 56px);
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        margin-bottom: 24px;
+      }
+      .hero p.tagline {
+        font-size: 22px;
+        color: var(--text-dim);
+        max-width: 640px;
+        margin-bottom: 20px;
+      }
+      .hero p.subline {
+        font-size: 17px;
+        color: var(--text-dim);
+        max-width: 640px;
+      }
+      section {
+        padding: 56px 0;
+        border-top: 1px solid var(--border);
+      }
+      h2 {
+        font-size: 14px;
+        font-family: var(--mono);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--accent);
+        margin-bottom: 24px;
+        font-weight: 500;
+      }
+      h3 {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        letter-spacing: -0.01em;
+      }
+      p { margin-bottom: 16px; color: var(--text); }
+      p.dim { color: var(--text-dim); }
+      .sim-frame {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        margin: 24px 0;
+      }
+      .sim-frame img {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 4px;
+      }
+      .sim-caption {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--text-dim);
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border);
+      }
+      ul.feature-list {
+        list-style: none;
+        margin: 24px 0;
+      }
+      ul.feature-list li {
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        gap: 16px;
+        align-items: baseline;
+      }
+      ul.feature-list li:last-child { border-bottom: none; }
+      ul.feature-list .key {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--accent);
+        min-width: 140px;
+        flex-shrink: 0;
+      }
+      ul.feature-list .val {
+        color: var(--text);
+      }
+      .contact-card {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 28px;
+        margin: 24px 0;
+      }
+      .contact-card .name {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .contact-card .role {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--text-dim);
+        margin-bottom: 18px;
+      }
+      .contact-card .bio {
+        font-size: 16px;
+        color: var(--text-dim);
+        margin-bottom: 20px;
+      }
+      .contact-links {
+        display: flex;
+        gap: 20px;
+        font-family: var(--mono);
+        font-size: 14px;
+      }
+      footer {
+        padding: 48px 0;
+        border-top: 1px solid var(--border);
+        text-align: center;
+        color: var(--text-dim);
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      @media (max-width: 600px) {
+        body { font-size: 16px; }
+        section.hero { padding: 48px 0 32px; }
+        ul.feature-list li { flex-direction: column; gap: 4px; }
+        ul.feature-list .key { min-width: 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <span class="brand">skydock</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="container">
+          <h1>Aerial ground-truth, on demand.</h1>
+          <p class="tagline">{tagline}</p>
+          <p class="subline">{subline}</p>
+        </div>
+      </section>
+
+      <section id="demo">
+        <div class="container">
+          <h2>Live simulation</h2>
+          <h3>A vehicle on patrol, fifteen minutes of operations.</h3>
+          <p class="dim">
+            The simulation models drones auto-deploying from host vehicles at trigger
+            arrivals, climbing to capture altitude, capturing scene footage, returning to
+            dock, and emitting OpenSCENARIO + agent-track deliverables. Failure cascades
+            (flyaway, dock damage, battery degradation) are modeled stochastically; unit
+            economics are tracked per-mission against a running P&amp;L.
+          </p>
+          <div class="sim-frame">
+            <img src={`${import.meta.env.BASE_URL}/sim_demo.gif`} alt="Skydock simulation: three host vehicles deploying drones across mixed urban and suburban corridors, with mission counters and P&L dashboard" />
+            <div class="sim-caption">
+              1 host vehicle · urban_dense corridor · 0.25 sim-hours · seed 7
+            </div>
+          </div>
+          <p class="dim">
+            Built as a discrete-time, full-system simulator: trigger arrivals, mission
+            state machine, data pipeline latency, customer-funnel dynamics, and
+            per-vehicle opex all run in a single Python process. The same model produces
+            both the visualization above and the underlying unit-economics report.
+          </p>
+        </div>
+      </section>
+
+      <section id="approach">
+        <div class="container">
+          <h2>System</h2>
+          <h3>How it's built.</h3>
+          <ul class="feature-list">
+            <li>
+              <span class="key">capture_layer</span>
+              <span class="val">Vehicle-mounted drone with auto-launch dock; missions triggered by scene-arrival heuristics or operator commands.</span>
+            </li>
+            <li>
+              <span class="key">data_pipeline</span>
+              <span class="val">Per-scenario emission of OpenSCENARIO + agent tracks + metadata, gated by an automated quality score before customer delivery.</span>
+            </li>
+            <li>
+              <span class="key">failure_model</span>
+              <span class="val">Drone flyaway, dock damage, battery degradation modeled stochastically; vehicle goes offline; downtime tracked against fleet utilization.</span>
+            </li>
+            <li>
+              <span class="key">unit_economics</span>
+              <span class="val">Revenue per delivered scenario, variable costs (cloud, drone wear), per-vehicle opex; rolled up into a live P&amp;L during simulation.</span>
+            </li>
+            <li>
+              <span class="key">customer_funnel</span>
+              <span class="val">Optional Poisson-arrival prospect funnel with pilot conversion gated by recent delivered scenario quality.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="contact">
+        <div class="container">
+          <h2>Founder</h2>
+          <div class="contact-card">
+            <div class="name">Krethik Ram</div>
+            <div class="role">Founder · Skydock</div>
+            <p class="bio">
+              <!-- TODO(krethik): replace this bio with your background. -->
+              Building Skydock to test whether independent aerial ground-truth is a
+              real, paid pain for AV perception teams. Currently in customer
+              discovery — talking to perception leads at AV OEMs, robotaxi
+              operators, and AV toolchain vendors. If you work on AV perception or
+              perception validation, I'd love to hear from you.
+            </p>
+            <div class="contact-links">
+              <a href="mailto:krethikram@gmail.com">email →</a>
+              <!-- TODO(krethik): add your LinkedIn / Twitter / GitHub if desired -->
+              <!-- <a href="https://linkedin.com/in/...">linkedin →</a> -->
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="container">
+        skydock · 2026
+      </div>
+    </footer>
+  </body>
+</html>
