@@ -1,0 +1,13 @@
+id,company,tier,contact_name,role,linkedin_url,outreach_variant,status,sent_date,first_followup_date,second_followup_date,response,response_date,convo_scheduled,convo_date,score_A_perception,score_C_geographic,score_orig_scenario,referral_received,notes
+1,Volvo/Zenseact,1,Erik Rosén,Senior Director of AI & Perception,verify on LinkedIn,B,not_sent,,,,,,,,,,,
+2,Nuro,1,Tilo Schwarz,VP Engineering Nuro Driver,linkedin.com/in/tilo-schwarz-42289b166/,A,not_sent,,,,,,,,,,,
+3,Aurora Innovation,1,TBD (Director-level Perception),Director of Perception Engineering,search Aurora's LinkedIn,A,not_sent,,,,,,,,,,,
+4,Pony.ai,1,Yimeng Zhang,VP Engineering U.S. (verify current employer),linkedin.com/in/yimeng-zhang-04144127/,A,not_sent,,,,,,,,,,,
+5,Wayve,1,Vijay Badrinarayanan,VP of AI,search wayve.ai leadership page,D,not_sent,,,,,,,,,,,
+6,Torc Robotics,1,Felix Heide,Head of AI,linkedin.com/in/felix-heide-7b7bb889/,A,not_sent,,,,,,,,,,,
+7,Applied Intuition,2,Jason Brown,GM Defense,verify on LinkedIn,C,not_sent,,,,,,,,,,,
+8,Foretellix,2,TBD (Head of Real-World Data),Head of Real-World Data Integration,search Foretellix LinkedIn,C,not_sent,,,,,,,,,,,
+9,Parallel Domain,2,James Grieve,CTO,search Parallel Domain LinkedIn,C,not_sent,,,,,,,,,,,
+10,Cognata,2,Danny Atsmon,Founder,search Cognata LinkedIn,C,not_sent,,,,,,,,,,,
+11,Waymo,3,TBD,Senior Manager Perception,search Waymo LinkedIn,B,deferred,,,,,,,,,,,
+12,Tesla,3,—,—,—,—,skip,,,,,,,,,,,
