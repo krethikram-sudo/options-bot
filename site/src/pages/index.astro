@@ -374,6 +374,40 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
         line-height: 1.55;
       }
 
+      .sources-group {
+        margin: 24px 0;
+      }
+      .sources-group h4 {
+        font-family: var(--mono);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--accent);
+        font-weight: 500;
+        margin-bottom: 14px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+      }
+      .sources-group ul {
+        list-style: none;
+        margin: 0;
+      }
+      .sources-group ul li {
+        padding: 8px 0;
+        font-size: 13px;
+        color: var(--text-dim);
+        line-height: 1.5;
+      }
+      .sources-group ul li a {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--text);
+      }
+      .sources-group ul li .src-note {
+        color: var(--text-dim);
+        margin-left: 6px;
+      }
+
       ul.sla-list { list-style: none; margin: 18px 0 24px; }
       ul.sla-list li {
         padding: 10px 0 10px 30px;
@@ -477,6 +511,7 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
           <a href="#scenario">What you get</a>
           <a href="#pricing">Pricing</a>
           <a href="#faq">FAQ</a>
+          <a href="#sources">Sources</a>
           <a href="#pilot">Start a pilot</a>
         </nav>
       </div>
@@ -1167,6 +1202,119 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
           </div>
         </div>
       </section>
+      <section id="sources">
+        <div class="container">
+          <h2>Sources</h2>
+          <h3>Receipts for every numerical claim above.</h3>
+          <p class="dim">
+            Every dollar figure, percentage, and benchmark on this page
+            traces back to a published source. Grouped by claim category
+            below.
+          </p>
+
+          <div class="sources-group">
+            <h4>Model performance evidence</h4>
+            <ul>
+              <li>
+                <a href="https://arxiv.org/abs/2412.14442" target="_blank" rel="noopener">EPN: Ego Vehicle Planning-Informed Network for Trajectory Prediction</a>
+                <span class="src-note">— arxiv 2412.14442. RMSE −64.6%, ADE −64.5%, FDE −64.3% on highD aerial drone dataset.</span>
+              </li>
+              <li>
+                <a href="https://arxiv.org/pdf/2309.10948" target="_blank" rel="noopener">A Novel DNN for Trajectory Prediction Using Velocity Vector Field</a>
+                <span class="src-note">— arxiv 2309.10948. 18-72% trajectory prediction accuracy improvement on highD vs SOTA.</span>
+              </li>
+              <li>
+                <a href="https://openaccess.thecvf.com/content/ICCV2025/papers/Xiao_RoboTron-Sim_Improving_Real-World_Driving_via_Simulated_Hard-Case_ICCV_2025_paper.pdf" target="_blank" rel="noopener">RoboTron-Sim: Improving Real-World Driving via Simulated Hard-Case</a>
+                <span class="src-note">— ICCV 2025. ~50% improvement in hard-case success rate with curated training.</span>
+              </li>
+              <li>
+                <a href="https://arxiv.org/html/2508.18397v2" target="_blank" rel="noopener">Mining the Long Tail: Data-Centric Criticality Metrics</a>
+                <span class="src-note">— arxiv 2508.18397. Collision rate reduced 16.0% → 5.5% via long-tail curation.</span>
+              </li>
+              <li>
+                <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6068987/" target="_blank" rel="noopener">CNN-based aerial pedestrian detection</a>
+                <span class="src-note">— PMC. 99.7% accuracy on aerial pedestrian detection; 71.1% sensitivity under partial occlusion.</span>
+              </li>
+              <li>
+                <a href="https://www.nature.com/articles/s41597-025-05344-7" target="_blank" rel="noopener">InterHub: Naturalistic Trajectory Dataset with Dense Interaction</a>
+                <span class="src-note">— Nature Scientific Data 2025. Multi-agent interaction data lowers trajectory error significantly vs baselines.</span>
+              </li>
+              <li>
+                <a href="https://arxiv.org/pdf/1810.05642" target="_blank" rel="noopener">The highD Dataset</a>
+                <span class="src-note">— arxiv 1810.05642. 16.5h of drone-captured trajectories from German highways; 25Hz sampling.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="sources-group">
+            <h4>Unit economics inputs</h4>
+            <ul>
+              <li>
+                <a href="https://www.glassdoor.com/Salaries/autonomous-vehicle-engineer-salary-SRCH_KO0,27.htm" target="_blank" rel="noopener">AV engineer salary — Glassdoor</a>
+                <span class="src-note">— $160-230K base for perception; $100-170/hr loaded.</span>
+              </li>
+              <li>
+                <a href="https://www.basic.ai/blog-post/how-much-do-data-annotation-services-cost-complete-guide-2025" target="_blank" rel="noopener">Annotation pricing — BasicAI 2025 guide</a>
+                <span class="src-note">— $0.03-$1 per bounding box; $0.05-$3 per mask; 60-120 cuboids/hr for 3D dense urban.</span>
+              </li>
+              <li>
+                <a href="https://uavcoach.com/drone-services-pricing/" target="_blank" rel="noopener">Commercial drone services pricing — UAV Coach</a>
+                <span class="src-note">— $200-$500/hr industry-standard rates; $1,000+ per usable scenario clip.</span>
+              </li>
+              <li>
+                <a href="https://www.skywatch.ai/blog/part-107-commercial-drone-insurance-guide" target="_blank" rel="noopener">FAA Part 107 commercial drone insurance — SkyWatch</a>
+                <span class="src-note">— $750-$1,500/yr for $1M liability coverage; $7/hr pay-per-flight available.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="sources-group">
+            <h4>Industry &amp; competitive context</h4>
+            <ul>
+              <li>
+                <a href="https://www.drone-dataset.com" target="_blank" rel="noopener">levelXdata commercial aerial AV datasets</a>
+                <span class="src-note">— commercial license for highD, inD, rounD, exiD. The 7-year incumbent in our category.</span>
+              </li>
+              <li>
+                <a href="https://www.foretellix.com/foretellix-parallel-domain-simulation/" target="_blank" rel="noopener">Foretellix + Parallel Domain partnership (Nov 2025)</a>
+                <span class="src-note">— scenario-based testing combined with photorealistic sensor simulation; confirms continued investment in scenario validation.</span>
+              </li>
+              <li>
+                <a href="https://www.nhtsa.gov/sites/nhtsa.gov/files/2024-12/nprm-av-step-2024-web.pdf" target="_blank" rel="noopener">NHTSA AV STEP NPRM (Dec 2024)</a>
+                <span class="src-note">— federal framework for AV safety, transparency, and evaluation. Voluntary participation; published Jan 2025.</span>
+              </li>
+              <li>
+                <a href="https://wayve.ai/press/wayve-launches-gaia3/" target="_blank" rel="noopener">Wayve GAIA-3 launch (Dec 2025)</a>
+                <span class="src-note">— generative world model trained on 10x more data; signals end-to-end foundation model trajectory in AV.</span>
+              </li>
+              <li>
+                <a href="https://www.digitaldividedata.com/blog/vru-detection-for-autonomous-vehicle-safety" target="_blank" rel="noopener">VRU detection for AV safety — Digital Divide Data</a>
+                <span class="src-note">— vulnerable road users represent &gt;50% of global traffic deaths; underrepresented in training data.</span>
+              </li>
+              <li>
+                <a href="https://www.globenewswire.com/news-release/2025/08/12/3131847/0/en/AI-Training-Dataset-Market-Surges-to-9-58-billion-by-2029-Dominated-by-Scale-AI-US-Appen-Australia-AWS-US.html" target="_blank" rel="noopener">AI Training Dataset Market — GlobeNewswire</a>
+                <span class="src-note">— $9.58B by 2029. Dominated by Scale AI, Appen, AWS. AV is a major segment.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="sources-group">
+            <h4>Standards</h4>
+            <ul>
+              <li>
+                <a href="https://www.asam.net/standards/detail/openscenario/" target="_blank" rel="noopener">ASAM OpenSCENARIO 2.0</a>
+                <span class="src-note">— published industry standard for AV scenario description. Our delivery default.</span>
+              </li>
+            </ul>
+          </div>
+
+          <p class="dim" style="margin-top: 32px;">
+            Internal research documents with the full methodology and
+            sensitivity analysis are available on request via email.
+          </p>
+        </div>
+      </section>
+
     </main>
 
     <footer>
