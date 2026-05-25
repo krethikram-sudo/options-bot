@@ -469,7 +469,7 @@ adjustment from seed proceeds.
 
 1. **First paid pilot slips to M10+** — extends burn 3-4 months, may force bridge round
 2. **Operator utilization stays at 50-60% through M12** — per-scenario cost stays at $120-140, never reaches $87 target
-3. **ASP at first pilot < $150** — invalidates entire revenue projection, forces full re-plan
+3. **Pilot-to-Volume conversion < 30%** — customers stay on $33.9K Validation Samplers, never expand to $50K Library Foundation. Pricing or product fit issue.
 4. **MVP reliability under 70% at M6** — delays first paid pilot, hardware contractor extends, burn grows
 5. **Bay Area engineer hiring takes 6+ months** — first eng arrives M11 instead of M7, build slips
 
