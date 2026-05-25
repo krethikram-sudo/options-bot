@@ -1,6 +1,6 @@
 # Skydock — Pre-seed PR-FAQ
 
-**Executive Summary:** Today we will discuss the product idea and business opportunity for Skydock. We are seeking $1.7M pre-seed funding to build the MVP and reach cash-flow positive operations on a 6-vehicle Bay Area fleet by month 18 (technical architecture is largely finalized; see [skydock simulation](.)). Reasons why this is a good investment: (1) Aerial bird's-eye-view (BEV) training data is a structurally underserved category that addresses a documented and growing AV-customer pain point (FAQs #9, #11, #15); (2) the operational model — vehicle-deployed dock + autonomous drone deployment + delivery pipeline — has not been built before and gives us a defensible time-to-market advantage (FAQs #12, #14); (3) we have already de-risked the technical and unit-economic assumptions through a fully-instrumented simulation that lets us answer pricing, capacity, and reliability questions before spending hardware capital (FAQ #13); (4) in the mid-case scenario, Skydock delivers ~$1.2M LTV per vehicle, ~57% gross margin (at weighted-volume ASP) or ~65% (at pilot-tier ASP), ~$492K monthly revenue at a 6-vehicle steady state, and reaches CFP in months 16-18 without a Series A dependency (FAQ #21).
+**Executive Summary:** Today we will discuss the product idea and business opportunity for Skydock. We are seeking **$2.0M pre-seed funding** to build the MVP and reach cash-flow positive operations on a 6-vehicle Bay Area fleet by **month 16-18** (technical architecture is largely finalized; see [skydock simulation](.)). Reasons why this is a good investment: (1) Aerial bird's-eye-view (BEV) training data is a structurally underserved category that addresses a documented and growing AV-customer pain point (FAQs #9, #11, #15); (2) the operational model — vehicle-deployed dock + autonomous drone deployment + delivery pipeline — has not been built before and gives us a defensible time-to-market advantage (FAQs #12, #14); (3) we have already de-risked the technical and unit-economic assumptions through a fully-instrumented simulation that lets us answer pricing, capacity, and reliability questions before spending hardware capital (FAQ #13); (4) in the mid-case scenario, Skydock delivers ~$1.2M LTV per vehicle, ~57% gross margin at weighted-volume ASP (~65% at pilot-tier ASP), ~$492K monthly revenue at a 6-vehicle steady state, and reaches CFP in months 16-18 **without a seed-round dependency** — the business is self-sustaining at CFP, with ~$1.89M cash position remaining at month 18. The seed round becomes an *optional* growth investment for multi-market expansion (Phoenix, Austin, EU) and corpus subscription products — not a survival requirement (FAQ #21, #21a).
 
 ---
 
@@ -232,49 +232,79 @@ The customer demand to absorb this throughput exists in the §4.1 target list (Q
 
 **Q21. What are the program-level financials? When does Skydock reach cash-flow positive?**
 
-Program-level financials, 18-month projection from pre-seed close:
+Program-level financials, 18-month monthly burn projection from pre-seed close ($2.0M raise, honest weighted ASP $200 mid-case after the cost-model audit; see [RAISE_SIZING.md](RAISE_SIZING.md) for the full month-by-month build):
 
-| Category | Months 1-6 (MVP build) | Months 7-12 (Pilot phase) | Months 13-18 (Scale to CFP) | Total 18 mo |
-|---|---|---|---|---|
-| Revenue | $0 | $700K | $5.0M | $5.7M |
-| Variable costs | $0 | $30K | $200K | $230K |
-| Founder + hires (1-3 FTE ramping) | $300K | $400K | $500K | $1.2M |
-| Hardware capex (6 vehicles over time) | $50K | $100K | $50K | $200K |
-| Cloud + infra | $5K | $20K | $50K | $75K |
-| Sales + marketing | $20K | $80K | $100K | $200K |
-| Operations + insurance + overhead | $30K | $80K | $100K | $210K |
-| **Period net cash** | **−$405K** | **−$10K** | **+$4.0M** | **+$3.6M** |
+| Phase | Months | Recurring monthly | Capex | Total period cost | Period revenue (honest) |
+|---|---|---|---|---|---|
+| Build | 1-3 | $68K | $5K | $204K | $0 |
+| MVP first capture | 4-6 | $70K | $57K | $267K | $0 |
+| First paid pilot | 7-9 | $90K | $57K | $327K | $118K |
+| 3-vehicle scale | 10-12 | $78K | $57K | $291K | $295K |
+| Ramp to 5 vehicles | 13-15 | $140K | $114K | $534K | $826K |
+| Mature 6-vehicle | 16-18 | $161K | $57K | $540K | $1.06M |
+| **Total 18 mo** | | | **$347K capex** | **$2.16M** | **$2.30M** |
 
-CFP achieved in month 14-15 (mid-Q2 2028) under the mid-case sim assumptions. The $1.7M pre-seed funds the negative-cash window (months 1-12) with $300K buffer. Beyond month 18, the business is self-funding; the seed round (if raised) is for growth into new markets, not survival.
+**Cumulative cash with $2.0M raise:**
+
+| Milestone | Month | Cumulative cash position |
+|---|---|---|
+| Pre-seed close | 0 | $2.0M |
+| MVP first capture | 4 | $1.79M |
+| First paid pilot signed | 7 | $1.59M |
+| Trough (deepest negative) | 12 | $1.32M (raise covers $680K trough burn) |
+| Cash-flow positive | 16-18 | $1.89M |
+| 12 months post-CFP | 30 | $4.2M (no expansion) |
+
+CFP achieved in **months 16-18** under honest weighted-ASP assumptions. The $2.0M pre-seed funds the negative-cash window (trough at month 12 = −$680K cumulative burn) with **$1.24M of buffer** for slip risk. Beyond month 18, the business is self-funding; the seed round (if raised) is for expansion + new products, not survival. See Q21a for the seed-optionality analysis.
 
 **Program-level KPIs and IRR**:
-- Revenue at month 18 run-rate: $1.8M/quarter = $7.2M annual
+- Revenue at month 18 run-rate: $1.06M in Q3 of fleet operations → ~$4.4M annual at honest weighted $200 ASP (~$5.9M at pilot-tier $339)
 - Gross margin at month-6-priors: ~65% at pilot-tier $339 ASP, ~57% at weighted $200 ASP across volume tiers (honest blended figure)
 - LTV per vehicle: ~$1.2M over 24 months (down from prior $1.4M after cost-model audit — see Q17 and [COST_MODEL_AUDIT.md](COST_MODEL_AUDIT.md))
 - Total LTV across 6-vehicle CFP fleet: ~$7.2M
-- Pre-seed capital deployed: $1.7M
-- 24-month IRR (pre-seed dollars to month-18 LTV): ~160% (revised from prior 190% claim; this is sensitive to delivery rate, ASP, and operator utilization — see Q22)
+- Pre-seed capital deployed: $2.0M (revised from prior $1.7M after burn re-derivation — see [RAISE_SIZING.md](RAISE_SIZING.md))
+- 24-month IRR (pre-seed dollars to month-18 LTV): ~140% (revised from prior 190%; sensitive to delivery rate, ASP, and operator utilization — see Q22)
+
+**Q21a. Does the pre-seed get us to profitability before the next raise?**
+
+**Yes — in the honest case, with $1.89M cash remaining at CFP.** This is the most important strategic feature of the Skydock financial model and the reason the seed round is *optional*, not required.
+
+Three different definitions of "profitability" with three different answers:
+
+| Definition | Timing | What it implies |
+|---|---|---|
+| **Cash-flow positive** (monthly cash > monthly costs) | M16-18 honest | Self-sustaining, no further capital needed to survive |
+| **GAAP net profit** (includes depreciation of capex) | M18-22 | True P&L profitability, 3-4 mo behind CFP |
+| **Self-sustaining for indefinite growth** | Not at 6-vehicle scale | Seed needed for geographic + product expansion only |
+
+**The strategic implication:** Skydock's pre-seed buys us into a position where we **negotiate the seed round from strength — or skip it entirely.** Most pre-seed-funded startups have ~12-18 months of runway and *must* raise seed to survive; Skydock at $2.0M reaches CFP at M16-18 with $1.89M cash, giving us the choice:
+
+1. **Bootstrap further** — stay 6-vehicle Bay Area, grow ARR from delivered scenarios, retain ownership, slow geographic expansion
+2. **Raise seed (~$5-10M)** — Phoenix Q4 2027 + Austin Q1 2028 + corpus subscription product + team to 15-20 FTE
+3. **Bridge ($2-3M)** — half-step expansion, minimal additional dilution, preserve optionality
+
+The seed pitch becomes "we've hit CFP, we have a $4.4M ARR run-rate growing 30-50% YoY, we want capital to expand the market we've already proven." Materially better story than "we'll be profitable someday, fund us." See [ASSUMPTIONS_AND_PROFITABILITY.md](ASSUMPTIONS_AND_PROFITABILITY.md) for the full analysis including assumption-by-assumption confidence and the pessimistic-case timeline (CFP slips to M21-22, still within $2.0M runway).
 
 **Q22. How sensitive is the entitlement? What are the key input drivers?**
 
-Sensitivity tornado (from [brief.py](skydock/brief.py) auto-generation, 24 seeds per perturbation, all other parameters held at month-6 priors):
+Sensitivity analysis combines (a) sim parameter sweeps from [brief.py](skydock/brief.py) with (b) the assumption confidence audit from [ASSUMPTIONS_AND_PROFITABILITY.md](ASSUMPTIONS_AND_PROFITABILITY.md). Key drivers ranked by impact-probability product:
 
-| Input | Range tested | Delivered scenarios / vehicle-day (low → high) | LTV impact |
+| Input | Range | Impact on CFP timing | Confidence |
 |---|---|---|---|
-| `host_vehicles.count` | 1 → 5 | 11.6 → 49.6 (+38.0) | Linear scaling |
-| `trigger.poisson_rate_per_hour` | 1.4 → 3.2 | 10.0 → 14.8 (+4.8) | Diminishing returns above 2.5/h |
-| `conditions.wind_mph_amplitude` | 4.0 → 10.0 | 14.5 → 11.5 (−3.0) | Significant; weather-day rescheduling required |
-| `probabilities.pre_flight_pass` | 0.90 → 0.98 | 10.5 → 13.1 (+2.6) | Modest; closes via process |
-| `conditions.weather_clear_prob` | 0.85 → 0.98 | 9.1 → 11.6 (+2.5) | Modest; weather forecasting closes most |
-| `economics.price_per_scenario_usd` | $100 → $250 | 11.6 → 11.6 (+0.0) | No delivery impact; pure revenue lever |
+| **Operator utilization year-1** | 60% → 90% | CFP slips 4-6 months at low utilization | 🟡 Medium (biggest single risk) |
+| **Weighted ASP** | $150 → $300 | CFP M22 → M14 | 🔴 Low (not yet validated by pilot) |
+| **First paid pilot timing** | M10 → M5 | CFP slips 3-5 months at M10 | 🟡 Medium |
+| **MVP reliability (delivery rate)** | 30% → 70% | Revenue and CFP scale linearly | 🟡 Medium |
+| **Hardware reliability + dock R&D timeline** | $150K + 6mo to $300K + 9mo | $150K capex + 3mo slip if 2× | 🟡 Medium |
+| **Bay Area pricing pressure** | hold $200 → drop to $130 | CFP slips 4-6 months | 🟡 Medium |
 
-Three cases for the entitlement, anchored on the price sensitivity (the dominant unknown):
+**Three cases for the entitlement, anchored on the dominant unknowns:**
 
-- **Pessimistic ($150/scenario, sim p10 delivery rate)**: monthly revenue $245K at 6 vehicles, gross profit $115K, CFP slips to month 22, $300K buffer would need to be drawn down — feasible but tight.
-- **Mid-case ($339/scenario, sim mean delivery rate)**: monthly revenue $492K at 6 vehicles, gross profit $387K, CFP at month 15, buffer preserved. This is the base case for the raise.
-- **Optimistic ($500/scenario, sim p90 delivery rate)**: monthly revenue $850K at 6 vehicles, gross profit $720K, CFP at month 11, $500K+ surplus by month 18 — would enable expansion to 12 vehicles or a second market without seed round.
+- **Pessimistic ($150 ASP, p10 delivery rate, MVP slip)**: monthly revenue $245K at 6 vehicles, gross profit $115K, CFP slips to month 21-22. **Still within $2.0M raise runway** (would have $360K negative cash at M18, recovers by M22). If pessimistic signals are clear by M14-15, consider $300-500K bridge round.
+- **Mid-case ($339 ASP, sim mean delivery rate)**: monthly revenue $492K at 6 vehicles, gross profit $310K (post-audit), CFP at month 14-15, $2.5M+ cash at M18. This is the base case.
+- **Optimistic ($500 ASP, p90 delivery rate)**: monthly revenue $850K at 6 vehicles, CFP at month 11, $1M+ surplus by M18 — would enable Phoenix expansion or 12-vehicle scale without seed round.
 
-The key signal to monitor in the first 6 months: actual ASP from the first 2 paid pilots. If ASP < $150, we redirect the raise to extending runway rather than scaling fleet. If ASP > $300, we accelerate the second-market expansion.
+The key signal to monitor in the first 6 months: **actual ASP from the first 2 paid pilots**. If ASP < $150, we slow capex deployment to maintain runway; if ASP > $300, we accelerate second-market expansion. The $2.0M raise is sized to survive the pessimistic case and execute the mid-case.
 
 **Q23. What additional opportunities have we not included in the entitlement calculation?**
 
@@ -287,7 +317,7 @@ Six categories of upside not modelled in Q21's mid-case financials:
 5. **Data licensing to non-AV customers** (Q18). $50K-$200K/year low-margin additional revenue if pursued.
 6. **OpenSCENARIO-adjacent tooling sales**. The customer-facing pipeline (scenario validation, ingestion-format converters) has standalone product potential for AV teams that don't buy our data. Speculative; not in the next 18 months but a credible Series-A thesis.
 
-These collectively suggest $5M-$15M ARR by month 30 against the $1.7M raise — and underwrite the seed-round growth story. The current PR-FAQ is anchored on the pre-seed-to-CFP path, which is the wedge product alone.
+These collectively suggest $5M-$15M ARR by month 30 against the $2.0M raise — and underwrite the seed-round growth story. The current PR-FAQ is anchored on the pre-seed-to-CFP path, which is the wedge product alone.
 
 ---
 
@@ -367,7 +397,7 @@ Per spec §5.1, adapted for the pre-seed schedule:
 
 | Milestone | Target | Outcome |
 |---|---|---|
-| M0: Pre-seed close | Month 0 | $1.7M committed; founder + hardware contractor onboarded |
+| M0: Pre-seed close | Month 0 | $2.0M committed; founder + hardware contractor onboarded |
 | M1: First MVP capture | Month 4 | One vehicle operational; first scenario package emitted; reviewed by ≥3 prospects |
 | M2: First paid pilot signed | Month 7 | $30K-$80K commitment from a §4.1 customer |
 | M3: First paid pilot delivered | Month 9 | 100+ scenarios delivered, customer NPS ≥7 |
