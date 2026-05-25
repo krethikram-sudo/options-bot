@@ -13,11 +13,12 @@ or industry-benchmarked, but **none have been validated in real-world
 operations yet**. The single highest-risk assumption is operator
 utilization (year-1 ramp could be much slower than modeled).
 
-**Question 2**: **Yes, in the honest case**. CFP at month 16-18 under
-$200 weighted ASP, with $1.89M cash position remaining at M18. The
-business is self-sustaining at that point. **The seed round becomes
-optional** — needed for geographic expansion + product growth, not for
-survival.
+**Question 2**: **Yes, in the honest case**. CFP at month 15-17 under
+$200 weighted ASP, with **$2.27M cash position remaining at M18**
+(assumes founder loaded comp held at $200K through Phase 4 — a real
+constraint, not a paper one). The business is self-sustaining at CFP.
+**The seed round becomes optional** — needed for geographic expansion
++ product growth, not for survival.
 
 ---
 

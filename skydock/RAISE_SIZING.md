@@ -16,19 +16,21 @@ revenue capture in the early periods.
 
 ## 1. Monthly burn projection through month 18
 
-Using honest loaded comp ($300K founder, $250K senior eng, $220K GTM,
-$160K CS, $80K operator-driver), plus contractor / capex / overhead per
-the audit.
+Using honest loaded comp (**$200K founder** — lean pre-seed mode, see note below; $250K senior eng, $220K GTM, $160K CS, $80K operator-driver), plus contractor / capex / overhead per the audit.
+
+**Founder comp at $200K loaded** = $16.7K/month covers cash salary + benefits + employer payroll tax. Take-home in SF ~$110K. Founder comp revisits at CFP / seed close — market rate for CEO of an at-CFP small-ops business is $250-350K loaded.
 
 | Phase | Months | Recurring monthly | Capex this phase | Phase cost | Revenue @ $339 ASP | Revenue @ $200 weighted |
 |---|---|---|---|---|---|---|
-| Build P1 | 1-3 | $68K (founder + 2 contractors + minimal ops) | $5K (parts/setup) | $204K | $0 | $0 |
-| MVP P2 | 4-6 | $70K (+ 2 operators part-time) | $57K (1 vehicle + 1 rig) | $267K | $0 | $0 |
-| Pilot P3 | 7-9 | $90K (+ 1st eng hire, marketing starts) | $57K (1 vehicle + 1 rig) | $327K | $200K | $118K |
-| Scale P4 | 10-12 | $78K (3-vehicle fleet ops) | $57K (1 vehicle + 1 rig) | $291K | $500K | $295K |
-| Ramp P5 | 13-15 | $140K (+ GTM + 2 eng + 3 ops + 0.5 CS) | $114K (2 vehicles + 2 rigs) | $534K | $1.4M | $826K |
-| Mature P6 | 16-18 | $161K (full 6-vehicle fleet + team) | $57K (1 vehicle + 1 rig) | $540K | $1.8M | $1.06M |
-| **Total 18mo** | | | **$347K capex** | **$2.16M** | $5.9M | $2.30M |
+| Build P1 | 1-3 | $60K (founder + 2 contractors + minimal ops) | $5K (parts/setup) | $185K | $0 | $0 |
+| MVP P2 | 4-6 | $62K (+ 2 operators part-time) | $57K (1 vehicle + 1 rig) | $243K | $0 | $0 |
+| Pilot P3 | 7-9 | $82K (+ 1st eng hire, marketing starts) | $57K (1 vehicle + 1 rig) | $303K | $200K | $118K |
+| Scale P4 | 10-12 | $70K (3-vehicle fleet ops) | $57K (1 vehicle + 1 rig) | $267K | $500K | $295K |
+| Ramp P5 | 13-15 | $132K (+ GTM + 2 eng + 3 ops + 0.5 CS) | $114K (2 vehicles + 2 rigs) | $510K | $1.4M | $826K |
+| Mature P6 | 16-18 | $153K (full 6-vehicle fleet + team) | $57K (1 vehicle + 1 rig) | $516K | $1.8M | $1.06M |
+| **Total 18mo** | | | **$347K capex** | **$2.02M** | $5.9M | $2.30M |
+
+*~$140K reduction from prior plan that assumed $300K loaded founder comp.*
 
 ## 2. Cumulative cash analysis
 
@@ -39,27 +41,27 @@ cumulative cash position.
 
 | End of period | Period net | Cum cash |
 |---|---|---|
-| Month 3 | −$204K | **−$204K** |
-| Month 6 | −$267K | −$471K |
-| Month 9 | −$127K (revenue starts) | −$598K ← **trough** |
-| Month 12 | +$209K | −$389K |
-| Month 15 | +$866K | +$477K |
-| Month 18 | +$1.26M | +$1.74M |
+| Month 3 | −$185K | **−$185K** |
+| Month 6 | −$243K | −$428K |
+| Month 9 | −$103K | −$531K ← **trough** |
+| Month 12 | +$233K | −$298K |
+| Month 15 | +$890K | +$592K |
+| Month 18 | +$1.28M | +$1.87M |
 
-Trough: **−$598K at end of month 9**. Raise needed: $600K + buffer.
+Trough: **−$531K at end of month 9** (mid case). Raise needed: $531K + buffer.
 
 ### Honest case ($200 weighted ASP):
 
 | End of period | Period net | Cum cash |
 |---|---|---|
-| Month 3 | −$204K | **−$204K** |
-| Month 6 | −$267K | −$471K |
-| Month 9 | −$209K | −$680K |
-| Month 12 | +$4K | −$676K ← **trough** |
-| Month 15 | +$292K | −$384K |
-| Month 18 | +$520K | +$136K |
+| Month 3 | −$185K | **−$185K** |
+| Month 6 | −$243K | −$428K |
+| Month 9 | −$185K | −$613K |
+| Month 12 | +$28K | −$585K ← **trough** |
+| Month 15 | +$316K | −$269K |
+| Month 18 | +$544K | +$275K |
 
-Trough: **−$680K at end of month 12**. Raise needed: $680K + buffer.
+Trough: **−$613K at end of month 9** (honest case). Raise needed: $613K + buffer.
 
 ### Pessimistic case ($150 weighted ASP + 6-month MVP slip):
 
@@ -84,27 +86,29 @@ needed: $760K + buffer for the extended runway.
 
 ### Scenario A — $1.5M raise (lean)
 
-- Covers trough of $680K (honest case) with $820K buffer
-- Headroom: ~12 months of slip absorption
-- Risk: if pessimistic case hits, runway gets tight by month 18 — would need bridge financing
+- Covers trough of $613K (honest case) with $887K buffer
+- Headroom: ~14 months of slip absorption
+- Risk: if pessimistic case hits (−$668K trough), buffer drops to $832K — still survivable but less comfortable
 - Dilution at $7.5M post-money: ~17%
-- **Best for**: high-conviction founder who'd rather take less capital and execute fast
+- **Best for**: high-conviction founder who's confident on $200K founder comp + lean ops
 
 ### Scenario B — $2.0M raise (recommended)
 
-- Covers trough of $760K (pessimistic case) with $1.24M buffer
-- Headroom: ~18 months of slip absorption
+- Covers trough of $668K (pessimistic case) with $1.33M buffer
+- Headroom: ~20 months of slip absorption
 - Sufficient runway to reach CFP under pessimistic ASP + extended-MVP slip
+- Allows pulling founder comp toward market rate at month 15+ if traction supports it
 - Allows seizing 1-2 unexpected hires or geographic expansion opportunity
 - Dilution at $10M post-money: ~17%
-- **Best for**: prudent reserve against the realistic risk set
+- **Best for**: prudent reserve against the realistic risk set; preserves optionality for founder comp adjustment + expansion
 
 ### Scenario C — $2.5M raise (cushioned)
 
-- Trough + $1.74M buffer
+- Trough + $1.83M buffer
 - Could pull CFP forward by 1-2 months via earlier eng hires
 - Could fund partial Phoenix expansion before seed round
 - Could survive a 12-month sales-cycle slip with no panic
+- Allows founder comp at market rate ($300K) from month 6+
 - Dilution at $12.5M post-money: ~20%
 - **Best for**: investor preference for more cash + greater optionality
 
