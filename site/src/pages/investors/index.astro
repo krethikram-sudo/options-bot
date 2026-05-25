@@ -1,0 +1,362 @@
+---
+const repoBase = "https://github.com/krethikram-sudo/options-bot/blob/main/skydock";
+const docs = [
+  {
+    section: "Strategic narrative",
+    description: "The investor pitch, execution plan, and the assumptions baked into it.",
+    items: [
+      { name: "PR-FAQ (PITCH.md)", file: "PITCH.md", desc: "Amazon-style PR-FAQ. The full investor narrative — problem, wedge, financials, risks. 478 lines." },
+      { name: "Execution plan", file: "EXECUTION_PLAN.md", desc: "End-to-end operational plan: now → pre-seed → 18mo execution → seed round close. Monthly milestones, hiring sequence, KPIs by phase." },
+      { name: "Assumptions + profitability", file: "ASSUMPTIONS_AND_PROFITABILITY.md", desc: "10 baked-in assumptions with confidence levels. Answers: does the pre-seed get us to profitability before next raise?" },
+      { name: "Thesis review", file: "THESIS_REVIEW.md", desc: "Self-critique of the original thesis. What changed after customer discovery." },
+    ],
+  },
+  {
+    section: "Financial model",
+    description: "Honest numbers with line-by-line derivation. Updated post-audit.",
+    items: [
+      { name: "Cost model audit", file: "COST_MODEL_AUDIT.md", desc: "Audit of original PR-FAQ Q17 cost claims. Found ~3× undercount in all-in cost. Honest rebuild at $87/scenario all-in." },
+      { name: "Raise sizing", file: "RAISE_SIZING.md", desc: "Monthly burn projection through M18. Three cumulative cash scenarios. Recommendation: $2.0M raise at $10M post-money cap." },
+      { name: "Value quantification", file: "VALUE_QUANTIFICATION.md", desc: "Customer ROI math. 49-74% cost savings vs alternatives with sourced inputs. Sensitivity analysis." },
+      { name: "Equity projection", file: "EQUITY_PROJECTION.md", desc: "Cap table evolution: incorporation → pre-seed → seed → Series A/B. Founder retention scenarios." },
+    ],
+  },
+  {
+    section: "Market research + evidence",
+    description: "What customers need, what the published research says, who tried before us.",
+    items: [
+      { name: "AV training data research", file: "AV_DATA_VALUE_RESEARCH.md", desc: "Deep research on AV training pipelines. Identifies levelXdata as missed competitor. Refines thesis from 'category empty' to 'commercial on-demand US-coverage missing'." },
+      { name: "Model performance evidence", file: "MODEL_PERFORMANCE_EVIDENCE.md", desc: "Peer-reviewed numbers backing every model-performance claim. RMSE −64% on highD, +50% hard-case (RoboTron-Sim ICCV 2025), −67% collision rate." },
+      { name: "Competitive graveyard", file: "COMPETITIVE_GRAVEYARD.md", desc: "10 adjacent companies that tried this and failed. PrecisionHawk ($136M raised, bankruptcy), Workhorse HorseFly, SkyDrop, Mighty AI, Civil Maps. Patterns of failure + how Skydock differs." },
+      { name: "Research log", file: "RESEARCH_LOG.md", desc: "Running notes from customer discovery, competitive scans, and industry conversations." },
+    ],
+  },
+  {
+    section: "Customer discovery operations",
+    description: "Active outreach, customer pipeline, and conversation tracking.",
+    items: [
+      { name: "Discovery plan", file: "DISCOVERY_PLAN.md", desc: "4-6 week customer discovery operational plan. 18 named contacts across 3 tiers (validation platforms, AV OEMs, trajectory prediction teams, competitive intelligence). Conversation guide + scoring rubric." },
+    ],
+    note: "Other discovery materials (CONTACTS.md, OUTREACH_SCRIPTS.md, WARM_INTRO_TEMPLATES.md) contain named contacts and outreach scripts — available on request via email, not linked here for privacy.",
+  },
+  {
+    section: "Simulation source",
+    description: "The 7,000-line physical-layer simulation backing every quantitative claim.",
+    items: [
+      { name: "Simulation repo", file: "skydock/", desc: "Discrete-time, full-system simulation. Trigger arrivals → mission state machine → data pipeline → unit economics. 16 passing regression tests." },
+      { name: "Live demo on landing page", file: "../", desc: "The cinematic animation embedded on the customer site is generated from this sim. Same model drives the unit-economics numbers in the financial docs." },
+    ],
+  },
+];
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href={`${import.meta.env.BASE_URL}/favicon.svg`} />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="Internal investor materials — confidential" />
+    <title>Skydock — Internal & Investor Materials</title>
+    <style is:global>
+      :root {
+        --bg: #0a0e1a;
+        --bg-elev: #111827;
+        --border: #1f2937;
+        --text: #e5e7eb;
+        --text-dim: #9ca3af;
+        --text-strong: #f9fafb;
+        --accent: #60a5fa;
+        --accent-soft: rgba(96, 165, 250, 0.08);
+        --warn: #e5b85a;
+        --warn-soft: rgba(229, 184, 90, 0.12);
+        --mono: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', Menlo, Consolas, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        line-height: 1.65;
+        font-size: 17px;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: border-color 0.15s ease;
+      }
+      a:hover { border-bottom-color: var(--accent); }
+      .container {
+        max-width: 820px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      header.site-header {
+        padding: 24px 0;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg);
+      }
+      .site-header .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .brand {
+        font-family: var(--mono);
+        font-size: 18px;
+        letter-spacing: 0.02em;
+        color: var(--text-strong);
+      }
+      .brand::before {
+        content: '◆ ';
+        color: var(--accent);
+      }
+      .internal-badge {
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--warn);
+        background: var(--warn-soft);
+        padding: 4px 10px;
+        border-radius: 3px;
+        border: 1px solid rgba(229, 184, 90, 0.3);
+      }
+      section.hero {
+        padding: 64px 0 48px;
+      }
+      h1 {
+        font-size: clamp(32px, 5vw, 44px);
+        font-weight: 700;
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+        margin-bottom: 20px;
+        color: var(--text-strong);
+      }
+      .hero p.subline {
+        font-size: 17px;
+        color: var(--text-dim);
+        max-width: 680px;
+      }
+      .confidential-note {
+        background: var(--warn-soft);
+        border: 1px solid rgba(229, 184, 90, 0.3);
+        border-left: 3px solid var(--warn);
+        border-radius: 4px;
+        padding: 16px 20px;
+        margin: 28px 0;
+        font-size: 14px;
+        color: var(--text);
+        line-height: 1.5;
+      }
+      .confidential-note strong {
+        color: var(--warn);
+        font-family: var(--mono);
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        display: block;
+        margin-bottom: 6px;
+      }
+      section {
+        padding: 48px 0;
+        border-top: 1px solid var(--border);
+      }
+      h2 {
+        font-size: 13px;
+        font-family: var(--mono);
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--accent);
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+      .section-desc {
+        font-size: 16px;
+        color: var(--text-dim);
+        margin-bottom: 24px;
+      }
+      .doc-list {
+        list-style: none;
+      }
+      .doc-item {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 18px 22px;
+        margin-bottom: 12px;
+      }
+      .doc-name {
+        font-family: var(--mono);
+        font-size: 14px;
+        color: var(--accent);
+        font-weight: 500;
+        margin-bottom: 6px;
+      }
+      .doc-name a { color: var(--accent); }
+      .doc-desc {
+        color: var(--text);
+        font-size: 14.5px;
+        line-height: 1.55;
+      }
+      .section-note {
+        margin-top: 18px;
+        font-size: 13px;
+        color: var(--text-dim);
+        font-style: italic;
+      }
+      .quick-facts {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 22px 24px;
+        margin: 24px 0;
+      }
+      .quick-facts h4 {
+        font-family: var(--mono);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--accent);
+        margin-bottom: 14px;
+      }
+      .quick-facts ul {
+        list-style: none;
+      }
+      .quick-facts ul li {
+        padding: 6px 0;
+        font-size: 14.5px;
+        color: var(--text);
+      }
+      .quick-facts ul li strong {
+        color: var(--text-strong);
+        font-family: var(--mono);
+        font-size: 13.5px;
+        margin-right: 8px;
+      }
+      footer {
+        padding: 40px 0;
+        border-top: 1px solid var(--border);
+        text-align: center;
+        color: var(--text-dim);
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      footer a { color: var(--text-dim); }
+      footer a:hover { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container row">
+        <span class="brand">skydock</span>
+        <span class="internal-badge">internal · confidential</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="container">
+          <h1>Internal &amp; Investor Materials</h1>
+          <p class="subline">
+            Strategic narrative, financial model, market research, and
+            execution plan. Linked materials live on the public GitHub
+            repository but are not indexed from the customer site nav.
+          </p>
+
+          <div class="confidential-note">
+            <strong>Confidential</strong>
+            These materials are intended for investors, prospective hires,
+            and the founder's working group. They contain candid risk
+            assessments, internal financial assumptions, and competitive
+            analysis not suitable for public sharing. Please do not
+            redistribute without permission.
+          </div>
+
+          <div class="quick-facts">
+            <h4>Quick reference</h4>
+            <ul>
+              <li><strong>Stage</strong> Pre-seed (customer discovery + raise)</li>
+              <li><strong>Raise size</strong> $2.0M on SAFE @ $10M post-money cap</li>
+              <li><strong>CFP target</strong> Month 15-17 from raise close</li>
+              <li><strong>Cash at M18</strong> ~$2.28M + $75K accrued deferred founder comp</li>
+              <li><strong>Founder ownership post-seed</strong> ~50% (solo founder)</li>
+              <li><strong>LTV per vehicle</strong> ~$1.2M over 24 months</li>
+              <li><strong>Customer site</strong> <a href="../">skydock landing page</a></li>
+              <li><strong>Contact</strong> <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {docs.map((section) => (
+        <section>
+          <div class="container">
+            <h2>{section.section}</h2>
+            <p class="section-desc">{section.description}</p>
+            <ul class="doc-list">
+              {section.items.map((item) => (
+                <li class="doc-item">
+                  <div class="doc-name">
+                    <a href={`${repoBase}/${item.file}`} target="_blank" rel="noopener">{item.name} →</a>
+                  </div>
+                  <div class="doc-desc">{item.desc}</div>
+                </li>
+              ))}
+            </ul>
+            {section.note && <p class="section-note">{section.note}</p>}
+          </div>
+        </section>
+      ))}
+
+      <section>
+        <div class="container">
+          <h2>How to use these materials</h2>
+          <ul class="doc-list">
+            <li class="doc-item">
+              <div class="doc-name">For investors</div>
+              <div class="doc-desc">
+                Start with the <strong>PR-FAQ (PITCH.md)</strong> for the
+                full narrative. Skim <strong>Assumptions + Profitability</strong>
+                for honest risk framing. Then <strong>Raise Sizing</strong>
+                for the dollar math and <strong>Equity Projection</strong>
+                for the cap table.
+              </div>
+            </li>
+            <li class="doc-item">
+              <div class="doc-name">For prospective hires</div>
+              <div class="doc-desc">
+                Start with the <strong>PR-FAQ</strong>, then
+                <strong>Execution Plan</strong> for the 18-month operational
+                roadmap. <strong>Cost Model Audit</strong> shows the honest
+                unit economics. <strong>Competitive Graveyard</strong> is the
+                most candid view of risks.
+              </div>
+            </li>
+            <li class="doc-item">
+              <div class="doc-name">For customer-discovery prospects</div>
+              <div class="doc-desc">
+                The customer-facing site (linked above) is the primary
+                resource. The <strong>Model Performance Evidence</strong>
+                doc here provides the deeper sourced research backing the
+                site's headline numbers — share on request.
+              </div>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="container">
+        skydock · 2026 · internal data room · last updated May 2026 · <a href="../">customer site</a>
+      </div>
+    </footer>
+  </body>
+</html>
