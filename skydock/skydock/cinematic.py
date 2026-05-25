@@ -327,6 +327,27 @@ class CinematicRenderer:
             color=TEXT_DIM, fontsize=9, family="monospace",
             ha="right", zorder=20, alpha=0.0,
         )
+        # Running event log — right side, mid-height. Shows trigger, capture
+        # start, delivered, and aborted events as they happen so a viewer
+        # can scan the chronological story without watching every frame.
+        self.log_header = self.ax.text(
+            0.96, 0.78, "event log", transform=self.ax.transAxes,
+            color=ACCENT, fontsize=9, family="monospace",
+            ha="right", fontweight="bold", zorder=20,
+        )
+        self.log_body = self.ax.text(
+            0.96, 0.75, "", transform=self.ax.transAxes,
+            color=TEXT_DIM, fontsize=9, family="monospace",
+            ha="right", va="top", zorder=20,
+            linespacing=1.4,
+        )
+        self._event_log: list[str] = []
+        self._max_log_lines = 8
+        # Tracking state for event detection (each frame, diff against prior).
+        self._prev_missions_started = 0
+        self._prev_completed_count = 0
+        self._prev_pipeline_completed = 0
+        self._prev_mission_stages: dict[str, str] = {}
 
         # Track most-recent completed mission for the deliverable popup.
         self._last_completed_count = 0
@@ -554,6 +575,93 @@ class CinematicRenderer:
         else:
             self.deliverable_popup.set_visible(False)
 
+    def _format_log_time(self, t_s: float) -> str:
+        hrs = int(t_s // 3600)
+        mins = int((t_s % 3600) // 60)
+        secs = int(t_s % 60)
+        return f"{hrs:02d}:{mins:02d}:{secs:02d}"
+
+    def _push_log(self, t_s: float, kind: str, detail: str):
+        """Append an event line to the log; keep only the last N visible."""
+        ts = self._format_log_time(t_s)
+        line = f"[{ts}]  {kind:<10s} {detail}"
+        self._event_log.append(line)
+        if len(self._event_log) > self._max_log_lines:
+            self._event_log = self._event_log[-self._max_log_lines:]
+
+    def _emit_events(self, t_s: float):
+        """Detect state transitions vs last frame, log them."""
+        sim = self.sim
+
+        # New triggers — mission started count grew.
+        n_started = sim.metrics.missions_started
+        if n_started > self._prev_missions_started:
+            new_missions = n_started - self._prev_missions_started
+            for u in sim.units:
+                m = u.active_mission
+                if m is not None and m.is_active:
+                    # Only log if we haven't logged this one before — track by
+                    # mission_id in _prev_mission_stages.
+                    if m.mission_id not in self._prev_mission_stages:
+                        self._push_log(
+                            t_s, "TRIGGER",
+                            f"{m.trigger.type}·{m.scene_class.replace('_','-')}",
+                        )
+                        self._prev_mission_stages[m.mission_id] = m.stage
+            self._prev_missions_started = n_started
+
+        # Stage transitions on active missions — log when entering CAPTURING.
+        for u in sim.units:
+            m = u.active_mission
+            if m is None or not m.is_active:
+                continue
+            prev = self._prev_mission_stages.get(m.mission_id, "")
+            if prev != m.stage:
+                if m.stage == "CAPTURING":
+                    n_agents = len(u.active_scene.agents) if u.active_scene else 0
+                    self._push_log(
+                        t_s, "CAPTURE",
+                        f"{n_agents:>2d} agents · {m.scene_class.replace('_','-')}",
+                    )
+                self._prev_mission_stages[m.mission_id] = m.stage
+
+        # Mission completions — DONE or ABORTED.
+        completed = sim.completed_missions
+        if len(completed) > self._prev_completed_count:
+            for new in completed[self._prev_completed_count:]:
+                short_id = new.mission_id.replace("skydock-mission-", "")
+                if new.stage == "DONE":
+                    q = new.quality_score_from_scene or 0.0
+                    self._push_log(
+                        t_s, "✓ CAPTURED",
+                        f"scenario_{short_id}  q={q:.0f}",
+                    )
+                elif new.stage == "ABORTED":
+                    reason = (new.aborted_reason or "unknown").replace("_", " ")
+                    self._push_log(t_s, "✗ ABORTED", reason)
+            self._prev_completed_count = len(completed)
+
+        # Pipeline deliveries — when a scenario finishes processing.
+        n_pipeline_done = len(sim.pipeline.completed)
+        if n_pipeline_done > self._prev_pipeline_completed:
+            for job in sim.pipeline.completed[self._prev_pipeline_completed:]:
+                short_id = job.mission.mission_id.replace("skydock-mission-", "")
+                if job.delivered:
+                    self._push_log(
+                        t_s, "→ DELIVERED",
+                        f"scenario_{short_id}.xosc",
+                    )
+                else:
+                    self._push_log(
+                        t_s, "  rejected",
+                        f"scenario_{short_id} (low quality)",
+                    )
+            self._prev_pipeline_completed = n_pipeline_done
+
+        # Render the current log into the body text artist. Newest at the
+        # bottom (matches a terminal scroll), padded to keep right-alignment.
+        self.log_body.set_text("\n".join(self._event_log))
+
     def _update_overlays(self, focal: "VehicleUnit", t_s: float):
         m = focal.active_mission
         if m is not None and m.is_active:
@@ -633,6 +741,7 @@ class CinematicRenderer:
             self._update_vehicle(art, unit)
             self._update_drone(art, unit, sim.t_s)
             self._render_scene_agents(art, unit, sim.t_s)
+        self._emit_events(sim.t_s)
         self._update_overlays(focal, sim.t_s)
         self._check_for_deliverable(sim.t_s, sim_dt_per_frame)
         return []
