@@ -352,6 +352,28 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
         line-height: 1.4;
       }
 
+      ul.faq-list {
+        list-style: none;
+        margin: 24px 0;
+      }
+      ul.faq-list li {
+        padding: 18px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      ul.faq-list li:last-child { border-bottom: none; }
+      .faq-q {
+        font-family: var(--mono);
+        font-size: 14px;
+        color: var(--accent);
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+      .faq-a {
+        color: var(--text);
+        font-size: 16px;
+        line-height: 1.55;
+      }
+
       ul.sla-list { list-style: none; margin: 18px 0 24px; }
       ul.sla-list li {
         padding: 10px 0 10px 30px;
@@ -452,9 +474,9 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
           <a href="#capture">How it works</a>
           <a href="#problem">Problem</a>
           <a href="#evidence">Evidence</a>
-          <a href="#why">Why now</a>
           <a href="#scenario">What you get</a>
           <a href="#pricing">Pricing</a>
+          <a href="#faq">FAQ</a>
           <a href="#pilot">Start a pilot</a>
         </nav>
       </div>
@@ -1027,6 +1049,67 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
       </section>
 
 
+      <section id="faq">
+        <div class="container">
+          <h2>FAQ</h2>
+          <h3>Common questions from prospective customers.</h3>
+          <ul class="faq-list">
+            <li>
+              <div class="faq-q">Can I see a sample before committing?</div>
+              <div class="faq-a">Yes. Request a free sample scenario package &mdash; metadata.json, agent_tracks.json, scenario.xosc &mdash; to review with your team. No commitment, no NDA required.</div>
+            </li>
+            <li>
+              <div class="faq-q">What's the minimum pilot size?</div>
+              <div class="faq-a">$25K minimum commitment (~74 scenarios at pilot tier). Smaller engagements possible for design partners willing to work through ambiguity together &mdash; talk to us.</div>
+            </li>
+            <li>
+              <div class="faq-q">What if my city isn't in your coverage area yet?</div>
+              <div class="faq-a">Bay Area operational from MVP. Phoenix Q4 2027. Austin Q1 2028. EU on post-seed roadmap. We can quote custom geographic expansion for committed pilots &mdash; it accelerates our market entry and accelerates your access.</div>
+            </li>
+            <li>
+              <div class="faq-q">Can I specify exact intersections, times of day, or weather conditions?</div>
+              <div class="faq-a">Yes. Custom waypoints (specific GPS coordinates, scene-class labels) get added to the operator's route plan. Time-of-day and reproducible weather conditions can be targeted. Custom scenario taxonomies onboarded in ~1 week. Custom captures priced 2-3&times; standard tier.</div>
+            </li>
+            <li>
+              <div class="faq-q">Can my scenarios be exclusive &mdash; not licensed to competitors?</div>
+              <div class="faq-a">Non-exclusive licensing by default. Your data joins the multi-tenant corpus, which keeps per-scenario pricing low. Exclusive captures available at a documented premium for customers who need data sovereignty &mdash; typically 2-5&times; standard pricing depending on duration and scope.</div>
+            </li>
+            <li>
+              <div class="faq-q">How do you handle pedestrian privacy and license plates?</div>
+              <div class="faq-a">Default delivery is anonymized agent tracks (position + class + heading + speed) &mdash; no biometric or PII data. Optional raw 4K video has face and license-plate blurring applied before delivery. Custom privacy handling negotiable for enterprise customers with specific compliance requirements.</div>
+            </li>
+            <li>
+              <div class="faq-q">Do you carry insurance for the drone operations?</div>
+              <div class="faq-a">Yes. Commercial drone liability insurance per FAA Part 107 &mdash; $1M standard coverage. Enterprise customers can request higher coverage limits in the master service agreement. We carry the regulatory and accident liability so you don't have to take it onto your books.</div>
+            </li>
+            <li>
+              <div class="faq-q">How does Skydock data interact with my synthetic pipeline?</div>
+              <div class="faq-a">We deliver native OpenSCENARIO 2.0 &mdash; drops into Foretellix, Applied Intuition, CARLA, Cognata, or your internal validation pipeline without schema rewrite. Real aerial captures can also seed synthetic generators (Parallel Domain, Mira) as input for hyper-realistic digital twins.</div>
+            </li>
+            <li>
+              <div class="faq-q">What happens if a scenario doesn't pass the quality threshold?</div>
+              <div class="faq-a">No charge. We generate the scenario, score it against the 60/20/20 methodology, and only bill if quality lands above 70. If it doesn't, the capture stays internal and you're not billed.</div>
+            </li>
+            <li>
+              <div class="faq-q">What if my QA team rejects a delivered scenario?</div>
+              <div class="faq-a">30-day QA credit window. If your QA team finds documented schema or content issues with a delivered scenario, full credit toward future scenarios &mdash; no recourse to dispute. Enterprise customers can negotiate longer windows in the master service agreement.</div>
+            </li>
+            <li>
+              <div class="faq-q">How do you handle adverse weather?</div>
+              <div class="faq-a">Capture rejected at wind &gt;20 mph or non-clear weather. Wind-shake quality penalty kicks in above 12 mph average wind during capture. Operating envelope is documented in every scenario's metadata so you can filter your corpus by capture conditions &mdash; useful if your validation needs only fair-weather data, or specifically wants edge-weather scenarios.</div>
+            </li>
+            <li>
+              <div class="faq-q">What's the scene-class match guarantee?</div>
+              <div class="faq-a">99.5% per SLA. The 0.5% of mismatches get credit toward future scenarios. We're conservative on this &mdash; scenario classification is automated against the waypoint label, so misclassification is rare but possible at edge intersections.</div>
+            </li>
+          </ul>
+          <p class="dim">
+            Question not answered here? Email <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a>
+            or schedule a 30-min call via the pilot CTA below.
+          </p>
+        </div>
+      </section>
+
       <section id="pilot">
         <div class="container">
           <h2>Start a pilot</h2>
@@ -1059,16 +1142,29 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
             <div class="name">Krethikram Gowrisankar</div>
             <div class="role">Founder · Skydock</div>
             <p class="bio">
-              <!-- TODO(krethik): replace this bio with your background. -->
-              Running customer discovery personally with AV scenario
-              engineering and perception leads. Happy to share sample
-              scenarios, walk through the simulation methodology, or
-              scope a pilot against your library gaps.
+              Krethikram led product on Amazon's Smart Trailer Dock Release
+              (Smart TDR) &mdash; the autonomous docking system now operating
+              across ~50% of Amazon's middle-mile network, with 1M+
+              automated cycles, zero safety incidents, and $80MM+ in
+              secured funding.
+            </p>
+            <p class="bio">
+              Skydock applies the same operational pattern &mdash; hardware
+              + firmware + real-time sensor integration + safety-critical
+              control &mdash; to vehicle-mounted aerial drone docks for AV
+              training data. Same engineering DNA, different physical
+              primitive.
+            </p>
+            <p class="bio">
+              Previously built Barrier One (BLE-authenticated smart
+              delivery, provisional patent) and cold-pitched Amazon
+              leadership to convert his contractor role to full-time PM.
+              B.S. Computer Science, University of Wisconsin&ndash;Madison.
+              Based in San Francisco.
             </p>
             <div class="contact-links">
               <a href="mailto:krethikram@gmail.com">email →</a>
-              <!-- TODO(krethik): add your LinkedIn / GitHub / Twitter -->
-              <!-- <a href="https://linkedin.com/in/...">linkedin →</a> -->
+              <a href="https://linkedin.com/in/krethikram-gowrisankar-a4b986209" target="_blank" rel="noopener">linkedin →</a>
             </div>
           </div>
         </div>
