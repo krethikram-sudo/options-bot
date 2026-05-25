@@ -1,5 +1,6 @@
 name: Deploy Astro site to GitHub Pages
 
+# Retrigger.
 on:
   push:
     branches:
