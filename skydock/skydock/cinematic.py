@@ -327,19 +327,23 @@ class CinematicRenderer:
             color=TEXT_DIM, fontsize=9, family="monospace",
             ha="right", zorder=20, alpha=0.0,
         )
-        # Running event log — right side, mid-height. Shows trigger, capture
-        # start, delivered, and aborted events as they happen so a viewer
-        # can scan the chronological story without watching every frame.
-        self.log_header = self.ax.text(
-            0.96, 0.78, "event log", transform=self.ax.transAxes,
-            color=ACCENT, fontsize=9, family="monospace",
-            ha="right", fontweight="bold", zorder=20,
+        # Running event log — right side, mid-height. Anchored to the
+        # *figure* (not the axes) so the camera pan/zoom can't displace it.
+        # Backed by a translucent panel so it stays readable over any
+        # content underneath.
+        self.log_header = self.fig.text(
+            0.96, 0.78, "event log", color=ACCENT,
+            fontsize=10, family="monospace",
+            ha="right", va="top", fontweight="bold", zorder=30,
         )
-        self.log_body = self.ax.text(
-            0.96, 0.75, "", transform=self.ax.transAxes,
-            color=TEXT_DIM, fontsize=9, family="monospace",
-            ha="right", va="top", zorder=20,
-            linespacing=1.4,
+        self.log_body = self.fig.text(
+            0.96, 0.745, "", color=TEXT_COLOR,
+            fontsize=9, family="monospace",
+            ha="right", va="top", zorder=30,
+            linespacing=1.5,
+            bbox=dict(facecolor="#0a0e1a", edgecolor="#1f2937",
+                      linewidth=0.8, boxstyle="round,pad=0.6",
+                      alpha=0.92),
         )
         self._event_log: list[str] = []
         self._max_log_lines = 8
