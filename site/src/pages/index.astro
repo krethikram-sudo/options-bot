@@ -212,18 +212,20 @@ const subline = "A vehicle-mounted drone platform that captures bird's-eye-view 
       <section id="demo">
         <div class="container">
           <h2>Live simulation</h2>
-          <h3>A vehicle on patrol, fifteen minutes of operations.</h3>
+          <h3>One vehicle, multiple mission cycles, follow-camera view.</h3>
           <p class="dim">
             The simulation models drones auto-deploying from host vehicles at trigger
             arrivals, climbing to capture altitude, capturing scene footage, returning to
             dock, and emitting OpenSCENARIO + agent-track deliverables. Failure cascades
             (flyaway, dock damage, battery degradation) are modeled stochastically; unit
-            economics are tracked per-mission against a running P&amp;L.
+            economics are tracked per-mission against a running P&amp;L. The clip below is
+            the cinematic mode &mdash; the same simulation also runs in an analytical
+            mode with a live dashboard for inspecting state, aborts, and unit-economics.
           </p>
           <div class="sim-frame">
-            <img src={`${import.meta.env.BASE_URL}/sim_demo.gif`} alt="Skydock simulation: three host vehicles deploying drones across mixed urban and suburban corridors, with mission counters and P&L dashboard" />
+            <img src={`${import.meta.env.BASE_URL}/sim_demo.gif`} alt="Skydock cinematic simulation: host vehicle driving along an urban corridor, drone visibly launching from the vehicle, climbing to capture altitude, scanning a scene, then returning and landing back on the vehicle" />
             <div class="sim-caption">
-              1 host vehicle · urban_dense corridor · 0.25 sim-hours · seed 7
+              1 host vehicle · urban_dense corridor · 0.15 sim-hours · seed 11
             </div>
           </div>
           <p class="dim">
