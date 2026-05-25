@@ -1,6 +1,6 @@
 ---
-const tagline = "Aerial BEV training data for AV scenario libraries — delivered in OpenSCENARIO 2.0, captured by drones deployed from moving fleet vehicles.";
-const subline = "Skydock fills the aerial-perspective slot in your scenario library at the locations your fleet actually operates. Drops into your existing pipeline without schema rewrite, naming-convention negotiation, or QA process changes.";
+const tagline = "Trajectory prediction RMSE −64%. VRU detection 99.7% under aerial occlusion. Hard-case success +50% with curated training. Aerial drone data is the highest-leverage missing input in AV model performance — and AV teams can't capture it themselves at scale.";
+const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-formatted aerial captures that fill the trajectory, prediction, and validation gaps in your training pipelines.";
 ---
 
 <html lang="en">
@@ -450,9 +450,10 @@ const subline = "Skydock fills the aerial-perspective slot in your scenario libr
         <nav class="nav">
           <a href="#scenario">What you get</a>
           <a href="#capture">How it works</a>
-          <a href="#scenes">Scene classes</a>
-          <a href="#usecases">Use cases</a>
-          <a href="#fleet">Our fleet</a>
+          <a href="#problem">Problem</a>
+          <a href="#evidence">Evidence</a>
+          <a href="#why">Why now</a>
+          <a href="#scenario">What you get</a>
           <a href="#pricing">Pricing</a>
           <a href="#pilot">Start a pilot</a>
         </nav>
@@ -462,7 +463,7 @@ const subline = "Skydock fills the aerial-perspective slot in your scenario libr
     <main>
       <section class="hero">
         <div class="container">
-          <h1>Aerial BEV scenarios for AV training, on demand.</h1>
+          <h1>Move your AV models past the long tail.</h1>
           <p class="tagline">{tagline}</p>
           <p class="subline">{subline}</p>
           <div class="hero-meta">
@@ -471,6 +472,180 @@ const subline = "Skydock fills the aerial-perspective slot in your scenario libr
             <span><span class="label">starting</span>$339/scenario</span>
             <span><span class="label">pilot</span>from 100 scenarios</span>
           </div>
+        </div>
+      </section>
+
+      <section id="problem">
+        <div class="container">
+          <h2>The problem</h2>
+          <h3>Three places AV teams are stuck on model performance.</h3>
+          <p>
+            Modern AV models &mdash; whether modular (perception → prediction → planning)
+            or end-to-end foundation models &mdash; are bottlenecked on the same
+            kinds of data. The long tail of behaviors, the rare edge cases, the
+            multi-agent interactions captured from above without ego-vehicle
+            occlusion. These aren't problems of more data; they're problems of
+            the <em>right</em> data, in formats that drop into existing pipelines.
+          </p>
+          <ul class="feature-list">
+            <li>
+              <span class="key">trajectory prediction</span>
+              <span class="val">Plateaus on ego-perspective data because behaviors that matter most for safety happen between agents that don't share a viewpoint. Models trained on aerial drone trajectories (highD, inD, openDD) reliably outperform same-architecture models trained on ego data.</span>
+            </li>
+            <li>
+              <span class="key">perception validation</span>
+              <span class="val">Requires ground truth from a sensor system independent of the one being validated. Internal capture has correlated errors with the model being tested. Aerial drone capture provides the structural independence the safety case needs.</span>
+            </li>
+            <li>
+              <span class="key">hard-case coverage</span>
+              <span class="val">The scenario library that gates the safety case grows linearly with new requirements &mdash; but the hardest scenarios (unprotected lefts, VRU interactions, school zones at dismissal) are the slowest to capture organically and the highest-leverage to add.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="evidence">
+        <div class="container">
+          <h2>The evidence</h2>
+          <h3>What the published research says about aerial drone data.</h3>
+          <p>
+            Aerial drone data is the demonstrated training source for the
+            largest published improvements in AV model performance. The data
+            quality &mdash; 25Hz sampling, unoccluded multi-agent visibility,
+            full intersection in a single frame &mdash; is structurally
+            unavailable from ego-vehicle sensors.
+          </p>
+          <div class="stat-grid">
+            <div class="stat">
+              <div class="value">−64%</div>
+              <div class="label">trajectory prediction RMSE</div>
+              <div class="footnote">EPN model on highD vs SOTA</div>
+            </div>
+            <div class="stat">
+              <div class="value">+50%</div>
+              <div class="label">hard-case success rate</div>
+              <div class="footnote">RoboTron-Sim curated training, ICCV 2025</div>
+            </div>
+            <div class="stat">
+              <div class="value">−67%</div>
+              <div class="label">collision rate in simulation</div>
+              <div class="footnote">curated long-tail training, 16%→5.5%</div>
+            </div>
+            <div class="stat">
+              <div class="value">99.7%</div>
+              <div class="label">aerial pedestrian detection</div>
+              <div class="footnote">CNN, vs 30-50% ego under occlusion</div>
+            </div>
+            <div class="stat">
+              <div class="value">18-72%</div>
+              <div class="label">trajectory accuracy range</div>
+              <div class="footnote">Velocity Vector Field on highD</div>
+            </div>
+            <div class="stat">
+              <div class="value">+6.8 mAP</div>
+              <div class="label">person detection</div>
+              <div class="footnote">aerial + ego multi-dataset training</div>
+            </div>
+          </div>
+          <p class="dim">
+            <strong>Honest caveat:</strong> these results are for aerial drone
+            data in general &mdash; the published highD, inD, openDD, RoboTron-Sim
+            studies. Skydock-specific evidence comes from your paid pilot:
+            we deliver 100 scenarios in your target area, you measure
+            improvement on your benchmarks, we publish jointly subject to your
+            IP terms. The structural argument for why aerial data should work
+            doesn't depend on Skydock; the customer-specific magnitude does.
+          </p>
+        </div>
+      </section>
+
+      <section id="why">
+        <div class="container">
+          <h2>Why this is hard to solve internally</h2>
+          <h3>The existing alternatives, and why they don't fill the gap.</h3>
+          <p>
+            If aerial drone data is this valuable, why hasn't every AV
+            company already captured it themselves? Because the operational
+            economics don't work for any single customer &mdash; and the
+            existing third-party options solve the wrong subset of the
+            problem.
+          </p>
+          <table class="compare">
+            <thead>
+              <tr>
+                <th>Approach</th>
+                <th>Limitation</th>
+                <th>Per-scenario cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="headline">Internal drone team</td>
+                <td>Capacity caps at 2-4 captures/day per crew. 7 of 8 AV companies we surveyed tried this and stopped within a year &mdash; operational overhead, FAA Part 107 compliance, and dedicated drone-ops engineering pulls senior eng off core work.</td>
+                <td>$1,000+</td>
+              </tr>
+              <tr>
+                <td class="headline">levelXdata (highD/inD/rounD)</td>
+                <td>Established 7-year commercial aerial datasets. German highways/intersections/roundabouts only. Fixed-location captures, no on-demand custom waypoints, custom format requires conversion.</td>
+                <td>commercial license</td>
+              </tr>
+              <tr>
+                <td class="headline">Academic datasets</td>
+                <td>openDD, MiTra, DeepUrban, AUTOMATUM &mdash; fixed snapshots from one-time research collections. Free for research, commercial use restricted. No SLA.</td>
+                <td>free, research-grade</td>
+              </tr>
+              <tr>
+                <td class="headline">Fixed-base drone box</td>
+                <td>One location per install. Designed for industrial inspection, not road scenarios.</td>
+                <td>$15K+ install</td>
+              </tr>
+              <tr>
+                <td class="headline">Synthetic BEV</td>
+                <td>Strong on volume, weaker on edge-case fidelity. Used <em>alongside</em> real data by every customer we spoke to, not as a substitute.</td>
+                <td>$50 - $300</td>
+              </tr>
+              <tr class="skydock-row">
+                <td class="headline">Skydock</td>
+                <td>US-geography vehicle-deployed autonomous capture. On-demand custom waypoints, OpenSCENARIO 2.0 native, commercial SLA. Multi-tenant corpus amortizes operational cost across customers.</td>
+                <td>$100 - $339</td>
+              </tr>
+            </tbody>
+          </table>
+          <h4 style="margin-top: 32px; margin-bottom: 14px;">The cost math, for context</h4>
+          <p class="dim">
+            For a customer building 500 scenarios internally vs buying from
+            Skydock at the volume tier:
+          </p>
+          <div class="stat-grid">
+            <div class="stat">
+              <div class="value">$100K</div>
+              <div class="label">Skydock (500 × $200)</div>
+              <div class="footnote">delivered in ~1.5 months</div>
+            </div>
+            <div class="stat">
+              <div class="value">$382K</div>
+              <div class="label">internal program build</div>
+              <div class="footnote">8 months to first 500 delivered</div>
+            </div>
+            <div class="stat">
+              <div class="value">$500K</div>
+              <div class="label">commercial drone services</div>
+              <div class="footnote">$1K/scenario industry rate</div>
+            </div>
+            <div class="stat">
+              <div class="value">−74%</div>
+              <div class="label">cost vs internal</div>
+              <div class="footnote">plus 4-6 months time-to-value</div>
+            </div>
+          </div>
+          <p class="dim">
+            Cost-to-replicate inputs: AV engineer loaded labor ($100-170/hr),
+            commercial drone service rates ($200-500/hr industry standard,
+            $1K/scenario typical full delivery), annotation labor
+            ($30-150/scenario for 3D agent cuboids), drone + vehicle + dock
+            capex amortization. Sources: Glassdoor AV salary data, UAV Coach
+            commercial drone pricing, BasicAI 2025 annotation cost guide.
+          </p>
         </div>
       </section>
 
@@ -851,53 +1026,6 @@ const subline = "Skydock fills the aerial-perspective slot in your scenario libr
         </div>
       </section>
 
-      <section id="alternatives">
-        <div class="container">
-          <h2>Why Skydock</h2>
-          <h3>vs. what you're using today.</h3>
-          <table class="compare">
-            <thead>
-              <tr>
-                <th>Approach</th>
-                <th>Limitation</th>
-                <th>Per-scenario cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="headline">levelXdata (highD/inD/rounD)</td>
-                <td>Established 7-year commercial aerial datasets. German highways, intersections, roundabouts only. Fixed-location captures, no on-demand custom waypoints, custom format requires conversion.</td>
-                <td>commercial license</td>
-              </tr>
-              <tr>
-                <td class="headline">Academic datasets</td>
-                <td>openDD, MiTra, DeepUrban, AUTOMATUM — fixed snapshots from one-time research collections. Free for research, commercial use restricted. No SLA.</td>
-                <td>free, research-grade</td>
-              </tr>
-              <tr>
-                <td class="headline">Fixed-base drone box</td>
-                <td>One location per install. Designed for industrial inspection, not road scenarios.</td>
-                <td>$15K+ install</td>
-              </tr>
-              <tr>
-                <td class="headline">Internal drone team</td>
-                <td>Capacity caps at 2-4 captures/day per crew. Customers who tried this all stopped within a year.</td>
-                <td>$1,000+</td>
-              </tr>
-              <tr>
-                <td class="headline">Synthetic BEV</td>
-                <td>Strong on volume, weaker on edge-case fidelity. Useful alongside real data, not as a substitute.</td>
-                <td>$50 - $300</td>
-              </tr>
-              <tr class="skydock-row">
-                <td class="headline">Skydock</td>
-                <td>US-geography vehicle-deployed autonomous capture. On-demand custom waypoints, OpenSCENARIO 2.0 native, commercial SLA. Goes where your fleet operates.</td>
-                <td>$100 - $339</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
 
       <section id="pilot">
         <div class="container">
