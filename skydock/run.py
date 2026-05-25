@@ -15,6 +15,7 @@ import sys
 from pathlib import Path
 
 from skydock.animation import run_animation
+from skydock.cinematic import run_cinematic
 from skydock.config import Config
 from skydock.report import print_report
 from skydock.simulation import Simulation
@@ -61,6 +62,10 @@ def main(argv: list[str] | None = None) -> int:
         help="Launch interactive matplotlib animation instead of headless run.",
     )
     parser.add_argument(
+        "--cinematic", action="store_true",
+        help="Render the cinematic follow-camera demo instead of the analytical dashboard.",
+    )
+    parser.add_argument(
         "--save", type=Path, default=None,
         help="Save animation to file (mp4 or gif). Implies --animate.",
     )
@@ -90,9 +95,13 @@ def main(argv: list[str] | None = None) -> int:
 
     sim = Simulation(cfg)
 
-    animate = args.animate or args.save is not None
+    animate = args.animate or args.save is not None or args.cinematic
+    save_path = str(args.save) if args.save else None
     if animate:
-        run_animation(sim, save_path=str(args.save) if args.save else None)
+        if args.cinematic:
+            run_cinematic(sim, save_path=save_path)
+        else:
+            run_animation(sim, save_path=save_path)
         # Still print a report after the animation ends.
         print_report(sim)
     else:
