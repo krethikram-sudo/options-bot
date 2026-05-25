@@ -42,6 +42,40 @@ Twelve target companies. For each, the role we want to reach and why. The actual
 | 9 | **Parallel Domain** | Head of Data Lab / Director of Real-World Data | Their Data Lab API generates synthetic from real drive log reconstructions; aerial captures could seed new variants |
 | 10 | **Cognata** | Head of Real-World Data Acquisition (DriveMatrix product) | Synthetic from real test-drive data; possible channel partner |
 
+### Tier 1b — Trajectory prediction & behavior teams (added May 2026 per data-value research)
+
+The AV_DATA_VALUE_RESEARCH.md findings showed that trajectory prediction
+teams are an underemphasized but strong customer cohort — every academic
+aerial dataset (highD, inD, openDD) is used primarily for this. Same
+companies as Tier 1, different team-level decision-maker.
+
+| # | Company | Role to target | Why this team |
+|---|---|---|---|
+| 13 | Aurora Innovation | Head of Behavior / Head of Prediction | Trajectory prediction is core to their L4 planner; aerial data is the gold standard for training |
+| 14 | Pony.ai | Head of Prediction Engineering | Same — prediction model maturity directly affects safety margin |
+| 15 | Zoox | Head of Motion Prediction | Robotaxi prediction stack; uses scenario libraries extensively |
+| 16 | Waymo | Senior Manager, Behavior Prediction | Major buyer of trajectory data; even own large internal capture |
+| 17 | Wayve | VP of Embodied AI / Foundation Models | End-to-end trajectories; less per-task but high volume |
+
+**Outreach angle for this cohort:** "I noticed your team builds trajectory
+prediction. The highD / inD / openDD datasets are the standard for
+training on aerial agent-trajectory data — we're building the on-demand
+US-coverage equivalent. Would 15 min on your prediction-data sourcing be
+useful?"
+
+### Tier 1c — Competitive intelligence (not customer outreach)
+
+| # | Company | Role to target | Why |
+|---|---|---|---|
+| 18 | levelXdata (drone-dataset.com) | Founder / Head of Product | 7-year incumbent in commercial aerial AV datasets. Either validate non-overlap (they do German, we do US), explore partnership, or learn how their pricing + sales motion works. |
+| 19 | AUTOMATUM DATA | Founder / Sales | Also commercial drone-based AV dataset provider. Similar conversation. |
+
+**Outreach angle:** "I'm building Skydock — vehicle-deployed aerial capture
+for US AV scenario libraries. I've been studying highD/inD as the reference
+point in this category. Would love a 20-min peer call on the commercial
+side of this market — what your customers ask for, where you see gaps,
+whether a US-focused entrant overlaps or complements your offering."
+
 ### Tier 3 — Adjacent / harder to reach (defer if Tier 1+2 conversations are productive)
 
 | # | Company | Role to target | Why this company |

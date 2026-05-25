@@ -451,6 +451,7 @@ const subline = "Skydock fills the aerial-perspective slot in your scenario libr
           <a href="#scenario">What you get</a>
           <a href="#capture">How it works</a>
           <a href="#scenes">Scene classes</a>
+          <a href="#usecases">Use cases</a>
           <a href="#fleet">Our fleet</a>
           <a href="#pricing">Pricing</a>
           <a href="#pilot">Start a pilot</a>
@@ -814,6 +815,42 @@ const subline = "Skydock fills the aerial-perspective slot in your scenario libr
         </div>
       </section>
 
+      <section id="usecases">
+        <div class="container">
+          <h2>What we're built for</h2>
+          <h3>Three use cases where aerial BEV data is the right tool.</h3>
+          <p>
+            We're honest about fit. Aerial drone capture isn't a substitute
+            for every kind of AV data — it's the right tool for specific
+            problems where overhead ground truth and full multi-agent
+            visibility matter.
+          </p>
+          <ul class="feature-list">
+            <li>
+              <span class="key">scenario libraries</span>
+              <span class="val">Populate your OpenSCENARIO library with diverse, geographically-distributed real-world scenarios. Drone footage provides unoccluded multi-agent ground truth that drops directly into replay-driven validation pipelines.</span>
+            </li>
+            <li>
+              <span class="key">trajectory prediction</span>
+              <span class="val">Train trajectory and behavior-prediction models on naturalistic agent interactions captured from above. Same use case as highD/inD/openDD, but with on-demand US coverage and custom waypoints.</span>
+            </li>
+            <li>
+              <span class="key">perception validation</span>
+              <span class="val">Validate your on-vehicle perception against ground truth captured by a fully independent sensor system. The independence is the point — same-stack validation has correlated errors.</span>
+            </li>
+          </ul>
+          <p class="dim">
+            <strong>What we're not built for:</strong> training ego-vehicle
+            perception models directly. Perception models need to learn
+            from sensor data in the perspective they're deployed in
+            (ego-vehicle cameras + lidar). Aerial BEV is the complement to
+            that training data, not a replacement for it. If you're looking
+            for ego-perspective camera/lidar capture, talk to a different
+            vendor &mdash; we'll happily refer.
+          </p>
+        </div>
+      </section>
+
       <section id="alternatives">
         <div class="container">
           <h2>Why Skydock</h2>
@@ -827,6 +864,16 @@ const subline = "Skydock fills the aerial-perspective slot in your scenario libr
               </tr>
             </thead>
             <tbody>
+              <tr>
+                <td class="headline">levelXdata (highD/inD/rounD)</td>
+                <td>Established 7-year commercial aerial datasets. German highways, intersections, roundabouts only. Fixed-location captures, no on-demand custom waypoints, custom format requires conversion.</td>
+                <td>commercial license</td>
+              </tr>
+              <tr>
+                <td class="headline">Academic datasets</td>
+                <td>openDD, MiTra, DeepUrban, AUTOMATUM — fixed snapshots from one-time research collections. Free for research, commercial use restricted. No SLA.</td>
+                <td>free, research-grade</td>
+              </tr>
               <tr>
                 <td class="headline">Fixed-base drone box</td>
                 <td>One location per install. Designed for industrial inspection, not road scenarios.</td>
@@ -842,14 +889,9 @@ const subline = "Skydock fills the aerial-perspective slot in your scenario libr
                 <td>Strong on volume, weaker on edge-case fidelity. Useful alongside real data, not as a substitute.</td>
                 <td>$50 - $300</td>
               </tr>
-              <tr>
-                <td class="headline">Public footage scrape</td>
-                <td>Quality + legal issues. Three of eight customers tried; none reported it working.</td>
-                <td>$0 - low</td>
-              </tr>
               <tr class="skydock-row">
                 <td class="headline">Skydock</td>
-                <td>Vehicle-deployed autonomous capture. Goes where your fleet operates. 20 captures/day per vehicle.</td>
+                <td>US-geography vehicle-deployed autonomous capture. On-demand custom waypoints, OpenSCENARIO 2.0 native, commercial SLA. Goes where your fleet operates.</td>
                 <td>$100 - $339</td>
               </tr>
             </tbody>
