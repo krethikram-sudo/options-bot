@@ -224,6 +224,22 @@ class CinematicRenderer:
             # Altitude tether (faint dashed line from vehicle to drone)
             tether = self.ax.plot([], [], "--", color=DRONE_COLOR,
                                    linewidth=0.6, alpha=0.0, zorder=4)[0]
+            # Scene agents — drawn on the ground during a capture so a viewer
+            # can see WHAT the drone is recording: cars, pedestrians, cyclists.
+            scene_vehicles = self.ax.scatter([], [], s=42, c="#7ab0d4",
+                                              marker="s", alpha=0.0,
+                                              edgecolors="none", zorder=4)
+            scene_peds = self.ax.scatter([], [], s=22, c="#9ee37d",
+                                          marker="o", alpha=0.0,
+                                          edgecolors="none", zorder=4)
+            scene_cyclists = self.ax.scatter([], [], s=28, c="#e5b85a",
+                                              marker="^", alpha=0.0,
+                                              edgecolors="none", zorder=4)
+            # Bright halo over agents currently inside the drone's FOV.
+            scene_visible = self.ax.scatter([], [], s=80, c="none",
+                                             marker="o", alpha=0.0,
+                                             edgecolors=DRONE_COLOR,
+                                             linewidths=1.2, zorder=8)
             self.unit_artists.append({
                 "chassis": chassis,
                 "cabin": cabin,
@@ -236,6 +252,10 @@ class CinematicRenderer:
                 "fov_right": fov_right,
                 "fov_circle": fov_circle,
                 "tether": tether,
+                "scene_vehicles": scene_vehicles,
+                "scene_peds": scene_peds,
+                "scene_cyclists": scene_cyclists,
+                "scene_visible": scene_visible,
             })
 
         # On-screen overlays
@@ -263,11 +283,54 @@ class CinematicRenderer:
             color=TEXT_DIM, fontsize=11, family="monospace",
             ha="right", zorder=20,
         )
+        # Trigger info — appears top-right under the counter when a mission starts.
+        self.trigger_label = self.ax.text(
+            0.96, 0.86, "", transform=self.ax.transAxes,
+            color=TEXT_DIM, fontsize=10, family="monospace",
+            ha="right", zorder=20,
+        )
         self.clock_label = self.ax.text(
             0.96, 0.05, "", transform=self.ax.transAxes,
             color=TEXT_DIM, fontsize=10, family="monospace",
             ha="right", zorder=20,
         )
+        # Scenario label + agent counts — left side, below alt/batt, only
+        # visible during capture.
+        self.scenario_label = self.ax.text(
+            0.04, 0.80, "", transform=self.ax.transAxes,
+            color=TEXT_DIM, fontsize=11, family="monospace",
+            zorder=20,
+        )
+        self.capture_stats = self.ax.text(
+            0.04, 0.75, "", transform=self.ax.transAxes,
+            color=TEXT_DIM, fontsize=10, family="monospace",
+            zorder=20,
+        )
+        # Deliverable popup — center, fades in for ~3 sec after a mission
+        # completes successfully.
+        self.deliverable_popup = self.ax.text(
+            0.5, 0.50, "", transform=self.ax.transAxes,
+            color="#9ee37d", fontsize=15, family="monospace",
+            fontweight="bold", ha="center", va="center",
+            zorder=21,
+            bbox=dict(facecolor="#0a0e1a", edgecolor="#9ee37d",
+                      linewidth=1.5, boxstyle="round,pad=0.6",
+                      alpha=0.95),
+        )
+        self.deliverable_popup.set_visible(False)
+        self._popup_t_remaining = 0.0
+        # Legend in the bottom-right corner so viewers know what the colored
+        # ground markers mean during capture.
+        self.legend_label = self.ax.text(
+            0.96, 0.10, "■ vehicle    ● pedestrian    ▲ cyclist",
+            transform=self.ax.transAxes,
+            color=TEXT_DIM, fontsize=9, family="monospace",
+            ha="right", zorder=20, alpha=0.0,
+        )
+
+        # Track most-recent completed mission for the deliverable popup.
+        self._last_completed_count = 0
+        self._last_popup_text = ""
 
     # -- per-frame update ----------------------------------------------------
 
@@ -403,6 +466,94 @@ class CinematicRenderer:
             art["fov_right"].set_alpha(0.0)
             art["fov_circle"].set_alpha(0.0)
 
+    def _render_scene_agents(self, art: dict, unit: "VehicleUnit", t_s: float):
+        """During capture, plot the agents in the scene as ground markers so
+        viewers can see WHAT is being captured. Outside capture, hide them."""
+        scene = unit.active_scene
+        capturing = (unit.active_mission is not None
+                     and unit.active_mission.is_capturing
+                     and scene is not None)
+        if not capturing:
+            for k in ("scene_vehicles", "scene_peds", "scene_cyclists",
+                     "scene_visible"):
+                art[k].set_offsets([[float("nan"), float("nan")]])
+                art[k].set_alpha(0.0)
+            return
+
+        # Agents in FOV right now (per the last recorded capture frame).
+        in_fov: set[str] = set()
+        if unit.capture_frame_idx > 0:
+            last_frame = unit.capture_frame_idx - 1
+            for aid, frames in scene.visibility.items():
+                if last_frame in frames:
+                    in_fov.add(aid)
+
+        positions = scene.positions_now(t_s)
+        veh_xy, ped_xy, cyc_xy, vis_xy = [], [], [], []
+        for aid, cls, x, y in positions:
+            sy = _project_y(y, 0.0)
+            if cls == "passenger_vehicle":
+                veh_xy.append((x, sy))
+            elif cls == "pedestrian":
+                ped_xy.append((x, sy))
+            else:
+                cyc_xy.append((x, sy))
+            if aid in in_fov:
+                vis_xy.append((x, sy))
+
+        for key, xys, alpha in (
+            ("scene_vehicles", veh_xy, 0.95),
+            ("scene_peds", ped_xy, 0.85),
+            ("scene_cyclists", cyc_xy, 0.90),
+            ("scene_visible", vis_xy, 0.85),
+        ):
+            if xys:
+                art[key].set_offsets(xys)
+                art[key].set_alpha(alpha)
+            else:
+                art[key].set_offsets([[float("nan"), float("nan")]])
+                art[key].set_alpha(0.0)
+
+    def _check_for_deliverable(self, t_s: float, frame_dt: float):
+        """If a mission just completed (DONE or ABORTED), set up the popup."""
+        completed = self.sim.completed_missions
+        if len(completed) > self._last_completed_count:
+            # One or more missions completed since last frame.
+            newest = completed[-1]
+            if newest.stage == "DONE":
+                q = newest.quality_score_from_scene or 0.0
+                short_id = newest.mission_id.replace("skydock-mission-", "")
+                self._last_popup_text = (
+                    f"✓ DELIVERED  scenario_{short_id}.xosc\n"
+                    f"   quality {q:.0f}  ·  {newest.scene_class.replace('_',' ')}"
+                )
+                self.deliverable_popup.set_color("#9ee37d")
+                # Update bbox edge color too.
+                bbox = self.deliverable_popup.get_bbox_patch()
+                if bbox is not None:
+                    bbox.set_edgecolor("#9ee37d")
+                self._popup_t_remaining = 3.0
+            elif newest.stage == "ABORTED":
+                reason = (newest.aborted_reason or "unknown").replace("_", " ")
+                self._last_popup_text = f"✗ ABORTED  {reason}"
+                self.deliverable_popup.set_color("#d97757")
+                bbox = self.deliverable_popup.get_bbox_patch()
+                if bbox is not None:
+                    bbox.set_edgecolor("#d97757")
+                self._popup_t_remaining = 2.0
+            self._last_completed_count = len(completed)
+
+        # Fade the popup out as its timer runs.
+        if self._popup_t_remaining > 0:
+            self.deliverable_popup.set_visible(True)
+            self.deliverable_popup.set_text(self._last_popup_text)
+            # Use real-time-ish fade — frame_dt is sim seconds per frame, but
+            # the popup feels right keyed to frame count.
+            self._popup_t_remaining -= frame_dt / max(1.0,
+                self.cfg.animation.speed_multiplier / self.cfg.animation.fps)
+        else:
+            self.deliverable_popup.set_visible(False)
+
     def _update_overlays(self, focal: "VehicleUnit", t_s: float):
         m = focal.active_mission
         if m is not None and m.is_active:
@@ -413,11 +564,49 @@ class CinematicRenderer:
             alt_str = f"alt {focal.drone.altitude_m:5.1f} m  ·  batt {focal.drone.battery_pct:4.1f}%"
             self.alt_label.set_text(alt_str)
             self.alt_label.set_color(TEXT_COLOR)
+
+            # Trigger info — what made the drone launch?
+            trig = m.trigger
+            self.trigger_label.set_text(
+                f"trigger · {trig.type}  @  {m.scene_class.replace('_',' ')}"
+            )
+            self.trigger_label.set_color(TEXT_DIM)
         else:
             self.stage_label.set_text("◇ STANDBY")
             self.stage_label.set_color(TEXT_DIM)
             self.alt_label.set_text("awaiting trigger")
             self.alt_label.set_color(TEXT_DIM)
+            self.trigger_label.set_text("")
+
+        # Scenario + capture stats — only visible during CAPTURE.
+        scene = focal.active_scene
+        capturing = (m is not None and m.is_capturing and scene is not None)
+        if capturing:
+            self.scenario_label.set_text(
+                f"scenario · {scene.scene_class.replace('_',' ')}"
+            )
+            self.scenario_label.set_color(STAGE_COLOR["CAPTURING"])
+            # Live agent counts.
+            n_veh = sum(1 for a in scene.agents if a.cls == "passenger_vehicle")
+            n_ped = sum(1 for a in scene.agents if a.cls == "pedestrian")
+            n_cyc = sum(1 for a in scene.agents if a.cls == "cyclist")
+            n_in_fov = 0
+            if focal.capture_frame_idx > 0:
+                last_frame = focal.capture_frame_idx - 1
+                for aid, frames in scene.visibility.items():
+                    if last_frame in frames:
+                        n_in_fov += 1
+            n_total = len(scene.agents)
+            self.capture_stats.set_text(
+                f"tracking {n_in_fov:>2d}/{n_total:>2d} agents  ·  "
+                f"{n_veh} veh · {n_ped} ped · {n_cyc} cyc"
+            )
+            self.capture_stats.set_color(TEXT_COLOR)
+            self.legend_label.set_alpha(0.9)
+        else:
+            self.scenario_label.set_text("")
+            self.capture_stats.set_text("")
+            self.legend_label.set_alpha(0.0)
 
         delivered = sum(1 for j in self.sim.pipeline.completed if j.delivered)
         self.counter_label.set_text(
@@ -443,7 +632,9 @@ class CinematicRenderer:
         for art, unit in zip(self.unit_artists, sim.units):
             self._update_vehicle(art, unit)
             self._update_drone(art, unit, sim.t_s)
+            self._render_scene_agents(art, unit, sim.t_s)
         self._update_overlays(focal, sim.t_s)
+        self._check_for_deliverable(sim.t_s, sim_dt_per_frame)
         return []
 
 
