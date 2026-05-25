@@ -1,6 +1,6 @@
 # Skydock — Pre-seed PR-FAQ
 
-**Executive Summary:** Today we will discuss the product idea and business opportunity for Skydock. We are seeking $1.7M pre-seed funding to build the MVP and reach cash-flow positive operations on a 6-vehicle Bay Area fleet by month 18 (technical architecture is largely finalized; see [skydock simulation](.)). Reasons why this is a good investment: (1) Aerial bird's-eye-view (BEV) training data is a structurally underserved category that addresses a documented and growing AV-customer pain point (FAQs #9, #11, #15); (2) the operational model — vehicle-deployed dock + autonomous drone deployment + delivery pipeline — has not been built before and gives us a defensible time-to-market advantage (FAQs #12, #14); (3) we have already de-risked the technical and unit-economic assumptions through a fully-instrumented simulation that lets us answer pricing, capacity, and reliability questions before spending hardware capital (FAQ #13); (4) in the mid-case scenario, Skydock delivers $1.4M LTV per vehicle, a 65% gross margin, ~$640K monthly revenue at a 6-vehicle steady state, and reaches CFP in 18 months without a Series A dependency (FAQ #21).
+**Executive Summary:** Today we will discuss the product idea and business opportunity for Skydock. We are seeking $1.7M pre-seed funding to build the MVP and reach cash-flow positive operations on a 6-vehicle Bay Area fleet by month 18 (technical architecture is largely finalized; see [skydock simulation](.)). Reasons why this is a good investment: (1) Aerial bird's-eye-view (BEV) training data is a structurally underserved category that addresses a documented and growing AV-customer pain point (FAQs #9, #11, #15); (2) the operational model — vehicle-deployed dock + autonomous drone deployment + delivery pipeline — has not been built before and gives us a defensible time-to-market advantage (FAQs #12, #14); (3) we have already de-risked the technical and unit-economic assumptions through a fully-instrumented simulation that lets us answer pricing, capacity, and reliability questions before spending hardware capital (FAQ #13); (4) in the mid-case scenario, Skydock delivers ~$1.2M LTV per vehicle, ~57% gross margin (at weighted-volume ASP) or ~65% (at pilot-tier ASP), ~$492K monthly revenue at a 6-vehicle steady state, and reaches CFP in months 16-18 without a Series A dependency (FAQ #21).
 
 ---
 
@@ -149,19 +149,27 @@ A direct cannibalisation question: would Skydock's customer also reduce their sy
 
 **Q17. What is the estimated cost per scenario (TCPU)?**
 
-Per-scenario unit economics, sim-verified ([economics.py](skydock/skydock/economics.py)):
+Per-scenario unit economics, sim-verified ([economics.py](skydock/skydock/economics.py)) with both variable and all-in figures:
 
 | Component | Per scenario (USD) |
 |---|---|
 | Operator labour ($30/h × ~0.5 h/scenario amortised over the operating day) | $15.00 |
-| Vehicle operating cost (fuel + maintenance + depreciation, $5/h × ~0.5h) | $2.50 |
+| Vehicle operating cost (fuel + maintenance, $5/h × ~0.5h) | $2.50 |
 | Cloud processing (S3 + Lambda + EC2 GPU instance) | $0.80 |
 | Drone wear (battery cycles + airframe amortisation, ~$1.00 per flight) | $1.00 |
-| **Total variable cost per scenario** | **~$19.30** |
+| **Variable cost per scenario** | **~$19.30** |
+| Capex amortization (vehicles + rigs + dock R&D over 3-year fleet life) | $7.50 |
+| Engineering + GTM labour amortized (founder + 2 eng + 1 GTM + 0.5 CS) | $54.00 |
+| Overhead allocation (insurance + office + legal + marketing + admin) | $9.80 |
+| **All-in cost per scenario at 6-vehicle steady state** | **~$87.00** |
 
-Fixed costs (~$220/operating day = $10/scenario at 20/day) layer on top, giving an all-in cost of ~$30/scenario at scale. This is the *Skydock* cost — distinct from the customer's "cost to replicate" (Q19), which is what we charge against.
+Two different numbers because they answer two different questions:
+- **Variable cost ($19.30)** is the marginal cost of one more scenario at steady state. Contribution margin against any ASP is computed against this.
+- **All-in cost ($87)** properly amortizes fixed labor + capex + overhead. Gross margin against ASP is computed against this. Honest number for investor / customer scrutiny.
 
-The hardware capex per vehicle (spec §5.2): drone fleet ~$2,500 (3 × DJI Mini 4 Pro), dock ~$11,000 (materials + custom fabrication), edge compute ~$1,030, sensors ~$630, mounting ~$1,500, spares ~$2,000, contingency ~$3,700 — total ~$22,400 per vehicle. Amortised over 500 missions × 22 operating days × 20 captures = ~10,000 captures per vehicle-year, this is ~$0.22/scenario in vehicle capex amortisation.
+Both numbers improve at higher utilization. Year-1 ramp utilization gives all-in cost closer to $120-$140/scenario; the $87 is the 6-vehicle mature-cadence target.
+
+The hardware capex per vehicle (spec §5.2): drone fleet ~$2,500 (3 × DJI Mini 4 Pro), dock ~$11,000 (materials + custom fabrication), edge compute ~$1,030, sensors ~$630, mounting ~$1,500, spares ~$2,000, contingency ~$3,700 — total ~$22,400 per vehicle in rig capex. **Plus the vehicle itself** (compact hybrid SUV ~$35,000), bringing all-in per-vehicle capex to ~$57,400. Amortized at $7.50/scenario across the fleet's 3-year life. See [COST_MODEL_AUDIT.md](COST_MODEL_AUDIT.md) for the full line-by-line audit.
 
 **Q18. What is the financial impact beyond the direct sale revenue?**
 
@@ -198,10 +206,10 @@ At a 1,452 scenarios/month run rate (6 vehicles × 22 captures/day × 22 days ×
 - Monthly revenue: $492,228
 - Monthly variable cost: $28,025
 - Monthly contribution profit: $464,203
-- Less: operator + vehicle labour ($32K), cloud and infra ($5K), founder + 2 hires ($30K), insurance + overhead ($10K) ≈ $77K monthly opex
-- **Monthly net contribution: ~$387K at steady-state 6-vehicle scale**
+- Less: operator + vehicle labour ($32K), cloud and infra ($5K), founder + 2 eng + 1 GTM + 0.5 CS at honest loaded comp (~$92K/month, was understated as $30K), insurance + overhead ($13K), capex amortization ($14K) ≈ **$156K monthly opex**
+- **Monthly net contribution: ~$308K at steady-state 6-vehicle scale** (mid-case $339 ASP — drops to ~$195K at the $200 weighted ASP across volume tiers)
 
-LTV per vehicle (over 24-month operational period at this pace): ~$1.4M.
+LTV per vehicle (over 24-month operational period at this pace): ~$1.2M (down from prior $1.4M estimate; see [COST_MODEL_AUDIT.md](COST_MODEL_AUDIT.md) for the honest re-derivation that surfaced ~$60K/year/vehicle of previously under-counted engineering + sales labor).
 
 **Q20. How many units (scenarios) do we project to sell?**
 
@@ -241,11 +249,11 @@ CFP achieved in month 14-15 (mid-Q2 2028) under the mid-case sim assumptions. Th
 
 **Program-level KPIs and IRR**:
 - Revenue at month 18 run-rate: $1.8M/quarter = $7.2M annual
-- Gross margin at month-6-priors: 65% (sim mid-case)
-- LTV per vehicle: $1.4M over 24 months
-- Total LTV across 6-vehicle CFP fleet: ~$8.4M
+- Gross margin at month-6-priors: ~65% at pilot-tier $339 ASP, ~57% at weighted $200 ASP across volume tiers (honest blended figure)
+- LTV per vehicle: ~$1.2M over 24 months (down from prior $1.4M after cost-model audit — see Q17 and [COST_MODEL_AUDIT.md](COST_MODEL_AUDIT.md))
+- Total LTV across 6-vehicle CFP fleet: ~$7.2M
 - Pre-seed capital deployed: $1.7M
-- 24-month IRR (pre-seed dollars to month-18 LTV): ~190% (note: this is sensitive to delivery rate and ASP, see Q22)
+- 24-month IRR (pre-seed dollars to month-18 LTV): ~160% (revised from prior 190% claim; this is sensitive to delivery rate, ASP, and operator utilization — see Q22)
 
 **Q22. How sensitive is the entitlement? What are the key input drivers?**
 
