@@ -16,21 +16,21 @@ revenue capture in the early periods.
 
 ## 1. Monthly burn projection through month 18
 
-Using honest loaded comp (**$200K founder** — lean pre-seed mode, see note below; $250K senior eng, $220K GTM, $160K CS, $80K operator-driver), plus contractor / capex / overhead per the audit.
+Using honest loaded comp (**$250K founder loaded = $200K cash + $50K benefits/payroll tax**, see note; $250K senior eng, $220K GTM, $160K CS, $80K operator-driver), plus contractor / capex / overhead per the audit.
 
-**Founder comp at $200K loaded** = $16.7K/month covers cash salary + benefits + employer payroll tax. Take-home in SF ~$110K. Founder comp revisits at CFP / seed close — market rate for CEO of an at-CFP small-ops business is $250-350K loaded.
+**Founder comp at $250K loaded** = $20.8K/month. $200K cash to founder (covers SF mortgage + expenses; take-home ~$140K after fed+CA tax) + ~$50K company-paid benefits + payroll tax. Drops to ~$220K loaded if founder uses ACA or spouse-plan health coverage instead of company plan.
 
 | Phase | Months | Recurring monthly | Capex this phase | Phase cost | Revenue @ $339 ASP | Revenue @ $200 weighted |
 |---|---|---|---|---|---|---|
-| Build P1 | 1-3 | $60K (founder + 2 contractors + minimal ops) | $5K (parts/setup) | $185K | $0 | $0 |
-| MVP P2 | 4-6 | $62K (+ 2 operators part-time) | $57K (1 vehicle + 1 rig) | $243K | $0 | $0 |
-| Pilot P3 | 7-9 | $82K (+ 1st eng hire, marketing starts) | $57K (1 vehicle + 1 rig) | $303K | $200K | $118K |
-| Scale P4 | 10-12 | $70K (3-vehicle fleet ops) | $57K (1 vehicle + 1 rig) | $267K | $500K | $295K |
-| Ramp P5 | 13-15 | $132K (+ GTM + 2 eng + 3 ops + 0.5 CS) | $114K (2 vehicles + 2 rigs) | $510K | $1.4M | $826K |
-| Mature P6 | 16-18 | $153K (full 6-vehicle fleet + team) | $57K (1 vehicle + 1 rig) | $516K | $1.8M | $1.06M |
-| **Total 18mo** | | | **$347K capex** | **$2.02M** | $5.9M | $2.30M |
+| Build P1 | 1-3 | $64K (founder + 2 contractors + minimal ops) | $5K (parts/setup) | $197K | $0 | $0 |
+| MVP P2 | 4-6 | $66K (+ 2 operators part-time) | $57K (1 vehicle + 1 rig) | $255K | $0 | $0 |
+| Pilot P3 | 7-9 | $86K (+ 1st eng hire, marketing starts) | $57K (1 vehicle + 1 rig) | $315K | $200K | $118K |
+| Scale P4 | 10-12 | $74K (3-vehicle fleet ops) | $57K (1 vehicle + 1 rig) | $279K | $500K | $295K |
+| Ramp P5 | 13-15 | $136K (+ GTM + 2 eng + 3 ops + 0.5 CS) | $114K (2 vehicles + 2 rigs) | $522K | $1.4M | $826K |
+| Mature P6 | 16-18 | $157K (full 6-vehicle fleet + team) | $57K (1 vehicle + 1 rig) | $528K | $1.8M | $1.06M |
+| **Total 18mo** | | | **$347K capex** | **$2.10M** | $5.9M | $2.30M |
 
-*~$140K reduction from prior plan that assumed $300K loaded founder comp.*
+*~$60K reduction from original $300K-loaded-founder plan; $75K addition vs the temporary $200K-loaded-only assumption that didn't include founder benefits.*
 
 ## 2. Cumulative cash analysis
 
@@ -41,27 +41,27 @@ cumulative cash position.
 
 | End of period | Period net | Cum cash |
 |---|---|---|
-| Month 3 | −$185K | **−$185K** |
-| Month 6 | −$243K | −$428K |
-| Month 9 | −$103K | −$531K ← **trough** |
-| Month 12 | +$233K | −$298K |
-| Month 15 | +$890K | +$592K |
-| Month 18 | +$1.28M | +$1.87M |
+| Month 3 | −$197K | **−$197K** |
+| Month 6 | −$255K | −$452K |
+| Month 9 | −$115K | −$567K ← **trough** |
+| Month 12 | +$221K | −$346K |
+| Month 15 | +$878K | +$532K |
+| Month 18 | +$1.27M | +$1.80M |
 
-Trough: **−$531K at end of month 9** (mid case). Raise needed: $531K + buffer.
+Trough: **−$567K at end of month 9** (mid case). Raise needed: $567K + buffer.
 
 ### Honest case ($200 weighted ASP):
 
 | End of period | Period net | Cum cash |
 |---|---|---|
-| Month 3 | −$185K | **−$185K** |
-| Month 6 | −$243K | −$428K |
-| Month 9 | −$185K | −$613K |
-| Month 12 | +$28K | −$585K ← **trough** |
-| Month 15 | +$316K | −$269K |
-| Month 18 | +$544K | +$275K |
+| Month 3 | −$197K | **−$197K** |
+| Month 6 | −$255K | −$452K |
+| Month 9 | −$197K | −$649K |
+| Month 12 | +$16K | −$633K ← **trough** |
+| Month 15 | +$304K | −$329K |
+| Month 18 | +$532K | +$203K |
 
-Trough: **−$613K at end of month 9** (honest case). Raise needed: $613K + buffer.
+Trough: **−$649K at end of month 9** (honest case). Raise needed: $649K + buffer.
 
 ### Pessimistic case ($150 weighted ASP + 6-month MVP slip):
 

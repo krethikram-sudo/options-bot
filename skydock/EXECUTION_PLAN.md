@@ -334,7 +334,7 @@ Tactical:
 
 | Month | Role | Loaded comp/yr |
 |---|---|---|
-| 0 | Founder (CEO) — set at lean pre-seed level | $200K |
+| 0 | Founder (CEO) — $200K cash salary + benefits + payroll tax | $250K loaded |
 | 1 | Hardware contractor (0.5-1 FTE, 6-9 mo) | $20K/mo × 6 = $120K |
 | 1 | ML/pipeline contractor (0.5 FTE, 6 mo) | $10K/mo × 6 = $60K |
 | 5 | Operator 1 (FT) | $80K |
@@ -351,12 +351,14 @@ Tactical:
 | 23 | Phoenix market manager | $180K |
 | 24 | Engineer 3 (corpus product) | $250K |
 
-**Founder comp note**: $200K loaded ($16.7K/month) covers cash salary
-+ benefits + employer payroll tax. Cash salary ~$165K, take-home in SF
-~$110K. Honest "lean pre-seed founder" mode. Revisit at CFP / seed close
-— market rate for a small-ops-business CEO with proven CFP is closer
-to $250-350K loaded, which we should pay ourselves out of the seed
-round to retain.
+**Founder comp note**: $250K loaded ($20.8K/month) breaks down to:
+$200K cash salary (founder requirement: covers SF mortgage + expenses;
+take-home after fed+CA tax ~$140K) + ~$15K employer payroll tax +
+~$25K family health insurance + ~$10K other benefits (401k match,
+disability/life, equipment stipend). If founder switches to ACA or
+spouse-plan health coverage, loaded drops to ~$220K. Revisit at CFP /
+seed close — market rate for an at-CFP small-ops-business CEO is
+closer to $300-400K loaded.
 
 ## KPIs by phase (one-pager dashboard)
 
