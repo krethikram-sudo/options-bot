@@ -16,52 +16,58 @@ revenue capture in the early periods.
 
 ## 1. Monthly burn projection through month 18
 
-Using honest loaded comp (**$250K founder loaded = $200K cash + $50K benefits/payroll tax**, see note; $250K senior eng, $220K GTM, $160K CS, $80K operator-driver), plus contractor / capex / overhead per the audit.
+Using honest loaded comp (**$200K founder cash-loaded** = $150K cash + $50K benefits/payroll tax under Option C hybrid; $250K senior eng, $220K GTM, $160K CS, $80K operator-driver), plus contractor / capex / overhead per the audit.
 
-**Founder comp at $250K loaded** = $20.8K/month. $200K cash to founder (covers SF mortgage + expenses; take-home ~$140K after fed+CA tax) + ~$50K company-paid benefits + payroll tax. Drops to ~$220K loaded if founder uses ACA or spouse-plan health coverage instead of company plan.
+**Founder comp under Option C hybrid (recommended)**: $150K cash to founder ($16.7K/mo on P&L) + $50K/year accrued as deferred compensation liability on balance sheet (payable upon seed close, M&A, or M24). Total comp $200K/year, cash impact $150K/year. Saves $50K/year cash vs Option A (all-cash $200K), accumulating $75K deferred liability through M18.
 
-| Phase | Months | Recurring monthly | Capex this phase | Phase cost | Revenue @ $339 ASP | Revenue @ $200 weighted |
+| Phase | Months | Recurring monthly (cash) | Capex this phase | Phase cost | Revenue @ $339 ASP | Revenue @ $200 weighted |
 |---|---|---|---|---|---|---|
-| Build P1 | 1-3 | $64K (founder + 2 contractors + minimal ops) | $5K (parts/setup) | $197K | $0 | $0 |
-| MVP P2 | 4-6 | $66K (+ 2 operators part-time) | $57K (1 vehicle + 1 rig) | $255K | $0 | $0 |
-| Pilot P3 | 7-9 | $86K (+ 1st eng hire, marketing starts) | $57K (1 vehicle + 1 rig) | $315K | $200K | $118K |
-| Scale P4 | 10-12 | $74K (3-vehicle fleet ops) | $57K (1 vehicle + 1 rig) | $279K | $500K | $295K |
-| Ramp P5 | 13-15 | $136K (+ GTM + 2 eng + 3 ops + 0.5 CS) | $114K (2 vehicles + 2 rigs) | $522K | $1.4M | $826K |
-| Mature P6 | 16-18 | $157K (full 6-vehicle fleet + team) | $57K (1 vehicle + 1 rig) | $528K | $1.8M | $1.06M |
-| **Total 18mo** | | | **$347K capex** | **$2.10M** | $5.9M | $2.30M |
+| Build P1 | 1-3 | $60K (founder + 2 contractors + minimal ops) | $5K (parts/setup) | $185K | $0 | $0 |
+| MVP P2 | 4-6 | $62K (+ 2 operators part-time) | $57K (1 vehicle + 1 rig) | $243K | $0 | $0 |
+| Pilot P3 | 7-9 | $82K (+ 1st eng hire, marketing starts) | $57K (1 vehicle + 1 rig) | $303K | $200K | $118K |
+| Scale P4 | 10-12 | $70K (3-vehicle fleet ops) | $57K (1 vehicle + 1 rig) | $267K | $500K | $295K |
+| Ramp P5 | 13-15 | $132K (+ GTM + 2 eng + 3 ops + 0.5 CS) | $114K (2 vehicles + 2 rigs) | $510K | $1.4M | $826K |
+| Mature P6 | 16-18 | $153K (full 6-vehicle fleet + team) | $57K (1 vehicle + 1 rig) | $516K | $1.8M | $1.06M |
+| **Total 18mo** | | | **$347K capex** | **$2.02M** | $5.9M | $2.30M |
 
-*~$60K reduction from original $300K-loaded-founder plan; $75K addition vs the temporary $200K-loaded-only assumption that didn't include founder benefits.*
+Off-balance-sheet: **$75K founder deferred comp liability** at M18 (paid from seed proceeds at M22-24, or M24 if no seed).
+
+*~$140K cash reduction from original $300K-loaded plan; $75K cash reduction vs Option A (all-cash $200K) by deferring half of founder comp.*
 
 ## 2. Cumulative cash analysis
 
 The raise covers the negative-cash window. Trough = deepest negative
 cumulative cash position.
 
-### Mid-case ($339 ASP throughout):
+### Mid-case ($339 ASP throughout, Option C founder comp):
 
 | End of period | Period net | Cum cash |
 |---|---|---|
-| Month 3 | −$197K | **−$197K** |
-| Month 6 | −$255K | −$452K |
-| Month 9 | −$115K | −$567K ← **trough** |
-| Month 12 | +$221K | −$346K |
-| Month 15 | +$878K | +$532K |
-| Month 18 | +$1.27M | +$1.80M |
+| Month 3 | −$185K | **−$185K** |
+| Month 6 | −$243K | −$428K |
+| Month 9 | −$103K | −$531K ← **trough** |
+| Month 12 | +$233K | −$298K |
+| Month 15 | +$890K | +$592K |
+| Month 18 | +$1.28M | +$1.87M |
 
-Trough: **−$567K at end of month 9** (mid case). Raise needed: $567K + buffer.
+Trough: **−$531K at end of month 9** (mid case). Raise needed: $531K + buffer.
 
-### Honest case ($200 weighted ASP):
+*Plus $75K deferred comp liability paid at seed close.*
+
+### Honest case ($200 weighted ASP, Option C founder comp):
 
 | End of period | Period net | Cum cash |
 |---|---|---|
-| Month 3 | −$197K | **−$197K** |
-| Month 6 | −$255K | −$452K |
-| Month 9 | −$197K | −$649K |
-| Month 12 | +$16K | −$633K ← **trough** |
-| Month 15 | +$304K | −$329K |
-| Month 18 | +$532K | +$203K |
+| Month 3 | −$185K | **−$185K** |
+| Month 6 | −$243K | −$428K |
+| Month 9 | −$185K | −$613K |
+| Month 12 | +$28K | −$585K ← **trough** |
+| Month 15 | +$316K | −$269K |
+| Month 18 | +$544K | +$275K |
 
-Trough: **−$649K at end of month 9** (honest case). Raise needed: $649K + buffer.
+Trough: **−$613K at end of month 9** (honest case). Raise needed: $613K + buffer.
+
+*Plus $75K deferred comp liability accrued through M18, paid at seed close or M24.*
 
 ### Pessimistic case ($150 weighted ASP + 6-month MVP slip):
 

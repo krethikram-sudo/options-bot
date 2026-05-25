@@ -334,7 +334,7 @@ Tactical:
 
 | Month | Role | Loaded comp/yr |
 |---|---|---|
-| 0 | Founder (CEO) — $200K cash salary + benefits + payroll tax | $250K loaded |
+| 0 | Founder (CEO) — $150K cash + $50K/yr deferred (hybrid Option C) | $200K loaded (cash) + $50K/yr accrued liability |
 | 1 | Hardware contractor (0.5-1 FTE, 6-9 mo) | $20K/mo × 6 = $120K |
 | 1 | ML/pipeline contractor (0.5 FTE, 6 mo) | $10K/mo × 6 = $60K |
 | 5 | Operator 1 (FT) | $80K |
@@ -351,14 +351,29 @@ Tactical:
 | 23 | Phoenix market manager | $180K |
 | 24 | Engineer 3 (corpus product) | $250K |
 
-**Founder comp note**: $250K loaded ($20.8K/month) breaks down to:
-$200K cash salary (founder requirement: covers SF mortgage + expenses;
-take-home after fed+CA tax ~$140K) + ~$15K employer payroll tax +
-~$25K family health insurance + ~$10K other benefits (401k match,
-disability/life, equipment stipend). If founder switches to ACA or
-spouse-plan health coverage, loaded drops to ~$220K. Revisit at CFP /
-seed close — market rate for an at-CFP small-ops-business CEO is
-closer to $300-400K loaded.
+**Founder comp note (Option C — hybrid)**: $200K loaded ($16.7K/month
+cash to company P&L) breaks down to: **$150K cash salary** (take-home
+after fed+CA tax ~$105K, covers SF mortgage + tightened expenses) +
+~$11.5K employer payroll tax + ~$25K family health insurance + ~$10K
+other benefits (401k match, disability/life, equipment stipend). Plus
+**$50K/year deferred / accrued compensation** booked as a balance-sheet
+liability, payable upon defined trigger events (whichever comes first:
+seed round close, M&A event, or month 24).
+
+Net effect: $50K/year cash savings vs Option A ($200K cash all the way)
+= ~$75K cumulative cash savings through M18. Total comp aligned with
+$200K-cash market expectation, demonstrating capital discipline to
+investors. Deferred liability of $75K at seed close, paid from seed
+proceeds.
+
+**Legal action item Phase 0/1**: founder employment agreement must
+include a properly-structured Deferred Compensation Provision with IRS
+Section 409A-compliant trigger events. Cost: ~$2K legal one-time.
+
+Revisit at CFP — if performance supports, switch to $200K cash + $50K
+back-to-market raise (clears the accrued amount). Market rate for an
+at-CFP small-ops-business CEO is $300-400K loaded; structure that
+adjustment from seed proceeds.
 
 ## KPIs by phase (one-pager dashboard)
 
