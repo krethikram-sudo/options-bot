@@ -174,6 +174,28 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
         letter-spacing: 0.08em;
       }
 
+      .product-image {
+        margin: 28px 0;
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px;
+      }
+      .product-image img {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 4px;
+      }
+      .image-caption {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--text-dim);
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+      }
+
       .sim-frame {
         background: var(--bg-elev);
         border: 1px solid var(--border);
@@ -734,6 +756,12 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
         <div class="container">
           <h2>How it works</h2>
           <h3>Vehicle arrives at waypoint → drone captures → package delivered in 4 hours.</h3>
+          <div class="product-image">
+            <img src={`${import.meta.env.BASE_URL}/product_vehicle_dock.png`} alt="Skydock vehicle-mounted dock on a silver SUV with a quadcopter drone deploying from the roof at golden hour" />
+            <div class="image-caption">
+              Roof-mounted Skydock dock with sub-250g drone deploying mid-mission.
+            </div>
+          </div>
           <p>
             When a Skydock-equipped vehicle reaches a pre-planned waypoint, or
             the operator triggers manually, the system runs a 2-second pre-flight
@@ -782,6 +810,31 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
               urban_dense corridor · waypoint trigger · agents tracked in FOV · event log on right
             </div>
           </div>
+        </div>
+      </section>
+
+      <section id="samples">
+        <div class="container">
+          <h2>Sample captures</h2>
+          <h3>What an 80m aerial capture actually looks like.</h3>
+          <p>
+            Six representative captures across the scene-class taxonomy:
+            unprotected left turn, signalized intersection, pedestrian
+            crosswalk with VRU interaction, school zone at dismissal,
+            arterial-scale signalized intersection, and the in-field
+            vehicle-deployed dock itself.
+          </p>
+          <div class="sim-frame">
+            <img src={`${import.meta.env.BASE_URL}/samples_grid.png`} alt="Six sample aerial captures from Skydock: unprotected left turn intersection, signalized 4-way, pedestrian crosswalk with cyclist, school zone with crossing guard and school bus, large signalized intersection with multiple vehicles, and the Skydock vehicle-mounted dock with drone deploying" />
+            <div class="sim-caption">
+              representative samples across scene-class taxonomy
+            </div>
+          </div>
+          <p class="dim">
+            Every sample is delivered as a four-file package: metadata,
+            per-frame agent tracks, OpenSCENARIO 2.0 export, and optional
+            raw 4K video. See "What you get" above for the deliverable schema.
+          </p>
         </div>
       </section>
 
