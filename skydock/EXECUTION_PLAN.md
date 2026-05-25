@@ -17,6 +17,34 @@ seed round close ~24 months out.
 
 ---
 
+## Product catalog (what we're building toward)
+
+Per the customer-facing site's Order options section, the productized SKUs
+we're operationalizing through the 18-month plan:
+
+| Tier | Pack | Scenarios | Price | Per scenario |
+|---|---|---|---|---|
+| Pilot | Discovery Pack (single scene class) | 50 | $17,000 | $340 |
+| Pilot | Validation Library Sampler (mixed, recommended first pilot) | 100 | $33,900 | $339 |
+| Pilot | VRU Safety / Intersection Behavior Pack | 100 | $33,900 | $339 |
+| Volume 1 | Library Foundation | 250-500 | from $50,000 | $200 |
+| Volume 2 | Production Corpus | 500-1,000 | from $100,000 | $150 |
+| Volume 3 | Enterprise | 1,000+ | contact us | $100 |
+
+Custom captures, add-ons (raw 4K video, exclusive licensing, expedited
+delivery), and integration services priced separately. See website
+[Order options](../site/src/pages/index.astro) section.
+
+This product structure shapes the rest of the plan:
+- **Phase 2-3 must support all 6 pack SKUs** in the delivery pipeline by
+  first paid pilot
+- **Phase 3 first pilots = Discovery Packs or Validation Samplers** (not
+  custom-negotiated deals)
+- **Phase 4 revenue grows via pack-mix evolution** (customers move from
+  pilot → volume tiers, plus net-new customers entering at pilot)
+
+---
+
 ## Phase 0: Now → month 0 (pre-raise)
 
 **Goal**: validate enough of the thesis to close pre-seed cleanly.
@@ -126,9 +154,10 @@ Tactical:
 
 ### Month 5
 - First scenarios delivered to 2-3 prospect customers for offline review (no charge)
-- Begin negotiating first paid pilot terms
+- Begin negotiating first paid pilot — focus on **Validation Library Sampler ($33.9K, 100 mixed scenarios)** as the recommended first SKU
 - Reliability: target 80%+ landing success, 70%+ end-to-end delivery
 - 2 operators full-time at $7K/month each
+- **Productize the catalog**: order forms, pricing sheet, signed pilot agreement templates for all 6 pack SKUs (Discovery / Validation / Library Foundation / Production / Enterprise / Custom). Stripe + invoicing infrastructure for one-time pack purchases.
 
 ### Month 6
 - First paid pilot signed (target month 7 but push for early-month-6 signature)
@@ -152,76 +181,124 @@ Tactical:
 
 ## Phase 3: Months 7-12 (Pilot phase)
 
-**Goal**: 2-3 paid customers, 3-vehicle fleet operational, validate ASP.
+**Goal**: 2-3 paid customers, 3-vehicle fleet operational, validate ASP via pack-mix.
+
+### Pack-mix progression (the customer journey through pilot phase)
+
+| Month | New deals signed | New deal value | Cumulative committed |
+|---|---|---|---|
+| 7 | 1× Validation Library Sampler ($33.9K) | $33.9K | $33.9K |
+| 8 | — (deliver + evaluate) | — | $33.9K |
+| 9 | 1st customer expands to Library Foundation ($50K) + 2nd customer pilot Sampler ($33.9K) | $83.9K | $117.8K |
+| 10 | 1st customer Library delivering; 2nd customer evaluating | — | $117.8K |
+| 11 | 2nd customer expands to Library Foundation ($50K); 3rd customer Discovery Pack ($17K) | $67K | $184.8K |
+| 12 | 4th customer Validation Sampler ($33.9K); 5th customer Validation Sampler ($33.9K) | $67.8K | $252.6K |
+
+This is the **honest** revenue picture for Phase 3:
+- 5 customers signed by M12
+- Total committed $252.6K (mix of pilots + volume tier expansions)
+- Recognized revenue M7-12: ~$150-200K depending on delivery cadence and recognition timing
+- ~50% of pilot customers expand to volume tier within 60-90 days
+
+This is materially lower than the prior PR-FAQ projection ($700K through Q1 2027) because the pack-mix reflects realistic pilot-to-volume conversion timing. Updated revenue model now drives RAISE_SIZING.md trough analysis.
 
 ### Month 7-8
-- First paid pilot fully ramped (100+ scenarios)
+- First paid pilot fully ramped (100+ scenarios from Validation Sampler)
 - First eng hire onboarded (perception/data engineering) at $21K/month — replaces ML contractor
 - Order 2nd vehicle + rig ($57K total)
 - Hardware contractor winds to 0.5 FTE then 0 by month 9
+- **Productize**: customer success workflow (post-delivery QA, NPS survey, expansion conversation)
 
 ### Month 9-10
 - 2-vehicle fleet operational
 - Second pilot signed (target: a validation platform like Foretellix or trajectory-prediction team)
+- 1st customer expansion conversation: Validation Sampler → Library Foundation
 - Cloud pipeline scales: 200+ scenarios/month delivered combined
 - Insurance + regulatory: keep clean Part 107 record, no incidents
 
 ### Month 11-12
 - 3-vehicle fleet operational
-- 2-3 paid customers, $50-150K MRR
+- 4-5 paid customer engagements active (mix of pilots and volume expansions)
 - Start GTM/sales hire recruiting (target start month 12-13)
 - First case study from initial pilot ready (for seed pitch later)
-- Honest ASP signal validated against $200-339 range
+- Honest ASP signal validated: pilot tier $339/scenario for Discovery + Validation packs; Volume 1 $200/scenario for expansions
 
 ### Phase 3 KPIs
-- 2-3 paid customers by month 12
-- 500-1,500 scenarios delivered cumulatively
-- $50-150K MRR
+- 4-5 paid customers (multiple SKUs sold) by month 12
+- ~150-200 scenarios delivered cumulatively (lower than prior plan; reflects realistic pilot-then-expand cadence)
+- Cumulative committed revenue: $250-300K (mix of pilots + Volume 1 expansions)
 - Reliability: 90%+ mission success, 80%+ delivery rate
+- **Pack-mix**: ≥50% of pilot customers expand to Volume 1 (Library Foundation) within 90 days
+- **Discovery → Validation upsell rate**: ≥30% (Discovery customers move to Validation Sampler before Volume)
 - Cash position end of M12: trough ~−$680K cumulative burn against $2M raise (so ~$1.32M in bank)
 
 ### Risk gates at end of Phase 3
-- If MRR < $30K by M12: hold capex, extend runway, validate why pricing/conversion lagged
+- If MRR-equivalent (committed revenue / 12) < $30K by M12: hold capex, extend runway, validate why pilot-to-volume conversion lagged
+- If pilot customers don't expand to Library Foundation (< 30% conversion): rethink pack pricing, possibly drop pilot tier to $250/scenario to make Volume 1 a clearer step up
 - If reliability < 80%: pause new customer onboarding, sprint reliability fix
-- If ASP < $150 average: trigger pessimistic-case plan, consider $300-500K bridge round at M14-15
+- If pilot ASP < $300 (customers pushing back on $339 pack pricing): trigger pessimistic-case plan, consider $300-500K bridge round at M14-15
 
 ---
 
 ## Phase 4: Months 13-18 (Scale to CFP)
 
-**Goal**: 6-vehicle fleet, 4-6 paid customers, cash-flow positive by month 16-18.
+**Goal**: 6-vehicle fleet, 6-10 customers (pack-mix evolving toward Volume 1+2), cash-flow positive by month 16-18.
+
+### Pack-mix progression Phase 4
+
+| Month | Customer pack-mix snapshot | Recognized MRR |
+|---|---|---|
+| 13 | 2 Library Foundation customers ($50K/quarter active) + 3 new Validation pilots in pipeline | $33K |
+| 14 | 3 Library Foundation + 1 first Production Corpus ($100K) signed + 4-5 pilots in pipeline | $90K |
+| 15 | 4 Library Foundation + 1 Production Corpus + 1 new Library Foundation = 5 volume-tier customers | $150K |
+| 16 | 5 volume customers + 1 Enterprise quote in negotiation + 2 new pilot conversions | $250K |
+| 17 | 6 volume customers + 1 Enterprise signed + first add-on attach (exclusive licensing premium) | $350K |
+| 18 | 7-8 active customers, mix of Production Corpus + Library Foundation + 2-3 Enterprise prospects | $400K+ MRR run rate |
+
+**Pack-mix dynamics**:
+- Most revenue from 4-6 Library Foundation customers ($50K each per quarter)
+- 1-2 Production Corpus customers ($100K each per quarter)
+- 1 Enterprise in late-stage negotiation by M18 ($150K+)
+- Continuous new pilot signings (Discovery + Validation packs) feeding the funnel
+- Add-on attach: exclusive licensing premium begins (2-5x) on first scenarios for safety-case-sensitive customers
 
 ### Month 13-14
-- GTM/sales hire starts ($18K/month) — quota: close 2 more pilots by M18
+- GTM/sales hire starts ($18K/month) — quota: close 2 more Library Foundation pilots by M18, plus first Production Corpus
 - 4th vehicle operational
 - 2nd eng hire (perception ML or data engineering) at $21K/month
 - 3 operators total
+- **First add-on revenue**: customer requests exclusive licensing premium ($25K above standard)
 
 ### Month 15-16
 - 5-vehicle fleet operational
-- 4 paid customers, $200-300K MRR
+- 5-6 paid customer engagements active, pack-mix moving toward volume tier
 - 0.5 FTE customer success hire ($7K/month)
 - Begin formal scenario library product positioning (sets up corpus subscription product later)
 - CFP achievement: revenue exceeding monthly burn for first time
+- First Production Corpus deal signed ($100K committed)
 
 ### Month 17-18
 - 6-vehicle fleet operational (final ramp)
-- 4-6 paid customers, $400K+ MRR run-rate
+- 7-8 paid customers, $400K+ MRR run-rate
 - 4 operators total
 - CFP confirmed and sustained
 - First customer case studies finalized + published (with permission)
+- First Enterprise quote (1000+ scenarios, $150K+) in late-stage negotiation
 - Cash position M18: ~$1.89M (honest case)
 
 ### Phase 4 KPIs
 - 6-vehicle operational by M17
-- 4-6 paid customers by M18
-- $400K+ MRR
+- 7-8 paid customers by M18 across pack-mix
+- $400K+ MRR run rate
 - Reliability: 95%+ mission success, 50%+ delivery rate
 - CFP: cash position stable or growing
 - LTV per vehicle tracking toward $1.2M
+- **Pack mix at M18**: 4-5 Library Foundation, 1-2 Production Corpus, 1 Enterprise in late stage, continuous pilot inflow
+- **Add-on attach rate**: ≥20% of customers using at least one paid add-on
 
 ### Risk gates at end of Phase 4
 - If CFP not achieved by M18: extend by 3-6 months on remaining buffer, target M21-22
+- If pack-mix stuck at pilot tier (no expansions): pricing problem, possibly raise pilot price OR widen volume tier discount
 - If customer churn appears (early): root-cause analysis, may need product fix before scaling
 
 ---
@@ -379,12 +456,14 @@ adjustment from seed proceeds.
 
 | KPI | M0 | M6 | M12 | M18 | M24 |
 |---|---|---|---|---|---|
-| Customers signed | 0 | 0-1 | 2-3 | 4-6 | 6-8 |
-| MRR | $0 | $0 | $50-150K | $400K+ | $500K+ |
+| Paid customer engagements | 0 | 0-1 | 4-5 | 7-8 | 10-12 |
+| Active pack mix (vol/pilot) | n/a | n/a | mostly pilot | 4-5 Library / 1-2 Production / 1 Enterprise | 6-8 Library / 3-4 Production / 2 Enterprise |
+| MRR run rate | $0 | $0 | $20-30K | $400K+ | $600K+ |
+| Add-on attach rate | n/a | n/a | <10% | ≥20% | ≥30% |
 | Vehicles operational | 0 | 1 | 3 | 6 | 8 |
 | FTE (incl. founder) | 1 | 3 (+2 contractors) | 5 | 9 | 14 |
 | Cash position | $2.0M | $1.53M | $1.32M | $1.89M | $4-7M (with seed) |
-| Cumulative scenarios delivered | 0 | 50 | 1,000 | 8,000 | 18,000 |
+| Cumulative scenarios delivered | 0 | 50 | 800-1,200 | 6,000-8,000 | 18,000+ |
 
 ## What kills the plan (top 5 watch items)
 
