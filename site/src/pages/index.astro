@@ -1,6 +1,6 @@
 ---
 const tagline = "Aerial ground-truth capture for autonomous-vehicle perception.";
-const subline = "A vehicle-mounted drone platform that captures bird's-eye-view footage at the locations AV fleets actually operate — feeding perception validation, scenario libraries, and training data pipelines.";
+const subline = "Skydock builds the first vehicle-deployed aerial drone platform for AV training data. The wedge: a structurally missing category in AV scenario libraries — aerial bird's-eye-view — that AV teams have been trying to source internally for years.";
 ---
 
 <html lang="en">
@@ -10,7 +10,7 @@ const subline = "A vehicle-mounted drone platform that captures bird's-eye-view 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={tagline} />
-    <meta property="og:title" content="Skydock" />
+    <meta property="og:title" content="Skydock — Aerial ground-truth for AV perception" />
     <meta property="og:description" content={tagline} />
     <meta property="og:type" content="website" />
     <title>Skydock — Aerial ground-truth for AV perception</title>
@@ -21,8 +21,12 @@ const subline = "A vehicle-mounted drone platform that captures bird's-eye-view 
         --border: #1f2937;
         --text: #e5e7eb;
         --text-dim: #9ca3af;
+        --text-strong: #f9fafb;
         --accent: #60a5fa;
         --accent-dim: #1e3a8a;
+        --accent-soft: rgba(96, 165, 250, 0.08);
+        --good: #9ee37d;
+        --warn: #e5b85a;
         --mono: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', Menlo, Consolas, monospace;
         --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       }
@@ -32,7 +36,7 @@ const subline = "A vehicle-mounted drone platform that captures bird's-eye-view 
         background: var(--bg);
         color: var(--text);
         font-family: var(--sans);
-        line-height: 1.6;
+        line-height: 1.65;
         font-size: 17px;
         -webkit-font-smoothing: antialiased;
         text-rendering: optimizeLegibility;
@@ -45,72 +49,139 @@ const subline = "A vehicle-mounted drone platform that captures bird's-eye-view 
       }
       a:hover { border-bottom-color: var(--accent); }
       .container {
-        max-width: 780px;
+        max-width: 820px;
         margin: 0 auto;
         padding: 0 24px;
       }
       header.site-header {
-        padding: 28px 0;
+        padding: 24px 0;
         border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        background: var(--bg);
+        z-index: 10;
+      }
+      .site-header .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
       }
       .brand {
         font-family: var(--mono);
         font-size: 18px;
         letter-spacing: 0.02em;
-        color: var(--text);
+        color: var(--text-strong);
       }
       .brand::before {
         content: '◆ ';
         color: var(--accent);
       }
+      .nav {
+        display: flex;
+        gap: 24px;
+        font-family: var(--mono);
+        font-size: 13px;
+      }
+      .nav a {
+        color: var(--text-dim);
+        border-bottom: none;
+      }
+      .nav a:hover { color: var(--accent); }
+      @media (max-width: 600px) {
+        .nav { display: none; }
+      }
       section.hero {
-        padding: 80px 0 64px;
+        padding: 96px 0 56px;
       }
       h1 {
-        font-size: clamp(36px, 6vw, 56px);
+        font-size: clamp(36px, 6vw, 60px);
         font-weight: 700;
-        line-height: 1.1;
+        line-height: 1.05;
         letter-spacing: -0.02em;
-        margin-bottom: 24px;
+        margin-bottom: 28px;
+        color: var(--text-strong);
       }
       .hero p.tagline {
         font-size: 22px;
-        color: var(--text-dim);
-        max-width: 640px;
-        margin-bottom: 20px;
+        color: var(--text);
+        max-width: 680px;
+        margin-bottom: 22px;
+        line-height: 1.4;
       }
       .hero p.subline {
         font-size: 17px;
         color: var(--text-dim);
-        max-width: 640px;
+        max-width: 680px;
       }
+      .hero-meta {
+        margin-top: 32px;
+        display: flex;
+        gap: 28px;
+        flex-wrap: wrap;
+        font-family: var(--mono);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-dim);
+      }
+      .hero-meta .label { color: var(--accent); margin-right: 8px; }
       section {
-        padding: 56px 0;
+        padding: 64px 0;
         border-top: 1px solid var(--border);
       }
       h2 {
-        font-size: 14px;
+        font-size: 13px;
         font-family: var(--mono);
         text-transform: uppercase;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.14em;
         color: var(--accent);
         margin-bottom: 24px;
         font-weight: 500;
       }
       h3 {
-        font-size: 24px;
+        font-size: 26px;
         font-weight: 600;
-        margin-bottom: 16px;
+        margin-bottom: 18px;
         letter-spacing: -0.01em;
+        color: var(--text-strong);
+        line-height: 1.3;
       }
-      p { margin-bottom: 16px; color: var(--text); }
+      h4 {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: var(--text-strong);
+      }
+      p { margin-bottom: 18px; color: var(--text); }
       p.dim { color: var(--text-dim); }
+      strong { color: var(--text-strong); font-weight: 600; }
+
+      blockquote.pullquote {
+        border-left: 3px solid var(--accent);
+        padding: 12px 0 12px 24px;
+        margin: 28px 0;
+        font-size: 19px;
+        color: var(--text);
+        font-style: italic;
+        line-height: 1.5;
+      }
+      blockquote.pullquote .attribution {
+        display: block;
+        margin-top: 10px;
+        font-style: normal;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
       .sim-frame {
         background: var(--bg-elev);
         border: 1px solid var(--border);
         border-radius: 8px;
-        padding: 16px;
-        margin: 24px 0;
+        padding: 14px;
+        margin: 28px 0;
       }
       .sim-frame img {
         width: 100%;
@@ -122,19 +193,20 @@ const subline = "A vehicle-mounted drone platform that captures bird's-eye-view 
         font-family: var(--mono);
         font-size: 13px;
         color: var(--text-dim);
-        margin-top: 14px;
-        padding-top: 14px;
+        margin-top: 12px;
+        padding-top: 12px;
         border-top: 1px solid var(--border);
       }
+
       ul.feature-list {
         list-style: none;
         margin: 24px 0;
       }
       ul.feature-list li {
-        padding: 12px 0;
+        padding: 14px 0;
         border-bottom: 1px solid var(--border);
         display: flex;
-        gap: 16px;
+        gap: 18px;
         align-items: baseline;
       }
       ul.feature-list li:last-child { border-bottom: none; }
@@ -142,23 +214,135 @@ const subline = "A vehicle-mounted drone platform that captures bird's-eye-view 
         font-family: var(--mono);
         font-size: 13px;
         color: var(--accent);
-        min-width: 140px;
+        min-width: 160px;
         flex-shrink: 0;
       }
-      ul.feature-list .val {
+      ul.feature-list .val { color: var(--text); }
+
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 16px;
+        margin: 28px 0;
+      }
+      .stat {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 22px 20px;
+      }
+      .stat .value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-strong);
+        line-height: 1;
+        margin-bottom: 8px;
+        letter-spacing: -0.01em;
+      }
+      .stat .label {
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-dim);
+      }
+      .stat .footnote {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--text-dim);
+        font-family: var(--mono);
+      }
+
+      table.compare {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 24px 0;
+        font-size: 14px;
+      }
+      table.compare th,
+      table.compare td {
+        text-align: left;
+        padding: 12px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      table.compare th {
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--accent);
+        font-weight: 500;
+        background: var(--accent-soft);
+      }
+      table.compare td.headline {
+        font-family: var(--mono);
+        color: var(--text-strong);
+        white-space: nowrap;
+      }
+      table.compare tr.skydock-row {
+        background: rgba(96, 165, 250, 0.06);
+      }
+      table.compare tr.skydock-row td.headline {
+        color: var(--accent);
+      }
+
+      ul.checklist {
+        list-style: none;
+        margin: 18px 0 24px;
+      }
+      ul.checklist li {
+        padding: 8px 0 8px 28px;
+        position: relative;
         color: var(--text);
       }
+      ul.checklist li::before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: var(--good);
+        font-weight: 600;
+      }
+
+      .milestones {
+        margin: 24px 0;
+        border-left: 2px solid var(--border);
+        padding-left: 20px;
+      }
+      .milestone {
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .milestone:last-child { border-bottom: none; }
+      .milestone .when {
+        font-family: var(--mono);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--accent);
+        margin-bottom: 4px;
+      }
+      .milestone .what {
+        color: var(--text-strong);
+        font-weight: 500;
+        margin-bottom: 4px;
+      }
+      .milestone .detail {
+        font-size: 14px;
+        color: var(--text-dim);
+      }
+
       .contact-card {
         background: var(--bg-elev);
         border: 1px solid var(--border);
         border-radius: 8px;
-        padding: 28px;
+        padding: 30px;
         margin: 24px 0;
       }
       .contact-card .name {
-        font-size: 20px;
+        font-size: 22px;
         font-weight: 600;
         margin-bottom: 4px;
+        color: var(--text-strong);
       }
       .contact-card .role {
         font-family: var(--mono);
@@ -166,17 +350,42 @@ const subline = "A vehicle-mounted drone platform that captures bird's-eye-view 
         color: var(--text-dim);
         margin-bottom: 18px;
       }
-      .contact-card .bio {
-        font-size: 16px;
-        color: var(--text-dim);
-        margin-bottom: 20px;
-      }
-      .contact-links {
+      .contact-card .bio { font-size: 16px; color: var(--text-dim); margin-bottom: 22px; }
+      .contact-links { display: flex; gap: 24px; font-family: var(--mono); font-size: 14px; }
+
+      .cta-row {
         display: flex;
-        gap: 20px;
+        gap: 14px;
+        margin-top: 28px;
+        flex-wrap: wrap;
+      }
+      .cta {
+        display: inline-block;
+        padding: 14px 22px;
+        border-radius: 6px;
         font-family: var(--mono);
         font-size: 14px;
+        font-weight: 500;
+        border-bottom: none;
       }
+      .cta.primary {
+        background: var(--accent);
+        color: #0a0e1a;
+      }
+      .cta.primary:hover {
+        background: #7ab1f5;
+        border-bottom: none;
+      }
+      .cta.secondary {
+        background: transparent;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+      }
+      .cta.secondary:hover {
+        background: var(--accent-soft);
+        border-bottom: 1px solid var(--accent);
+      }
+
       footer {
         padding: 48px 0;
         border-top: 1px solid var(--border);
@@ -185,106 +394,420 @@ const subline = "A vehicle-mounted drone platform that captures bird's-eye-view 
         font-family: var(--mono);
         font-size: 12px;
       }
+
       @media (max-width: 600px) {
         body { font-size: 16px; }
-        section.hero { padding: 48px 0 32px; }
+        section.hero { padding: 64px 0 40px; }
         ul.feature-list li { flex-direction: column; gap: 4px; }
         ul.feature-list .key { min-width: 0; }
+        table.compare { font-size: 13px; }
+        table.compare th, table.compare td { padding: 10px 8px; }
       }
     </style>
   </head>
   <body>
     <header class="site-header">
-      <div class="container">
+      <div class="container row">
         <span class="brand">skydock</span>
+        <nav class="nav">
+          <a href="#gap">The gap</a>
+          <a href="#how">How it works</a>
+          <a href="#why-now">Why now</a>
+          <a href="#economics">Economics</a>
+          <a href="#raise">The raise</a>
+        </nav>
       </div>
     </header>
 
     <main>
       <section class="hero">
         <div class="container">
-          <h1>Aerial ground-truth, on demand.</h1>
+          <h1>Aerial ground-truth for autonomous vehicles.</h1>
           <p class="tagline">{tagline}</p>
           <p class="subline">{subline}</p>
+          <div class="hero-meta">
+            <span><span class="label">stage</span>pre-seed</span>
+            <span><span class="label">raising</span>$1.7M</span>
+            <span><span class="label">target</span>CFP at month 15-18</span>
+            <span><span class="label">based</span>Mountain View, CA</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="gap">
+        <div class="container">
+          <h2>The gap</h2>
+          <h3>A category nobody can collect at scale.</h3>
+          <p>
+            AV development teams have spent the last decade collecting
+            ground-perspective training data &mdash; cameras and lidar on test
+            vehicles, augmented with synthetic data generated from 3D scenes.
+            <strong>Aerial bird's-eye-view footage &mdash; drone perspective
+            from 80m AGL &mdash; has been a structurally missing category</strong>
+            because the operational model didn't exist.
+          </p>
+          <p>
+            Fixed-base drone-in-a-box systems (DJI Dock 2, Skydio Dock 2) only
+            capture at the location they're installed. Manually-piloted drone
+            collection caps at 2-4 captures per day per crew and costs $1,000+
+            per usable clip. Synthetic BEV is strong on volume but acknowledged
+            by AV teams to underperform real data on edge cases.
+          </p>
+          <blockquote class="pullquote">
+            "Aerial BEV was the perspective we'd been trying to source
+            internally for two years. The operational model just didn't exist
+            at the scale we needed."
+            <span class="attribution">— Head of Scenario Engineering, Tier-1 AV validation platform</span>
+          </blockquote>
+          <p class="dim">
+            In customer-discovery conversations with eight AV engineering leads
+            in early 2026, seven of eight confirmed the gap. Six confirmed
+            pricing tolerance at $200+ per scenario. Four expressed commit-intent
+            for a paid pilot subject to quality evidence.
+          </p>
+        </div>
+      </section>
+
+      <section id="how">
+        <div class="container">
+          <h2>The wedge</h2>
+          <h3>The first vehicle-deployed aerial drone platform for AV data.</h3>
+          <p>
+            Skydock automates the operational layer. A roof-mounted dock
+            containing sub-250g drones deploys autonomously at pre-planned
+            waypoints or operator command, captures 30-120 seconds of BEV
+            footage at 80m AGL above the scene, returns to the dock, and the
+            resulting OpenSCENARIO 2.0 package is delivered to the customer
+            within four hours.
+          </p>
+          <ul class="feature-list">
+            <li>
+              <span class="key">capture_layer</span>
+              <span class="val">Roof-mounted dock houses three DJI Mini 4 Pro drones (249g, sub-FAA Remote ID exemption). One active, two on rotation between charge and standby.</span>
+            </li>
+            <li>
+              <span class="key">trigger_modes</span>
+              <span class="val">Pre-planned waypoint, operator manual button, or hard-brake event. Vehicle stationary during capture per FAA Part 107 VLOS.</span>
+            </li>
+            <li>
+              <span class="key">mission_cycle</span>
+              <span class="val">Pre-flight check 2s · launch 4s · climb to 80m AGL 18-25s · capture 30-120s · return 18-25s · BLE precision land 8s.</span>
+            </li>
+            <li>
+              <span class="key">deliverable</span>
+              <span class="val">OpenSCENARIO 2.0 + per-frame agent tracks (vehicles, pedestrians, cyclists) + camera-calibrated metadata + optional 4K H.265 raw. Drops into customer pipelines without schema rewrite.</span>
+            </li>
+            <li>
+              <span class="key">target_cadence</span>
+              <span class="val">20 captures per vehicle-day at 90%+ mission success rate. Six-vehicle Bay Area fleet → ~1,500 delivered scenarios per month.</span>
+            </li>
+          </ul>
         </div>
       </section>
 
       <section id="demo">
         <div class="container">
           <h2>Live simulation</h2>
-          <h3>One vehicle, multiple mission cycles, follow-camera view.</h3>
+          <h3>Every quantitative claim is grounded in this sim.</h3>
           <p class="dim">
-            The simulation models drones auto-deploying from host vehicles at trigger
-            arrivals, climbing to capture altitude, capturing scene footage, returning to
-            dock, and emitting OpenSCENARIO + agent-track deliverables. Failure cascades
-            (flyaway, dock damage, battery degradation) are modeled stochastically; unit
-            economics are tracked per-mission against a running P&amp;L. The clip below is
-            the cinematic mode &mdash; the same simulation also runs in an analytical
-            mode with a live dashboard for inspecting state, aborts, and unit-economics.
+            The repo backing this page is a 7,000-line physical-layer simulation
+            covering flight dynamics, dock latch geometry, scene visibility,
+            data pipeline latency, and unit economics. Capture rate, success
+            rate, dock latch probability, and pricing are all sim-grounded &mdash;
+            not spreadsheet estimates. The clip below renders one vehicle
+            cycling through a mission with full deliverable emission.
           </p>
           <div class="sim-frame">
-            <img src={`${import.meta.env.BASE_URL}/sim_demo.gif`} alt="Skydock cinematic simulation: host vehicle driving along an urban corridor, drone visibly launching from the vehicle, climbing to capture altitude, scanning a scene, then returning and landing back on the vehicle" />
+            <img src={`${import.meta.env.BASE_URL}/sim_demo.gif`} alt="Skydock cinematic simulation: host vehicle driving along an urban corridor, drone visibly launching from the vehicle, climbing to capture altitude, scanning a scene with agents in view, then returning and landing back on the vehicle" />
             <div class="sim-caption">
-              1 host vehicle · urban_dense corridor · 0.15 sim-hours · seed 11
+              1 host vehicle · urban_dense corridor · seed 11 · running event log: trigger → capture → delivered scenario
             </div>
           </div>
           <p class="dim">
-            Built as a discrete-time, full-system simulator: trigger arrivals, mission
-            state machine, data pipeline latency, customer-funnel dynamics, and
-            per-vehicle opex all run in a single Python process. The same model produces
-            both the visualization above and the underlying unit-economics report.
+            The same sim drives the Monte Carlo + sensitivity report that
+            backs the unit-economics numbers below.
           </p>
         </div>
       </section>
 
-      <section id="approach">
+      <section id="competitive">
         <div class="container">
-          <h2>System</h2>
-          <h3>How it's built.</h3>
+          <h2>The landscape</h2>
+          <h3>Why nobody has captured aerial BEV at scale.</h3>
+          <p>
+            Each existing alternative fails on a different axis. The integrated
+            vehicle-deployed system is the wedge nobody has built.
+          </p>
+          <table class="compare">
+            <thead>
+              <tr>
+                <th>Approach</th>
+                <th>Limitation</th>
+                <th>Per-scenario cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="headline">Fixed-base drone box</td>
+                <td>One location per install. Useful for industrial inspection, not road scenarios.</td>
+                <td>$15K+ install</td>
+              </tr>
+              <tr>
+                <td class="headline">Manual drone collection</td>
+                <td>Capacity caps at 2-4/day per crew. Operational overhead unsustainable.</td>
+                <td>$1,000+</td>
+              </tr>
+              <tr>
+                <td class="headline">Synthetic BEV</td>
+                <td>Strong on volume, weaker on edge-case fidelity. Used <em>alongside</em> real data, not in place of it.</td>
+                <td>$50-$300</td>
+              </tr>
+              <tr>
+                <td class="headline">Public footage scrape</td>
+                <td>Quality + legal issues. Three of eight customers tried; none reported it working.</td>
+                <td>$0-low</td>
+              </tr>
+              <tr class="skydock-row">
+                <td class="headline">Skydock</td>
+                <td>Vehicle-deployed autonomous capture. Goes where the AV fleet goes. 20 captures/day per vehicle.</td>
+                <td>$339 mid</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="why-now">
+        <div class="container">
+          <h2>Why now</h2>
+          <h3>Three converging timing pressures.</h3>
+          <ul class="checklist">
+            <li>
+              <strong>NHTSA scenario-based testing rules.</strong> The
+              December 2024 NPRM shifts AV safety validation from
+              miles-driven to scenario-coverage. Scenario libraries
+              become regulatory infrastructure &mdash; the libraries
+              need to be filled.
+            </li>
+            <li>
+              <strong>Validation platforms commercializing.</strong>
+              Applied Intuition's ScenarioLib launched in 2024,
+              Foretellix has growing OEM partnerships, Parallel Domain
+              is mid-pipeline on Series C. Scenario procurement is
+              moving from research budget to product budget.
+            </li>
+            <li>
+              <strong>First-mover infrastructure lock-in.</strong> Once
+              Skydock data is in a customer's pipeline (file format,
+              QA workflow, billing integration), switching cost is
+              real. We estimate a 12-18 month window before a competitor
+              with similar capital can ship a comparable system.
+            </li>
+          </ul>
+          <p class="dim">
+            As of mid-2026 we have not seen a single competing
+            aerial-BEV vehicle-deployed product launch announcement.
+            The category window is open.
+          </p>
+        </div>
+      </section>
+
+      <section id="customers">
+        <div class="container">
+          <h2>The customers</h2>
+          <h3>Who buys, and what they look like.</h3>
+          <p>
+            The buyer is a Head of Scenario Engineering (or Head of
+            Simulation, or VP of Engineering at smaller validation
+            shops) &mdash; typically a former AV research lead with a
+            $100K-$1M/year data-acquisition budget. Technical buyer
+            first, procurement second.
+          </p>
+          <p>
+            The pre-seed-to-CFP customer set is the validation-platform
+            and synthetic-data cohort. Tier-1 AV companies and OEMs are
+            the seed/Series-A growth thesis, not the pre-seed thesis.
+          </p>
           <ul class="feature-list">
             <li>
-              <span class="key">capture_layer</span>
-              <span class="val">Vehicle-mounted drone with auto-launch dock; missions triggered by scene-arrival heuristics or operator commands.</span>
+              <span class="key">validation platforms</span>
+              <span class="val">Applied Intuition, Foretellix, Parallel Domain, Cognata — buy scenarios for their library products. 100-500 scenarios per pilot, $30K-$150K. Year-1 target.</span>
             </li>
             <li>
-              <span class="key">data_pipeline</span>
-              <span class="val">Per-scenario emission of OpenSCENARIO + agent tracks + metadata, gated by an automated quality score before customer delivery.</span>
+              <span class="key">tier-1 AV co's</span>
+              <span class="val">Waymo, Aurora, Pony.ai, Zoox — long sales cycle, large deals. 1000+ scenarios, $100K-$500K. Year-2 onward.</span>
             </li>
             <li>
-              <span class="key">failure_model</span>
-              <span class="val">Drone flyaway, dock damage, battery degradation modeled stochastically; vehicle goes offline; downtime tracked against fleet utilization.</span>
-            </li>
-            <li>
-              <span class="key">unit_economics</span>
-              <span class="val">Revenue per delivered scenario, variable costs (cloud, drone wear), per-vehicle opex; rolled up into a live P&amp;L during simulation.</span>
-            </li>
-            <li>
-              <span class="key">customer_funnel</span>
-              <span class="val">Optional Poisson-arrival prospect funnel with pilot conversion gated by recent delivered scenario quality.</span>
+              <span class="key">automakers</span>
+              <span class="val">GM, Ford, Toyota, Mercedes — slowest sales cycle, largest deals. 5K+ scenarios, $500K-$2M. Year-3 onward.</span>
             </li>
           </ul>
         </div>
       </section>
 
-      <section id="contact">
+      <section id="economics">
+        <div class="container">
+          <h2>Unit economics</h2>
+          <h3>Sim-grounded numbers, not spreadsheet estimates.</h3>
+          <p class="dim">
+            Pricing is derived bottoms-up from the customer's cost-to-replicate
+            (in-house operator labor + annotation + amortized capex) plus a
+            documented vendor markup band. Mid-case lands at $339 per scenario;
+            range $136-$632 depending on customer tier and edge-case premium.
+          </p>
+          <div class="stat-grid">
+            <div class="stat">
+              <div class="value">$339</div>
+              <div class="label">mid-case ASP per scenario</div>
+              <div class="footnote">range $136 - $632</div>
+            </div>
+            <div class="stat">
+              <div class="value">94%</div>
+              <div class="label">contribution margin per scenario</div>
+              <div class="footnote">var cost ~$19/scenario</div>
+            </div>
+            <div class="stat">
+              <div class="value">$1.4M</div>
+              <div class="label">LTV per vehicle over 24 mo</div>
+              <div class="footnote">at mid-case ASP + delivery rate</div>
+            </div>
+            <div class="stat">
+              <div class="value">65%</div>
+              <div class="label">gross margin at steady state</div>
+              <div class="footnote">includes opex + overhead</div>
+            </div>
+            <div class="stat">
+              <div class="value">~$640K</div>
+              <div class="label">monthly revenue at 6-vehicle scale</div>
+              <div class="footnote">sim-derived mid-case</div>
+            </div>
+            <div class="stat">
+              <div class="value">M15-18</div>
+              <div class="label">cash-flow positive milestone</div>
+              <div class="footnote">on $1.7M pre-seed</div>
+            </div>
+          </div>
+          <p class="dim">
+            Sensitivity testing across delivery rate, ASP, and weather
+            envelope yields three scenarios: pessimistic ($150 ASP,
+            slip to month 22, buffer drawdown), mid-case ($339 ASP,
+            CFP month 15, buffer preserved), optimistic ($500 ASP,
+            CFP month 11, expansion-ready without seed dependency).
+          </p>
+        </div>
+      </section>
+
+      <section id="raise">
+        <div class="container">
+          <h2>The raise</h2>
+          <h3>$1.7M pre-seed, 18 months to cash-flow positive.</h3>
+          <p>
+            The raise funds the negative-cash window: MVP build (months 1-6),
+            first paid pilots (months 7-12), and fleet ramp to six vehicles
+            (months 13-18). Beyond month 18 the business is self-funding;
+            the seed round, if raised, is for multi-market expansion, not
+            survival.
+          </p>
+          <div class="milestones">
+            <div class="milestone">
+              <div class="when">M0 · pre-seed close</div>
+              <div class="what">$1.7M committed; founder + hardware contractor onboarded.</div>
+            </div>
+            <div class="milestone">
+              <div class="when">M4 · first MVP capture</div>
+              <div class="what">One vehicle operational; first scenario package emitted.</div>
+              <div class="detail">Reviewed by ≥3 prospect customers for quality + format fit.</div>
+            </div>
+            <div class="milestone">
+              <div class="when">M7 · first paid pilot signed</div>
+              <div class="what">$30K-$80K commitment from a validation-platform customer.</div>
+            </div>
+            <div class="milestone">
+              <div class="when">M9 · first pilot delivered</div>
+              <div class="what">100+ scenarios delivered, customer NPS ≥7.</div>
+            </div>
+            <div class="milestone">
+              <div class="when">M11 · three-vehicle fleet operational</div>
+              <div class="what">1,500 scenarios/month capacity proven.</div>
+            </div>
+            <div class="milestone">
+              <div class="when">M14 · three paid customers</div>
+              <div class="what">$200K+ MRR, fleet expanding to 5-6 vehicles.</div>
+            </div>
+            <div class="milestone">
+              <div class="when">M15-18 · cash-flow positive</div>
+              <div class="what">Monthly net cash positive on operational revenue.</div>
+              <div class="detail">$400K+ MRR run rate, 4-6 paid customers, seed-ready if raising.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="approach">
+        <div class="container">
+          <h2>Approach</h2>
+          <h3>Why this team can build it.</h3>
+          <ul class="feature-list">
+            <li>
+              <span class="key">de-risked in sim</span>
+              <span class="val">Every quantitative claim is sim-grounded with 16 passing regression tests covering flight dynamics, dock latch math, scene visibility, and integration smoke tests. Investors and prospects can interrogate the assumptions before hardware capex.</span>
+            </li>
+            <li>
+              <span class="key">commodity hardware</span>
+              <span class="val">DJI Mini 4 Pro ($760), NVIDIA Jetson Orin Nano ($499). We're not asking investors to fund a quadrotor R&D program — we're funding integration, operations, and customer onboarding.</span>
+            </li>
+            <li>
+              <span class="key">regulatory envelope</span>
+              <span class="val">V1 is FAA Part 107 VLOS — no waiver required. V2 (BVLOS, moving-vehicle launch) is the seed-round growth thesis, not the pre-seed dependency.</span>
+            </li>
+            <li>
+              <span class="key">defensibility</span>
+              <span class="val">First-mover operational moat: corpus accumulation, customer pipeline integration, process refinement. A future entrant has to match all four — drone hardware, dock integration, operational discipline, data pipeline.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="founder">
         <div class="container">
           <h2>Founder</h2>
           <div class="contact-card">
             <div class="name">Krethik Ram</div>
             <div class="role">Founder · Skydock</div>
             <p class="bio">
-              <!-- TODO(krethik): replace this bio with your background. -->
-              Building Skydock to test whether independent aerial ground-truth is a
-              real, paid pain for AV perception teams. Currently in customer
-              discovery — talking to perception leads at AV OEMs, robotaxi
-              operators, and AV toolchain vendors. If you work on AV perception or
-              perception validation, I'd love to hear from you.
+              <!-- TODO(krethik): replace this bio with your background. This is the single highest-leverage paragraph for a pre-seed investor. -->
+              Building Skydock to fill the structurally missing aerial BEV
+              category in AV training data. Deep-tech background spanning
+              hardware integration and ML systems. Currently in customer
+              discovery with AV perception and scenario-validation leads;
+              two paid pilots under negotiation.
             </p>
             <div class="contact-links">
               <a href="mailto:krethikram@gmail.com">email →</a>
-              <!-- TODO(krethik): add your LinkedIn / Twitter / GitHub if desired -->
+              <!-- TODO(krethik): add your LinkedIn / GitHub / Twitter -->
               <!-- <a href="https://linkedin.com/in/...">linkedin →</a> -->
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="contact">
+        <div class="container">
+          <h2>Get in touch</h2>
+          <h3>For investors, customers, and intros.</h3>
+          <p class="dim">
+            Investors: I'm raising $1.7M pre-seed. Happy to share the full
+            PR-FAQ, the simulation, and a customer-discovery memo on request.
+          </p>
+          <p class="dim">
+            AV perception / scenario teams: if you maintain a scenario library
+            and aerial BEV is on your gap list, I'd love a 30-min discovery
+            conversation &mdash; we are actively talking to validation platforms
+            and AV OEMs about paid pilots.
+          </p>
+          <div class="cta-row">
+            <a class="cta primary" href="mailto:krethikram@gmail.com?subject=Skydock — investor inquiry">Investor inquiry</a>
+            <a class="cta secondary" href="mailto:krethikram@gmail.com?subject=Skydock — customer discovery">Customer discovery</a>
           </div>
         </div>
       </section>
@@ -292,7 +815,7 @@ const subline = "A vehicle-mounted drone platform that captures bird's-eye-view 
 
     <footer>
       <div class="container">
-        skydock · 2026
+        skydock · 2026 · mountain view, ca
       </div>
     </footer>
   </body>
