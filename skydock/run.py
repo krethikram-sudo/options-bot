@@ -16,7 +16,6 @@ from pathlib import Path
 
 from skydock.animation import run_animation
 from skydock.cinematic import run_cinematic
-from skydock.cinematic_3d import run_cinematic3d
 from skydock.config import Config
 from skydock.report import print_report
 from skydock.simulation import Simulation
@@ -67,10 +66,6 @@ def main(argv: list[str] | None = None) -> int:
         help="Render the cinematic follow-camera demo instead of the analytical dashboard.",
     )
     parser.add_argument(
-        "--cinematic3d", action="store_true",
-        help="Render the 3D cinematic mode (Axes3D) with BEV footage inset. Slower.",
-    )
-    parser.add_argument(
         "--save", type=Path, default=None,
         help="Save animation to file (mp4 or gif). Implies --animate.",
     )
@@ -100,12 +95,10 @@ def main(argv: list[str] | None = None) -> int:
 
     sim = Simulation(cfg)
 
-    animate = args.animate or args.save is not None or args.cinematic or args.cinematic3d
+    animate = args.animate or args.save is not None or args.cinematic
     save_path = str(args.save) if args.save else None
     if animate:
-        if args.cinematic3d:
-            run_cinematic3d(sim, save_path=save_path)
-        elif args.cinematic:
+        if args.cinematic:
             run_cinematic(sim, save_path=save_path)
         else:
             run_animation(sim, save_path=save_path)
