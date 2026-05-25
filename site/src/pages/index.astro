@@ -378,6 +378,80 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
         list-style: none;
         margin: 24px 0;
       }
+
+      .pack-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 16px;
+        margin: 20px 0 32px;
+      }
+      .pack-card {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 22px 22px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .pack-card.featured {
+        border-color: var(--accent);
+        background: linear-gradient(180deg, rgba(96,165,250,0.04), var(--bg-elev));
+      }
+      .pack-card .pack-name {
+        font-size: 17px;
+        font-weight: 600;
+        color: var(--text-strong);
+        margin-bottom: 2px;
+      }
+      .pack-card .pack-includes {
+        font-size: 13.5px;
+        color: var(--text-dim);
+        line-height: 1.5;
+        margin-bottom: 6px;
+      }
+      .pack-card .pack-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        margin-top: auto;
+      }
+      .pack-card .pack-count {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .pack-card .pack-price {
+        font-family: var(--mono);
+        font-size: 18px;
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      h4.subsection {
+        font-size: 14px;
+        font-family: var(--mono);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-strong);
+        margin-top: 28px;
+        margin-bottom: 12px;
+        font-weight: 500;
+      }
+      h4.subsection:first-of-type { margin-top: 8px; }
+      h4.subsection .tier-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-dim);
+        text-transform: lowercase;
+        letter-spacing: 0.02em;
+        font-weight: 400;
+        margin-left: 8px;
+      }
       ul.faq-list li {
         padding: 18px 0;
         border-bottom: 1px solid var(--border);
@@ -526,14 +600,12 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
       <div class="container row">
         <span class="brand">skydock</span>
         <nav class="nav">
-          <a href="#scenario">What you get</a>
-          <a href="#capture">How it works</a>
           <a href="#problem">Problem</a>
           <a href="#evidence">Evidence</a>
           <a href="#scenario">What you get</a>
+          <a href="#order">Order options</a>
           <a href="#pricing">Pricing</a>
           <a href="#faq">FAQ</a>
-          <a href="#sources">Sources</a>
           <a href="#pilot">Start a pilot</a>
         </nav>
       </div>
@@ -806,6 +878,175 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
             per-frame agent tracks, OpenSCENARIO 2.0 export, and optional
             raw 4K video. See "What you get" above for the deliverable schema.
           </p>
+        </div>
+      </section>
+
+      <section id="order">
+        <div class="container">
+          <h2>Order options</h2>
+          <h3>Pick a pack. Request custom captures. Add what you need.</h3>
+          <p>
+            Three ways to buy: pre-defined scenario packs at fixed price,
+            custom-waypoint captures at premium pricing, and add-ons like
+            raw video or exclusive licensing. All orders deliver in
+            OpenSCENARIO 2.0 within the 4-hour SLA per scenario.
+          </p>
+
+          <h4 class="subsection">Discovery packs <span class="tier-label">single scene class · pilot tier</span></h4>
+          <div class="pack-grid">
+            <div class="pack-card">
+              <div class="pack-name">Unprotected Left Turn Starter</div>
+              <div class="pack-includes">50 captures of <code>unprotected_left_turn</code> scenarios across Bay Area intersections. Highest-leverage scene class for trajectory prediction validation.</div>
+              <div class="pack-meta">
+                <span class="pack-count">50 scenarios</span>
+                <span class="pack-price">$17,000</span>
+              </div>
+            </div>
+            <div class="pack-card">
+              <div class="pack-name">Pedestrian Crosswalk Starter</div>
+              <div class="pack-includes">50 captures of <code>pedestrian_crosswalk</code> scenarios with rich VRU interactions. Useful for VRU detection model validation.</div>
+              <div class="pack-meta">
+                <span class="pack-count">50 scenarios</span>
+                <span class="pack-price">$17,000</span>
+              </div>
+            </div>
+            <div class="pack-card">
+              <div class="pack-name">School Zone Starter</div>
+              <div class="pack-includes">50 captures of <code>school_zone</code> scenarios during dismissal hours. Crossing guards, buses, pedestrian density edge cases.</div>
+              <div class="pack-meta">
+                <span class="pack-count">50 scenarios</span>
+                <span class="pack-price">$17,000</span>
+              </div>
+            </div>
+          </div>
+
+          <h4 class="subsection">Validation packs <span class="tier-label">mixed scene classes · pilot tier</span></h4>
+          <div class="pack-grid">
+            <div class="pack-card featured">
+              <div class="pack-name">Validation Library Sampler</div>
+              <div class="pack-includes">100 mixed-class scenarios sampled across our 10 built-in scene classes. The recommended first pilot for any AV scenario-library team.</div>
+              <div class="pack-meta">
+                <span class="pack-count">100 scenarios</span>
+                <span class="pack-price">$33,900</span>
+              </div>
+            </div>
+            <div class="pack-card">
+              <div class="pack-name">VRU Safety Discovery</div>
+              <div class="pack-includes">100 scenarios across <code>pedestrian_crosswalk</code>, <code>vru_interaction</code>, and <code>school_zone</code>. Targeted at perception safety case for VRU detection.</div>
+              <div class="pack-meta">
+                <span class="pack-count">100 scenarios</span>
+                <span class="pack-price">$33,900</span>
+              </div>
+            </div>
+            <div class="pack-card">
+              <div class="pack-name">Intersection Behavior Pack</div>
+              <div class="pack-includes">100 scenarios across <code>intersection_signalized</code>, <code>intersection_unsignalized</code>, and <code>unprotected_left_turn</code>. Trajectory prediction training emphasis.</div>
+              <div class="pack-meta">
+                <span class="pack-count">100 scenarios</span>
+                <span class="pack-price">$33,900</span>
+              </div>
+            </div>
+          </div>
+
+          <h4 class="subsection">Production volume <span class="tier-label">customer-specified mix · volume tiers</span></h4>
+          <div class="pack-grid">
+            <div class="pack-card">
+              <div class="pack-name">Library Foundation</div>
+              <div class="pack-includes">250-500 scenarios across all 10 scene classes, customer-specified mix and geography focus. Volume 1 tier.</div>
+              <div class="pack-meta">
+                <span class="pack-count">250-500 scenarios</span>
+                <span class="pack-price">from $50,000</span>
+              </div>
+            </div>
+            <div class="pack-card">
+              <div class="pack-name">Production Corpus</div>
+              <div class="pack-includes">500-1,000 scenarios with customer-specified scenario taxonomy and waypoint targeting. Volume 2 tier.</div>
+              <div class="pack-meta">
+                <span class="pack-count">500-1,000 scenarios</span>
+                <span class="pack-price">from $100,000</span>
+              </div>
+            </div>
+            <div class="pack-card">
+              <div class="pack-name">Enterprise</div>
+              <div class="pack-includes">1,000+ scenarios with custom waypoints, custom scenario classes, custom delivery SLAs. Volume 3 tier or annual contract.</div>
+              <div class="pack-meta">
+                <span class="pack-count">1,000+ scenarios</span>
+                <span class="pack-price">contact us</span>
+              </div>
+            </div>
+          </div>
+
+          <h4 class="subsection">Custom requests</h4>
+          <ul class="feature-list">
+            <li>
+              <span class="key">custom waypoints</span>
+              <span class="val">Specific GPS coordinates (e.g. <em>"Castro &amp; Market in SF, weekdays 4-6pm"</em>) added to operator route. Scene-class labels per waypoint. Premium pricing 2-3× standard tier.</span>
+            </li>
+            <li>
+              <span class="key">custom conditions</span>
+              <span class="val">Time-of-day targeting (rush hour, school dismissal, late evening) or reproducible weather conditions. Subject to operating envelope.</span>
+            </li>
+            <li>
+              <span class="key">custom taxonomies</span>
+              <span class="val">Onboarding your internal scene-class definitions beyond our 10 built-ins. ~1-week scoping. $5K-$15K depending on schema complexity.</span>
+            </li>
+            <li>
+              <span class="key">custom delivery formats</span>
+              <span class="val">Beyond OpenSCENARIO 2.0 — CommonRoad, custom JSON schemas, customer-specific naming conventions. Engineering rate ($5K-$15K).</span>
+            </li>
+            <li>
+              <span class="key">geographic expansion</span>
+              <span class="val">Outside Bay Area / Phoenix (Q4 2027) / Austin (Q1 2028)? We'll quote operational expansion for committed pilots.</span>
+            </li>
+          </ul>
+
+          <h4 class="subsection">Add-ons (per scenario)</h4>
+          <ul class="feature-list">
+            <li>
+              <span class="key">raw 4K H.265 video</span>
+              <span class="val">Original capture footage in addition to the standard agent-tracks + metadata + OpenSCENARIO. 200-600 MB per scenario. Quote at commission time.</span>
+            </li>
+            <li>
+              <span class="key">exclusive licensing</span>
+              <span class="val">Default licensing is non-exclusive (your captures join multi-tenant corpus). Exclusive captures at 2-5× premium for data sovereignty.</span>
+            </li>
+            <li>
+              <span class="key">extended capture duration</span>
+              <span class="val">Default 30-120s capture. Longer captures (up to 5 min) for complex arterial corridors at +50% rate.</span>
+            </li>
+            <li>
+              <span class="key">expedited delivery</span>
+              <span class="val">Default 4-hour SLA. Sub-hour delivery for high-priority captures at engineering rate.</span>
+            </li>
+            <li>
+              <span class="key">integration support</span>
+              <span class="val">Engineering time for direct pipeline integration (Foretellix, Applied Intuition, CARLA, custom). Quoted as fixed-fee engagement.</span>
+            </li>
+          </ul>
+
+          <h4 class="subsection">What we don't sell</h4>
+          <p class="dim">
+            Honest scope. Skydock is an aerial BEV capture vendor &mdash;
+            adjacent products we don't sell:
+          </p>
+          <ul class="feature-list">
+            <li>
+              <span class="key">ego-vehicle capture</span>
+              <span class="val">Ground-perspective camera / lidar / radar from on-vehicle sensors. Different product class; we'll refer to vendors who specialize.</span>
+            </li>
+            <li>
+              <span class="key">synthetic data generation</span>
+              <span class="val">We sell real captures only. Synthetic generators (Parallel Domain, Mira, Cognata) can consume our captures as input for digital twins, but we don't generate synthetic ourselves.</span>
+            </li>
+            <li>
+              <span class="key">ML model training services</span>
+              <span class="val">We deliver training data; you train your models. We don't offer model-development or fine-tuning services.</span>
+            </li>
+            <li>
+              <span class="key">annotation services</span>
+              <span class="val">Our deliveries include the agent_tracks.json with automated detection. Additional human-in-the-loop annotation services go to Scale AI / Surge / Appen.</span>
+            </li>
+          </ul>
         </div>
       </section>
 
