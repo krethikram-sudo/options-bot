@@ -648,8 +648,8 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
               <span class="val">Requires ground truth from a sensor system independent of the one being validated. Internal capture has correlated errors with the model being tested. Aerial drone capture provides the structural independence the safety case needs.</span>
             </li>
             <li>
-              <span class="key">hard-case coverage</span>
-              <span class="val">The scenario library that gates the safety case grows linearly with new requirements &mdash; but the hardest scenarios (unprotected lefts, VRU interactions, school zones at dismissal) are the slowest to capture organically and the highest-leverage to add.</span>
+              <span class="key">scenario library coverage</span>
+              <span class="val">The library that gates the safety case grows linearly with new requirements. Customers need diverse, geographically-distributed scenarios with <em>filterable rarity signals</em> &mdash; not just volume. Skydock delivers waypoint-targeted captures with long-tail scores per scenario (criticality, epistemic uncertainty, corpus frequency) so customer QA can extract the rare events that matter.</span>
             </li>
           </ul>
         </div>
@@ -700,12 +700,25 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
           </div>
           <p class="dim">
             <strong>Honest caveat:</strong> these results are for aerial drone
-            data in general &mdash; the published highD, inD, openDD, RoboTron-Sim
+            data in general &mdash; published highD, inD, openDD, RoboTron-Sim
             studies. Skydock-specific evidence comes from your paid pilot:
             we deliver 100 scenarios in your target area, you measure
             improvement on your benchmarks, we publish jointly subject to your
             IP terms. The structural argument for why aerial data should work
             doesn't depend on Skydock; the customer-specific magnitude does.
+          </p>
+          <p class="dim">
+            <strong>What we're claiming, and what we're not:</strong>
+            Skydock is an aerial BEV capture platform, not a long-tail mining
+            platform. We deliver scene-class-targeted captures with three
+            independent long-tail scores per scenario (criticality metrics,
+            epistemic uncertainty vs baseline, corpus frequency) so your team
+            can filter for the rare events you actually need. Long-tail bias
+            comes from waypoint selection (you target high-incident locations),
+            hard-brake event triggers (correlated with anomalies), and
+            time-of-day targeting. Direct edge-case mining at &lt;0.03%
+            corpus frequency requires multi-million-mile corpora; that's a
+            different product class.
           </p>
         </div>
       </section>
@@ -1112,13 +1125,14 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
       <section id="quality">
         <div class="container">
           <h2>Quality methodology</h2>
-          <h3>Every scenario carries a transparent 0-100 score.</h3>
+          <h3>Capture quality + long-tail scoring, transparent per scenario.</h3>
           <p>
-            Quality is computed from agent visibility, not drawn from a
-            distribution. Every scenario's <code>metadata.json</code>
-            includes the exact methodology so your QA team can verify the
-            score against the agent tracks.
+            Every scenario's <code>metadata.json</code> includes two score
+            blocks: a 0-100 capture quality score (agent visibility, coverage,
+            class diversity), and three independent long-tail signals so your
+            QA team can filter the corpus by rarity.
           </p>
+          <h4 class="subsection">Capture quality (0-100)</h4>
           <ul class="feature-list">
             <li>
               <span class="key">60 points</span>
@@ -1141,6 +1155,27 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
             <strong>Scenarios scoring below 70 are not delivered.</strong> No
             charge, no opt-in. If we can't hit the bar, we don't ship.
           </p>
+
+          <h4 class="subsection">Long-tail scores (per scenario, for your filtering)</h4>
+          <p class="dim">
+            We don't decide what's long-tail for you. We surface three
+            independent signals; you filter the corpus to match your
+            team's definition of rare.
+          </p>
+          <ul class="feature-list">
+            <li>
+              <span class="key">criticality</span>
+              <span class="val">Physics-derived from agent_tracks.json &mdash; TTC (time-to-collision), PET (post-encroachment time), jerk thresholds. Cheap, interpretable, references Westhofen et al. 2021 catalog.</span>
+            </li>
+            <li>
+              <span class="key">epistemic uncertainty</span>
+              <span class="val">Per-frame score against our baseline perception model. The signal that drove the 16% → 5.5% collision-rate reduction in Mining the Long Tail (arXiv 2508.18397). Orthogonal to criticality.</span>
+            </li>
+            <li>
+              <span class="key">corpus frequency</span>
+              <span class="val">Rarity ranking against our growing library &mdash; how unusual this scene-class + agent configuration is relative to the corpus. Matches Waymo's WOD-E2E &lt;0.03% frequency threshold methodology.</span>
+            </li>
+          </ul>
         </div>
       </section>
 
