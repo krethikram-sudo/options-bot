@@ -1,6 +1,6 @@
 ---
-const tagline = "Trajectory prediction RMSE −64%. VRU detection 99.7% under aerial occlusion. Hard-case success +50% with curated training. Aerial drone data is the highest-leverage missing input in AV model performance — and AV teams can't capture it themselves at scale.";
-const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-formatted aerial captures that fill the trajectory, prediction, and validation gaps in your training pipelines.";
+const tagline = "Synthetic libraries can't gate the safety case — the ground truth is circular. Skydock is the curated, criticality-scored, validation-grade aerial BEV scenario library that AV safety teams use to close their closed-loop collision-rate gates.";
+const subline = "Continuous capture from fixed-point installations at high-incident US intersections. Filtered through a 5-signal curation pipeline. Indexed against your OpenODD coverage model. Delivered as a subscription, not a pile of clips.";
 ---
 
 <html lang="en">
@@ -10,10 +10,10 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={tagline} />
-    <meta property="og:title" content="Skydock — Aerial BEV scenarios for AV training" />
+    <meta property="og:title" content="Skydock — Validation-grade aerial BEV scenario library for AV safety teams" />
     <meta property="og:description" content={tagline} />
     <meta property="og:type" content="website" />
-    <title>Skydock — Aerial BEV scenarios for AV training</title>
+    <title>Skydock — Validation-grade aerial BEV scenario library</title>
     <style is:global>
       :root {
         --bg: #0a0e1a;
@@ -174,50 +174,6 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
         letter-spacing: 0.08em;
       }
 
-      .product-image {
-        margin: 28px 0;
-        background: var(--bg-elev);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 14px;
-      }
-      .product-image img {
-        width: 100%;
-        height: auto;
-        display: block;
-        border-radius: 4px;
-      }
-      .image-caption {
-        font-family: var(--mono);
-        font-size: 13px;
-        color: var(--text-dim);
-        margin-top: 12px;
-        padding-top: 12px;
-        border-top: 1px solid var(--border);
-      }
-
-      .sim-frame {
-        background: var(--bg-elev);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 14px;
-        margin: 28px 0;
-      }
-      .sim-frame img {
-        width: 100%;
-        height: auto;
-        display: block;
-        border-radius: 4px;
-      }
-      .sim-caption {
-        font-family: var(--mono);
-        font-size: 13px;
-        color: var(--text-dim);
-        margin-top: 12px;
-        padding-top: 12px;
-        border-top: 1px solid var(--border);
-      }
-
       ul.feature-list {
         list-style: none;
         margin: 24px 0;
@@ -238,40 +194,6 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
         flex-shrink: 0;
       }
       ul.feature-list .val { color: var(--text); }
-
-      .stat-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 16px;
-        margin: 28px 0;
-      }
-      .stat {
-        background: var(--bg-elev);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 22px 20px;
-      }
-      .stat .value {
-        font-size: 26px;
-        font-weight: 700;
-        color: var(--text-strong);
-        line-height: 1;
-        margin-bottom: 8px;
-        letter-spacing: -0.01em;
-      }
-      .stat .label {
-        font-family: var(--mono);
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--text-dim);
-      }
-      .stat .footnote {
-        margin-top: 8px;
-        font-size: 12px;
-        color: var(--text-dim);
-        font-family: var(--mono);
-      }
 
       table.compare {
         width: 100%;
@@ -526,6 +448,36 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
         font-weight: 600;
       }
 
+      .pilot-card {
+        background: linear-gradient(180deg, rgba(96,165,250,0.06), var(--bg-elev));
+        border: 1px solid var(--accent);
+        border-radius: 8px;
+        padding: 28px;
+        margin: 28px 0;
+      }
+      .pilot-card .pilot-step {
+        display: flex;
+        gap: 18px;
+        padding: 14px 0;
+        align-items: baseline;
+        border-bottom: 1px solid var(--border);
+      }
+      .pilot-card .pilot-step:last-of-type { border-bottom: none; }
+      .pilot-card .pilot-step .step-num {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--accent);
+        min-width: 60px;
+        flex-shrink: 0;
+      }
+      .pilot-card .pilot-step .step-body { color: var(--text); }
+      .pilot-card .pilot-headline {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-strong);
+        margin-bottom: 14px;
+      }
+
       .contact-card {
         background: var(--bg-elev);
         border: 1px solid var(--border);
@@ -601,12 +553,11 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
         <span class="brand">skydock</span>
         <nav class="nav">
           <a href="#problem">Problem</a>
-          <a href="#evidence">Evidence</a>
-          <a href="#scenario">What you get</a>
-          <a href="#order">Order options</a>
-          <a href="#pricing">Pricing</a>
+          <a href="#product">Product</a>
+          <a href="#how">How it works</a>
+          <a href="#pricing">Subscription tiers</a>
           <a href="#faq">FAQ</a>
-          <a href="#pilot">Start a pilot</a>
+          <a href="#pilot">Closed-loop pilot</a>
         </nav>
       </div>
     </header>
@@ -614,14 +565,14 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
     <main>
       <section class="hero">
         <div class="container">
-          <h1>Move your AV models past the long tail.</h1>
+          <h1>Close your safety case faster.</h1>
           <p class="tagline">{tagline}</p>
           <p class="subline">{subline}</p>
           <div class="hero-meta">
-            <span><span class="label">delivery</span>4 hr SLA</span>
-            <span><span class="label">format</span>OpenSCENARIO 2.0</span>
-            <span><span class="label">starting</span>$339/scenario</span>
-            <span><span class="label">pilot</span>from 100 scenarios</span>
+            <span><span class="label">product</span>Library subscription</span>
+            <span><span class="label">format</span>OpenSCENARIO 2.0 + OpenLABEL</span>
+            <span><span class="label">pilot</span>Free 30-day closed-loop eval</span>
+            <span><span class="label">conversion</span>Pre-agreed success criteria</span>
           </div>
         </div>
       </section>
@@ -629,108 +580,128 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
       <section id="problem">
         <div class="container">
           <h2>The problem</h2>
-          <h3>Three places AV teams are stuck on model performance.</h3>
+          <h3>The safety case has a ground-truth problem that synthetic data can't fix.</h3>
           <p>
-            Modern AV models &mdash; whether modular (perception → prediction → planning)
-            or end-to-end foundation models &mdash; are bottlenecked on the same
-            kinds of data. The long tail of behaviors, the rare edge cases, the
-            multi-agent interactions captured from above without ego-vehicle
-            occlusion. These aren't problems of more data; they're problems of
-            the <em>right</em> data, in formats that drop into existing pipelines.
+            Every AV company shipping in 2026 has the same gate to clear:
+            a closed-loop collision-rate evaluation against a library of
+            high-criticality scenarios, segmented by criticality bin, that
+            regulators and internal safety leadership both sign off on.
+          </p>
+          <p>
+            Three structural problems are stuck in that gate:
           </p>
           <ul class="feature-list">
             <li>
-              <span class="key">trajectory prediction</span>
-              <span class="val">Plateaus on ego-perspective data because behaviors that matter most for safety happen between agents that don't share a viewpoint. Models trained on aerial drone trajectories (highD, inD, openDD) reliably outperform same-architecture models trained on ego data.</span>
+              <span class="key">circular ground truth</span>
+              <span class="val">Synthetic scenario libraries (world models, generative sims, replay rigs trained on your own captures) inherit the assumptions of the system being validated. They cannot serve as <em>independent</em> evidence in a safety case, by construction. NHTSA AV STEP, EU AI Act, and UK CCAV all increasingly require independent validation data.</span>
             </li>
             <li>
-              <span class="key">perception validation</span>
-              <span class="val">Requires ground truth from a sensor system independent of the one being validated. Internal capture has correlated errors with the model being tested. Aerial drone capture provides the structural independence the safety case needs.</span>
+              <span class="key">coverage gaps you can't see</span>
+              <span class="val">Your library has gaps where your fleet doesn't drive, doesn't drive at the right times, or where your ego perception can't see the interaction at all (occluded by your own vehicle, lower vantage point, narrow FOV). The gaps shape your collision-rate eval result without showing up in your coverage report.</span>
             </li>
             <li>
-              <span class="key">scenario library coverage</span>
-              <span class="val">The library that gates the safety case grows linearly with new requirements. Customers need diverse, geographically-distributed scenarios with <em>filterable rarity signals</em> &mdash; not just volume. Skydock delivers waypoint-targeted captures with long-tail scores per scenario (criticality, epistemic uncertainty, corpus frequency) so customer QA can extract the rare events that matter.</span>
+              <span class="key">long-tail scenarios are filtered, not mined</span>
+              <span class="val">Customers need <em>real</em>, high-criticality scenarios with rarity signals their QA team can filter on. Raw drone clips are commodity; a criticality-scored, epistemic-uncertainty-tagged, corpus-frequency-ranked library is the artifact safety teams actually use. We sell the filtered library, not the bucket of clips.</span>
             </li>
           </ul>
+        </div>
+      </section>
+
+      <section id="product">
+        <div class="container">
+          <h2>The product</h2>
+          <h3>An always-on aerial BEV scenario library, criticality-scored, filterable by your OpenODD axes.</h3>
+          <p>
+            Skydock operates a growing network of fixed-point aerial capture
+            installations at high-incident US intersections. Every captured
+            scenario runs through a 5-signal curation pipeline. The filtered,
+            scored, taxonomy-tagged library is exposed to subscribers via API
+            and via partner integrations (Foretellix, Applied Intuition
+            Validation Toolset, CARLA).
+          </p>
+          <p>
+            You don't buy a fixed set of clips. You subscribe to the library
+            and query it for the scenarios that match your evolving safety
+            case &mdash; criticality bin, scene class, agent count, geography,
+            time-of-day, weather, OpenODD-axis match.
+          </p>
+          <div class="deliverable-card">
+            <span class="tree-line">scenario_skydock-cap-00042/</span><br>
+            <span class="tree-line">├─</span> <span class="file">metadata.json</span>           <span class="desc">site ID · capture geometry · scene class · OpenLABEL tags · 5-signal curation scores · OpenODD axis match</span><br>
+            <span class="tree-line">├─</span> <span class="file">agent_tracks.json</span>       <span class="desc">per-frame ENU positions of every visible vehicle / pedestrian / cyclist at 30 fps, with heading and speed</span><br>
+            <span class="tree-line">├─</span> <span class="file">scenario.xosc</span>           <span class="desc">OpenSCENARIO 2.0 export — road network reference, scenario entities, storyboard skeleton</span><br>
+            <span class="tree-line">└─</span> <span class="file">raw_video.mp4</span>           <span class="desc">optional 4K H.265 source video — toggleable in subscription tier</span>
+          </div>
+          <p class="dim">
+            The library grows continuously: ~1,000 newly-delivered scenarios
+            per site per month after the curation filter. At 5 active sites
+            (Year 1 target) that's ~60,000 net-new scored scenarios per year
+            added to the corpus all subscribers can query.
+          </p>
         </div>
       </section>
 
       <section id="evidence">
         <div class="container">
           <h2>The evidence</h2>
-          <h3>What the published research says about aerial drone data.</h3>
+          <h3>Why aerial BEV is the validation data type that survives the world-model era.</h3>
           <p>
-            Aerial drone data is the demonstrated training source for the
-            largest published improvements in AV model performance. The data
-            quality &mdash; 25Hz sampling, unoccluded multi-agent visibility,
-            full intersection in a single frame &mdash; is structurally
-            unavailable from ego-vehicle sensors.
+            Two distinct claims worth separating: <strong>aerial drone data
+            improves AV models in the lab</strong> (published research),
+            and <strong>aerial drone data is the validation data type with
+            durable willingness-to-pay</strong> (the V2 thesis). Both matter,
+            but the second is what we sell.
           </p>
-          <div class="stat-grid">
-            <div class="stat">
-              <div class="value">−64%</div>
-              <div class="label">trajectory prediction RMSE</div>
-              <div class="footnote">EPN model on highD vs SOTA</div>
-            </div>
-            <div class="stat">
-              <div class="value">+50%</div>
-              <div class="label">hard-case success rate</div>
-              <div class="footnote">RoboTron-Sim curated training, ICCV 2025</div>
-            </div>
-            <div class="stat">
-              <div class="value">−67%</div>
-              <div class="label">collision rate in simulation</div>
-              <div class="footnote">curated long-tail training, 16%→5.5%</div>
-            </div>
-            <div class="stat">
-              <div class="value">99.7%</div>
-              <div class="label">aerial pedestrian detection</div>
-              <div class="footnote">CNN, vs 30-50% ego under occlusion</div>
-            </div>
-            <div class="stat">
-              <div class="value">18-72%</div>
-              <div class="label">trajectory accuracy range</div>
-              <div class="footnote">Velocity Vector Field on highD</div>
-            </div>
-            <div class="stat">
-              <div class="value">+6.8 mAP</div>
-              <div class="label">person detection</div>
-              <div class="footnote">aerial + ego multi-dataset training</div>
-            </div>
-          </div>
-          <p class="dim">
-            <strong>Honest caveat:</strong> these results are for aerial drone
-            data in general &mdash; published highD, inD, openDD, RoboTron-Sim
-            studies. Skydock-specific evidence comes from your paid pilot:
-            we deliver 100 scenarios in your target area, you measure
-            improvement on your benchmarks, we publish jointly subject to your
-            IP terms. The structural argument for why aerial data should work
-            doesn't depend on Skydock; the customer-specific magnitude does.
+          <p class="dim" style="margin-top: 6px; margin-bottom: 18px;">
+            <strong>What the research says about aerial BEV in training and
+            validation:</strong> highD trajectories drove published RMSE
+            reductions of 64% on EPN and 18-72% on Velocity Vector Field
+            architectures. Curated long-tail training reduced collision
+            rate in simulation from 16.0% to 5.5% (Mining the Long Tail,
+            arXiv 2508.18397). Aerial pedestrian detection reaches 99.7%
+            accuracy versus 30-50% under ego-perspective occlusion. These
+            results come from the open published datasets we model our
+            curation pipeline after.
           </p>
           <p class="dim">
-            <strong>What we're claiming, and what we're not:</strong>
-            Skydock is an aerial BEV capture platform, not a long-tail mining
-            platform. We deliver scene-class-targeted captures with three
-            independent long-tail scores per scenario (criticality metrics,
-            epistemic uncertainty vs baseline, corpus frequency) so your team
-            can filter for the rare events you actually need. Long-tail bias
-            comes from waypoint selection (you target high-incident locations),
-            hard-brake event triggers (correlated with anomalies), and
-            time-of-day targeting. Direct edge-case mining at &lt;0.03%
-            corpus frequency requires multi-million-mile corpora; that's a
-            different product class.
+            <strong>What we tell customers honestly:</strong> the
+            customer-specific magnitude of any model-performance gain
+            comes from <em>your</em> closed-loop pilot on <em>your</em>
+            safety case. The structural argument for why aerial BEV
+            should help is not in question. What's worth measuring
+            against your own held-out collision-rate eval is the magnitude.
+            That's what the free pilot is for.
           </p>
+          <p>
+            The durable layer of the pitch is the second claim. Three
+            independent reasons aerial BEV is the validation data class
+            with growing &mdash; not shrinking &mdash; willingness-to-pay:
+          </p>
+          <ul class="feature-list">
+            <li>
+              <span class="key">regulation requires it</span>
+              <span class="val">NHTSA AV STEP (Dec 2024 NPRM, finalized 2025), EU AI Act high-risk system requirements, UK CCAV safety-case process &mdash; each is moving in the same direction: independent validation evidence is mandatory for production AV deployment. Synthetic data fails the "independent" requirement by construction.</span>
+            </li>
+            <li>
+              <span class="key">world models can't substitute</span>
+              <span class="val">Wayve GAIA-3, NVIDIA Cosmos, and synthetic generators are manufacturing infinite training data &mdash; eroding training-data willingness-to-pay every generation. But closed-loop validation requires <em>real, independent ground truth</em> the model has not seen. Synthetic libraries fail the circularity test.</span>
+            </li>
+            <li>
+              <span class="key">tied to revenue, not R&amp;D</span>
+              <span class="val">Faster safety-case closure equals faster commercial deployment equals direct revenue impact for your AV deployment. Validation data is not a research line-item; it's on the critical path to launch.</span>
+            </li>
+          </ul>
         </div>
       </section>
 
       <section id="why">
         <div class="container">
           <h2>Why this is hard to solve internally</h2>
-          <h3>The existing alternatives, and why they don't fill the gap.</h3>
+          <h3>The existing alternatives, and why they don't fill the safety-case gap.</h3>
           <p>
-            If aerial drone data is this valuable, why hasn't every AV
-            company already captured it themselves? Because the operational
-            economics don't work for any single customer &mdash; and the
+            If aerial drone data is the structurally-required validation
+            data type, why not capture it in-house? Because the operational
+            economics don't work for any single AV company &mdash; and the
             existing third-party options solve the wrong subset of the
             problem.
           </p>
@@ -739,325 +710,123 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
               <tr>
                 <th>Approach</th>
                 <th>Limitation</th>
-                <th>Per-scenario cost</th>
+                <th>Validation use</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td class="headline">Internal drone team</td>
-                <td>Capacity caps at 2-4 captures/day per crew. 7 of 8 AV companies we surveyed tried this and stopped within a year &mdash; operational overhead, FAA Part 107 compliance, and dedicated drone-ops engineering pulls senior eng off core work.</td>
-                <td>$1,000+</td>
+                <td>Capacity caps at a few captures per day per crew. FAA Part 107 compliance, dedicated drone-ops engineering, and operational overhead pull senior eng off core work. Result: stale, small, single-geography library.</td>
+                <td>Coverage too narrow</td>
+              </tr>
+              <tr>
+                <td class="headline">Synthetic libraries</td>
+                <td>Strong on volume, weaker on edge-case fidelity. Cannot serve as independent ground truth in a safety case because the model being validated trained on the same generative assumptions.</td>
+                <td>Fails independence requirement</td>
               </tr>
               <tr>
                 <td class="headline">levelXdata (highD/inD/rounD)</td>
-                <td>Established 7-year commercial aerial datasets. German highways/intersections/roundabouts only. Fixed-location captures, no on-demand custom waypoints, custom format requires conversion.</td>
-                <td>commercial license</td>
+                <td>Established commercial aerial datasets. German highways/intersections/roundabouts only. Fixed-location captures from one-time research collections, no on-demand library growth, no criticality scoring.</td>
+                <td>Useful for training, weak for safety case</td>
               </tr>
               <tr>
                 <td class="headline">Academic datasets</td>
-                <td>openDD, MiTra, DeepUrban, AUTOMATUM &mdash; fixed snapshots from one-time research collections. Free for research, commercial use restricted. No SLA.</td>
-                <td>free, research-grade</td>
+                <td>openDD, MiTra, DeepUrban, AUTOMATUM &mdash; fixed snapshots from one-time research collections. Free for research, commercial use restricted. No criticality scoring, no library growth, no SLA.</td>
+                <td>Not safety-case grade</td>
               </tr>
               <tr>
-                <td class="headline">Fixed-base drone box</td>
-                <td>One location per install. Designed for industrial inspection, not road scenarios.</td>
-                <td>$15K+ install</td>
-              </tr>
-              <tr>
-                <td class="headline">Synthetic BEV</td>
-                <td>Strong on volume, weaker on edge-case fidelity. Used <em>alongside</em> real data by every customer we spoke to, not as a substitute.</td>
-                <td>$50 - $300</td>
+                <td class="headline">Replay from your own fleet</td>
+                <td>Internal capture has correlated errors with the model being tested. Ego-perspective limits visibility into multi-agent interactions. Adequate for monitoring; insufficient for the independence required by safety case.</td>
+                <td>Fails independence requirement</td>
               </tr>
               <tr class="skydock-row">
                 <td class="headline">Skydock</td>
-                <td>US-geography vehicle-deployed autonomous capture. On-demand custom waypoints, OpenSCENARIO 2.0 native, commercial SLA. Multi-tenant corpus amortizes operational cost across customers.</td>
-                <td>$100 - $339</td>
+                <td>Continuous fixed-point aerial capture from high-incident US intersections. 5-signal curation. Library accessed by subscription, queryable against your OpenODD coverage model. Multi-tenant corpus amortizes operational cost across customers.</td>
+                <td>Validation-grade by design</td>
               </tr>
             </tbody>
           </table>
           <p class="dim" style="margin-top: 24px;">
-            ROI analysis for your specific volume and scenario mix
-            available on request &mdash; we'll model your in-house
-            cost-to-replicate against the appropriate Skydock tier.
-            Reach out via the <a href="#pilot">pilot CTA</a> below.
+            ROI analysis for your specific safety-case gates available
+            on request &mdash; we'll model your in-house cost-to-replicate
+            against the appropriate Skydock subscription tier. Reach out
+            via the <a href="#pilot">closed-loop pilot CTA</a> below.
           </p>
         </div>
       </section>
 
-      <section id="scenario">
-        <div class="container">
-          <h2>What you get</h2>
-          <h3>A scenario package that drops into your pipeline.</h3>
-          <p>
-            Every Skydock scenario is a 30-120 second aerial bird's-eye-view
-            recording captured from 80m AGL, delivered as a four-file package
-            named by scenario ID. No proprietary schemas, no custom ingestion.
-          </p>
-          <div class="deliverable-card">
-            <span class="tree-line">scenario_skydock-mission-00042/</span><br>
-            <span class="tree-line">├─</span> <span class="file">metadata.json</span>           <span class="desc">scene class · GPS with uncertainty · capture geometry · DJI Mini 4 Pro calibration · quality score with methodology</span><br>
-            <span class="tree-line">├─</span> <span class="file">agent_tracks.json</span>       <span class="desc">per-frame ENU positions of every visible vehicle / pedestrian / cyclist at 30 fps, with heading and speed</span><br>
-            <span class="tree-line">├─</span> <span class="file">scenario.xosc</span>           <span class="desc">OpenSCENARIO 2.0 export — road network reference, scenario entities, storyboard skeleton</span><br>
-            <span class="tree-line">└─</span> <span class="file">raw_video.mp4</span>           <span class="desc">optional 4K H.265 source video — request at scenario commission time</span>
-          </div>
-          <p class="dim">
-            File sizes: metadata ~2 KB · agent_tracks 50-500 KB depending on
-            agent count · OpenSCENARIO ~5 KB · raw 4K video 200-600 MB.
-            Sample package available on request.
-          </p>
-        </div>
-      </section>
-
-      <section id="capture">
+      <section id="how">
         <div class="container">
           <h2>How it works</h2>
-          <h3>Vehicle arrives at waypoint → drone captures → package delivered in 4 hours.</h3>
-          <div class="product-image">
-            <img src={`${import.meta.env.BASE_URL}/product_vehicle_dock.png`} alt="Skydock vehicle-mounted dock on a silver SUV with a quadcopter drone deploying from the roof at golden hour" />
-            <div class="image-caption">
-              Roof-mounted Skydock dock with sub-250g drone deploying mid-mission.
-            </div>
-          </div>
+          <h3>Fixed-point installations capture continuously. The curation pipeline turns raw captures into the library you query.</h3>
           <p>
-            When a Skydock-equipped vehicle reaches a pre-planned waypoint, or
-            the operator triggers manually, the system runs a 2-second pre-flight
-            check, deploys a sub-250g drone, climbs to 80m AGL, captures, and
-            returns. Total mission time: ~90 seconds. The vehicle is stationary
-            throughout per FAA Part 107 VLOS.
+            Skydock operates three classes of fixed-point capture
+            installations, deployed at high-incident intersections in
+            partner-host buildings. Captures run continuously during the
+            operational envelope; the curation pipeline filters and scores
+            them into the deliverable library.
           </p>
+
+          <h4 class="subsection">Site deployment models</h4>
           <ul class="feature-list">
             <li>
-              <span class="key">trigger</span>
-              <span class="val">Pre-planned waypoint, operator manual button, or hard-brake event. Custom waypoints (specific intersections, times of day, conditions) can be added to the operator's route.</span>
+              <span class="key">Model A — rooftop</span>
+              <span class="val">High-resolution camera + edge compute + cellular uplink installed on a partner building rooftop overlooking the target intersection. Simplest regulatory path; primary V1 deployment model. 3 sites live by M6 of operations; 5 sites by M12.</span>
             </li>
             <li>
-              <span class="key">capture geometry</span>
-              <span class="val">80m AGL · 80° diagonal FOV · ~67m footprint radius — captures a full signalized intersection or a 130m corridor in a single frame.</span>
+              <span class="key">Model B — tethered drone</span>
+              <span class="val">LTE-tethered drone hovering 50-150m AGL indefinitely (no battery limit, power via tether). Simplified Part 107 path for tethered ops; no Remote ID requirement on tethered drones. Deployed when intersection geometry needs higher vantage. Sites added M12-M18.</span>
             </li>
             <li>
-              <span class="key">capture duration</span>
-              <span class="val">30-120s per scenario, operator-configurable. Default 60s for intersection scenarios, 30s for crosswalks, 120s for arterial corridors.</span>
-            </li>
-            <li>
-              <span class="key">processing</span>
-              <span class="val">Cloud pipeline: upload → BEV transform → YOLOv8 + ByteTrack agent detection → OpenSCENARIO export → quality scoring → delivery.</span>
-            </li>
-            <li>
-              <span class="key">delivery</span>
-              <span class="val">S3 pre-signed URL within 4 hours of capture. Optional SFTP, custom S3 bucket, or streaming API endpoint for enterprise customers.</span>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <section id="demo">
-        <div class="container">
-          <h2>Live simulation</h2>
-          <h3>See the mission cycle.</h3>
-          <p class="dim">
-            One vehicle, one mission cycle: trigger fires, drone deploys,
-            climbs to 80m, captures the scene with agents in the FOV, returns
-            and lands. The same simulation that backs our delivery rate,
-            success rate, and quality methodology numbers.
-          </p>
-          <div class="sim-frame">
-            <img src={`${import.meta.env.BASE_URL}/sim_demo.gif`} alt="Skydock simulation: host vehicle driving along an urban corridor, drone visibly launching from the vehicle, climbing to capture altitude, scanning a scene with agents in view, then returning and landing back on the vehicle" />
-            <div class="sim-caption">
-              urban_dense corridor · waypoint trigger · agents tracked in FOV · event log on right
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="samples">
-        <div class="container">
-          <h2>Sample captures</h2>
-          <h3>What an 80m aerial capture actually looks like.</h3>
-          <p>
-            Six representative captures across the scene-class taxonomy:
-            unprotected left turn, signalized intersection, pedestrian
-            crosswalk with VRU interaction, school zone at dismissal,
-            arterial-scale signalized intersection, and the in-field
-            vehicle-deployed dock itself.
-          </p>
-          <div class="sim-frame">
-            <img src={`${import.meta.env.BASE_URL}/samples_grid.png`} alt="Six sample aerial captures from Skydock: unprotected left turn intersection, signalized 4-way, pedestrian crosswalk with cyclist, school zone with crossing guard and school bus, large signalized intersection with multiple vehicles, and the Skydock vehicle-mounted dock with drone deploying" />
-            <div class="sim-caption">
-              representative samples across scene-class taxonomy
-            </div>
-          </div>
-          <p class="dim">
-            Every sample is delivered as a four-file package: metadata,
-            per-frame agent tracks, OpenSCENARIO 2.0 export, and optional
-            raw 4K video. See "What you get" above for the deliverable schema.
-          </p>
-        </div>
-      </section>
-
-      <section id="order">
-        <div class="container">
-          <h2>Order options</h2>
-          <h3>Pick a pack. Request custom captures. Add what you need.</h3>
-          <p>
-            Three ways to buy: pre-defined scenario packs at fixed price,
-            custom-waypoint captures at premium pricing, and add-ons like
-            raw video or exclusive licensing. All orders deliver in
-            OpenSCENARIO 2.0 within the 4-hour SLA per scenario.
-          </p>
-
-          <h4 class="subsection">Discovery packs <span class="tier-label">single scene class · pilot tier</span></h4>
-          <div class="pack-grid">
-            <div class="pack-card">
-              <div class="pack-name">Unprotected Left Turn Starter</div>
-              <div class="pack-includes">50 captures of <code>unprotected_left_turn</code> scenarios across Bay Area intersections. Highest-leverage scene class for trajectory prediction validation.</div>
-              <div class="pack-meta">
-                <span class="pack-count">50 scenarios</span>
-                <span class="pack-price">$17,000</span>
-              </div>
-            </div>
-            <div class="pack-card">
-              <div class="pack-name">Pedestrian Crosswalk Starter</div>
-              <div class="pack-includes">50 captures of <code>pedestrian_crosswalk</code> scenarios with rich VRU interactions. Useful for VRU detection model validation.</div>
-              <div class="pack-meta">
-                <span class="pack-count">50 scenarios</span>
-                <span class="pack-price">$17,000</span>
-              </div>
-            </div>
-            <div class="pack-card">
-              <div class="pack-name">School Zone Starter</div>
-              <div class="pack-includes">50 captures of <code>school_zone</code> scenarios during dismissal hours. Crossing guards, buses, pedestrian density edge cases.</div>
-              <div class="pack-meta">
-                <span class="pack-count">50 scenarios</span>
-                <span class="pack-price">$17,000</span>
-              </div>
-            </div>
-          </div>
-
-          <h4 class="subsection">Validation packs <span class="tier-label">mixed scene classes · pilot tier</span></h4>
-          <div class="pack-grid">
-            <div class="pack-card featured">
-              <div class="pack-name">Validation Library Sampler</div>
-              <div class="pack-includes">100 mixed-class scenarios sampled across our 10 built-in scene classes. The recommended first pilot for any AV scenario-library team.</div>
-              <div class="pack-meta">
-                <span class="pack-count">100 scenarios</span>
-                <span class="pack-price">$33,900</span>
-              </div>
-            </div>
-            <div class="pack-card">
-              <div class="pack-name">VRU Safety Discovery</div>
-              <div class="pack-includes">100 scenarios across <code>pedestrian_crosswalk</code>, <code>vru_interaction</code>, and <code>school_zone</code>. Targeted at perception safety case for VRU detection.</div>
-              <div class="pack-meta">
-                <span class="pack-count">100 scenarios</span>
-                <span class="pack-price">$33,900</span>
-              </div>
-            </div>
-            <div class="pack-card">
-              <div class="pack-name">Intersection Behavior Pack</div>
-              <div class="pack-includes">100 scenarios across <code>intersection_signalized</code>, <code>intersection_unsignalized</code>, and <code>unprotected_left_turn</code>. Trajectory prediction training emphasis.</div>
-              <div class="pack-meta">
-                <span class="pack-count">100 scenarios</span>
-                <span class="pack-price">$33,900</span>
-              </div>
-            </div>
-          </div>
-
-          <h4 class="subsection">Production volume <span class="tier-label">customer-specified mix · volume tiers</span></h4>
-          <div class="pack-grid">
-            <div class="pack-card">
-              <div class="pack-name">Library Foundation</div>
-              <div class="pack-includes">250-500 scenarios across all 10 scene classes, customer-specified mix and geography focus. Volume 1 tier.</div>
-              <div class="pack-meta">
-                <span class="pack-count">250-500 scenarios</span>
-                <span class="pack-price">from $50,000</span>
-              </div>
-            </div>
-            <div class="pack-card">
-              <div class="pack-name">Production Corpus</div>
-              <div class="pack-includes">500-1,000 scenarios with customer-specified scenario taxonomy and waypoint targeting. Volume 2 tier.</div>
-              <div class="pack-meta">
-                <span class="pack-count">500-1,000 scenarios</span>
-                <span class="pack-price">from $100,000</span>
-              </div>
-            </div>
-            <div class="pack-card">
-              <div class="pack-name">Enterprise</div>
-              <div class="pack-includes">1,000+ scenarios with custom waypoints, custom scenario classes, custom delivery SLAs. Volume 3 tier or annual contract.</div>
-              <div class="pack-meta">
-                <span class="pack-count">1,000+ scenarios</span>
-                <span class="pack-price">contact us</span>
-              </div>
-            </div>
-          </div>
-
-          <h4 class="subsection">Custom requests</h4>
-          <ul class="feature-list">
-            <li>
-              <span class="key">custom waypoints</span>
-              <span class="val">Specific GPS coordinates (e.g. <em>"Castro &amp; Market in SF, weekdays 4-6pm"</em>) added to operator route. Scene-class labels per waypoint. Premium pricing 2-3× standard tier.</span>
-            </li>
-            <li>
-              <span class="key">custom conditions</span>
-              <span class="val">Time-of-day targeting (rush hour, school dismissal, late evening) or reproducible weather conditions. Subject to operating envelope.</span>
-            </li>
-            <li>
-              <span class="key">custom taxonomies</span>
-              <span class="val">Onboarding your internal scene-class definitions beyond our 10 built-ins. ~1-week scoping. $5K-$15K depending on schema complexity.</span>
-            </li>
-            <li>
-              <span class="key">custom delivery formats</span>
-              <span class="val">Beyond OpenSCENARIO 2.0 — CommonRoad, custom JSON schemas, customer-specific naming conventions. Engineering rate ($5K-$15K).</span>
-            </li>
-            <li>
-              <span class="key">geographic expansion</span>
-              <span class="val">Outside Bay Area / Phoenix (Q4 2027) / Austin (Q1 2028)? We'll quote operational expansion for committed pilots.</span>
+              <span class="key">Model C — drone-in-a-box</span>
+              <span class="val">Persistent ground station that launches drones on schedule; drone returns for battery swap. Continuous capture via rotation. Requires BVLOS waiver for unattended ops; deployed post-waiver clearance in Phoenix and Austin expansion markets.</span>
             </li>
           </ul>
 
-          <h4 class="subsection">Add-ons (per scenario)</h4>
+          <h4 class="subsection">Capture geometry</h4>
           <ul class="feature-list">
             <li>
-              <span class="key">raw 4K H.265 video</span>
-              <span class="val">Original capture footage in addition to the standard agent-tracks + metadata + OpenSCENARIO. 200-600 MB per scenario. Quote at commission time.</span>
+              <span class="key">altitude</span>
+              <span class="val">50-120m AGL depending on intersection geometry. Default 80m for signalized urban intersections.</span>
             </li>
             <li>
-              <span class="key">exclusive licensing</span>
-              <span class="val">Default licensing is non-exclusive (your captures join multi-tenant corpus). Exclusive captures at 2-5× premium for data sovereignty.</span>
+              <span class="key">field of view</span>
+              <span class="val">Full signalized intersection or 130m corridor captured in a single frame. Sampling at 25-30 fps; agent tracking via YOLOv8 + ByteTrack.</span>
             </li>
             <li>
-              <span class="key">extended capture duration</span>
-              <span class="val">Default 30-120s capture. Longer captures (up to 5 min) for complex arterial corridors at +50% rate.</span>
-            </li>
-            <li>
-              <span class="key">expedited delivery</span>
-              <span class="val">Default 4-hour SLA. Sub-hour delivery for high-priority captures at engineering rate.</span>
-            </li>
-            <li>
-              <span class="key">integration support</span>
-              <span class="val">Engineering time for direct pipeline integration (Foretellix, Applied Intuition, CARLA, custom). Quoted as fixed-fee engagement.</span>
+              <span class="key">production rate</span>
+              <span class="val">~5,000 raw candidate scenarios per site-month. ~1,000 delivered per site-month after curation filter. At 5 active sites: ~60,000 scored scenarios added to the library per year.</span>
             </li>
           </ul>
 
-          <h4 class="subsection">What we don't sell</h4>
+          <h4 class="subsection">The curation pipeline (the moat)</h4>
           <p class="dim">
-            Honest scope. Skydock is an aerial BEV capture vendor &mdash;
-            adjacent products we don't sell:
+            Every captured candidate scenario runs through 5 independent
+            scoring signals. A scenario must score in the top 20% on at
+            least 2 of 5 signals to enter the delivered library. ~80% of
+            raw captures are filtered out. This matches Waymo's WOD-E2E
+            human-review acceptance rate (30%).
           </p>
           <ul class="feature-list">
             <li>
-              <span class="key">ego-vehicle capture</span>
-              <span class="val">Ground-perspective camera / lidar / radar from on-vehicle sensors. Different product class; we'll refer to vendors who specialize.</span>
+              <span class="key">criticality</span>
+              <span class="val">Physics-derived from agent tracks &mdash; TTC (time-to-collision), PET (post-encroachment time), jerk thresholds, near-miss detection. Cheap, interpretable; references Westhofen et al. 2021 catalog.</span>
             </li>
             <li>
-              <span class="key">synthetic data generation</span>
-              <span class="val">We sell real captures only. Synthetic generators (Parallel Domain, Mira, Cognata) can consume our captures as input for digital twins, but we don't generate synthetic ourselves.</span>
+              <span class="key">epistemic uncertainty</span>
+              <span class="val">Per-frame score against our baseline perception detector. The signal that drove the 16% → 5.5% collision-rate reduction in Mining the Long Tail (arXiv 2508.18397). Orthogonal to criticality.</span>
             </li>
             <li>
-              <span class="key">ML model training services</span>
-              <span class="val">We deliver training data; you train your models. We don't offer model-development or fine-tuning services.</span>
+              <span class="key">corpus frequency</span>
+              <span class="val">Rarity ranking vs the growing Skydock library &mdash; how unusual this scene-class + agent configuration is relative to corpus. Matches Waymo's WOD-E2E &lt;0.03% threshold methodology.</span>
             </li>
             <li>
-              <span class="key">annotation services</span>
-              <span class="val">Our deliveries include the agent_tracks.json with automated detection. Additional human-in-the-loop annotation services go to Scale AI / Surge / Appen.</span>
+              <span class="key">multi-agent interaction density</span>
+              <span class="val">Number of distinct agent interactions per scenario, derived from agent track topology. Higher densities surface scenarios where prediction and planning models stress most. References InterHub methodology (Nature Scientific Data 2025).</span>
+            </li>
+            <li>
+              <span class="key">scene-class taxonomy match</span>
+              <span class="val">Alignment with customer's OpenODD axes &mdash; what ODD bucket this scenario belongs to in your coverage model. Custom taxonomies onboarded in ~1 week.</span>
             </li>
           </ul>
         </div>
@@ -1066,11 +835,11 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
       <section id="scenes">
         <div class="container">
           <h2>Scene classes</h2>
-          <h3>What we capture, out of the box.</h3>
+          <h3>What our sites capture, out of the box.</h3>
           <p>
             Ten built-in scene classes drawn from common AV validation
             taxonomies. Custom taxonomies (your internal scene-class
-            definitions) onboarded in ~1 week.
+            definitions, OpenODD axis labels) onboarded in ~1 week.
           </p>
           <div class="scene-grid">
             <div class="scene-tag">
@@ -1115,10 +884,166 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
             </div>
           </div>
           <p class="dim">
-            Custom scenarios &mdash; specific intersections, specific times
-            of day, specific weather conditions if reproducible &mdash;
-            priced 2-3&times; standard tier.
+            Site selection prioritizes intersections with documented
+            high incident rates from city/state DOT data, customer-
+            requested geographies, and tractable rooftop access.
           </p>
+        </div>
+      </section>
+
+      <section id="pricing">
+        <div class="container">
+          <h2>Subscription tiers</h2>
+          <h3>Annual library access, sized to your safety-case scope.</h3>
+          <p>
+            Library subscriptions are annual, with 30-day notice for renewal.
+            Tier is based on access scope (which sites, which scene classes,
+            how much of the corpus) and on integration depth (API only,
+            partner-integrated, or with custom-capture support).
+          </p>
+          <table class="pricing">
+            <thead>
+              <tr>
+                <th>Tier</th>
+                <th>Scope</th>
+                <th>Annual</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="tier">Starter</td>
+                <td>1 metro library access (Bay Area), 3 scene classes, API access</td>
+                <td class="price">$100K</td>
+              </tr>
+              <tr>
+                <td class="tier">Standard</td>
+                <td>1 metro full access, all scene classes, OpenLABEL + OpenSCENARIO, partner integration</td>
+                <td class="price">$250K</td>
+              </tr>
+              <tr>
+                <td class="tier">Production</td>
+                <td>All US metros, all scene classes, all corpus tiers, raw 4K access, expansion priority</td>
+                <td class="price">$500K</td>
+              </tr>
+              <tr>
+                <td class="tier">Enterprise</td>
+                <td>Production + custom taxonomies + custom-capture rights + exclusivity windows</td>
+                <td class="price">contact us</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h4 class="subsection">Custom capture</h4>
+          <ul class="feature-list">
+            <li>
+              <span class="key">new site deployment</span>
+              <span class="val">You specify a high-criticality intersection in your operating area; we deploy a Model A/B/C site if economics justify. Capture for 6-12 months, then folds into your library subscription. Pricing: $50K-$150K per new site setup depending on deployment model.</span>
+            </li>
+            <li>
+              <span class="key">time-bounded exclusivity</span>
+              <span class="val">Default licensing is non-exclusive (captures join the multi-tenant corpus, which keeps subscription prices low). Time-bounded exclusivity available at a documented premium: 2-5× standard subscription rate for the exclusive window. Useful for safety-case-sensitive deployments.</span>
+            </li>
+            <li>
+              <span class="key">custom taxonomies</span>
+              <span class="val">Onboarding your internal scene-class definitions and OpenODD axis labels. ~1-week scoping. Bundled into the subscription at Standard tier and above.</span>
+            </li>
+          </ul>
+
+          <h4 class="subsection">What we don't sell</h4>
+          <p class="dim">
+            Honest scope. Skydock is the validation-grade aerial BEV
+            scenario library &mdash; adjacent products we don't sell:
+          </p>
+          <ul class="feature-list">
+            <li>
+              <span class="key">ego-vehicle capture</span>
+              <span class="val">Ground-perspective camera / lidar / radar from on-vehicle sensors. Different product class; we'll refer to vendors who specialize.</span>
+            </li>
+            <li>
+              <span class="key">synthetic data generation</span>
+              <span class="val">We sell real captures only. Synthetic generators (Parallel Domain, Mira, Cognata) can consume our captures as input for digital twins, but we don't generate synthetic ourselves.</span>
+            </li>
+            <li>
+              <span class="key">ML model training services</span>
+              <span class="val">We deliver scored validation libraries; you train and validate your models. We don't offer model-development or fine-tuning services.</span>
+            </li>
+            <li>
+              <span class="key">annotation services</span>
+              <span class="val">Library deliverables include automated agent tracks. Additional human-in-the-loop annotation services go to Scale AI / Surge / Appen.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="pilot">
+        <div class="container">
+          <h2>Closed-loop pilot</h2>
+          <h3>Free 30-day pilot. You measure the value on your own safety case.</h3>
+          <div class="pilot-card">
+            <div class="pilot-headline">Phase 0 — free, 30 days</div>
+            <div class="pilot-step">
+              <span class="step-num">1.</span>
+              <span class="step-body">You specify a Bay Area intersection that matters to your safety case (or pick from our site list).</span>
+            </div>
+            <div class="pilot-step">
+              <span class="step-num">2.</span>
+              <span class="step-body">We deliver 100 criticality-scored, OpenSCENARIO 2.0 scenarios from that site, with all 5 curation signals tagged.</span>
+            </div>
+            <div class="pilot-step">
+              <span class="step-num">3.</span>
+              <span class="step-body">You import into your closed-loop simulation pipeline. No charge. No NDA required.</span>
+            </div>
+          </div>
+
+          <div class="pilot-card">
+            <div class="pilot-headline">Phase 1 — measurement, 30 days, jointly authored success criteria</div>
+            <div class="pilot-step">
+              <span class="step-num">1.</span>
+              <span class="step-body">You measure your AV's collision rate on your existing held-out evaluation set, segmented by criticality bin, <em>before</em> adding Skydock scenarios.</span>
+            </div>
+            <div class="pilot-step">
+              <span class="step-num">2.</span>
+              <span class="step-body">You augment your library with the 100 Skydock scenarios and re-measure on the same held-out set.</span>
+            </div>
+            <div class="pilot-step">
+              <span class="step-num">3.</span>
+              <span class="step-body">
+                <strong>Pre-agreed success criterion (written before pilot starts)</strong>:
+                collision-rate reduction of ≥10% in at least one criticality
+                bin <em>or</em> coverage-gap closure on ≥3 OpenODD axes.
+                Joint authorship binds the conversion economics in advance.
+              </span>
+            </div>
+          </div>
+
+          <div class="pilot-card">
+            <div class="pilot-headline">Phase 2 — conversion to Library subscription</div>
+            <div class="pilot-step">
+              <span class="step-num">1.</span>
+              <span class="step-body">If success criteria are met, you sign an annual Library subscription at the agreed tier ($100K-$500K).</span>
+            </div>
+            <div class="pilot-step">
+              <span class="step-num">2.</span>
+              <span class="step-body">12-month initial commitment, 30-day notice for renewal. Captures + curation continue against your evolving safety case.</span>
+            </div>
+            <div class="pilot-step">
+              <span class="step-num">3.</span>
+              <span class="step-body">Expansion (custom sites, additional metros, exclusivity windows) on demand at the documented add-on rates.</span>
+            </div>
+          </div>
+
+          <p class="dim">
+            We don't ask you to take our metrics on faith. The pilot is
+            structured so you measure the value yourself, on your own
+            safety case, against your own held-out evaluation set.
+            Predefined success criteria align both sides on what conversion
+            looks like before either of us has skin in the game.
+          </p>
+
+          <div class="cta-row">
+            <a class="cta primary" href="mailto:krethikram@gmail.com?subject=Skydock — closed-loop pilot inquiry">Start a closed-loop pilot</a>
+            <a class="cta secondary" href="mailto:krethikram@gmail.com?subject=Skydock — discovery call">Book a discovery call</a>
+          </div>
         </div>
       </section>
 
@@ -1129,113 +1054,32 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
           <p>
             Every scenario's <code>metadata.json</code> includes two score
             blocks: a 0-100 capture quality score (agent visibility, coverage,
-            class diversity), and three independent long-tail signals so your
-            QA team can filter the corpus by rarity.
+            class diversity), and the 5 independent curation signals from
+            the pipeline so your QA team can filter the library by rarity.
           </p>
           <h4 class="subsection">Capture quality (0-100)</h4>
           <ul class="feature-list">
             <li>
               <span class="key">60 points</span>
-              <span class="val">Agent visibility ratio — frames each agent was inside the drone's FOV / total frames observed.</span>
+              <span class="val">Agent visibility ratio &mdash; frames each agent was inside the capture FOV / total frames observed.</span>
             </li>
             <li>
               <span class="key">20 points</span>
-              <span class="val">Agent coverage — saturated at 70% of spawned agents to reflect realistic FOV limits.</span>
+              <span class="val">Agent coverage &mdash; saturated at 70% of spawned agents to reflect realistic FOV limits.</span>
             </li>
             <li>
               <span class="key">20 points</span>
-              <span class="val">Agent class diversity — vehicle / pedestrian / cyclist representation.</span>
+              <span class="val">Agent class diversity &mdash; vehicle / pedestrian / cyclist representation.</span>
             </li>
             <li>
               <span class="key">multipliers</span>
-              <span class="val">Altitude-resolution factor (1.0 at 80m AGL, decreasing above). Wind-shake factor (1.0 at ≤12 mph, decreasing above, 10% floor).</span>
+              <span class="val">Altitude-resolution factor (1.0 at 80m AGL, decreasing above). Wind-shake factor (1.0 at ≤12 mph, decreasing above, 10% floor for tethered/drone-in-box sites).</span>
             </li>
           </ul>
           <p>
-            <strong>Scenarios scoring below 70 are not delivered.</strong> No
-            charge, no opt-in. If we can't hit the bar, we don't ship.
-          </p>
-
-          <h4 class="subsection">Long-tail scores (per scenario, for your filtering)</h4>
-          <p class="dim">
-            We don't decide what's long-tail for you. We surface three
-            independent signals; you filter the corpus to match your
-            team's definition of rare.
-          </p>
-          <ul class="feature-list">
-            <li>
-              <span class="key">criticality</span>
-              <span class="val">Physics-derived from agent_tracks.json &mdash; TTC (time-to-collision), PET (post-encroachment time), jerk thresholds. Cheap, interpretable, references Westhofen et al. 2021 catalog.</span>
-            </li>
-            <li>
-              <span class="key">epistemic uncertainty</span>
-              <span class="val">Per-frame score against our baseline perception model. The signal that drove the 16% → 5.5% collision-rate reduction in Mining the Long Tail (arXiv 2508.18397). Orthogonal to criticality.</span>
-            </li>
-            <li>
-              <span class="key">corpus frequency</span>
-              <span class="val">Rarity ranking against our growing library &mdash; how unusual this scene-class + agent configuration is relative to the corpus. Matches Waymo's WOD-E2E &lt;0.03% frequency threshold methodology.</span>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <section id="pricing">
-        <div class="container">
-          <h2>Pricing</h2>
-          <h3>Volume-tiered. No long contracts to start.</h3>
-          <p>
-            Pricing is derived bottoms-up from your cost-to-replicate
-            (in-house operator labor + annotation + amortized capex) plus a
-            documented vendor markup band. The full methodology is in our
-            FAQ; the resulting tiers are below.
-          </p>
-          <table class="pricing">
-            <thead>
-              <tr>
-                <th>Tier</th>
-                <th>Scenarios</th>
-                <th>Per scenario</th>
-                <th>Premium edge case</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="tier">Pilot</td>
-                <td>1 – 99</td>
-                <td class="price">$339</td>
-                <td>$632</td>
-              </tr>
-              <tr>
-                <td class="tier">Volume 1</td>
-                <td>100 – 499</td>
-                <td class="price">$200</td>
-                <td>$400</td>
-              </tr>
-              <tr>
-                <td class="tier">Volume 2</td>
-                <td>500 – 999</td>
-                <td class="price">$150</td>
-                <td>$300</td>
-              </tr>
-              <tr>
-                <td class="tier">Volume 3</td>
-                <td>1,000+</td>
-                <td class="price">$100</td>
-                <td>$200</td>
-              </tr>
-              <tr>
-                <td class="tier">Enterprise</td>
-                <td>Custom</td>
-                <td class="price">contact us</td>
-                <td>custom</td>
-              </tr>
-            </tbody>
-          </table>
-          <p class="dim">
-            Minimum pilot commitment: $25K (~74 scenarios at pilot rate).
-            Custom scenario taxonomies onboarded at $5K-$15K depending on
-            schema complexity. Bulk corpus access (historical scenarios)
-            quoted separately.
+            <strong>Scenarios scoring below 70 are not added to the library.</strong>
+            No exception, no opt-in. If we can't hit the quality bar, the
+            capture stays internal.
           </p>
         </div>
       </section>
@@ -1246,102 +1090,101 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
           <h3>What we commit to, and what happens when we miss.</h3>
           <ul class="sla-list">
             <li>
-              <span class="pct">99%</span> of triggered missions complete
-              delivery within 4 hours.
+              <span class="pct">99.5%</span> library API availability per
+              calendar month, excluding planned maintenance.
+            </li>
+            <li>
+              <span class="pct">99%</span> of newly-captured scenarios at
+              operational sites reach the subscription library within 48
+              hours of capture.
             </li>
             <li>
               <span class="pct">95%</span> of delivered scenarios pass the
-              published quality threshold (≥70).
+              published capture quality threshold (≥70).
             </li>
             <li>
-              <span class="pct">99.5%</span> of paid scenarios match the
-              customer's scene-class request.
-            </li>
-            <li>
-              <strong>No charge on failure.</strong> If a mission aborts
-              mid-capture, upload fails, or quality lands below threshold,
-              we don't bill.
+              <strong>Site uptime guarantee.</strong> Each subscribed site
+              targets ≥95% of operational-envelope hours captured. Outages
+              past 72 hours trigger pro-rated subscription credit.
             </li>
             <li>
               <strong>30-day QA credit window.</strong> If your QA team
-              rejects a delivered scenario for documented schema or content
-              issues, full credit toward future scenarios.
+              identifies documented schema or content issues with a library
+              scenario, credit toward subscription renewal.
             </li>
             <li>
-              <strong>Custom SLA terms.</strong> Enterprise customers can
-              negotiate bespoke uptime, delivery, and quality SLAs in the
-              master service agreement.
+              <strong>Custom SLA terms.</strong> Production and Enterprise
+              tier subscribers can negotiate bespoke availability, latency,
+              and quality SLAs in the master service agreement.
             </li>
           </ul>
         </div>
       </section>
 
-      <section id="fleet">
+      <section id="sites">
         <div class="container">
-          <h2>Our fleet</h2>
-          <h3>Independent, full-time, multi-market.</h3>
+          <h2>Our sites</h2>
+          <h3>Continuous capture at high-incident US intersections.</h3>
           <p>
-            We operate our own fleet &mdash; independent of any AV company's
-            data strategy. That gives you consistent capture quality across
-            every market, predictable scheduling, and a non-exclusive corpus
-            that scales faster than any single-customer DIY effort could.
+            We operate our own network of fixed-point capture installations
+            &mdash; independent of any AV company's data strategy. That gives
+            you consistent capture quality across every site, continuous
+            library growth, and a multi-tenant corpus that no single AV
+            company could build solo.
           </p>
           <ul class="feature-list">
             <li>
-              <span class="key">vehicles</span>
-              <span class="val">Compact hybrid SUVs (Toyota RAV4 Hybrid, Honda CR-V Hybrid, Tesla Model Y) with custom roof docks. Common make and model: predictable maintenance, low fuel cost, parts available anywhere.</span>
+              <span class="key">deployment</span>
+              <span class="val">Model A (rooftop) for Bay Area V1 sites &mdash; simplest regulatory and access path. Model B (tethered drone) for sites where intersection geometry needs higher vantage. Model C (drone-in-a-box) for Phoenix and Austin expansion post-BVLOS waiver.</span>
             </li>
             <li>
-              <span class="key">operators</span>
-              <span class="val">Full-time trained driver-operators, ride-share-style scheduling. Same crew runs your routes month over month &mdash; familiarity with corridors and waypoints translates directly to delivery rate.</span>
+              <span class="key">site selection</span>
+              <span class="val">Three signals prioritize sites: documented high-incident intersections from city/state DOT data, customer-requested geographies on the safety-case critical path, and tractable rooftop or land-use access.</span>
             </li>
             <li>
-              <span class="key">capacity</span>
-              <span class="val">Target 20 deliverable scenarios per vehicle-day at the 6-vehicle Bay Area steady state &mdash; ~1,500 scenarios per month against committed-pilot demand.</span>
+              <span class="key">operational profile</span>
+              <span class="val">Continuous capture during the regulatory envelope (daylight in V1, 24/7 post-BVLOS waiver). Per-site delivery: ~1,000 scored library scenarios per month after the 5-signal curation filter.</span>
             </li>
             <li>
               <span class="key">markets</span>
-              <span class="val">Bay Area operational from MVP. Phoenix Q4 2027 (year-round capture window). Austin Q1 2028 (Tesla / GM partnership zone). EU on the post-seed roadmap.</span>
+              <span class="val">Bay Area operational from M4 (3 sites). 5 sites total by M12. Phoenix Q3 2027 (year-round capture window). Austin Q4 2027 (Tesla / GM partnership zone). EU on the post-seed roadmap.</span>
             </li>
             <li>
               <span class="key">licensing</span>
-              <span class="val">Non-exclusive licensing by default &mdash; your data joins the multi-tenant corpus, lowering your per-scenario cost. Exclusive captures available at a documented premium for customers who need data sovereignty.</span>
+              <span class="val">Non-exclusive by default &mdash; your subscription accesses the multi-tenant corpus, which keeps prices low. Time-bounded exclusivity on specific captures available at documented premium.</span>
             </li>
           </ul>
-          <p class="dim">
-            We don't mount on customer or third-party fleets in v1. Running
-            an independent fleet is the operational discipline that makes
-            spec-target reliability achievable; piggybacking on AV test
-            fleets is a v3 capacity-expansion model after the core process
-            is dialed in.
-          </p>
         </div>
       </section>
 
       <section id="envelope">
         <div class="container">
           <h2>Operating envelope</h2>
-          <h3>When and where we can capture.</h3>
+          <h3>When and where we capture.</h3>
           <ul class="feature-list">
             <li>
-              <span class="key">daylight</span>
-              <span class="val">Civil daylight only: sunrise +30 min to sunset −30 min. Documented in scenario metadata so you can filter your corpus by capture conditions.</span>
+              <span class="key">daylight (V1)</span>
+              <span class="val">Civil daylight only: sunrise +30 min to sunset −30 min for Part 107 stationary observation. Documented in scenario metadata so you can filter the library by capture conditions. V2 capture envelope expands with BVLOS waiver clearance.</span>
             </li>
             <li>
               <span class="key">weather</span>
-              <span class="val">Capture rejected at wind &gt;20 mph or non-clear weather. Wind-shake quality penalty above 12 mph average.</span>
+              <span class="val">Capture rejected at wind &gt;20 mph or non-clear weather for Model B/C sites (tethered and drone-in-a-box). Wind-shake quality penalty above 12 mph average. Model A rooftop captures continue through most weather since the camera is fixed-mounted.</span>
             </li>
             <li>
               <span class="key">altitude</span>
-              <span class="val">50-120m AGL (default 80m). FAA Part 107 ceiling is 400 ft (122m) with margin.</span>
+              <span class="val">50-120m AGL across deployment models. FAA Part 107 ceiling is 400 ft (122m) with margin. Tethered drones (Model B) operate within tethered-ops envelope with simplified registration.</span>
             </li>
             <li>
-              <span class="key">geography</span>
-              <span class="val">Bay Area operational from MVP. Phoenix Q4 2027, Austin Q1 2028. EU on the roadmap post-seed.</span>
+              <span class="key">regulatory posture</span>
+              <span class="val">FAA Part 107 commercial certificate held by Skydock. Operators per site are FAA-licensed (Part 107 remote pilot certificate). Model A (rooftop) and Model B (tethered) operate within standard Part 107 envelope; Model C (drone-in-a-box) requires BVLOS waiver, filed M1 of operations.</span>
             </li>
             <li>
-              <span class="key">regulatory</span>
-              <span class="val">FAA Part 107 VLOS only in V1 — no waiver dependency. Sub-250g drone qualifies for Remote ID exemption.</span>
+              <span class="key">privacy</span>
+              <span class="val">Default delivery is anonymized agent tracks (position + class + heading + speed) &mdash; no biometric or PII data. Optional raw 4K video has face and license-plate blurring applied before delivery, per California Civil Code §1708.8 and CCPA compliance.</span>
+            </li>
+            <li>
+              <span class="key">insurance</span>
+              <span class="val">Commercial drone liability per Part 107 &mdash; $1M standard coverage. Production and Enterprise subscribers can request higher coverage limits in MSA. We carry the regulatory and accident liability.</span>
             </li>
           </ul>
         </div>
@@ -1350,25 +1193,25 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
       <section id="usecases">
         <div class="container">
           <h2>What we're built for</h2>
-          <h3>Three use cases where aerial BEV data is the right tool.</h3>
+          <h3>Three use cases where validation-grade aerial BEV is the right tool.</h3>
           <p>
-            We're honest about fit. Aerial drone capture isn't a substitute
-            for every kind of AV data — it's the right tool for specific
-            problems where overhead ground truth and full multi-agent
-            visibility matter.
+            We're honest about fit. Skydock isn't a substitute for every
+            kind of AV data &mdash; it's the right tool for problems where
+            independent ground truth and full multi-agent visibility from
+            above matter.
           </p>
           <ul class="feature-list">
             <li>
-              <span class="key">scenario libraries</span>
-              <span class="val">Populate your OpenSCENARIO library with diverse, geographically-distributed real-world scenarios. Drone footage provides unoccluded multi-agent ground truth that drops directly into replay-driven validation pipelines.</span>
+              <span class="key">closed-loop validation</span>
+              <span class="val">Gate your safety case against a library of criticality-scored real captures from high-incident intersections. The data fails the synthetic-circularity test by construction (it's real, independent ground truth) &mdash; which is what the safety case requires.</span>
             </li>
             <li>
-              <span class="key">trajectory prediction</span>
-              <span class="val">Train trajectory and behavior-prediction models on naturalistic agent interactions captured from above. Same use case as highD/inD/openDD, but with on-demand US coverage and custom waypoints.</span>
+              <span class="key">scenario library coverage</span>
+              <span class="val">Populate your OpenSCENARIO library with diverse, geographically-distributed, OpenODD-axis-tagged real scenarios. Drone footage provides unoccluded multi-agent ground truth filterable by criticality bin, epistemic uncertainty, and corpus frequency.</span>
             </li>
             <li>
-              <span class="key">perception validation</span>
-              <span class="val">Validate your on-vehicle perception against ground truth captured by a fully independent sensor system. The independence is the point — same-stack validation has correlated errors.</span>
+              <span class="key">trajectory prediction validation</span>
+              <span class="val">Validate trajectory and behavior-prediction models on naturalistic interactions captured from above. Same use case as highD/inD/openDD, with continuous US library growth and criticality-scored curation.</span>
             </li>
           </ul>
           <p class="dim">
@@ -1383,90 +1226,64 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
         </div>
       </section>
 
-
       <section id="faq">
         <div class="container">
           <h2>FAQ</h2>
           <h3>Common questions from prospective customers.</h3>
           <ul class="faq-list">
             <li>
-              <div class="faq-q">Can I see a sample before committing?</div>
-              <div class="faq-a">Yes. Request a free sample scenario package &mdash; metadata.json, agent_tracks.json, scenario.xosc &mdash; to review with your team. No commitment, no NDA required.</div>
+              <div class="faq-q">Why subscription instead of per-scenario pricing?</div>
+              <div class="faq-a">Safety teams don't want a one-time pile of clips &mdash; they want a library that grows continuously as their safety case evolves. Subscription aligns our incentives with yours: we make money when the library gets more useful to you over time, not by selling each new scenario individually. It also lets us amortize site capex across your subscription term rather than tax you for each capture.</div>
             </li>
             <li>
-              <div class="faq-q">What's the minimum pilot size?</div>
-              <div class="faq-a">$25K minimum commitment (~74 scenarios at pilot tier). Smaller engagements possible for design partners willing to work through ambiguity together &mdash; talk to us.</div>
+              <div class="faq-q">What's actually different about a "validation-grade" library vs raw drone clips?</div>
+              <div class="faq-a">Three things. (1) 5-signal curation: every scenario is scored on criticality, epistemic uncertainty, corpus frequency, multi-agent interaction density, and scene-class taxonomy match. (2) OpenLABEL + OpenSCENARIO 2.0 native format that drops into your closed-loop sim without conversion. (3) OpenODD axis tagging so you can query the library against your coverage model. Raw clips are commodity; the scored, tagged, queryable library is the artifact safety teams actually use.</div>
             </li>
             <li>
-              <div class="faq-q">What if my city isn't in your coverage area yet?</div>
-              <div class="faq-a">Bay Area operational from MVP. Phoenix Q4 2027. Austin Q1 2028. EU on post-seed roadmap. We can quote custom geographic expansion for committed pilots &mdash; it accelerates our market entry and accelerates your access.</div>
+              <div class="faq-q">How does the closed-loop pilot work in practice?</div>
+              <div class="faq-a">100 free criticality-scored scenarios from a Bay Area intersection you specify, delivered in OpenSCENARIO 2.0. You measure your AV's collision rate on your existing held-out eval before and after adding the scenarios. Success criteria are jointly authored before the pilot starts &mdash; typically a ≥10% collision-rate reduction in at least one criticality bin, or coverage-gap closure on ≥3 OpenODD axes. Conversion to subscription happens if the agreed criteria are met.</div>
             </li>
             <li>
-              <div class="faq-q">Can I specify exact intersections, times of day, or weather conditions?</div>
-              <div class="faq-a">Yes. Custom waypoints (specific GPS coordinates, scene-class labels) get added to the operator's route plan. Time-of-day and reproducible weather conditions can be targeted. Custom scenario taxonomies onboarded in ~1 week. Custom captures priced 2-3&times; standard tier.</div>
-            </li>
-            <li>
-              <div class="faq-q">Can my scenarios be exclusive &mdash; not licensed to competitors?</div>
-              <div class="faq-a">Non-exclusive licensing by default. Your data joins the multi-tenant corpus, which keeps per-scenario pricing low. Exclusive captures available at a documented premium for customers who need data sovereignty &mdash; typically 2-5&times; standard pricing depending on duration and scope.</div>
-            </li>
-            <li>
-              <div class="faq-q">How do you handle pedestrian privacy and license plates?</div>
-              <div class="faq-a">Default delivery is anonymized agent tracks (position + class + heading + speed) &mdash; no biometric or PII data. Optional raw 4K video has face and license-plate blurring applied before delivery. Custom privacy handling negotiable for enterprise customers with specific compliance requirements.</div>
-            </li>
-            <li>
-              <div class="faq-q">Do you carry insurance for the drone operations?</div>
-              <div class="faq-a">Yes. Commercial drone liability insurance per FAA Part 107 &mdash; $1M standard coverage. Enterprise customers can request higher coverage limits in the master service agreement. We carry the regulatory and accident liability so you don't have to take it onto your books.</div>
+              <div class="faq-q">What if your sites don't cover the intersections we care about?</div>
+              <div class="faq-a">Custom site deployment: you specify a high-criticality intersection in your operating area; we deploy a Model A/B/C site at $50K-$150K setup. Capture for 6-12 months, then folds into your library subscription. Site selection is one of our highest-leverage decisions, so customer demand signal weights heavily on what we build next.</div>
             </li>
             <li>
               <div class="faq-q">How does Skydock data interact with my synthetic pipeline?</div>
-              <div class="faq-a">We deliver native OpenSCENARIO 2.0 &mdash; drops into Foretellix, Applied Intuition, CARLA, Cognata, or your internal validation pipeline without schema rewrite. Real aerial captures can also seed synthetic generators (Parallel Domain, Mira) as input for hyper-realistic digital twins.</div>
+              <div class="faq-a">We deliver native OpenSCENARIO 2.0 + OpenLABEL &mdash; drops into Foretellix, Applied Intuition, CARLA, Cognata, or your internal validation pipeline without schema rewrite. Real aerial captures can also seed synthetic generators (Parallel Domain, Mira) as input for hyper-realistic digital twins. The synthetic pipeline complements our real captures; it doesn't replace them in the safety case.</div>
             </li>
             <li>
-              <div class="faq-q">What happens if a scenario doesn't pass the quality threshold?</div>
-              <div class="faq-a">No charge. We generate the scenario, score it against the 60/20/20 methodology, and only bill if quality lands above 70. If it doesn't, the capture stays internal and you're not billed.</div>
+              <div class="faq-q">Can my library access be exclusive &mdash; not licensed to competitors?</div>
+              <div class="faq-a">Default library subscription is multi-tenant (which is what keeps prices low). Time-bounded exclusivity on specific captures or specific sites available at 2-5× premium for safety-case-sensitive deployments. Enterprise tier includes exclusivity windows by default.</div>
             </li>
             <li>
-              <div class="faq-q">What if my QA team rejects a delivered scenario?</div>
-              <div class="faq-a">30-day QA credit window. If your QA team finds documented schema or content issues with a delivered scenario, full credit toward future scenarios &mdash; no recourse to dispute. Enterprise customers can negotiate longer windows in the master service agreement.</div>
+              <div class="faq-q">How do you handle pedestrian privacy and license plates?</div>
+              <div class="faq-a">Default delivery is anonymized agent tracks (position + class + heading + speed) &mdash; no biometric or PII data. Optional raw 4K video has face and license-plate blurring applied before delivery, compliant with California Civil Code §1708.8, CCPA, and AB 856. Custom privacy handling negotiable for enterprise customers with specific compliance requirements.</div>
             </li>
             <li>
-              <div class="faq-q">How do you handle adverse weather?</div>
-              <div class="faq-a">Capture rejected at wind &gt;20 mph or non-clear weather. Wind-shake quality penalty kicks in above 12 mph average wind during capture. Operating envelope is documented in every scenario's metadata so you can filter your corpus by capture conditions &mdash; useful if your validation needs only fair-weather data, or specifically wants edge-weather scenarios.</div>
+              <div class="faq-q">What's your regulatory posture, especially on Part 107 and Remote ID?</div>
+              <div class="faq-a">Skydock holds the FAA Part 107 commercial certificate; per-site operators hold individual remote pilot certificates. Model A (rooftop) and Model B (tethered drone) operate within standard Part 107 envelope; tethered drones have simplified registration and Remote ID exemption. Model C (drone-in-a-box) requires BVLOS waiver &mdash; filed M1 of operations and tracked as a milestone in our execution plan. We do not rely on sub-250g Remote ID exemption for commercial ops; that exemption is for recreational flight, not commercial Part 107.</div>
             </li>
             <li>
-              <div class="faq-q">What's the scene-class match guarantee?</div>
-              <div class="faq-a">99.5% per SLA. The 0.5% of mismatches get credit toward future scenarios. We're conservative on this &mdash; scenario classification is automated against the waypoint label, so misclassification is rare but possible at edge intersections.</div>
+              <div class="faq-q">What happens to the library if a site goes offline?</div>
+              <div class="faq-a">Per-site uptime targets ≥95% of operational-envelope hours captured. Outages past 72 hours trigger pro-rated subscription credit. Library subscribers retain access to all already-captured scenarios from a site even if the site is paused or decommissioned.</div>
+            </li>
+            <li>
+              <div class="faq-q">Do you carry insurance for the drone operations?</div>
+              <div class="faq-a">Yes. Commercial drone liability insurance per FAA Part 107 &mdash; $1M standard coverage. Production and Enterprise subscribers can request higher coverage limits in the master service agreement. We carry the regulatory and accident liability so you don't have to take it onto your books.</div>
+            </li>
+            <li>
+              <div class="faq-q">How does pricing scale with corpus growth?</div>
+              <div class="faq-a">Subscription pricing locks for the 12-month term at signing. Renewal pricing reflects net-new corpus value (more sites, more scenarios, more curation depth) but expansion to next tier is at your option. You're not penalized for the library getting bigger; you choose whether to subscribe to more of it.</div>
+            </li>
+            <li>
+              <div class="faq-q">What's the difference between Skydock and levelXdata?</div>
+              <div class="faq-a">Three things. (1) US geographic coverage (vs Germany-only). (2) Continuous library growth (vs one-time research collections). (3) 5-signal curation scoring + OpenODD axis tagging (vs raw trajectory dumps). levelXdata is the validated commercial precedent that proves the category works at unit-economic scale; we're the US-coverage, validation-grade, continuously-growing extension of that model.</div>
             </li>
           </ul>
           <p class="dim">
             Question not answered here? Email <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a>
-            or schedule a 30-min call via the pilot CTA below.
+            or schedule a 30-min discovery call via the <a href="#pilot">closed-loop pilot CTA</a>.
           </p>
-        </div>
-      </section>
-
-      <section id="pilot">
-        <div class="container">
-          <h2>Start a pilot</h2>
-          <h3>Three ways to begin.</h3>
-          <ul class="feature-list">
-            <li>
-              <span class="key">1 · sample request</span>
-              <span class="val">Get a free sample scenario package (metadata + agent tracks + OpenSCENARIO) to review with your team. No commitment.</span>
-            </li>
-            <li>
-              <span class="key">2 · discovery call</span>
-              <span class="val">30-min call to walk through your scenario library, identify aerial-BEV gaps, scope a pilot. Founder-led.</span>
-            </li>
-            <li>
-              <span class="key">3 · paid pilot</span>
-              <span class="val">100-300 scenarios at pilot tier, scoped against your custom waypoints. Average pilot lands at $30K-$80K total.</span>
-            </li>
-          </ul>
-          <div class="cta-row">
-            <a class="cta primary" href="mailto:krethikram@gmail.com?subject=Skydock — request sample scenario">Request sample</a>
-            <a class="cta secondary" href="mailto:krethikram@gmail.com?subject=Skydock — pilot inquiry">Talk about a pilot</a>
-          </div>
         </div>
       </section>
 
@@ -1484,11 +1301,11 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
               operations.
             </p>
             <p class="bio">
-              Skydock applies the same operational pattern to a different
-              physical primitive: vehicle-mounted aerial drone docks for
-              AV training data. The hardware is commodity. The wedge is
-              operational discipline at spec-target reliability &mdash;
-              which is what he's spent his career building.
+              Skydock applies the same operational discipline to a different
+              physical primitive: fixed-point aerial capture sites
+              feeding a validation-grade scenario library for AV safety teams.
+              The hardware is commodity. The wedge is curation methodology
+              and operational discipline at safety-case-grade reliability.
             </p>
             <p class="bio">
               Earlier work includes a smart-access hardware and firmware
@@ -1502,18 +1319,18 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
           </div>
         </div>
       </section>
+
       <section id="sources">
         <div class="container">
           <h2>Sources</h2>
           <h3>Receipts for every numerical claim above.</h3>
           <p class="dim">
-            Every dollar figure, percentage, and benchmark on this page
-            traces back to a published source. Grouped by claim category
-            below.
+            Every percentage and benchmark on this page traces back to a
+            published source. Grouped by claim category below.
           </p>
 
           <div class="sources-group">
-            <h4>Model performance evidence</h4>
+            <h4>Model performance &amp; aerial BEV evidence</h4>
             <ul>
               <li>
                 <a href="https://arxiv.org/abs/2412.14442" target="_blank" rel="noopener">EPN: Ego Vehicle Planning-Informed Network for Trajectory Prediction</a>
@@ -1524,12 +1341,8 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
                 <span class="src-note">— arxiv 2309.10948. 18-72% trajectory prediction accuracy improvement on highD vs SOTA.</span>
               </li>
               <li>
-                <a href="https://openaccess.thecvf.com/content/ICCV2025/papers/Xiao_RoboTron-Sim_Improving_Real-World_Driving_via_Simulated_Hard-Case_ICCV_2025_paper.pdf" target="_blank" rel="noopener">RoboTron-Sim: Improving Real-World Driving via Simulated Hard-Case</a>
-                <span class="src-note">— ICCV 2025. ~50% improvement in hard-case success rate with curated training.</span>
-              </li>
-              <li>
                 <a href="https://arxiv.org/html/2508.18397v2" target="_blank" rel="noopener">Mining the Long Tail: Data-Centric Criticality Metrics</a>
-                <span class="src-note">— arxiv 2508.18397. Collision rate reduced 16.0% → 5.5% via long-tail curation.</span>
+                <span class="src-note">— arxiv 2508.18397. Collision rate reduced 16.0% → 5.5% via long-tail curation. The methodology our epistemic-uncertainty signal mirrors.</span>
               </li>
               <li>
                 <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6068987/" target="_blank" rel="noopener">CNN-based aerial pedestrian detection</a>
@@ -1537,33 +1350,33 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
               </li>
               <li>
                 <a href="https://www.nature.com/articles/s41597-025-05344-7" target="_blank" rel="noopener">InterHub: Naturalistic Trajectory Dataset with Dense Interaction</a>
-                <span class="src-note">— Nature Scientific Data 2025. Multi-agent interaction data lowers trajectory error significantly vs baselines.</span>
+                <span class="src-note">— Nature Scientific Data 2025. Methodology for the multi-agent interaction density signal in our curation pipeline.</span>
               </li>
               <li>
                 <a href="https://arxiv.org/pdf/1810.05642" target="_blank" rel="noopener">The highD Dataset</a>
-                <span class="src-note">— arxiv 1810.05642. 16.5h of drone-captured trajectories from German highways; 25Hz sampling.</span>
+                <span class="src-note">— arxiv 1810.05642. 16.5h of drone-captured trajectories from German highways; 25Hz sampling. The fixed-point hover precedent at unit-economic scale.</span>
               </li>
             </ul>
           </div>
 
           <div class="sources-group">
-            <h4>Unit economics inputs</h4>
+            <h4>Validation &amp; regulatory framework</h4>
             <ul>
               <li>
-                <a href="https://www.glassdoor.com/Salaries/autonomous-vehicle-engineer-salary-SRCH_KO0,27.htm" target="_blank" rel="noopener">AV engineer salary — Glassdoor</a>
-                <span class="src-note">— $160-230K base for perception; $100-170/hr loaded.</span>
+                <a href="https://www.nhtsa.gov/sites/nhtsa.gov/files/2024-12/nprm-av-step-2024-web.pdf" target="_blank" rel="noopener">NHTSA AV STEP NPRM (Dec 2024)</a>
+                <span class="src-note">— federal framework for AV safety, transparency, and evaluation. Voluntary participation; published Jan 2025.</span>
               </li>
               <li>
-                <a href="https://www.basic.ai/blog-post/how-much-do-data-annotation-services-cost-complete-guide-2025" target="_blank" rel="noopener">Annotation pricing — BasicAI 2025 guide</a>
-                <span class="src-note">— $0.03-$1 per bounding box; $0.05-$3 per mask; 60-120 cuboids/hr for 3D dense urban.</span>
+                <a href="https://www.foretellix.com/foretellix-parallel-domain-simulation/" target="_blank" rel="noopener">Foretellix + Parallel Domain partnership (Nov 2025)</a>
+                <span class="src-note">— scenario-based testing combined with photorealistic sensor simulation; confirms continued investment in scenario validation.</span>
               </li>
               <li>
-                <a href="https://uavcoach.com/drone-services-pricing/" target="_blank" rel="noopener">Commercial drone services pricing — UAV Coach</a>
-                <span class="src-note">— $200-$500/hr industry-standard rates; $1,000+ per usable scenario clip.</span>
+                <a href="https://wayve.ai/press/wayve-launches-gaia3/" target="_blank" rel="noopener">Wayve GAIA-3 launch (Dec 2025)</a>
+                <span class="src-note">— generative world model trained on 10× more data; signals end-to-end foundation model trajectory in AV. The world-model competition we explicitly opted out of by positioning on validation.</span>
               </li>
               <li>
-                <a href="https://www.skywatch.ai/blog/part-107-commercial-drone-insurance-guide" target="_blank" rel="noopener">FAA Part 107 commercial drone insurance — SkyWatch</a>
-                <span class="src-note">— $750-$1,500/yr for $1M liability coverage; $7/hr pay-per-flight available.</span>
+                <a href="https://www.digitaldividedata.com/blog/vru-detection-for-autonomous-vehicle-safety" target="_blank" rel="noopener">VRU detection for AV safety — Digital Divide Data</a>
+                <span class="src-note">— vulnerable road users represent &gt;50% of global traffic deaths; underrepresented in training data.</span>
               </li>
             </ul>
           </div>
@@ -1573,27 +1386,15 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
             <ul>
               <li>
                 <a href="https://www.drone-dataset.com" target="_blank" rel="noopener">levelXdata commercial aerial AV datasets</a>
-                <span class="src-note">— commercial license for highD, inD, rounD, exiD. The 7-year incumbent in our category.</span>
-              </li>
-              <li>
-                <a href="https://www.foretellix.com/foretellix-parallel-domain-simulation/" target="_blank" rel="noopener">Foretellix + Parallel Domain partnership (Nov 2025)</a>
-                <span class="src-note">— scenario-based testing combined with photorealistic sensor simulation; confirms continued investment in scenario validation.</span>
-              </li>
-              <li>
-                <a href="https://www.nhtsa.gov/sites/nhtsa.gov/files/2024-12/nprm-av-step-2024-web.pdf" target="_blank" rel="noopener">NHTSA AV STEP NPRM (Dec 2024)</a>
-                <span class="src-note">— federal framework for AV safety, transparency, and evaluation. Voluntary participation; published Jan 2025.</span>
-              </li>
-              <li>
-                <a href="https://wayve.ai/press/wayve-launches-gaia3/" target="_blank" rel="noopener">Wayve GAIA-3 launch (Dec 2025)</a>
-                <span class="src-note">— generative world model trained on 10x more data; signals end-to-end foundation model trajectory in AV.</span>
-              </li>
-              <li>
-                <a href="https://www.digitaldividedata.com/blog/vru-detection-for-autonomous-vehicle-safety" target="_blank" rel="noopener">VRU detection for AV safety — Digital Divide Data</a>
-                <span class="src-note">— vulnerable road users represent &gt;50% of global traffic deaths; underrepresented in training data.</span>
+                <span class="src-note">— commercial license for highD, inD, rounD, exiD. The fixed-point hover precedent at commercial scale.</span>
               </li>
               <li>
                 <a href="https://www.globenewswire.com/news-release/2025/08/12/3131847/0/en/AI-Training-Dataset-Market-Surges-to-9-58-billion-by-2029-Dominated-by-Scale-AI-US-Appen-Australia-AWS-US.html" target="_blank" rel="noopener">AI Training Dataset Market — GlobeNewswire</a>
                 <span class="src-note">— $9.58B by 2029. Dominated by Scale AI, Appen, AWS. AV is a major segment.</span>
+              </li>
+              <li>
+                <a href="https://www.skywatch.ai/blog/part-107-commercial-drone-insurance-guide" target="_blank" rel="noopener">FAA Part 107 commercial drone insurance — SkyWatch</a>
+                <span class="src-note">— $750-$1,500/yr for $1M liability coverage. Our regulatory and insurance posture is built on this framework.</span>
               </li>
             </ul>
           </div>
@@ -1603,14 +1404,18 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
             <ul>
               <li>
                 <a href="https://www.asam.net/standards/detail/openscenario/" target="_blank" rel="noopener">ASAM OpenSCENARIO 2.0</a>
-                <span class="src-note">— published industry standard for AV scenario description. Our delivery default.</span>
+                <span class="src-note">— published industry standard for AV scenario description. Our library delivery default.</span>
+              </li>
+              <li>
+                <a href="https://www.asam.net/standards/detail/openlabel/" target="_blank" rel="noopener">ASAM OpenLABEL</a>
+                <span class="src-note">— published industry standard for scenario labeling and annotation. Bundled with OpenSCENARIO in Standard tier and above.</span>
               </li>
             </ul>
           </div>
 
           <p class="dim" style="margin-top: 32px;">
-            Internal research documents with the full methodology and
-            sensitivity analysis are available on request via email.
+            Internal research documents with the full methodology, financial
+            model, and sensitivity analysis are available on request via email.
           </p>
         </div>
       </section>
@@ -1619,7 +1424,7 @@ const subline = "Skydock delivers on-demand, US-coverage, OpenSCENARIO 2.0-forma
 
     <footer>
       <div class="container">
-        skydock · 2026 · mountain view, ca
+        skydock · 2026 · san francisco, ca
       </div>
     </footer>
   </body>
