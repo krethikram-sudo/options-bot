@@ -1,3 +1,12 @@
+> ⚠ **STALE — V1 ARCHITECTURE.** This document sizes the V1 mobile-dock
+> raise at $2.0M based on the audited V1 cost model. The V2 fixed-point
+> architecture replaced V1 in May 2026 and the V2 raise is $2.2M per
+> V2_FINANCIAL_MODEL.md. V2 has materially different burn timing,
+> capex profile, and revenue ramp. Kept for historical context on raise
+> sizing methodology.
+
+---
+
 # Pre-seed raise sizing — honest re-derivation post-audit
 
 Internal. Builds on COST_MODEL_AUDIT.md. The prior PITCH.md claim was

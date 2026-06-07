@@ -1,3 +1,12 @@
+> ⚠ **STALE — V1 ARCHITECTURE.** This document audits the V1 mobile-dock
+> cost model. The V2 fixed-point architecture replaced V1 in May 2026
+> (per SKYDOCK_V2_THESIS.md). V2 unit economics are in
+> V2_FINANCIAL_MODEL.md; the V1 $87/scenario all-in cost is no longer
+> the relevant unit. Kept for historical context on the audit
+> methodology that surfaced the V1 economics problem.
+
+---
+
 # Cost model audit — what's missing in the current unit economics
 
 Internal honest critique. Question that prompted this: does our existing

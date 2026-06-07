@@ -1,3 +1,14 @@
+> ⚠ **STALE — V1 DISCOVERY POSTURE.** This document plans 3-thesis
+> parallel discovery against perception-team decision-makers. The V2
+> architecture (May 2026) committed to one thesis (closed-loop
+> validation library) and refocused discovery on AV safety teams + OEM
+> regulatory safety officers. Current discovery plan is
+> V2_DISCOVERY_PLAN.md; current outreach scripts are
+> V2_OUTREACH_SCRIPTS.md. Kept for historical context on V1 discovery
+> methodology and target company list.
+
+---
+
 # Skydock — Customer discovery plan
 
 **Goal:** Over 4-6 weeks, run 15-20 conversations with named decision-makers at AV companies to validate which of three thesis framings has actual buyer pull. Exit the discovery period with enough evidence to commit to a single thesis and rewrite PITCH.md against it.

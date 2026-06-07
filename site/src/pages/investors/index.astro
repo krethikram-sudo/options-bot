@@ -5,49 +5,58 @@ const repoBase = "https://github.com/krethikram-sudo/options-bot/blob/main/skydo
 const PASSWORD_HASH = "81a8ea8f660c824c8eda9e56c1e49a02389bb3cbd330ea9b51d38eb8db2fa123";
 const docs = [
   {
-    section: "Strategic narrative",
-    description: "The investor pitch, execution plan, and the assumptions baked into it.",
+    section: "V2 strategic narrative (current)",
+    description: "The V2 architecture: fixed-point capture + curation-as-product + validation-positioning. Replaces V1 mobile-dock per May 2026 pivot.",
     items: [
-      { name: "PR-FAQ (PITCH.md)", file: "PITCH.md", desc: "Amazon-style PR-FAQ. The full investor narrative — problem, wedge, financials, risks. 478 lines." },
-      { name: "Execution plan", file: "EXECUTION_PLAN.md", desc: "End-to-end operational plan: now → pre-seed → 18mo execution → seed round close. Monthly milestones, hiring sequence, KPIs by phase." },
-      { name: "Assumptions + profitability", file: "ASSUMPTIONS_AND_PROFITABILITY.md", desc: "10 baked-in assumptions with confidence levels. Answers: does the pre-seed get us to profitability before next raise?" },
-      { name: "Thesis review", file: "THESIS_REVIEW.md", desc: "Self-critique of the original thesis. What changed after customer discovery." },
+      { name: "V2 thesis", file: "SKYDOCK_V2_THESIS.md", desc: "The V2 strategic pivot. Why V1 mobile-dock died on unit economics and category positioning. Fixed-point capture + curation moat + safety-team positioning." },
+      { name: "PR-FAQ (V2 PITCH.md)", file: "PITCH.md", desc: "Amazon-style PR-FAQ rewritten against V2 architecture. The full investor narrative — closed-loop validation problem, library subscription product, fixed-point unit economics, $2.2M raise. Q27 corrects V1's incorrect Remote ID exemption claim." },
+      { name: "V2 execution plan", file: "V2_EXECUTION_PLAN.md", desc: "End-to-end V2 operational plan: now → pre-seed → 18mo → seed. Site deployment sequence (Model A/B/C), curation pipeline build, BVLOS waiver timing, hiring weighted toward engineering + GTM." },
+      { name: "V2 financial model", file: "V2_FINANCIAL_MODEL.md", desc: "V2 unit economics + monthly burn + cumulative cash. $2.2M raise, $2/scenario delivered cost, library subscription pricing $100K-$500K/yr, CFP M18-20, end-M18 cash $600K." },
     ],
   },
   {
-    section: "Financial model",
-    description: "Honest numbers with line-by-line derivation. Updated post-audit.",
+    section: "V2 customer discovery (current)",
+    description: "V2 outreach refocused on AV safety teams + OEM regulatory safety officers + validation-platform channel partners.",
     items: [
-      { name: "Cost model audit", file: "COST_MODEL_AUDIT.md", desc: "Audit of original PR-FAQ Q17 cost claims. Found ~3× undercount in all-in cost. Honest rebuild at $87/scenario all-in." },
-      { name: "Raise sizing", file: "RAISE_SIZING.md", desc: "Monthly burn projection through M18. Three cumulative cash scenarios. Recommendation: $2.0M raise at $10M post-money cap." },
-      { name: "Value quantification", file: "VALUE_QUANTIFICATION.md", desc: "Customer ROI math. 49-74% cost savings vs alternatives with sourced inputs. Sensitivity analysis." },
-      { name: "Equity projection", file: "EQUITY_PROJECTION.md", desc: "Cap table evolution: incorporation → pre-seed → seed → Series A/B. Founder retention scenarios." },
+      { name: "V2 discovery plan", file: "V2_DISCOVERY_PLAN.md", desc: "6-8 week V2 discovery + closed-loop pilot Phase 0 acquisition plan. 18 named target accounts across Tier 1A (AV safety teams), 1B (OEM regulatory safety), and 2 (channel partners). Conversation guide built around safety case workflow probes." },
+      { name: "V2 outreach scripts", file: "V2_OUTREACH_SCRIPTS.md", desc: "4 outreach variants (AV safety team / OEM regulatory / channel partner / warm intro). Pre-built hooks for Waymo, Cruise, Aurora, GM, Foretify. Phase 0 closed-loop pilot conversion mechanic baked into the ask." },
     ],
+    note: "CONTACTS.md, WARM_INTRO_TEMPLATES.md, and the V1 OUTREACH_SCRIPTS.md / DISCOVERY_PLAN.md (now marked stale) contain named contacts — available on request via email, not linked here for privacy.",
   },
   {
-    section: "Market research + evidence",
-    description: "What customers need, what the published research says, who tried before us.",
+    section: "Supporting research + evidence",
+    description: "Domain research, model performance evidence, competitive landscape, regulatory framework. Largely unchanged by V1→V2 pivot since the underlying domain thesis (aerial BEV solves long-tail / validation) survives.",
     items: [
-      { name: "AV training data research", file: "AV_DATA_VALUE_RESEARCH.md", desc: "Deep research on AV training pipelines. Identifies levelXdata as missed competitor. Refines thesis from 'category empty' to 'commercial on-demand US-coverage missing'." },
-      { name: "Model performance evidence", file: "MODEL_PERFORMANCE_EVIDENCE.md", desc: "Peer-reviewed numbers backing every model-performance claim. RMSE −64% on highD, +50% hard-case (RoboTron-Sim ICCV 2025), −67% collision rate." },
+      { name: "Data value + long-tail research", file: "DATA_VALUE_AND_LONGTAIL_RESEARCH.md", desc: "Deep research on long-tail identification methodology + customer evaluation criteria. Underpins the V2 curation pipeline (criticality, epistemic uncertainty, corpus frequency, interaction density, taxonomy match)." },
+      { name: "AV training data research", file: "AV_DATA_VALUE_RESEARCH.md", desc: "Deep research on AV training pipelines. Identifies levelXdata as commercial precedent for V2 fixed-point architecture. Refines thesis." },
+      { name: "Model performance evidence", file: "MODEL_PERFORMANCE_EVIDENCE.md", desc: "Peer-reviewed numbers backing aerial BEV model-performance claims. RMSE −64% on highD, +50% hard-case (RoboTron-Sim ICCV 2025), −67% collision rate from long-tail curation." },
+      { name: "Value quantification", file: "VALUE_QUANTIFICATION.md", desc: "Customer ROI math. Cost-to-replicate analysis. Sensitivity analysis. Some V1 inputs need V2 refresh (subscription pricing vs per-scenario) but methodology survives." },
       { name: "Competitive graveyard", file: "COMPETITIVE_GRAVEYARD.md", desc: "10 adjacent companies that tried this and failed. PrecisionHawk ($136M raised, bankruptcy), Workhorse HorseFly, SkyDrop, Mighty AI, Civil Maps. Patterns of failure + how Skydock differs." },
+      { name: "Regulatory + permits", file: "REGULATORY_PERMITS.md", desc: "FAA Part 107 + tethered ops + BVLOS waiver path. California Civil Code §1708.8 + CCPA + AB 856 privacy. Surfaces and corrects the V1 sub-250g Remote ID exemption error." },
+      { name: "Equity projection", file: "EQUITY_PROJECTION.md", desc: "Cap table evolution: incorporation → pre-seed → seed → Series A/B. Founder retention scenarios. V2-compatible (similar dilution, mostly unchanged)." },
+      { name: "Thesis review", file: "THESIS_REVIEW.md", desc: "Self-critique of the original thesis. What changed after customer discovery." },
       { name: "Research log", file: "RESEARCH_LOG.md", desc: "Running notes from customer discovery, competitive scans, and industry conversations." },
     ],
   },
   {
-    section: "Customer discovery operations",
-    description: "Active outreach, customer pipeline, and conversation tracking.",
+    section: "Historical V1 artifacts",
+    description: "V1 mobile-dock architecture documents. Kept for historical context and methodology audit trails. The V2 docs above supersede these for any current decision.",
     items: [
-      { name: "Discovery plan", file: "DISCOVERY_PLAN.md", desc: "4-6 week customer discovery operational plan. 18 named contacts across 3 tiers (validation platforms, AV OEMs, trajectory prediction teams, competitive intelligence). Conversation guide + scoring rubric." },
+      { name: "V1 PR-FAQ (in git history)", file: "../commits/main/skydock/PITCH.md", desc: "The V1 PR-FAQ as of pre-V2-pivot is preserved in git history. Current PITCH.md is the V2 rewrite." },
+      { name: "V1 execution plan (stale)", file: "EXECUTION_PLAN.md", desc: "V1 mobile-dock 18-month operating plan. 6-vehicle Bay Area fleet. Hiring weighted toward operator-drivers. Superseded by V2 execution plan." },
+      { name: "V1 raise sizing (stale)", file: "RAISE_SIZING.md", desc: "V1 raise sizing analysis — $2.0M based on audited V1 cost model. Superseded by V2 financial model ($2.2M)." },
+      { name: "V1 cost model audit (stale)", file: "COST_MODEL_AUDIT.md", desc: "V1 cost audit that surfaced the ~3× undercount in PR-FAQ Q17. Methodology survives; V1-specific numbers do not. V2 unit economics in V2_FINANCIAL_MODEL.md." },
+      { name: "V1 assumptions + profitability (stale)", file: "ASSUMPTIONS_AND_PROFITABILITY.md", desc: "V1 assumption audit + profitability-vs-seed timing for V1 architecture. Useful for assumption-audit methodology. V2 has different assumptions." },
+      { name: "V1 discovery plan (stale)", file: "DISCOVERY_PLAN.md", desc: "V1 3-thesis parallel discovery plan against perception-team decision-makers. V2 refocused on safety teams." },
+      { name: "V1 outreach scripts (stale)", file: "OUTREACH_SCRIPTS.md", desc: "V1 outreach scripts targeting perception teams. V2 outreach targets safety teams + regulatory officers." },
     ],
-    note: "Other discovery materials (CONTACTS.md, OUTREACH_SCRIPTS.md, WARM_INTRO_TEMPLATES.md) contain named contacts and outreach scripts — available on request via email, not linked here for privacy.",
   },
   {
     section: "Simulation source",
-    description: "The 7,000-line physical-layer simulation backing every quantitative claim.",
+    description: "Physical-layer simulation that backed V1 quantitative claims. Most of the V1 sim modeled vehicle-mounted operations; V2 thesis-relevant components survive but full V2 site-deployment sim is post-pre-seed work.",
     items: [
-      { name: "Simulation repo", file: "skydock/", desc: "Discrete-time, full-system simulation. Trigger arrivals → mission state machine → data pipeline → unit economics. 16 passing regression tests." },
-      { name: "Live demo on landing page", file: "../", desc: "The cinematic animation embedded on the customer site is generated from this sim. Same model drives the unit-economics numbers in the financial docs." },
+      { name: "Simulation repo", file: "skydock/", desc: "Discrete-time full-system simulation. Trigger arrivals → mission state machine → data pipeline → unit economics. 16 passing regression tests. V1 mobile-dock model; useful for methodology reference." },
+      { name: "Live demo on landing page (V1)", file: "../", desc: "V2 customer site replaces the V1 simulation animation. V1 demo gif remains in repo public/ but is not surfaced on the V2 customer site." },
     ],
   },
 ];
@@ -422,15 +431,17 @@ const docs = [
           </div>
 
           <div class="quick-facts">
-            <h4>Quick reference</h4>
+            <h4>Quick reference (V2)</h4>
             <ul>
-              <li><strong>Stage</strong> Pre-seed (customer discovery + raise)</li>
-              <li><strong>Raise size</strong> $2.0M on SAFE @ $10M post-money cap</li>
-              <li><strong>CFP target</strong> Month 15-17 from raise close</li>
-              <li><strong>Cash at M18</strong> ~$2.28M + $75K accrued deferred founder comp</li>
+              <li><strong>Stage</strong> Pre-seed (V2 closed-loop pilot acquisition + raise)</li>
+              <li><strong>Architecture</strong> V2 fixed-point capture + library subscription (pivoted from V1 mobile-dock May 2026)</li>
+              <li><strong>Raise size</strong> $2.2M on SAFE @ $12M post-money cap (~18% dilution)</li>
+              <li><strong>CFP target</strong> Month 18-20 from raise close, $900K-$1.2M ARR run-rate</li>
+              <li><strong>Cash at M18</strong> ~$600K (4 months buffer at mature burn)</li>
               <li><strong>Founder ownership post-seed</strong> ~50% (solo founder)</li>
-              <li><strong>LTV per vehicle</strong> ~$1.2M over 24 months</li>
-              <li><strong>Customer site</strong> <a href="../">skydock landing page</a></li>
+              <li><strong>Mature LTV per customer</strong> $297K gross profit; LTV/CAC 3.7×</li>
+              <li><strong>Unit economics</strong> $2/scenario delivered (vs V1 $87)</li>
+              <li><strong>Customer site (V2)</strong> <a href="../">skydock landing page</a></li>
               <li><strong>Contact</strong> <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a></li>
             </ul>
           </div>
@@ -464,30 +475,37 @@ const docs = [
             <li class="doc-item">
               <div class="doc-name">For investors</div>
               <div class="doc-desc">
-                Start with the <strong>PR-FAQ (PITCH.md)</strong> for the
-                full narrative. Skim <strong>Assumptions + Profitability</strong>
-                for honest risk framing. Then <strong>Raise Sizing</strong>
-                for the dollar math and <strong>Equity Projection</strong>
-                for the cap table.
+                Start with the <strong>V2 thesis</strong> for the strategic
+                framing of the May 2026 pivot. Then the
+                <strong>V2 PR-FAQ (PITCH.md)</strong> for the full
+                narrative — closed-loop validation problem, library
+                subscription product, fixed-point unit economics. Skim
+                <strong>V2 financial model</strong> for the dollar math
+                and <strong>Equity Projection</strong> for the cap table.
+                <strong>V2 execution plan</strong> for the 18-month
+                operational roadmap.
               </div>
             </li>
             <li class="doc-item">
               <div class="doc-name">For prospective hires</div>
               <div class="doc-desc">
-                Start with the <strong>PR-FAQ</strong>, then
-                <strong>Execution Plan</strong> for the 18-month operational
-                roadmap. <strong>Cost Model Audit</strong> shows the honest
-                unit economics. <strong>Competitive Graveyard</strong> is the
-                most candid view of risks.
+                Start with the <strong>V2 thesis</strong>, then the
+                <strong>V2 PR-FAQ</strong>. <strong>V2 execution plan</strong>
+                shows the 18-month operational roadmap and the engineering
+                + curation hiring sequence. <strong>Competitive graveyard</strong>
+                and <strong>Regulatory + permits</strong> are the most
+                candid view of risks. V1 docs in the historical section give
+                context on why we pivoted from mobile-dock.
               </div>
             </li>
             <li class="doc-item">
               <div class="doc-name">For customer-discovery prospects</div>
               <div class="doc-desc">
                 The customer-facing site (linked above) is the primary
-                resource. The <strong>Model Performance Evidence</strong>
-                doc here provides the deeper sourced research backing the
-                site's headline numbers — share on request.
+                resource. <strong>Model performance evidence</strong> and
+                <strong>Data value + long-tail research</strong> docs here
+                provide the deeper sourced research backing the site's
+                headline numbers — share on request.
               </div>
             </li>
           </ul>
@@ -497,7 +515,7 @@ const docs = [
 
     <footer>
       <div class="container">
-        skydock · 2026 · internal data room · last updated May 2026 · <a href="../">customer site</a>
+        skydock · 2026 · internal data room · V2 architecture · last updated June 2026 · <a href="../">customer site</a>
       </div>
     </footer>
     </div>

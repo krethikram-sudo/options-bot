@@ -1,3 +1,13 @@
+> ⚠ **STALE — V1 ARCHITECTURE.** This document audits assumptions in the
+> V1 mobile-dock $2.0M raise plan and analyzes profitability-vs-seed
+> timing for the V1 architecture. V2 fixed-point architecture replaced
+> V1 in May 2026; V2 financial assumptions are in V2_FINANCIAL_MODEL.md.
+> Notably, V2 is more honestly seed-dependent than V1's plan suggested
+> (CFP at M18-20, seed needed for Phoenix + Austin + Model C expansion).
+> Kept for historical context on the assumption-audit methodology.
+
+---
+
 # Assumptions audit + profitability vs next-raise timing
 
 Internal companion doc to RAISE_SIZING.md. Two questions the prior

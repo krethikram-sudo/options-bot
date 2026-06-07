@@ -1,3 +1,13 @@
+> ⚠ **STALE — V1 ARCHITECTURE.** This document plans the V1 mobile-dock
+> 18-month rollout (6-vehicle Bay Area fleet). The V2 fixed-point
+> architecture replaced V1 in May 2026. Current execution plan is
+> V2_EXECUTION_PLAN.md (7 fixed-point sites, curation pipeline build,
+> BVLOS waiver work, library subscription product). V2 hiring sequence
+> shifts engineering-heavy from V1's operator-driver-heavy structure.
+> Kept for historical context on operating-plan methodology.
+
+---
+
 # Skydock execution plan — now → pre-seed → 18 months → seed
 
 Internal operating plan. End-to-end from current discovery state through

@@ -1,3 +1,13 @@
+> ⚠ **STALE — V1 OUTREACH POSTURE.** These scripts target perception-
+> team decision-makers with V1's mobile-dock thesis. The V2 architecture
+> (May 2026) refocused outreach on AV safety teams + OEM regulatory
+> safety officers + validation-platform channel partners. Current
+> outreach scripts are V2_OUTREACH_SCRIPTS.md. Kept for historical
+> context on V1 outreach methodology and specific-context customization
+> patterns.
+
+---
+
 # Skydock — Outreach Scripts
 
 Four variants tuned to contact type, plus follow-up sequences and customization examples for the top 3 priority contacts.
