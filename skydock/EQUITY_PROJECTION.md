@@ -6,8 +6,8 @@ depends on specific SAFE / seed terms which are negotiated.
 
 **TL;DR**: As **sole founder**, you'd own approximately:
 - **100% at incorporation**
-- **100% of issued shares after pre-seed close** (~80% pro-forma when SAFE converts)
-- **~50-55% after seed round** (typical scenario)
+- **100% of issued shares after pre-seed close** (~82% pro-forma when SAFE converts)
+- **~51-55% after seed round** (typical scenario)
 - **~38-45% after Series A** (if raised)
 - **~28-35% after Series B** (if raised)
 
@@ -22,10 +22,10 @@ no co-founder dilution.
 | Variable | Assumed value | Source |
 |---|---|---|
 | Founder split | Solo founder (you own 100% of common at start) | Your background |
-| Pre-seed structure | $2.0M on YC post-money SAFE at $10M post-money cap | RAISE_SIZING.md |
-| Pre-seed → SAFE share | 20% at conversion | $2M / $10M = 20% |
-| Seed round size | $5-10M | EXECUTION_PLAN.md Phase 5 |
-| Seed valuation | $25-40M post-money | EXECUTION_PLAN.md |
+| Pre-seed structure | $2.2M on YC post-money SAFE at $12M post-money cap | V2_FINANCIAL_MODEL.md |
+| Pre-seed → SAFE share | ~18% at conversion | $2.2M / $12M ≈ 18.3% |
+| Seed round size | $5-10M | V2_EXECUTION_PLAN.md Phase 5 |
+| Seed valuation | $25-40M post-money | V2_EXECUTION_PLAN.md |
 | Option pool at seed | 10% pre-money (standard pre-seed → seed) | Industry standard |
 | Series A (if raised) | $15-25M at $60-100M post-money + 5% pool top-up | Standard trajectory |
 | Series B (if raised) | $30-50M at $150-250M post-money + 5% pool top-up | Standard trajectory |
@@ -44,8 +44,8 @@ You own everything. Standard founder stock at incorporation.
 ### Stage 2: Pre-seed close (SAFE issued, not converted)
 | Holder | Shares | % of issued | Pro-forma at conversion |
 |---|---|---|---|
-| Founder | 10,000,000 | 100% | ~80% |
-| Pre-seed SAFE | — (right to ~20% on conversion) | 0% | ~20% |
+| Founder | 10,000,000 | 100% | ~82% |
+| Pre-seed SAFE | — (right to ~18% on conversion) | 0% | ~18% |
 
 You still own 100% of *issued* equity. SAFEs are a promise of future shares,
 not actual shares yet. You retain full voting control through pre-seed.
@@ -56,16 +56,19 @@ not actual shares yet. You retain full voting control through pre-seed.
 
 | Holder | Approximate % |
 |---|---|
-| **Founder** | **~50%** |
-| Pre-seed SAFE (now converted) | ~15% |
+| **Founder** | **~51-52%** |
+| Pre-seed SAFE (now converted) | ~13-14% |
 | Option pool (ESOP) | ~10% |
 | Seed investors | ~25% |
 
 The math:
 - Seed investors: $7.5M / $30M = 25%
 - Option pool: 10% (added pre-money, dilutes founder + SAFE)
-- Pre-seed SAFE conversion: ~15% (20% allocated minus dilution from option pool)
-- Founder retains: 100% − 25% − 10% − 15% = **50%**
+- Pre-seed SAFE conversion: ~13-14% (18% allocated minus dilution from option pool)
+- Founder retains: 100% − 25% − 10% − 14% = **~51%**
+
+(V2 at $12M pre-seed cap is ~1 percentage point more favorable to the
+founder than V1's $10M cap.)
 
 ### Stage 4: Series A (if raised) — typical scenario
 
@@ -104,11 +107,11 @@ Approximate paper value of founder equity at each stage:
 
 | Stage | Founder % | Implied valuation | Founder paper value |
 |---|---|---|---|
-| Pre-seed (post-conversion) | ~80% | $10M (SAFE cap) | $8M |
-| Seed | ~50% | $30M | $15M |
+| Pre-seed (post-conversion) | ~82% | $12M (SAFE cap) | $9.8M |
+| Seed | ~51% | $30M | $15.3M |
 | Series A | ~38% | $80M | $30M |
 | Series B | ~30% | $200M | $60M |
-| Acquisition at $150M (year 4-5 honest case) | ~30-50% (depends on if seed raised) | $150M | $45-75M |
+| Acquisition at $150M (year 4-5 honest case) | ~30-51% (depends on if seed raised) | $150M | $45-77M |
 | Acquisition at $300M (year 5-7 optimistic) | ~25-30% (after seed + A) | $300M | $75-90M |
 
 Note: paper value ≠ liquidity. Founder shares are common stock — convert to
@@ -136,17 +139,19 @@ preserving founder economics.
 
 ## Three ways to retain more equity
 
-1. **Skip the Series A.** Bootstrap from CFP. Stay at ~50% post-seed.
-   Per ASSUMPTIONS_AND_PROFITABILITY.md, this is a real option given Skydock
-   hits CFP at M15-17.
+1. **Skip the Series A.** Bootstrap from CFP. Stay at ~51% post-seed.
+   V2 reaches CFP at M18-20 (per V2_FINANCIAL_MODEL.md); seed is more
+   necessary in V2 than V1 for expansion, but bootstrap-from-CFP remains
+   a real option if V2 customer ramp is strong.
 
 2. **Smaller seed round.** $5M seed at $25M post-money (instead of $7.5M at
-   $30M) leaves you at ~52% instead of ~50%. Trade-off: less capital for
-   expansion.
+   $30M) leaves you at ~53% instead of ~51%. Trade-off: less capital for
+   expansion (Phoenix + Austin + Model C).
 
-3. **Aggressive SAFE cap.** Negotiate pre-seed at $12-15M post-money cap
-   (instead of $10M). Lower SAFE dilution. Trade-off: investors may push back
-   given pre-revenue stage.
+3. **Aggressive SAFE cap.** V2 already sized to $12M post-money cap (vs
+   V1's $10M); pushing further to $14-15M is possible but investors may
+   push back given pre-revenue stage. The V2 $12M cap is a reasonable
+   middle ground.
 
 ---
 
@@ -189,7 +194,7 @@ are absorbed.
 In order of importance for pre-seed:
 
 1. **Post-money SAFE structure** (not pre-money, not convertible note) — clearer math, less ambiguity at conversion
-2. **Cap, not discount** — $10M post-money cap is industry standard for pre-seed
+2. **Cap, not discount** — V2 targets $12M post-money cap (V1 had $10M). $10-12M is industry standard for pre-seed.
 3. **MFN (Most Favored Nation) clause** — protects later pre-seed investors from worse terms than earlier ones
 4. **Pro-rata rights** — let early investors participate in later rounds; signals confidence
 5. **No special seat / observer rights at pre-seed** — keep founder control intact
@@ -202,6 +207,8 @@ What to push back on at pre-seed:
 
 ---
 
-*v1, May 2026. Update when actual SAFE / seed term sheets come in.
-Get a startup attorney (~$5K for pre-seed cap table review) before
-signing any term sheet.*
+*v2 (V2 architecture refresh), June 2026. Updated for V2 raise sizing
+($2.2M at $12M cap vs V1's $2.0M at $10M cap). Cap-table mechanics
+unchanged; only the specific raise terms differ. Update when actual
+SAFE / seed term sheets come in. Get a startup attorney (~$5K for
+pre-seed cap table review) before signing any term sheet.*
