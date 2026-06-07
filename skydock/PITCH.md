@@ -1,6 +1,6 @@
 # Skydock — Pre-seed PR-FAQ (V2)
 
-**Executive Summary:** Today we will discuss the product idea and business opportunity for Skydock. We are seeking **$2.2M pre-seed funding** to build the V2 architecture: a fixed-point aerial BEV capture network feeding a validation-grade scenario library that AV safety teams subscribe to. Cash-flow positive operations on a 5-7 site Bay Area + adjacent footprint by **months 18-20** with $900K-$1.2M ARR run-rate (see [V2_EXECUTION_PLAN.md](V2_EXECUTION_PLAN.md) and [V2_FINANCIAL_MODEL.md](V2_FINANCIAL_MODEL.md)). Reasons why this is a good investment: (1) AV safety teams have a structurally non-substitutable need for *independent* validation-grade scenario libraries that synthetic data cannot satisfy (FAQs #9, #11, #15, #16); (2) fixed-point capture economics — already validated commercially by levelXdata's 7-year German precedent — deliver $2/scenario all-in cost vs $87/scenario in the V1 mobile model we abandoned (FAQ #17); (3) the curation pipeline (5-signal scoring on every captured scenario) is the defensible product layer that raw clips cannot displace (FAQ #12); (4) at maturity (Year 3-5), 15 sites + 15 customers + Library subscription model delivers $4-8M ARR at 45-62% gross margin with multi-tenant corpus growth as the moat (FAQ #21); (5) the closed-loop pilot conversion structure — free 30 days, jointly-authored success criteria, conversion to annual subscription — aligns customer purchase decisions with measured safety-case improvements they verify on their own held-out evals (FAQ #4). Founder comp: $150K cash + $50K/yr deferred + benefits = $200K cash-loaded through Phase 4 (deferred portion accrues as $75K liability payable from seed close).
+**Executive Summary:** Today we will discuss the product idea and business opportunity for Skydock. We are seeking **$2.2M pre-seed funding** to build the V2 architecture: a fixed-point aerial BEV capture network feeding a validation-grade scenario library that AV safety teams subscribe to. Cash-flow positive operations on a 5-7 site Bay Area + adjacent footprint by **months 18-20** with $900K-$1.2M ARR run-rate (see [V2_EXECUTION_PLAN.md](V2_EXECUTION_PLAN.md) and [V2_FINANCIAL_MODEL.md](V2_FINANCIAL_MODEL.md)). Reasons why this is a good investment: (1) AV safety teams have a structurally non-substitutable need for *independent* validation-grade scenario libraries that synthetic data cannot satisfy (FAQs #9, #11, #15, #16); (2) fixed-point capture economics — already validated commercially by levelXdata's 7-year German precedent — deliver ~$2.33/scenario all-in cost vs $87/scenario in the V1 mobile model we abandoned (FAQ #17); (3) the curation pipeline (5-signal scoring on every captured scenario) is the defensible product layer that raw clips cannot displace (FAQ #12); (4) at maturity (Year 3-5), 15 sites + 15 customers + Library subscription model delivers $4-8M ARR at 45-62% gross margin with multi-tenant corpus growth as the moat (FAQ #21); (5) the closed-loop pilot conversion structure — free 30 days, jointly-authored success criteria, conversion to annual subscription — aligns customer purchase decisions with measured safety-case improvements they verify on their own held-out evals (FAQ #4). Founder comp: $150K cash + $50K/yr deferred + benefits = $200K cash-loaded through Phase 4 (deferred portion accrues as $75K liability payable from seed close).
 
 **This V2 architecture replaces the V1 mobile-dock approach** documented in earlier drafts. The V1 mobile-dock model fought physics on unit economics (one vehicle + operator delivers ~60 seconds of capture; drives 30 minutes to next site) and sold the commodity layer (raw captures) while disclaiming the defensible one (curation). V2 inverts both. The thesis is in [SKYDOCK_V2_THESIS.md](SKYDOCK_V2_THESIS.md).
 
@@ -176,22 +176,24 @@ A direct cannibalization question: as synthetic libraries get better, do safety 
 
 **Q17. What is the per-delivered-scenario cost?**
 
-V2 fixed-point unit economics, derived in [V2_FINANCIAL_MODEL.md](V2_FINANCIAL_MODEL.md):
+V2 fixed-point unit economics, derived in [V2_FINANCIAL_MODEL.md](V2_FINANCIAL_MODEL.md) (refreshed June 2026 with realistic landlord economics per [V2_DEPLOYMENT_LOGISTICS.md](V2_DEPLOYMENT_LOGISTICS.md)):
 
 | Component | Annual per Model A site | Per delivered scenario |
 |---|---|---|
 | Capex amortization (5-year life on $25K Model A install) | $5K | $0.42 |
-| Operating (rooftop lease + cellular + cloud + insurance) | $9K | $0.75 |
+| Operating (rooftop lease $5K + cellular $2K + cloud $3K + insurance $1K + maintenance $2K) | $13K | $1.08 |
 | Centralized curation labor allocation (1 FTE per ~5-10 sites at $80K loaded) | $10K | $0.83 |
-| **Total annual cost per site (Model A)** | **$24K** | **~$2.00** |
+| **Total annual cost per site (Model A)** | **$28K** | **~$2.33** |
 | Annual delivered scenarios per site (after 80% curation filter) | ~12,000 | — |
 
-Comparison with V1 mobile-dock model we abandoned: V1 all-in cost was $87/scenario at 6-vehicle steady state ([COST_MODEL_AUDIT.md](COST_MODEL_AUDIT.md), now stale as a V1 artifact). The 43× unit-economics improvement is what made the V2 architecture pivot necessary — V1 mobile fought physics on per-scenario delivery cost; V2 fixed-point absorbs the continuous-capture economics levelXdata proved commercially over 7 years.
+Comparison with V1 mobile-dock model we abandoned: V1 all-in cost was $87/scenario at 6-vehicle steady state ([COST_MODEL_AUDIT.md](COST_MODEL_AUDIT.md), now stale as a V1 artifact). The 37× unit-economics improvement (refreshed from 43× after rent-realism update) is what made the V2 architecture pivot necessary — V1 mobile fought physics on per-scenario delivery cost; V2 fixed-point absorbs the continuous-capture economics levelXdata proved commercially over 7 years.
 
-Per-site deployment models and capex (more detail in V2_FINANCIAL_MODEL.md):
-- **Model A (rooftop):** $25K capex, $9K/yr operating, simplest regulatory path
-- **Model B (tethered drone):** $40K capex, $11K/yr operating, simplified Part 107 tethered-ops
-- **Model C (drone-in-a-box):** $50-80K capex, $15K/yr operating, requires BVLOS waiver
+**Rooftop rent realism:** Earlier V2 financial model assumed $1K/yr rooftop lease per site (~$80/mo). Industry comparables (cell tower / small cell / antenna attachment) put realistic Class B office rooftop rent at $300-500/mo ($3.6-6K/yr) for our small footprint with civic-tech framing. We've revised the model to $5K/yr midpoint. City-owned buildings and transit-adjacent civic partnerships can drop to $0-200/mo on longer negotiation cycles. See [V2_DEPLOYMENT_LOGISTICS.md](V2_DEPLOYMENT_LOGISTICS.md) for the full landlord-economics analysis.
+
+Per-site deployment models and capex (more detail in V2_FINANCIAL_MODEL.md and V2_DEPLOYMENT_LOGISTICS.md):
+- **Model A (rooftop):** $25K capex, $13K/yr operating, simplest regulatory path
+- **Model B (tethered drone):** $40K capex, $15K/yr operating, simplified Part 107 tethered-ops, BVLOS waiver eliminates VLOS operator cost
+- **Model C (drone-in-a-box):** $50-80K capex, $19K/yr operating, requires BVLOS waiver
 
 The 18-month plan deploys 5 sites by M12 (3 Model A + 2 Model A) and 7 sites by M18 (5 Model A + 2 Model B). Model C deployment begins post-seed (Phoenix + Austin expansion).
 

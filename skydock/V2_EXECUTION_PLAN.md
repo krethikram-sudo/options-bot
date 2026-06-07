@@ -110,7 +110,14 @@ sufficient.
 ### Phase 0 exit criteria → ready to close raise
 
 - ≥3 safety teams interested in closed-loop pilot
-- 3 site partnerships confirmed (LOI or verbal commitment)
+- **3 signed LOIs from Model A building partners** (non-binding intent
+  to host pending pre-seed close, with rent terms agreed in principle —
+  see V2_DEPLOYMENT_LOGISTICS.md "Landlord economics" section). Reduces
+  M4 first-site-live risk to near-zero. Verbal commitments alone are
+  insufficient given the negotiation cycle length (30-60 days for Class
+  B office; longer for city-owned buildings)
+- **20-30 candidate building partners under conversation** (the 6:1
+  pipeline ratio needed to handle landlord conversion losses)
 - ≥1 investor at term sheet stage
 - Legal entity + SAFE + bank ready
 - Founder bio + website (with V2 positioning) + pitch deck final

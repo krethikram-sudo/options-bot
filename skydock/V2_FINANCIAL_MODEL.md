@@ -20,22 +20,30 @@ run-rate and better unit economics). End-M18 cash with $2.2M raise:
 
 | Model | Description | Capex | Operating annual |
 |---|---|---|---|
-| **A: Rooftop mount** | Camera + compute + cellular on partner building rooftop. DJI Mini 4 Pro or Skydio X10 mounted, not flying continuously | $25K | $9K (lease $3K + cell $2K + cloud $3K + insurance $1K) |
-| **B: Tethered drone** | LTE-tethered drone hovering 50-150m indefinitely. Bigger drone (>250g) for tether weight | $40K | $11K (same as A + tether maintenance $2K) |
-| **C: Drone-in-a-box** | Persistent ground station, drone rotates for battery swap. Needs BVLOS waiver | $50-80K | $15K (DIB maintenance higher) |
+| **A: Rooftop mount** | Camera + compute + cellular on partner building rooftop. DJI Mini 4 Pro or Skydio X10 mounted, not flying continuously | $25K | $13K (lease $5K + cell $2K + cloud $3K + insurance $1K + maintenance $2K) |
+| **B: Tethered drone** | LTE-tethered drone hovering 50-150m indefinitely. Bigger drone (>250g) for tether weight | $40K | $15K (same as A + tether maintenance $2K) |
+| **C: Drone-in-a-box** | Persistent ground station, drone rotates for battery swap. Needs BVLOS waiver | $50-80K | $19K (DIB maintenance + vendor support contract higher) |
+
+**Rent assumption note (updated per V2_DEPLOYMENT_LOGISTICS.md):**
+Model A rooftop rent revised from $1K/yr to $5K/yr based on industry
+comparables (cell tower / small cell / antenna attachment rates).
+Realistic landed rent for a Class B office Model A site with civic-tech
+framing is $300-500/mo ($3.6-6K/yr). City-owned buildings can drop to
+$0-200/mo with longer negotiation cycles. Models B and C operating costs
+adjusted up similarly to reflect the rent realism.
 
 ### Amortization
 - 5-year life on all deployment hardware
-- Model A: $5K/year amortization → all-in per site $14K/year
-- Model B: $8K/year → all-in $19K/year
-- Model C: $13K/year → all-in $28K/year
+- Model A: $5K/year amortization → all-in per site $18K/year
+- Model B: $8K/year → all-in $23K/year
+- Model C: $13K/year → all-in $32K/year
 
 ### Centralized labor allocation to sites
 
 Curation operator (centralized, remote monitoring): $80K loaded for 1 FTE
 covering ~5-10 sites. Per-site allocation: $10K/year.
 
-**Total per-site annual cost at Y1 mix (Model A only)**: ~$24K/year per site
+**Total per-site annual cost at Y1 mix (Model A only)**: ~$28K/year per site
 
 ### Production per site
 - Continuous daylight capture × 8h × 30 days = 240 site-hours/month
@@ -47,10 +55,15 @@ covering ~5-10 sites. Per-site allocation: $10K/year.
 - **Annual delivered scenarios per site: ~12,000**
 
 ### Per-delivered-scenario cost
-- $24K annual cost ÷ 12,000 scenarios = **$2.00/scenario delivered**
-- vs V1's $87/scenario all-in at steady state
+- $28K annual cost ÷ 12,000 scenarios = **~$2.33/scenario delivered**
+- (Pre-rent-realism baseline was $2.00; updated to reflect realistic
+  landlord economics per V2_DEPLOYMENT_LOGISTICS.md)
+- vs V1's $87/scenario all-in at steady state — still 37× better
 
-This is the unit-economics flip the V2 thesis depended on.
+This is the unit-economics flip the V2 thesis depended on. Even with
+realistic rent comparables, the gap to V1 is enormous and the per-
+scenario cost stays well within the band that closes for Library
+subscription pricing of $100K-$500K/yr.
 
 ---
 
