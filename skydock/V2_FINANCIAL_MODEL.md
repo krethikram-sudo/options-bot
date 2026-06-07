@@ -4,11 +4,13 @@ Internal. Companion to SKYDOCK_V2_THESIS.md. Honest 18-month financial
 projection for V2 architecture: 3-10 fixed-point sites + library
 subscription product + closed-loop pilot conversion model.
 
-**TL;DR**: Recommend **$1.7M pre-seed** (vs V1's $2.0M). Lower capex
-($205K vs $342K) but slower revenue ramp because subscription model takes
-months to compound. Trough cumulative cash: ~−$700K at M6-7. CFP target
-month 18-20 (slightly later than V1's M16-18, but at higher MRR run-rate
-and better unit economics).
+**TL;DR**: Recommend **$2.2M pre-seed** (revised up from initial $1.7M
+analysis after founder direction to widen buffer). Lower capex than V1
+($205K vs $342K) but slower revenue ramp because subscription model
+takes months to compound. Trough cumulative cash: ~−$700K at M6-7. CFP
+target month 18-20 (slightly later than V1's M16-18, but at higher MRR
+run-rate and better unit economics). End-M18 cash with $2.2M raise:
+~$600K (4 months of buffer at mature burn).
 
 ---
 
@@ -126,31 +128,63 @@ hardware contractor (M1-6 only).
 
 ---
 
-## 3. Cumulative cash with $1.7M raise
+## 3. Cumulative cash with $2.2M raise
 
 | Milestone | Month | Cumulative cash position |
 |---|---|---|
-| Pre-seed close | 0 | $1.7M |
-| End M3 (build phase done) | 3 | $1.48M |
-| End M6 (3 sites + first pilots) | 6 | $1.13M |
-| First paid pilot signed | 7 | $1.13M |
-| End M9 (4 sites, 1 customer ramping) | 9 | $0.88K |
-| End M12 (5 sites, 2 customers, GTM hire) | 12 | $0.58M |
-| End M15 (5 sites, 4 customers, +Model B + custom) | 15 | $0.36M |
-| End M18 (7 sites, 6 customers ARR $1.2M run-rate) | 18 | $0.10M (cash-flow positive at run-rate) |
+| Pre-seed close | 0 | $2.2M |
+| End M3 (build phase done) | 3 | $1.98M |
+| End M6 (3 sites + first pilots) | 6 | $1.63M |
+| First paid pilot signed | 7 | $1.63M |
+| End M9 (4 sites, 1 customer ramping) | 9 | $1.38M |
+| End M12 (5 sites, 2 customers, GTM hire) | 12 | $1.08M |
+| End M15 (5 sites, 4 customers, +Model B + custom) | 15 | $0.86M |
+| End M18 (7 sites, 6 customers ARR $1.2M run-rate) | 18 | **$0.60M** |
+| M19+ (positive contribution kicks in) | 19+ | growing |
 
-**Trough**: end M18 with $0.10M cash and MRR run-rate $75K/month
-($900K ARR), $140K/month burn = ~$65K/month positive contribution by M19.
+**End-M18 cash position: ~$600K** with $2.2M raise. At Phase 6 burn rate
+of $140K/month, that's ~4 months of buffer.
 
-**Buffer**: thin. $1.7M raise leaves only $100K cash at M18. Realistic
-pessimistic case (slower customer ramp by 2 months) eats into negative
-territory.
+**Pessimistic-case survivability**:
+- 3-month customer-ramp slip → −$420K → still $180K positive at M18
+- BVLOS waiver +6 months → ~−$200K capex shift later → still positive
+- Combined ASP pressure (Library subscription closes at $100K avg
+  instead of $150K) → −$100K revenue → still positive
 
-### Sensitivity recommendation
+### Why $2.2M not $1.7M
 
-**Raise $1.9M instead of $1.7M.** Adds $200K of pessimistic-case buffer.
-Same dilution (~17% at $11M post-money cap). Hard-to-justify-extra at
-$1.7M, easy-to-defend at $1.9M.
+Comparison of two raise options:
+
+| Metric | $1.7M raise | **$2.2M raise (recommended)** | $2.5M raise (cushioned) |
+|---|---|---|---|
+| End M18 cash | $0.10M | **$0.60M** | $0.90M |
+| Months of buffer at M18 burn | 0.7 | **4.3** | 6.4 |
+| Pessimistic-case survival | Tight | **Comfortable** | Comfortable + accelerated seed |
+| Dilution at post-money cap | 17% @ $10M | **18% @ $12M** | 19% @ $13M |
+| Seed prep timing | M20-22 | **M19-21** | M18-20 (pulls forward) |
+
+**$2.2M is the sweet spot**: $500K more buffer than $1.7M for only
+~1% more dilution. Allows for comfortable pessimistic-case survival
+without giving up materially more equity.
+
+**$2.5M considered** but rejected for now: adds ~$300K more buffer
+than $2.2M for ~1% more dilution. Worth revisiting if first investor
+conversations show preference for chunkier rounds. Some funds (Floodgate,
+K9) actively prefer to over-fund cleaner rounds; if that signal emerges,
+$2.5M at $13M post-money is the upgrade.
+
+### What the extra $500K buys
+
+Beyond pure buffer, $2.2M vs $1.7M enables:
+- **One extra eng hire 2 months earlier** (M11 instead of M13) — accelerates
+  curation pipeline maturity
+- **OR one extra site M15** (a 2nd Model B tethered drone deploy) —
+  accelerates revenue with one more site coming online by M16
+- **OR seed-prep work starts M16 instead of M18** — pulls seed close
+  forward by 2 months
+
+These are all "optionality" not "necessity" — the core plan works at $1.7M
+but with no margin for surprise. $2.2M turns surprise into adjustment.
 
 ---
 
@@ -237,19 +271,20 @@ CAC analysis:
 
 | | V1 (mobile) | V2 (fixed-point) |
 |---|---|---|
-| Raise | $2.0M | $1.7M-$1.9M |
+| Raise | $2.0M | **$2.2M** |
 | Total 18-mo cost | $2.16M | $2.11M |
 | Total 18-mo capex | $342K | $205K |
 | Total 18-mo revenue | $2.30M | $508K |
 | CFP timing | M16-18 | M18-20 |
-| End-M18 cash | $1.89M | $0.1M-$0.3M |
-| 18-mo cumulative cash position | Better | Worse |
+| End-M18 cash | $1.89M | $0.60M |
+| 18-mo cumulative cash position | Better | Worse (lower revenue ramp) |
 | Year 3 revenue | $4.4M | $4.25M |
 | Year 3 gross margin | 57% | 45% |
 | Year 5 trajectory | ~$5-7M ARR, 65% GM | $8M+ ARR, 62%+ GM |
 | Customer concentration risk | Higher (6 customers) | Lower (15 customers) |
 | Moat | Operational discipline | Curation IP + corpus + integration |
 | Race vs synthetic data | Direct race (loses long-term) | Wins (validation can't substitute) |
+| Dilution at post-money cap | 17% @ $10M | 18% @ $12M |
 
 **V2 is structurally a slower-to-CFP, lower-margin-at-MVP, higher-margin-
 at-maturity, harder-to-kill business.** Trades early-revenue ramp for
@@ -260,9 +295,12 @@ durable defensibility.
 ## 7. What this implies for the rest of the rebuild
 
 ### RAISE_SIZING update needed
-- Recommend $1.7M-$1.9M raise (band)
+- Recommend $2.2M raise (revised up from initial $1.7M per founder
+  direction to widen buffer)
 - New monthly burn projection above replaces V1's
 - New trough analysis: M18 not M12
+- $12M post-money cap, ~18% dilution
+- $2.5M alternative if investor signal supports chunkier rounds
 
 ### EXECUTION_PLAN update needed
 - Phase 2-6 rebuilt around site deployment sequence (not vehicle
