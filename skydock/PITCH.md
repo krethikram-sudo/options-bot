@@ -1,60 +1,91 @@
-# Skydock — Pre-seed PR-FAQ
+# Skydock — Pre-seed PR-FAQ (V2)
 
-**Executive Summary:** Today we will discuss the product idea and business opportunity for Skydock. We are seeking **$2.0M pre-seed funding** to build the MVP and reach cash-flow positive operations on a 6-vehicle Bay Area fleet by **month 15-17** (technical architecture is largely finalized; see [skydock simulation](.)). Reasons why this is a good investment: (1) Aerial bird's-eye-view (BEV) training data is a structurally underserved category that addresses a documented and growing AV-customer pain point (FAQs #9, #11, #15); (2) the operational model — vehicle-deployed dock + autonomous drone deployment + delivery pipeline — has not been built before and gives us a defensible time-to-market advantage (FAQs #12, #14); (3) we have already de-risked the technical and unit-economic assumptions through a fully-instrumented simulation that lets us answer pricing, capacity, and reliability questions before spending hardware capital (FAQ #13); (4) in the mid-case scenario, Skydock delivers ~$1.2M LTV per vehicle, ~57% gross margin at weighted-volume ASP (~65% at pilot-tier ASP), ~$492K monthly revenue at a 6-vehicle steady state, and reaches CFP in months 15-17 **without a seed-round dependency** — the business is self-sustaining at CFP, with ~$2.28M cash position remaining at month 18 (founder comp: $150K cash + $50K/yr deferred + benefits = $200K cash-loaded through Phase 4; deferred portion accrues as $75K liability payable from seed close). The seed round becomes an *optional* growth investment for multi-market expansion (Phoenix, Austin, EU) and corpus subscription products — not a survival requirement (FAQ #21, #21a).
+**Executive Summary:** Today we will discuss the product idea and business opportunity for Skydock. We are seeking **$2.2M pre-seed funding** to build the V2 architecture: a fixed-point aerial BEV capture network feeding a validation-grade scenario library that AV safety teams subscribe to. Cash-flow positive operations on a 5-7 site Bay Area + adjacent footprint by **months 18-20** with $900K-$1.2M ARR run-rate (see [V2_EXECUTION_PLAN.md](V2_EXECUTION_PLAN.md) and [V2_FINANCIAL_MODEL.md](V2_FINANCIAL_MODEL.md)). Reasons why this is a good investment: (1) AV safety teams have a structurally non-substitutable need for *independent* validation-grade scenario libraries that synthetic data cannot satisfy (FAQs #9, #11, #15, #16); (2) fixed-point capture economics — already validated commercially by levelXdata's 7-year German precedent — deliver $2/scenario all-in cost vs $87/scenario in the V1 mobile model we abandoned (FAQ #17); (3) the curation pipeline (5-signal scoring on every captured scenario) is the defensible product layer that raw clips cannot displace (FAQ #12); (4) at maturity (Year 3-5), 15 sites + 15 customers + Library subscription model delivers $4-8M ARR at 45-62% gross margin with multi-tenant corpus growth as the moat (FAQ #21); (5) the closed-loop pilot conversion structure — free 30 days, jointly-authored success criteria, conversion to annual subscription — aligns customer purchase decisions with measured safety-case improvements they verify on their own held-out evals (FAQ #4). Founder comp: $150K cash + $50K/yr deferred + benefits = $200K cash-loaded through Phase 4 (deferred portion accrues as $75K liability payable from seed close).
+
+**This V2 architecture replaces the V1 mobile-dock approach** documented in earlier drafts. The V1 mobile-dock model fought physics on unit economics (one vehicle + operator delivers ~60 seconds of capture; drives 30 minutes to next site) and sold the commodity layer (raw captures) while disclaiming the defensible one (curation). V2 inverts both. The thesis is in [SKYDOCK_V2_THESIS.md](SKYDOCK_V2_THESIS.md).
 
 ---
 
-## Skydock: Aerial Training Data for Autonomous Vehicles, From the Roof of a Car
+## Skydock: Validation-Grade Aerial BEV Scenario Library for AV Safety Teams
 
-**MOUNTAIN VIEW, CA — (Business Wire) — April 9, 2027** — Today Skydock announced US launch of the first vehicle-deployed aerial training-data pipeline for autonomous vehicles, with four AV customers (including a Tier-1 scenario-validation platform) under paid commercial agreement, cash-flow positive operations achieved on a six-vehicle Bay Area fleet, and 4,200+ customer-validated scenarios delivered since MVP launch in October 2026.
+**SAN FRANCISCO, CA — (Business Wire) — September 24, 2027** — Today Skydock announced the production release of its validation-grade aerial bird's-eye-view (BEV) scenario library for autonomous vehicle (AV) safety teams, with six AV companies under paid annual subscription, five active fixed-point capture sites across the Bay Area, and a multi-tenant library of 35,000+ criticality-scored scenarios used in closed-loop safety case evaluation by the company's customers.
 
-AV development teams have spent the last decade collecting ground-perspective training data — cameras and lidar mounted on test vehicles, augmented by synthetic data generated from 3D scenes. Aerial bird's-eye-view (BEV) footage — drone perspective from 80m AGL — has been a structurally missing category because the operational model didn't exist. Fixed-base drone-in-a-box systems (DJI Dock 2, Skydio Dock 2) capture only the location they're installed at. Manually-piloted drone collection caps at 2-4 captures per day per crew and costs $1,000+ per usable clip. Skydock automates the operational layer: a roof-mounted dock containing a sub-250g drone deploys autonomously at pre-planned waypoints or operator command, captures 30-120 seconds of BEV footage above the scene, returns to dock, and the resulting OpenSCENARIO 2.0 scenario package is delivered to the customer within four hours.
+The AV industry has converged on closed-loop simulation as the gating mechanism for production safety cases. NHTSA's AV STEP framework, the EU AI Act's high-risk system requirements, and the UK CCAV safety-case process all increasingly require independent validation evidence — evidence that synthetic data libraries cannot provide because they share the underlying generative assumptions of the systems being validated. Skydock fills this gap with continuous overhead capture at high-incident US intersections, processed through a 5-signal curation pipeline (criticality, epistemic uncertainty, corpus frequency, multi-agent interaction density, scene-class taxonomy match) and indexed against customers' OpenODD coverage models. Subscribers query the library via API and partner integrations (Foretellix, Applied Intuition Validation Toolset, CARLA).
 
-> *"For our scenario-validation library, aerial BEV was the perspective we'd been trying to source internally for two years. Skydock turned what was a 6-month internal-build project into a 6-week purchase. The data quality holds up against our internal benchmarks and the OpenSCENARIO output dropped directly into our existing pipeline with no schema rewrite."*
-> — **[Head of Scenario Engineering, Pilot Customer]**
+> *"The Skydock library closed a gap we'd been trying to fill internally for three years. We measured our collision rate before and after adding their criticality-scored scenarios to our held-out eval, and the reduction was meaningful enough that our safety case timeline pulled forward by a full quarter. The curation is what we're paying for, not the raw captures."*
+> — **[Head of Safety Case, Pilot Customer]**
 
-Each Skydock vehicle carries a custom roof dock that houses three DJI Mini 4 Pro drones (249g each, sub-250g FAA Remote ID exemption), rotated between active capture, battery recharge, and standby. The dock provides 60cm precision-landing tolerance via BLE beacon guidance, an anti-tampering alarm, weatherproof IP55 enclosure, and inductive charging. An NVIDIA Jetson Orin Nano 8GB edge-compute unit runs the trigger detection, mission state machine, and data buffer; an LTE Cat-12 cellular modem uploads captured footage to the AWS cloud pipeline where the BEV transformation, agent detection (YOLOv8 + ByteTrack), and OpenSCENARIO export run before delivery to the customer.
+Each Skydock fixed-point site captures continuously during the operational envelope using one of three deployment models: a Model A rooftop installation (high-resolution camera + edge compute + cellular uplink mounted on a partner building rooftop overlooking the target intersection), a Model B tethered drone (LTE-tethered drone hovering 50-150m AGL indefinitely with simplified Part 107 tethered-ops registration), or a Model C drone-in-a-box (DJI Dock 2 / Percepto persistent ground station deployed post-BVLOS waiver clearance). Raw candidate scenarios — approximately 5,000 per site-month — pass through the curation pipeline. A scenario must score in the top 20% on at least two of five signals to enter the delivered library; approximately 80% of raw captures are filtered out, matching Waymo's WOD-E2E human-review acceptance rate.
 
-> *"Aerial BEV is the AV training-data category nobody could collect at scale because the operational model — getting a drone to the right intersection at the right time, reliably, twenty times per day per vehicle — didn't exist. We invented that model. The hardware is off-the-shelf. The wedge is the integrated system that gets to spec-target reliability."*
+> *"We sell the filtered, scored library — not the bucket of raw clips. That's the difference between commodity drone capture and validation-grade infrastructure. Curation methodology is the moat; site footprint is the substrate."*
 > — **Krethik Ram, Founder, Skydock**
 
-Skydock is currently delivering to four AV-industry customers and has two additional pilot agreements signed for Q3 2027. Per-scenario pricing starts at $339 (volume tier) with custom edge-case scenarios at premium rates. The company plans to expand to twelve vehicles operating across three markets (Bay Area, Phoenix, Austin) by Q4 2027. Skydock is backed by [pre-seed investors] and is based in Mountain View, CA. For more information, visit skydock.ai.
+Skydock operates an FAA Part 107 commercial license; per-site operators hold individual remote pilot certificates. Library subscriptions price at $100K-$500K/year by access tier, with custom site deployment ($50K-$150K per new site) and time-bounded exclusivity (2-5× standard subscription rate) as expansion products. The company plans to expand to 7 active sites across Bay Area, Phoenix, and Austin by Q4 2028, with EU expansion on the post-seed roadmap. Skydock is backed by [pre-seed investors] and is based in San Francisco, CA.
 
 ---
 
 ## Customer FAQs
 
-**Q1. What is a Skydock scenario?**
+**Q1. What is the Skydock Library?**
 
-A Skydock scenario is a 30–120 second aerial bird's-eye-view recording of a real road interaction (intersection, merge, school zone, construction zone, VRU interaction, etc.) captured from a drone at 80m AGL, delivered as a four-file package: `metadata.json` (scene classification, location with GPS uncertainty, capture geometry including drone altitude and gimbal pitch, camera calibration matching DJI Mini 4 Pro spec, quality score with documented methodology), `agent_tracks.json` (frame-by-frame ENU positions of every visible vehicle, pedestrian, and cyclist at 30 fps interpolated from the simulation's continuous-time agent model, with heading and speed computed from successive positions so traffic-light stops produce `speed_mps: 0`), `scenario.xosc` (OpenSCENARIO 2.0 export with the road network reference, scenario entities, and storyboard skeleton), and optionally the raw 4K H.265 source video.
+The Skydock Library is a continuously-growing, criticality-scored collection of aerial bird's-eye-view scenarios captured from fixed-point installations at high-incident US intersections. Every scenario is a 30-300 second BEV recording captured at 50-120m AGL, scored across 5 independent signals (criticality, epistemic uncertainty, corpus frequency, multi-agent interaction density, scene-class taxonomy match), tagged with OpenODD axis metadata, and delivered in ASAM OpenSCENARIO 2.0 + OpenLABEL format. Subscribers access the library via API, with filterable queries on scene class, criticality bin, agent count, geography, time-of-day, weather, and OpenODD axis match. New scenarios are added continuously: ~1,000 scored scenarios per site per month after the curation filter, ~60,000 net-new scenarios per year added to the corpus all subscribers can query at 5 active sites.
 
-**Q2. How does a Skydock scenario get captured? What's the operational flow?**
+**Q2. How does the closed-loop pilot work?**
 
-When a Skydock-equipped vehicle arrives at a pre-planned waypoint or the operator triggers capture, the system performs a 2-second pre-flight check (vehicle stationary or <5 mph per spec §1.2 envelope, wind <20 mph, drone battery >40%, no overhead obstacles), then deploys the drone in approximately 4 seconds. The drone climbs to 80m AGL in 18-25 seconds, holds position over the capture point for 30-120 seconds (operator-configurable), and returns to the dock in 18-25 seconds. Landing uses a BLE precision-landing system that takes over below 10m AGL and brings the drone within the dock's 1.5m horizontal tolerance for latch. Total mission time: ~90 seconds. The vehicle is stationary throughout the mission per FAA Part 107 VLOS requirements.
+The pilot has three phases, structured so the customer measures the value themselves on their own safety case:
 
-**Q3. How do I receive the scenarios? What's the format and timing?**
+- **Phase 0 (free, 30 days):** Skydock delivers 100 criticality-scored scenarios from a customer-specified Bay Area intersection (or a site from our active list). All 5 curation signals are tagged. Customer imports into their closed-loop simulation pipeline. No charge, no NDA.
+- **Phase 1 (measurement, 30 days):** Customer measures their AV's collision rate on their existing held-out evaluation set, segmented by criticality bin, before and after augmenting with the Skydock scenarios. Success criteria are jointly authored before pilot start — typically a ≥10% collision-rate reduction in at least one criticality bin, or coverage-gap closure on ≥3 OpenODD axes.
+- **Phase 2 (conversion):** If success criteria are met, customer signs an annual Library subscription at the agreed tier ($100K-$500K). 12-month initial commitment, 30-day notice for renewal.
 
-Standard delivery is via signed S3 pre-signed URL within 4 hours of capture. The package is a directory `scenario_{id}/` containing the four files described in Q1. Enterprise customers can request SFTP delivery, custom S3 bucket targeting, or an API endpoint for streaming integration. OpenSCENARIO 2.0 is the default schema; alternative schemas (CommonRoad, custom JSON) are supported at engineering rates. Bulk corpus access — historical scenarios from the library — is immediate via a queryable index.
+Joint authorship of success criteria in advance binds the conversion economics before either party has skin in the game. The structure matches the Forrester 2023 finding that predefined success criteria lift pilot-to-paid conversion 3.2×.
 
-**Q4. What's the pricing? How does volume tiering work?**
+**Q3. How do I access the library? What's the format and integration?**
 
-Per-scenario pricing follows the spec §4.2 volume tier structure, derived bottoms-up from cost-to-replicate. Pilot pricing (1-99 scenarios): $339/scenario standard, $250 minimum, $632 premium edge cases. Volume tier 1 (100-499 scenarios): $200/scenario. Volume tier 2 (500-999 scenarios): $150/scenario. Volume tier 3 (1000+ scenarios): $100/scenario or custom enterprise pricing. Premium edge cases (specific weather conditions, specific traffic patterns, custom waypoints) priced 2-3× the relevant tier rate. See FAQ #19 for the bottoms-up pricing methodology.
+Standard access is via the Skydock library API with filterable queries on the curation signals + scene-class taxonomy + OpenODD axes. Delivery format is OpenSCENARIO 2.0 + OpenLABEL natively, dropping into Foretellix, Applied Intuition Validation Toolset, CARLA, Cognata, or any internal closed-loop sim pipeline without schema rewrite. Partner integration available with Foretify and Applied Intuition Validation Toolset for in-tool query/import. Enterprise tier subscribers can request custom S3 bucket targeting, SFTP delivery, or streaming-API endpoint integration. Each scenario package is a directory containing `metadata.json` (5-signal curation scores, OpenODD tags, site ID, capture geometry), `agent_tracks.json` (per-frame ENU agent positions at 30 fps), `scenario.xosc` (OpenSCENARIO 2.0 export), and optionally `raw_video.mp4` (4K H.265 source video — toggleable by subscription tier).
 
-**Q5. Can I get custom scenario types?**
+**Q4. What's the pricing? How do subscription tiers work?**
 
-Yes. Custom scenario waypoints (specific intersections, specific times of day, specific weather conditions if reproducible) are added to the operator's route plan and captured on the next operating day matching the conditions. Custom scenario taxonomies (beyond the spec §3.5 categories — `intersection_signalized`, `unprotected_left_turn`, etc.) are supported with a 1-week onboarding for the scene-class definition. Custom delivery formats beyond OpenSCENARIO 2.0 are supported at $5,000-$15,000 engineering rates depending on schema complexity. Custom geographic regions outside currently-operating markets require operational expansion and are quoted separately.
+Library subscriptions are annual, with 30-day notice for renewal. Tier is based on access scope (which sites, which scene classes, how much of the corpus) and on integration depth:
 
-**Q6. What's the data quality methodology? How do I know what I'm buying?**
+| Tier | Scope | Annual |
+|---|---|---|
+| Starter | 1 metro library access (Bay Area), 3 scene classes, API access | $100K |
+| Standard | 1 metro full access, all scene classes, OpenLABEL + OpenSCENARIO, partner integration | $250K |
+| Production | All US metros, all scene classes, all corpus tiers, raw 4K access, expansion priority | $500K |
+| Enterprise | Production + custom taxonomies + custom-capture rights + exclusivity windows | Custom |
 
-Every scenario carries a quality score from 0-100 computed via the published methodology: 60 points from agent visibility ratio (frames each agent was inside the drone's FOV / total frames observed), 20 points from agent coverage (saturated at 70% of spawned agents to reflect realistic FOV limits), 20 points from agent class diversity. The score is then multiplied by an altitude-resolution factor (1.0 at 80m AGL, scaling down above) and a wind-shake factor (1.0 at ≤12 mph, scaling down above to a 10% floor). Quality below 70 is not delivered (the scenario is generated, but not sold). The `quality.methodology` field in every `metadata.json` references this calculation explicitly so an AV engineer can verify the score against the agent_tracks.json.
+Expansion products (priced separately):
+- **Custom site deployment:** $50K-$150K per new site (Model A $50K / Model B $100K / Model C $150K) — customer specifies high-criticality intersection in their operating area, we deploy if economics justify, capture for 6-12 months folds into subscription
+- **Time-bounded exclusivity:** 2-5× standard subscription rate for the exclusive window — useful for safety-case-sensitive deployments
+- **Custom taxonomies:** bundled in Standard tier and above; ~1 week scoping
 
-**Q7. How does the system handle weather, time of day, and edge conditions?**
+See FAQ #19 for the bottoms-up subscription pricing methodology.
 
-Capture happens during civil daylight hours only (sunrise +30 min to sunset −30 min). Pre-flight checks reject capture attempts at wind >20 mph or non-clear weather. The drone's wind-shake quality penalty kicks in above 12 mph average wind during capture, so customers may opt to reject scenarios captured in marginal conditions via the quality threshold. Capture is paused for the duration of any rain event; the vehicle continues to its next waypoint or returns to dock. Operating envelope is documented in scenario metadata so customers can filter their corpus by capture conditions.
+**Q5. Can I get capture from a specific intersection?**
 
-**Q8. What's the SLA and what happens if a scenario fails to deliver?**
+Yes — through custom site deployment. You specify a high-criticality intersection in your operating area (typically tied to a safety-case requirement: specific Waymo operating corridor, specific OEM test deployment zone, specific high-incident location flagged by your QA). We deploy a Model A/B/C site at $50K-$150K setup cost depending on deployment model. Capture for 6-12 months, then the captured scenarios fold into your Library subscription. Site selection is one of our highest-leverage decisions, so customer demand signal weights heavily on what we build next. Custom taxonomies (your internal scene-class definitions, your OpenODD axis labels) onboarded in ~1 week and bundled in Standard tier and above.
 
-SLA: 99% of triggered missions complete delivery within 4 hours; 95% of delivered scenarios pass the published quality threshold (≥70); 99.5% of paid scenarios match the customer's scene-class request. If a scenario fails to deliver (mission aborted mid-capture, upload failed, quality below threshold), no charge is applied. If a scenario passes quality threshold but the customer's QA team rejects it within 30 days for documented schema or content issues, a credit is applied toward future scenarios. Enterprise customers can negotiate custom SLA terms in the master service agreement.
+**Q6. What's the data quality methodology? How do I know what I'm subscribing to?**
+
+Every scenario carries two score blocks in its `metadata.json`. **Capture quality (0-100):** 60 points from agent visibility ratio (frames each agent was inside the capture FOV / total frames observed), 20 points from agent coverage (saturated at 70% of spawned agents to reflect realistic FOV limits), 20 points from agent class diversity (vehicle / pedestrian / cyclist representation). Multipliers: altitude-resolution factor (1.0 at 80m AGL, decreasing above), wind-shake factor (1.0 at ≤12 mph, decreasing above with 10% floor for Model B/C sites). Scenarios scoring below 70 are not added to the library; no exception, no opt-in.
+
+**Curation scores (per scenario, for QA team filtering):**
+1. **Criticality:** TTC, PET, jerk thresholds, near-miss detection — Westhofen et al. 2021 catalog
+2. **Epistemic uncertainty:** per-frame score against baseline perception detector — Mining the Long Tail methodology (arXiv 2508.18397)
+3. **Corpus frequency:** rarity ranking vs growing Skydock library — Waymo WOD-E2E <0.03% threshold methodology
+4. **Multi-agent interaction density:** distinct agent interactions per scenario — InterHub methodology (Nature Scientific Data 2025)
+5. **Scene-class taxonomy match:** alignment with customer's OpenODD axes
+
+A scenario must score in the top 20% on at least 2 of 5 signals to enter the library. ~80% of raw captures are filtered out — matching Waymo WOD-E2E's 30% human-review acceptance rate.
+
+**Q7. How does the system handle weather, time of day, and the operating envelope?**
+
+Capture happens during the regulatory envelope — civil daylight only in V1 (sunrise +30 min to sunset −30 min) for Part 107 stationary observation. V2 envelope expands with BVLOS waiver clearance (filed M1 of operations; expected resolution M9-M12). Capture is rejected at wind >20 mph or non-clear weather for Model B/C sites (tethered and drone-in-a-box). Wind-shake quality penalty kicks in above 12 mph average wind during capture. Model A rooftop captures continue through most weather since the camera is fixed-mounted on a partner building. Operating envelope is documented in scenario metadata so subscribers can filter the library by capture conditions — useful when validation needs only fair-weather data, or specifically wants edge-weather scenarios.
+
+**Q8. What's the SLA and what happens if a site goes offline or a scenario fails?**
+
+SLA: 99.5% library API availability per calendar month (excluding planned maintenance); 99% of newly-captured scenarios at operational sites reach the subscription library within 48 hours of capture; 95% of delivered scenarios pass the published capture quality threshold (≥70). Per-site uptime targets ≥95% of operational-envelope hours captured. Outages past 72 hours trigger pro-rated subscription credit. Library subscribers retain access to all already-captured scenarios from a site even if the site is paused or decommissioned. If your QA team identifies documented schema or content issues with a library scenario within 30 days, credit applies toward subscription renewal. Production and Enterprise tier subscribers can negotiate custom availability, latency, and quality SLAs in the master service agreement.
 
 ---
 
@@ -62,263 +93,237 @@ SLA: 99% of triggered missions complete delivery within 4 hours; 95% of delivere
 
 **Q9. What customer problems are we solving?**
 
-Today, AV scenario validation teams cannot acquire aerial bird's-eye-view training data at scale, despite documented demand for it. We commissioned conversations with 8 AV engineering leads (a mix of validation-platform companies and Tier-1 AV companies) in March-April 2026; in 7 of 8 conversations, the lead confirmed (1) they maintain an internal scenario library, (2) aerial BEV slots in that library are currently empty or filled with low-quality opportunistic captures (one team has 200 scenarios from a former employee's hobby drone collection), (3) they would pay $200-$500 per validated aerial BEV scenario at meaningful volume. Existing alternatives — internal drone teams ($1,000+/scenario, capacity caps at 4/day), synthetic data (acknowledged by 6 of 8 leads to underperform real data on edge cases), opportunistic public-data scraping (legal ambiguity + quality issues) — are all unsatisfying. The category exists but is structurally underserved because nobody has built the operational system to populate it at scale. See FAQs #10–#11 for market sizing and competitive landscape, and Appendix C for the discovery conversation summary.
+AV safety teams cannot satisfy the closed-loop collision-rate gates in their safety cases without *independent* validation-grade scenario libraries — and synthetic libraries cannot serve that role because they share the underlying generative assumptions of the system being validated. NHTSA AV STEP, EU AI Act, and UK CCAV all increasingly require independent validation evidence; synthetic data fails the independence requirement by construction. Internal capture from the customer's own fleet has correlated errors with the model being tested. Aerial BEV captured from a sensor system independent of the customer's vehicle stack provides the structural independence the safety case requires.
+
+We commissioned conversations with AV safety teams in May 2026 (V2-pivot discovery phase, refocused from V1's perception/training-team list); the consistent feedback was: (a) closed-loop collision-rate evaluation is the production deployment gate; (b) aerial BEV is the data class they need but cannot economically capture at scale; (c) curation methodology (criticality scoring, OpenODD axis tagging) matters more than raw scenario count. The category exists and the customer pain is documented, but the operational system to populate it at validation-grade quality has not been built. See FAQs #10–#11 for market sizing and competitive landscape.
 
 **Q10. Who are the target customers and why?**
 
-The target customer is an AV scenario validation team with a defined scenario-library product or program. From spec §4.1, the prioritised customer list is:
+The target customer is an AV safety team or regulatory safety officer at an AV company or OEM with a defined closed-loop validation gate in their safety case. The V2 customer cohort shifted from V1's "scenario validation platforms + perception teams" to "safety teams + regulatory safety officers" because safety teams have the structurally non-substitutable need for independent ground truth, whereas perception teams have shrinking willingness-to-pay as world models manufacture infinite training data.
 
 | Customer | Buying behaviour | Likely deal shape | Target year |
 |---|---|---|---|
-| Applied Intuition | Sells scenario libraries to OEMs; buys data aggressively | 200-500 scenarios, $50K-$150K | Year 1 pilot |
-| Foretellix | Edge-case validation platform; ideal aerial BEV customer | 100-300 scenarios, $30K-$80K | Year 1 pilot |
-| Parallel Domain | Synthetic-data company; buys real data to validate synthetics | 500-1000 scenarios, $50K-$100K | Year 1-2 |
-| Cognata | Smaller validation player; entry-tier pilot | 100-200 scenarios, $20K-$50K | Year 1-2 |
-| Tier-1 AV companies (Waymo, Cruise, Aurora, Zoox, Pony.ai) | Long sales cycle; large deal sizes | 1000+ scenarios, $100K-$500K | Year 2+ |
-| OEMs (GM, Ford, Toyota, Mercedes) | Slowest sales cycle; largest deal sizes | 5K+ scenarios, $500K-$2M | Year 3+ |
+| Safety teams at Tier-1 AV companies (Waymo, Cruise, Aurora, Zoox) | Closed-loop validation is gating; willingness-to-pay tied to regulatory deadlines | $250K-$500K Library subscription | Year 1-2 pilots |
+| OEM regulatory safety officers (GM, Ford, Toyota, Mercedes, Stellantis) | Slower cycle; tied to NHTSA AV STEP submissions | $300K-$1M Library subscription + custom sites | Year 2-3 |
+| Validation platforms (Foretify, Applied Intuition Validation Toolset) | Channel partners — sell Library access through integration | Channel: rev-share or co-sold subscriptions | Year 2+ |
+| Logistics/trucking AV (Aurora Innovation trucking arm, Kodiak Robotics, Embark legacy) | Tighter unit economics; subscription cost-benefit clear on safety-case-tied revenue | $100K-$250K Starter/Standard | Year 1-2 |
+| Robotaxi operators in pilot phase (Pony.ai, May Mobility, Zoox launch) | Subscription tied to operating-area expansion | $250K-$500K Standard/Production | Year 2-3 |
 
-The first four are the immediate pre-seed-to-CFP customer set; one or two paid pilots from this group is required to hit the cash-flow positive milestone. The Tier-1 and OEM cohort is the seed/Series-A growth thesis, not the pre-seed thesis.
+The decision-maker is the **Head of Safety Case** or **Director of Safety Engineering** — typically a former regulatory or safety-critical-systems lead with budget authority in the $250K-$2M/year range for validation infrastructure. This is a smaller, more durable customer base than V1's perception-team list. Safety teams are the part of an AV company that cannot substitute synthetic for real ground truth.
 
-The buying decision-maker is the Head of Scenario Engineering (or equivalent — sometimes the Head of Simulation, sometimes the VP of Engineering) — typically a former AV research lead with technical hiring authority and a budget in the $100K-$1M/year range for data acquisition. We are *not* selling to procurement or to general operations; the technical buyer needs to be convinced first.
+**Q11. What alternatives exist today? Why haven't they captured the validation-grade aerial BEV market?**
 
-**Q11. What alternatives exist today? Why haven't they captured the aerial BEV market?**
+Five categories of alternatives:
 
-We surveyed the current alternatives in March 2026 through (a) Amazon / Google product searches, (b) Crunchbase data on drone-data startups, (c) the conversations referenced in FAQ #9. Comparable offerings classify into five categories:
+1. **Synthetic scenario libraries** (Parallel Domain, Mira, Datagen, NVIDIA Cosmos, Wayve GAIA-3). Strong on volume, weaker on edge-case fidelity. **Cannot serve as independent ground truth in a safety case** because the model being validated trained on the same generative assumptions. Used alongside real data by every safety team we spoke to, not as a substitute for it in validation gates.
+2. **Replay from internal fleet** (every AV company runs this). Adequate for monitoring deployed-AV performance; insufficient for the independence required by safety case. Internal capture has correlated errors with the model being tested; ego-perspective limits visibility into multi-agent interactions.
+3. **levelXdata (highD/inD/rounD/exiD)**. Established commercial aerial datasets — the 7-year fixed-point hover precedent that validates the unit economics of our architecture. German highways/intersections/roundabouts only. Fixed-location captures from one-time research collections, no on-demand library growth, no criticality scoring, no OpenODD axis tagging. Useful for training; weaker for safety case.
+4. **Academic datasets** (openDD, MiTra, DeepUrban, AUTOMATUM, InteractionDataset). Fixed snapshots from one-time research collections. Free for research, commercial use restricted. No criticality scoring, no library growth, no SLA.
+5. **Internal drone teams** (4-6 AV companies run small internal drone ops). Capacity caps at a few captures per day per crew. Operational overhead, FAA Part 107 compliance, dedicated drone-ops engineering pulls senior eng off core work. Result: stale, small, single-geography internal library.
 
-1. **Fixed-base drone-in-a-box** (DJI Dock 2 + Matrice 3D at ~$15K; Skydio Dock 2 + Skydio X10 at ~$40K). Captures only at the installed location. Useful for industrial inspection (Percepto's market) but cannot follow a moving operating area. Not viable for diverse road scenarios.
-2. **Manually-piloted drone collection** (small consulting outfits, AV company internal teams). Capacity caps at 2-4 captures/day per crew. Per-scenario cost $1,000+. Customers we spoke to who have tried this all stopped within a year — operational overhead too high.
-3. **Synthetic BEV** (Parallel Domain, Mira, Datagen). Strong on volume; weaker on edge case fidelity. All 6 of 8 customer-discovery leads confirmed they use synthetic *alongside* real data, not as a substitute.
-4. **Opportunistic public footage** (YouTube, traffic cam scrapes). Quality and legal issues. Three of eight customers had tried this; none reported it working for their use case.
-5. **Aerial traffic analytics services** (DataFromSky, Vivacity). Sell analytics products derived from static rooftop cameras, not training data. Different operational model, different output, different customer.
-
-None of these solutions has achieved meaningful share of the aerial-BEV-for-training-data market because the category is structurally hard to enter: you need (a) the drone hardware, (b) the dock/integration system, (c) the operational discipline to hit 20 captures/day reliably, and (d) the data pipeline to deliver in customer-acceptable format. Each one of these is doable; the integration is the wedge.
+None of these solutions has captured the validation-grade aerial BEV category because the structural requirements — continuous fixed-point capture + 5-signal curation + OpenODD axis tagging + safety-case-grade SLA + multi-tenant corpus — require coordinated operational + curation methodology investment that no incumbent has assembled. levelXdata is the closest precedent but is anchored on German fixed datasets without the US footprint or curation depth safety teams need. Our wedge is the integrated system + US coverage + curation IP, not the drone or the BEV transform individually.
 
 **Q12. What gives us confidence that we can do better with our system than existing solutions?**
 
 Four reasons:
 
-1. **The operational model didn't exist.** Vehicle-deployed drone-from-car dock with autonomous deployment is a category of one. The closest analogue is Percepto's industrial-inspection vehicles, which don't sell data and don't do BVLOS. Our wedge is the operational system, not the drone or the data pipeline individually.
-2. **We have a fully-instrumented simulation that de-risks the assumptions before hardware.** Every quantitative claim in this document (capture rate, success rate, dock latch probability, quality distribution, unit economics) is grounded in a working physical-layer simulation (this repo) that an engineer can interrogate. No competitor has this; most pre-seed startups are pitching with spreadsheets. We're pitching with a system.
-3. **The hardware is off-the-shelf.** DJI Mini 4 Pro is a $760 commodity drone. NVIDIA Jetson Orin Nano is a $499 commodity edge-compute module. The custom dock is a 2-3 month hardware engineering project. We're not asking investors to fund a quadrotor R&D program — we're asking them to fund integration and operations.
-4. **The customer pain is documented and recent.** AV scenario validation has gone from research curiosity to procurement line-item over the last 24 months. NHTSA's incoming scenario-based testing rules, Applied Intuition's 2024 ScenarioLib launch, and Foretellix's growing OEM partnerships all create concrete demand in the pre-seed-to-seed timeframe.
+1. **The architecture problem has been solved by precedent.** levelXdata has proven for 7 years that fixed-point hover capture at high-incident intersections delivers commercial-grade trajectory libraries at unit economics that close. highD recorded 110,000 vehicles from a single hovering drone over a German highway in 16.5 hours. We are extending this proven architecture with US coverage, criticality scoring, and OpenODD axis tagging — not inventing a new operational primitive.
+2. **The curation pipeline is the defensible product layer.** Raw drone captures are a commodity headed toward synthetic substitution. Curated, criticality-scored, OpenODD-tagged libraries that gate safety cases are the moat. The 5-signal curation methodology (criticality + epistemic uncertainty + corpus frequency + interaction density + taxonomy match) compounds over time as the multi-tenant corpus grows. Safety teams cannot rebuild this internally because they lack the cross-customer corpus that gives the corpus-frequency signal meaning.
+3. **Validation positioning sits on the side of regulation.** NHTSA AV STEP, EU AI Act, UK CCAV all push the industry toward independent validation evidence. World models manufacturing infinite training data erode training-data willingness-to-pay every generation; validation-data willingness-to-pay grows with every regulatory requirement. We sit on the right side of this curve.
+4. **The hardware is commodity.** DJI Mini 4 Pro and Skydio X10 are off-the-shelf hardware. The custom Model A rooftop installation (camera + edge compute + cellular + power) is a straightforward integration project. We're not asking investors to fund hardware R&D — we're asking them to fund the curation IP, the site network, and the customer-facing API + safety-case integration work.
 
-See FAQ #13 for our existing competence, FAQ #15 for "why now," and FAQ #16 for why this is the right approach vs. synthetic-only.
+See FAQ #13 for our existing competence, FAQ #15 for "why now," and FAQ #16 for why this is the right approach vs synthetic-only.
 
 **Q13. Do we have competence in this space, and if not, can we acquire it quickly?**
 
 Yes, partially, and the gaps are well-scoped:
 
-- **Simulation and unit-economic modeling**: ✓ established. The repo backing this document is a 7,000-line physical-layer simulation with 16 passing regression tests covering flight dynamics, dock latch math, scene visibility, and integration smoke tests. The investor brief generator (`brief.py`) produces a Monte Carlo + sensitivity report in 19 seconds.
-- **AV training data pipeline architecture**: ✓ established. OpenSCENARIO 2.0 is a published ASAM standard. YOLOv8 + ByteTrack are proven object-detection and tracking models with reference implementations. The cloud pipeline architecture (S3 ingest → time-sync → BEV processing → agent tracking → OpenSCENARIO export → delivery) is a straightforward ML-ops integration, not novel research.
-- **Drone hardware integration**: contractor required. DJI provides an SDK for autonomous mission programming. The custom dock (precision landing pad, latch system, BLE beacons, charging contact) is a hardware engineering project we will contract to a 0.5-1.0 FTE hardware engineer for the first 6 months (spec §5.4 cost model: $15K-$30K/month).
-- **FAA Part 107 / VLOS operations**: required but well-documented. V1 envelope (spec §1.2) is VLOS only — no waiver required. The operator becomes the licensed pilot. V2 BVLOS waiver is upside, not a dependency.
-- **Customer discovery and enterprise sales**: founder-led for the first 4 pilots, then a dedicated GTM hire in month 9-12.
+- **Domain thesis + curation methodology research**: ✓ established. The thesis is grounded in published research (Westhofen 2021 criticality catalog, Mining the Long Tail 2025 epistemic-uncertainty methodology, Waymo WOD-E2E corpus-frequency threshold, InterHub interaction-density methodology, ASAM OpenSCENARIO + OpenLABEL standards). The 5-signal curation pipeline maps directly onto these published methods.
+- **AV scenario format + validation pipeline architecture**: ✓ established. OpenSCENARIO 2.0 and OpenLABEL are published ASAM standards. YOLOv8 + ByteTrack are proven object-detection and tracking models with reference implementations. The library API + customer integration work is straightforward ML-ops integration, not novel research.
+- **Fixed-point site deployment + operations**: contractor required for Model A integration. Camera + edge compute + cellular + mount + power are commodity hardware integration. Model B tethered drone deployment uses commercial tethered-drone systems with simplified Part 107 registration. Model C drone-in-a-box uses DJI Dock 2 or Percepto with BVLOS waiver (filed M1; expected resolution M9-M12).
+- **FAA Part 107 + BVLOS waiver process**: required, with documented preparation path. V1 envelope (Model A + Model B stationary or tethered ops) is within standard Part 107 — no waiver dependency. V2 envelope (Model C drone-in-a-box at expansion markets) requires BVLOS waiver, filed M1 of operations as an explicit milestone with a 6-12 month expected resolution timeline (FAA BVLOS waiver approval rates have improved with Part 108 progress).
+- **Rooftop access negotiation + site selection**: founder-led for first 3 sites; documented site-selection methodology (criticality density from city/state DOT data + customer demand signal + building access tractability) used in subsequent rollout.
+- **Customer discovery + enterprise sales**: founder-led for the first 4 paid customers, then a dedicated GTM hire in month 11 specifically targeting AV safety teams.
 
-Capabilities that need to be built (not currently owned): the operational discipline to achieve 20 captures/vehicle-day at 90%+ success rate. This is the explicit goal of the 6-month MVP build phase (Phase 1-2 in spec §5.1). The simulation tells us this is achievable; the hardware iteration tells us whether it actually works.
+Capabilities that need to be built: the curation pipeline at production scale (5-signal scoring on every captured scenario, OpenODD axis tagging, multi-tenant corpus management), and the rooftop-partner negotiation process. Both are the explicit deliverables of the M1-M6 build phase in [V2_EXECUTION_PLAN.md](V2_EXECUTION_PLAN.md).
 
 **Q14. Why is this important for us / what does success mean for the founder?**
 
-Three layers of strategic importance:
+Three layers:
 
-1. **The wedge has a defensible time-to-market window**. The category exists, the demand is there, and nobody is building it. Whoever ships first establishes the operational moat (corpus, customer relationships, process refinement) that's hard to displace. If we don't capture this in 2026-2027, Skydio or DJI could enter as adjacent moves from their current businesses, or an AV scenario platform could vertical-integrate. Either would be defensible against us, but only if they get there first.
-2. **The product is the foundation of a larger data services company**. Aerial BEV is the first product. Subsequent products (ground sensor data, multi-modal capture, on-demand custom-scenario commissioning, V2X data collection) extend the same operational platform without rebuilding it. The pre-seed funding is for the wedge product; the seed/Series-A is the platform expansion.
-3. **Founder commitment**: this is what I'm building. Pre-seed solo founder, full-time on the project, deep-tech background applicable to the hardware and ML layers (founder bio in Q33). If the wedge fails, I have specific learnings about how to redirect — but the wedge isn't currently failing in the simulation, so the priority is to ship.
+1. **The validation gate is on the critical path of AV commercialization.** Every AV company that wants to ship in 2027-2029 needs to close their closed-loop safety case. Aerial BEV captured by an independent operator is the structurally non-substitutable data class for that gate. Whoever builds the validation-grade library first establishes the integration moat with safety teams — and integration moats with safety-critical workflows are slow to displace. levelXdata took 7 years to establish their German precedent; we have the opportunity to establish the US precedent in the next 18-24 months.
+2. **The product extends into a platform.** Library subscriptions are the wedge. Adjacent products that share the same site network, curation pipeline, and customer relationships: custom site deployment, time-bounded exclusivity, OpenSCENARIO-adjacent tooling, V2X data products, regulatory-evidence-as-a-service. The pre-seed funds the wedge; the seed/Series-A funds the platform.
+3. **Founder commitment.** This is what I'm building. Pre-seed solo founder, full-time on the project, deep-tech background applicable to the curation + site integration + customer-facing API work. Co-founder search is active but not gating; first engineering hire in M5 has operational + technical context to take operational continuity if a critical event hits.
 
 **Q15. Why now?**
 
 Three converging timing pressures make 2026-2027 the right window:
 
-1. **NHTSA scenario-based testing rules**. The agency's December 2024 NPRM (Notice of Proposed Rulemaking) for AV safety testing moves the industry from miles-driven to scenario-coverage as the validation standard. Scenario libraries are no longer optional for AV companies — they're regulatory infrastructure. The libraries need to be filled. Aerial BEV is one of the categories they need to be filled with.
-2. **Validation platform commercialisation**. Applied Intuition launched their ScenarioLib product in 2024, Foretellix has growing OEM partnerships, Parallel Domain is mid-pipeline on a Series C. The validation-platform layer of the AV ecosystem is going from R&D to revenue, which means scenario procurement is going from research budget to product budget. Procurement budgets are larger, more sustained, and harder to cut.
-3. **First-mover infrastructure lock-in**. Whoever ships the first credible aerial BEV service captures the AV-customer integration relationships first. Once Skydock data is in a customer's validation pipeline (file format, naming convention, QA workflow, billing integration), switching cost is real. We have an estimated 12-18 month window before a competitor with similar capital can ship a comparable system. If we don't capture customers in this window, we leave the door open for Skydio or a vertical integrator.
+1. **NHTSA AV STEP framework finalization (2025).** The voluntary AV safety, transparency, and evaluation program is finalizing through 2025-2026, moving scenario-based closed-loop validation from research curiosity to procurement line-item for AV companies preparing production deployment. Scenario libraries are no longer optional; they're regulatory infrastructure.
+2. **World model substitution forces validation differentiation.** Wayve GAIA-3 (December 2025) and NVIDIA Cosmos demonstrate that training data is becoming infinitely manufacturable. Training-data willingness-to-pay erodes every generation. Validation data — where independence is a structural requirement, not a preference — survives this. The next 18 months are when the industry sorts companies that compete in the training-data race from companies that occupy the validation differentiation. We're explicitly in the second camp.
+3. **Site footprint lock-in.** Whoever builds the first credible US fixed-point capture network at validation-grade quality captures the customer integration relationships first. Once Skydock data is integrated into a safety team's closed-loop sim pipeline (library API, OpenLABEL schema, OpenODD axis tagging, QA workflow, billing), switching cost is real. We have an estimated 18-24 month window before levelXdata enters US markets or before a vertical integrator (Foretify, Applied Intuition, or an OEM safety team) builds equivalent capture themselves.
 
-We have not seen a single competing aerial-BEV vehicle-deployed product launch announcement as of the current cycle. The category window is open.
+We have not seen a US fixed-point validation-grade aerial BEV library product launch announcement as of the current cycle. The category window is open.
 
-**Q16. Why should we invest in aerial BEV when synthetic data already covers most of the use case?**
+**Q16. Why should we invest in real aerial BEV when synthetic data is rapidly improving?**
 
-Synthetic data (Parallel Domain, Mira, Datagen) is a large and growing market, and Skydock is *not* trying to displace it. Synthetic and real data are complementary:
+Synthetic data and real validation-grade aerial BEV serve different roles in the AV development cycle, with structurally different willingness-to-pay trajectories:
 
-- **Synthetic strengths**: infinite volume, perfect labeling, parameterisable, no real-world capture constraints.
-- **Synthetic weaknesses (acknowledged by 6 of 8 customer-discovery leads)**: edge-case fidelity, distribution shift from real-world sensor noise, perception model performance on out-of-distribution scenes.
-- **Real-data strengths**: ground truth, distribution match to the deployed sensor stack, edge-case authenticity.
-- **Real-data weaknesses**: cost per scenario, slow turnaround, coverage gaps.
+- **Training:** synthetic data is rapidly substituting real data. Cost approaches zero per scenario. Real-data willingness-to-pay erodes. This is the race we are explicitly not competing in.
+- **Validation:** synthetic data cannot serve as independent ground truth in a safety case. NHTSA AV STEP, EU AI Act, UK CCAV all increasingly require independent validation evidence. Real-data willingness-to-pay grows with each regulatory cycle. This is where we sell.
 
-AV scenario validation teams use both. The procurement decision is "what percentage of my library should be synthetic vs. real?" — and the consistent answer from our discovery conversations is "we want more real, especially aerial BEV, but we can't get it." Skydock fills that demand. We don't compete with synthetic; we expand the real-data side of the same customer's library budget.
+A direct cannibalization question: as synthetic libraries get better, do safety teams stop subscribing to Skydock? Our view: no, the opposite — better synthetic libraries make the independence problem more acute. If your synthetic training data is generated by the same world model your closed-loop sim runs against, the validation evidence is circular. Safety teams will increase, not decrease, the share of their validation library that comes from independent real-world capture as synthetic capabilities improve. The trend that hurts training-data vendors helps validation-data vendors.
 
-A direct cannibalisation question: would Skydock's customer also reduce their synthetic spend in proportion? Discovery feedback: no — the library budget is growing fast enough that aerial BEV is additive, not substitutive, for the next 24-36 months.
+**Q17. What is the per-delivered-scenario cost?**
 
-**Q17. What is the estimated cost per scenario (TCPU)?**
+V2 fixed-point unit economics, derived in [V2_FINANCIAL_MODEL.md](V2_FINANCIAL_MODEL.md):
 
-Per-scenario unit economics, sim-verified ([economics.py](skydock/skydock/economics.py)) with both variable and all-in figures:
+| Component | Annual per Model A site | Per delivered scenario |
+|---|---|---|
+| Capex amortization (5-year life on $25K Model A install) | $5K | $0.42 |
+| Operating (rooftop lease + cellular + cloud + insurance) | $9K | $0.75 |
+| Centralized curation labor allocation (1 FTE per ~5-10 sites at $80K loaded) | $10K | $0.83 |
+| **Total annual cost per site (Model A)** | **$24K** | **~$2.00** |
+| Annual delivered scenarios per site (after 80% curation filter) | ~12,000 | — |
 
-| Component | Per scenario (USD) |
-|---|---|
-| Operator labour ($30/h × ~0.5 h/scenario amortised over the operating day) | $15.00 |
-| Vehicle operating cost (fuel + maintenance, $5/h × ~0.5h) | $2.50 |
-| Cloud processing (S3 + Lambda + EC2 GPU instance) | $0.80 |
-| Drone wear (battery cycles + airframe amortisation, ~$1.00 per flight) | $1.00 |
-| **Variable cost per scenario** | **~$19.30** |
-| Capex amortization (vehicles + rigs + dock R&D over 3-year fleet life) | $7.50 |
-| Engineering + GTM labour amortized (founder + 2 eng + 1 GTM + 0.5 CS) | $54.00 |
-| Overhead allocation (insurance + office + legal + marketing + admin) | $9.80 |
-| **All-in cost per scenario at 6-vehicle steady state** | **~$87.00** |
+Comparison with V1 mobile-dock model we abandoned: V1 all-in cost was $87/scenario at 6-vehicle steady state ([COST_MODEL_AUDIT.md](COST_MODEL_AUDIT.md), now stale as a V1 artifact). The 43× unit-economics improvement is what made the V2 architecture pivot necessary — V1 mobile fought physics on per-scenario delivery cost; V2 fixed-point absorbs the continuous-capture economics levelXdata proved commercially over 7 years.
 
-Two different numbers because they answer two different questions:
-- **Variable cost ($19.30)** is the marginal cost of one more scenario at steady state. Contribution margin against any ASP is computed against this.
-- **All-in cost ($87)** properly amortizes fixed labor + capex + overhead. Gross margin against ASP is computed against this. Honest number for investor / customer scrutiny.
+Per-site deployment models and capex (more detail in V2_FINANCIAL_MODEL.md):
+- **Model A (rooftop):** $25K capex, $9K/yr operating, simplest regulatory path
+- **Model B (tethered drone):** $40K capex, $11K/yr operating, simplified Part 107 tethered-ops
+- **Model C (drone-in-a-box):** $50-80K capex, $15K/yr operating, requires BVLOS waiver
 
-Both numbers improve at higher utilization. Year-1 ramp utilization gives all-in cost closer to $120-$140/scenario; the $87 is the 6-vehicle mature-cadence target.
+The 18-month plan deploys 5 sites by M12 (3 Model A + 2 Model A) and 7 sites by M18 (5 Model A + 2 Model B). Model C deployment begins post-seed (Phoenix + Austin expansion).
 
-The hardware capex per vehicle (spec §5.2): drone fleet ~$2,500 (3 × DJI Mini 4 Pro), dock ~$11,000 (materials + custom fabrication), edge compute ~$1,030, sensors ~$630, mounting ~$1,500, spares ~$2,000, contingency ~$3,700 — total ~$22,400 per vehicle in rig capex. **Plus the vehicle itself** (compact hybrid SUV ~$35,000), bringing all-in per-vehicle capex to ~$57,400. Amortized at $7.50/scenario across the fleet's 3-year life. See [COST_MODEL_AUDIT.md](COST_MODEL_AUDIT.md) for the full line-by-line audit.
+**Q18. What is the financial impact beyond the direct subscription revenue?**
 
-**Q18. What is the financial impact beyond the direct sale revenue?**
+Three additional revenue and value streams not modeled in Q21's base entitlement but which materially expand the business:
 
-Two additional revenue and value streams we have *not* counted in the base entitlement (Q21) but which materially expand the business:
+1. **Custom site deployment:** Customer-specified high-criticality intersection deployment at $50K-$150K per site setup. Captures fold into the customer's subscription for 6-12 months. Modeled at one custom site M14 ($75K) in the base entitlement; could deliver $200K-$500K/yr expansion revenue by M24 as the customer base grows.
+2. **Time-bounded exclusivity:** 2-5× standard subscription rate premium for safety-case-sensitive deployments. Customers we expect to consider this: OEMs preparing first NHTSA AV STEP submission, Tier-1 robotaxi operators in geographic launch windows. Estimated $300K-$1M ARR by M24 at maturity.
+3. **Channel revenue via validation-platform partners:** Foretify, Applied Intuition Validation Toolset, CARLA integrations allow Skydock library access to be sold through partner channels with rev-share or co-sold models. Estimated $200K-$500K/yr by M30 as partner integrations mature.
 
-1. **Corpus access subscription**: once we have a library of 5,000+ scenarios, we can sell annual access to historical scenarios separately from per-scenario capture. Customers who don't need fresh capture but want corpus access pay a subscription ($20K-$200K/year depending on coverage). Estimated $200K-$1M ARR by month 24.
-
-2. **Custom capture engagements**: customers occasionally need a very specific scenario (e.g., a particular intersection at 5:30 PM on Thursday in rain). Custom captures price 3-5× standard rate. Estimated $100K-$300K/year by month 18 as customer relationships deepen.
-
-A third potential stream is *data licensing to academic / non-AV-OEM users* (autonomous-agriculture, robotics, urban-planning research). We have not pursued this in our customer discovery but it represents ~$50K-$200K/year of low-margin revenue if we choose to enable it.
+A fourth potential stream — **regulatory evidence-as-a-service** — bundles library access with safety-case documentation support for OEMs preparing NHTSA submissions. Not modeled in the 18-month plan; speculative seed-round growth thesis.
 
 **Q19. What is the pricing strategy? What are the resulting unit economics?**
 
-Pricing is derived bottoms-up from cost-to-replicate (the customer's in-house cost) plus a documented vendor markup band, *not* from spec §4.2's unsourced volume tiers. From [pricing.py](skydock/skydock/pricing.py):
+Library subscription pricing is derived from three anchors:
 
-| Cost-to-replicate component | Per scenario |
+1. **Customer's in-house cost-to-replicate (cost-plus floor).** Customer running internal drone capture at the same site footprint would face: 1 senior eng × 0.5 FTE × $250K loaded = $125K/yr; 1 Part 107 operator × $80K = $80K/yr; capex amortization $5K-$15K/yr; operational overhead $30K = $240K-$250K/yr for *one site* internally, with no curation pipeline and no multi-tenant corpus benefit. Our Standard tier ($250K) is roughly the customer's cost for *one site* internally — they get full-corpus access (5+ sites at maturity) plus curation IP for the same outlay.
+2. **levelXdata commercial precedent (industry comparable).** levelXdata's commercial licensing for highD/inD/rounD is in the $50K-$200K/yr range per dataset, validating willingness-to-pay for fixed-location aerial trajectory libraries at this price tier. Our Standard tier sits at the upper end of the levelXdata range for materially more (US coverage + criticality scoring + library growth + OpenODD axis tagging).
+3. **Safety-case-tied value (revenue-impact ceiling).** Faster safety-case closure equals faster AV commercial deployment. A 1-quarter pull-forward on a $50M-$500M annual deployment revenue is a 7-9 figure value. Subscription pricing in the $250K-$500K range is small against that value when the closed-loop pilot demonstrates measurable collision-rate movement.
+
+Unit economics at Year 3 maturity (15 sites + 15 customers):
+
+| | Y3 entitlement |
 |---|---|
-| Customer operator labour ($100/h loaded × 0.5h/scenario) | $50.00 |
-| Annotation / QA (Scale AI public-filing band, low–high) | $30 – $150 |
-| Capital amortisation (drone + vehicle + dock) | $6.00 |
-| Software / cloud / tooling | $4.80 |
-| **Customer internal cost band** | **$91 – $211** |
-| Vendor markup band (1.5× – 3.0×, industry-typical for specialty data) | applied below |
-| **Skydock price band** | **$136 – $632** |
-| **Sim default (mid-cost × mid-markup)** | **$339** |
+| Annual cost (15 Model A + 3 Model B + 2 Model C) | $2.35M |
+| Library subscription ARR ($250K avg × 15 customers) | $3.75M |
+| Custom capture revenue | $500K |
+| **Total Year 3 revenue** | **$4.25M** |
+| **Gross margin** | **45%** |
 
-At the $339 mid-price, unit economics per scenario:
-- Revenue: $339
-- Variable cost: $19.30
-- Contribution profit: $319.70
-- Contribution margin: 94%
+LTV per customer (subscription retention assumptions: Y1 100%, Y2 80% renewal at expansion, Y3 70% retention from Y2 base, Y4 60%): **$659K expected gross revenue LTV**. At 45% mature GM: **$297K gross profit LTV**. CAC analysis (GTM cost per customer ~$80K loaded): **LTV/CAC = 3.7×**, clearing the 3× SaaS benchmark.
 
-At a 1,452 scenarios/month run rate (6 vehicles × 22 captures/day × 22 days × ~50% delivery-vs-trigger ratio), this gives:
-- Monthly revenue: $492,228
-- Monthly variable cost: $28,025
-- Monthly contribution profit: $464,203
-- Less: operator + vehicle labour ($32K), cloud and infra ($5K), founder ($17K cash + $4K accrued-deferred = $21K total comp under Option C hybrid) + 2 eng + 1 GTM + 0.5 CS (~$67K) = $84K leadership + eng + GTM cash team cost, insurance + overhead ($13K), capex amortization ($14K) ≈ **$148K monthly cash opex** (+ $4K/mo deferred liability accrual)
-- **Monthly net contribution: ~$316K at steady-state 6-vehicle scale** (mid-case $339 ASP — drops to ~$203K at the $200 weighted ASP across volume tiers)
+**Q20. What is the subscriber and revenue projection?**
 
-LTV per vehicle (over 24-month operational period at this pace): ~$1.2M (down from prior $1.4M estimate; see [COST_MODEL_AUDIT.md](COST_MODEL_AUDIT.md) for the honest re-derivation that surfaced ~$60K/year/vehicle of previously under-counted engineering + sales labor).
+Projection from pre-seed close through CFP (M0 → M20):
 
-**Q20. How many units (scenarios) do we project to sell?**
+| Quarter | Active sites | Active subscribers | Library subscription ARR | Custom capture (cumulative) | Phase revenue |
+|---|---|---|---|---|---|
+| Q1 (M1-3, build) | 0 | 0 | $0 | $0 | $0 |
+| Q2 (M4-6, MVP sites live) | 3 | 0 paid (free pilots in flight) | $0 | $0 | $0 |
+| Q3 (M7-9, first paid) | 4 | 1 | $150K | $0 | $37.5K |
+| Q4 (M10-12, GTM hire) | 5 | 2 | $300K | $0 | $62.5K |
+| Q5 (M13-15, 1st Model B) | 6 | 4 | $600K | $75K (first custom site M14) | $204K |
+| Q6 (M16-18, 2nd Model B) | 7 | 6 | $900K-$1.2M | $75K | $204K |
 
-Projection by quarter from MVP launch (Q4 2026) through CFP (Q2 2028):
-
-| Quarter | Vehicles operating | Scenarios captured | Scenarios delivered (~50% rate) | Revenue at $339 mid |
-|---|---|---|---|---|
-| Q4 2026 | 1 | ~1,200 | ~600 | $200K |
-| Q1 2027 | 2 | ~3,000 | ~1,500 | $500K |
-| Q2 2027 | 3 | ~5,000 | ~2,500 | $850K |
-| Q3 2027 | 5 | ~8,500 | ~4,250 | $1.4M |
-| Q4 2027 | 6 | ~10,500 | ~5,250 | $1.8M |
-| Q1 2028 | 6 | ~10,500 | ~5,250 | $1.8M (CFP achieved) |
-
-Total scenarios delivered through CFP: ~19,000. Total revenue through CFP: ~$6.5M.
-
-The 50% delivery-vs-trigger rate is the sim's month-6-priors output (Q22 sensitivity) — failed pre-flight, weather aborts, quality threshold rejects, dock failures together reduce delivered scenarios to ~50% of triggered missions. This is the conservative case; sim's optimistic case (95th percentile) gives ~70% delivery rate.
-
-The customer demand to absorb this throughput exists in the §4.1 target list (Q10). Six committed customers at 2,000 scenarios/year average = 12,000 scenarios/year demand; we project 21,000 scenarios/year throughput at 6 vehicles, leaving ~40% capacity for additional customers or corpus accumulation.
+Total 18-month revenue (recurring + custom): $508K. End-M18 ARR run-rate: $900K-$1.2M. The slower revenue ramp vs V1 (which projected ~$2.3M through M18 in the now-stale [RAISE_SIZING.md](RAISE_SIZING.md)) reflects the structural reality of subscription revenue: customer cycles take longer to convert, but recurring revenue compounds afterwards. End-M18 cash with $2.2M raise: ~$600K, ~4 months of buffer at mature burn. Trough cumulative cash: ~-$700K at M6-7.
 
 **Q21. What are the program-level financials? When does Skydock reach cash-flow positive?**
 
-Program-level financials, 18-month monthly burn projection from pre-seed close ($2.0M raise, honest weighted ASP $200 mid-case after the cost-model audit; see [RAISE_SIZING.md](RAISE_SIZING.md) for the full month-by-month build):
+Program-level financials, 18-month monthly burn projection from pre-seed close ($2.2M raise; see [V2_FINANCIAL_MODEL.md](V2_FINANCIAL_MODEL.md) for the full month-by-month build):
 
-| Phase | Months | Recurring monthly | Capex | Total period cost | Period revenue (honest) |
+| Phase | Months | Recurring monthly | Capex | Phase total cost | Phase revenue |
 |---|---|---|---|---|---|
-| Build | 1-3 | $68K | $5K | $204K | $0 |
-| MVP first capture | 4-6 | $70K | $57K | $267K | $0 |
-| First paid pilot | 7-9 | $90K | $57K | $327K | $118K |
-| 3-vehicle scale | 10-12 | $78K | $57K | $291K | $295K |
-| Ramp to 5 vehicles | 13-15 | $140K | $114K | $534K | $826K |
-| Mature 6-vehicle | 16-18 | $161K | $57K | $540K | $1.06M |
-| **Total 18 mo** | | | **$347K capex** | **$2.16M** | **$2.30M** |
+| 1: Build | 1-3 | $75K | $0 | $225K | $0 |
+| 2: 3 sites + free pilots | 4-6 | $90K | $75K | $345K | $0 |
+| 3: 1st paid + 4th site | 7-9 | $90K | $25K | $295K | $37.5K |
+| 4: 2nd paid + 5th site + GTM hire | 10-12 | $110K | $25K | $355K | $62.5K |
+| 5: 4 customers + Model B | 13-15 | $130K | $40K | $430K | $204K (incl $75K custom) |
+| 6: 6 customers + 0.5 CS hire | 16-18 | $140K | $40K | $460K | $204K |
+| **Total 18 mo** | | | **$205K capex** | **$2.11M** | **$508K** |
 
-**Cumulative cash with $2.0M raise** (founder comp under Option C hybrid: $150K cash + $50K/yr deferred through Phase 4):
+**Cumulative cash with $2.2M raise:**
 
 | Milestone | Month | Cumulative cash position |
 |---|---|---|
-| Pre-seed close | 0 | $2.0M |
-| MVP first capture | 4 | $1.81M |
+| Pre-seed close | 0 | $2.2M |
+| End M3 (build phase done) | 3 | $1.98M |
+| End M6 (3 sites + first pilots) | 6 | $1.63M |
 | First paid pilot signed | 7 | $1.63M |
-| Trough (deepest negative — honest case) | 9-12 | $1.39M (raise covers $613K trough burn) |
-| Cash-flow positive | 15-17 | $1.94M |
-| End of month 18 | 18 | **$2.28M** (+ $75K accrued deferred founder comp liability) |
-| 12 months post-CFP | 30 | $4.4M+ (no expansion) |
+| End M9 (4 sites, 1 customer ramping) | 9 | $1.38M |
+| End M12 (5 sites, 2 customers, GTM hire) | 12 | $1.08M |
+| End M15 (5 sites, 4 customers, +Model B + custom) | 15 | $0.86M |
+| End M18 (7 sites, 6 customers, ARR $1.2M run-rate) | 18 | **$0.60M** |
 
-CFP achieved in **months 15-17** under honest weighted-ASP assumptions. The $2.0M pre-seed funds the negative-cash window (trough ≈ −$613K cumulative burn) with **$1.39M of buffer** for slip risk. Beyond month 18, the business is self-funding; the seed round (if raised) pays out the $75K accrued founder deferred comp from proceeds and capitalizes expansion + new products. See Q21a for the seed-optionality analysis.
+CFP achieved in **months 18-20** at $900K-$1.2M ARR run-rate. The $2.2M pre-seed funds the negative-cash window (trough ≈ -$700K cumulative burn) with **$600K of buffer** for slip risk at M18. Beyond M18, the business approaches self-funding; the seed round becomes a growth investment for Phoenix + Austin expansion + Model C deployment + scaling the curation engineering team — not a survival requirement.
 
 **Program-level KPIs and IRR**:
-- Revenue at month 18 run-rate: $1.06M in Q3 of fleet operations → ~$4.4M annual at honest weighted $200 ASP (~$5.9M at pilot-tier $339)
-- Gross margin at month-6-priors: ~65% at pilot-tier $339 ASP, ~57% at weighted $200 ASP across volume tiers (honest blended figure)
-- LTV per vehicle: ~$1.2M over 24 months (down from prior $1.4M after cost-model audit — see Q17 and [COST_MODEL_AUDIT.md](COST_MODEL_AUDIT.md))
-- Total LTV across 6-vehicle CFP fleet: ~$7.2M
-- Pre-seed capital deployed: $2.0M (revised from prior $1.7M after burn re-derivation — see [RAISE_SIZING.md](RAISE_SIZING.md))
-- 24-month IRR (pre-seed dollars to month-18 LTV): ~140% (revised from prior 190%; sensitive to delivery rate, ASP, and operator utilization — see Q22)
+- ARR run-rate at M18: $900K-$1.2M growing toward $1.6M-$2.0M by M24
+- Gross margin at M18: scaling toward 45% as recurring revenue compounds against fixed engineering cost
+- LTV per customer: $297K gross profit at 45% mature GM (per Q19)
+- LTV/CAC: 3.7× (per Q19)
+- Pre-seed capital deployed: $2.2M ($12M post-money cap, ~18% dilution)
+- 24-month IRR (pre-seed dollars to M24 ARR + corpus value): ~80-120% range (sensitive to subscription conversion rate, expansion ASP, and BVLOS waiver timing — see Q22)
 
-**Q21a. Does the pre-seed get us to profitability before the next raise?**
+**Q21a. Does the pre-seed get us to profitability before the seed round?**
 
-**Yes — in the honest case, with $2.28M cash remaining at month 18 (plus $75K accrued founder deferred-comp liability payable at seed close).** This is the most important strategic feature of the Skydock financial model and the reason the seed round is *optional*, not required.
+**Approximately — CFP achieved at M18-20 with $600K cash buffer at M18, but slower revenue ramp than V1 means seed-round dependence is higher than V1's plan suggested.** The $2.2M raise is sized to comfortably survive the pessimistic case and bridge into the seed; it does not deliver V1's "seed becomes optional" outcome. This is a deliberate V2 tradeoff: the V2 business is structurally more durable (curation moat, multi-tenant corpus, regulatory-aligned positioning) but it ramps revenue slower because subscription cycles take longer to convert and compound. We are trading early-revenue ramp for durable defensibility.
 
-Three different definitions of "profitability" with three different answers:
+Three different definitions of "profitability":
 
 | Definition | Timing | What it implies |
 |---|---|---|
-| **Cash-flow positive** (monthly cash > monthly costs) | M15-17 honest | Self-sustaining, no further capital needed to survive |
-| **GAAP net profit** (includes depreciation of capex + deferred comp accrual) | M17-21 | True P&L profitability, 3-4 mo behind CFP |
-| **Self-sustaining for indefinite growth** | Not at 6-vehicle scale | Seed needed for geographic + product expansion only |
+| **Cash-flow positive** (monthly cash > monthly costs) | M18-20 | Self-sustaining at 7-site, 6-customer scale |
+| **GAAP net profit** (includes depreciation + deferred comp accrual) | M22-26 | True P&L profitability 4-6 months behind CFP |
+| **Self-sustaining for indefinite growth** | Not at 7-site scale | Seed needed for Phoenix + Austin + Model C + curation eng team |
 
-**The strategic implication:** Skydock's pre-seed buys us into a position where we **negotiate the seed round from strength — or skip it entirely.** Most pre-seed-funded startups have ~12-18 months of runway and *must* raise seed to survive; Skydock at $2.0M reaches CFP at M15-17 with $2.28M cash position at M18, giving us the choice:
-
-1. **Bootstrap further** — stay 6-vehicle Bay Area, grow ARR from delivered scenarios, retain ownership, slow geographic expansion
-2. **Raise seed (~$5-10M)** — Phoenix Q4 2027 + Austin Q1 2028 + corpus subscription product + team to 15-20 FTE
-3. **Bridge ($2-3M)** — half-step expansion, minimal additional dilution, preserve optionality
-
-The seed pitch becomes "we've hit CFP, we have a $4.4M ARR run-rate growing 30-50% YoY, we want capital to expand the market we've already proven." Materially better story than "we'll be profitable someday, fund us." See [ASSUMPTIONS_AND_PROFITABILITY.md](ASSUMPTIONS_AND_PROFITABILITY.md) for the full analysis including assumption-by-assumption confidence and the pessimistic-case timeline (CFP slips to M21-22, still within $2.0M runway).
+**Strategic implication:** Skydock's pre-seed buys us into a position where we **start seed conversations from M16-18 with measured pilot conversion data and a clear $1M+ ARR trajectory.** The seed pitch is "we've proven the V2 architecture, we have 6+ subscription customers, we're at $1M+ ARR growing, we want capital to expand to 3-market footprint and Model C deployment." This is materially better than V1's prior framing of "seed becomes optional" — V2 is honestly seed-dependent, but the seed conversations start from a defensible position rather than from desperation.
 
 **Q22. How sensitive is the entitlement? What are the key input drivers?**
 
-Sensitivity analysis combines (a) sim parameter sweeps from [brief.py](skydock/brief.py) with (b) the assumption confidence audit from [ASSUMPTIONS_AND_PROFITABILITY.md](ASSUMPTIONS_AND_PROFITABILITY.md). Key drivers ranked by impact-probability product:
+Sensitivity analysis combines (a) V2 unit-economics from [V2_FINANCIAL_MODEL.md](V2_FINANCIAL_MODEL.md) with (b) the V2 plan-killer audit from [V2_EXECUTION_PLAN.md](V2_EXECUTION_PLAN.md). Key drivers ranked by impact-probability product:
 
 | Input | Range | Impact on CFP timing | Confidence |
 |---|---|---|---|
-| **Operator utilization year-1** | 60% → 90% | CFP slips 4-6 months at low utilization | 🟡 Medium (biggest single risk) |
-| **Weighted ASP** | $150 → $300 | CFP M22 → M14 | 🔴 Low (not yet validated by pilot) |
-| **First paid pilot timing** | M10 → M5 | CFP slips 3-5 months at M10 | 🟡 Medium |
-| **MVP reliability (delivery rate)** | 30% → 70% | Revenue and CFP scale linearly | 🟡 Medium |
-| **Hardware reliability + dock R&D timeline** | $150K + 6mo to $300K + 9mo | $150K capex + 3mo slip if 2× | 🟡 Medium |
-| **Bay Area pricing pressure** | hold $200 → drop to $130 | CFP slips 4-6 months | 🟡 Medium |
+| **First paid pilot conversion timing** | M7 → M11 | CFP slips 3-4 months at M11 first-paid | 🟡 Medium (biggest single risk) |
+| **Library subscription ASP** | $100K → $300K | CFP M22 → M16 | 🟡 Medium (closed-loop pilot conversion economics drive this) |
+| **BVLOS waiver timing** | M9 → M18 | M9-12 enables Phoenix Model C by M20; slip delays expansion revenue | 🟡 Medium-high (FAA approval rate uncertain) |
+| **Rooftop access negotiation timeline** | M3 → M7 per site | Site deployment delay → revenue delay | 🟢 Higher confidence (commercial real-estate negotiation is well-understood) |
+| **Curation pipeline production scale** | M5 → M9 ready | Customer integration delays subscription start | 🟡 Medium |
+| **Multi-tenant corpus retention** | 60% Y2 → 90% Y2 | LTV/CAC 2.5× → 5× | 🟡 Medium (early — no V2 customer data yet) |
 
-**Three cases for the entitlement, anchored on the dominant unknowns:**
+**Three cases for the entitlement:**
 
-- **Pessimistic ($150 ASP, p10 delivery rate, MVP slip)**: monthly revenue $245K at 6 vehicles, gross profit $115K, CFP slips to month 21-22. **Still within $2.0M raise runway** (would have $360K negative cash at M18, recovers by M22). If pessimistic signals are clear by M14-15, consider $300-500K bridge round.
-- **Mid-case ($339 ASP, sim mean delivery rate)**: monthly revenue $492K at 6 vehicles, gross profit $310K (post-audit), CFP at month 14-15, $2.5M+ cash at M18. This is the base case.
-- **Optimistic ($500 ASP, p90 delivery rate)**: monthly revenue $850K at 6 vehicles, CFP at month 11, $1M+ surplus by M18 — would enable Phoenix expansion or 12-vehicle scale without seed round.
+- **Pessimistic (first paid M11, ASP $150K, BVLOS slip):** $600K ARR at M18, CFP slips to M22, cash position at M18 +$180K (4-month bridge runway). Need $300-500K bridge round at M20-22 if pessimistic signals persist. Still survivable within $2.2M raise.
+- **Mid-case (first paid M7, ASP $200K, BVLOS clears M12):** $900K-$1.2M ARR at M18, CFP at M18-20, $600K cash at M18 — the base case projected throughout this PR-FAQ.
+- **Optimistic (first paid M6, ASP $300K, BVLOS clears M9, Phoenix Model C live by M18):** $1.5M-$2M ARR at M18, CFP at M16, $1M+ cash at M18 — accelerates seed prep and enables 3-market footprint by M24.
 
-The key signal to monitor in the first 6 months: **actual ASP from the first 2 paid pilots**. If ASP < $150, we slow capex deployment to maintain runway; if ASP > $300, we accelerate second-market expansion. The $2.0M raise is sized to survive the pessimistic case and execute the mid-case.
+The key signal to monitor in the first 8 months: **conversion rate of the first 3-5 free closed-loop pilots into paid subscriptions**, and the average subscription tier customers convert to. If the conversion rate is below 40%, we revisit the pilot success-criteria definition; if average ASP lands below $150K, we revisit the subscription tier scope. The $2.2M raise is sized to survive the pessimistic case and execute the mid-case.
 
 **Q23. What additional opportunities have we not included in the entitlement calculation?**
 
-Six categories of upside not modelled in Q21's mid-case financials:
+Six categories of upside not modeled in Q21's mid-case financials:
 
-1. **Corpus subscription revenue** (Q18). $200K-$1M ARR by month 24 from customers buying access to the historical library separately from fresh capture.
-2. **Custom capture engagements** (Q18). $100K-$300K/year by month 18 at premium pricing.
-3. **Multi-market expansion** (Phoenix, Austin in Q4 2027). The MVP entitlement is Bay Area only; expansion 2-3× revenue without proportional capex.
-4. **V2 envelope** (BVLOS, moving-vehicle launch/recovery from spec §1.2). Increases capture capacity per vehicle by ~40%. Estimated +$200K monthly revenue at 6 vehicles, +$2.4M annual.
-5. **Data licensing to non-AV customers** (Q18). $50K-$200K/year low-margin additional revenue if pursued.
-6. **OpenSCENARIO-adjacent tooling sales**. The customer-facing pipeline (scenario validation, ingestion-format converters) has standalone product potential for AV teams that don't buy our data. Speculative; not in the next 18 months but a credible Series-A thesis.
+1. **Custom site expansion revenue** (Q18). $200K-$500K/yr by M24 from customers commissioning additional high-criticality intersections.
+2. **Time-bounded exclusivity premium** (Q18). $300K-$1M ARR by M24 from safety-case-sensitive deployments.
+3. **Channel revenue via Foretify, Applied Intuition Validation Toolset, CARLA partner integrations** (Q18). $200K-$500K/yr by M30.
+4. **Multi-market expansion** (Phoenix, Austin Q3-Q4 2027). Per-market deployment 2-3× the multi-tenant corpus value without proportional capex.
+5. **V2 envelope (Model C drone-in-a-box at scale, BVLOS waiver clearance)**. Continuous 24/7 capture; ~3× capture volume per site for the same operational cost.
+6. **Regulatory-evidence-as-a-service**. Library subscription + safety-case documentation support for OEMs preparing NHTSA AV STEP submissions. Speculative seed-round growth thesis.
 
-These collectively suggest $5M-$15M ARR by month 30 against the $2.0M raise — and underwrite the seed-round growth story. The current PR-FAQ is anchored on the pre-seed-to-CFP path, which is the wedge product alone.
+These collectively suggest $5M-$8M ARR by M30 against the $2.2M raise — and underwrite the seed-round growth story. The current PR-FAQ is anchored on the pre-seed-to-CFP path, which is the wedge product alone.
 
 ---
 
@@ -326,192 +331,201 @@ These collectively suggest $5M-$15M ARR by month 30 against the $2.0M raise — 
 
 **Q24. What is the North Star of the product?**
 
-Our North Star is to enable AV development teams to acquire any aerial BEV training scenario they need, anywhere we operate, at a per-scenario cost low enough that aerial BEV becomes a default category in their scenario library rather than a research curiosity. Success is when Applied Intuition's ScenarioLib (or equivalent) lists "aerial BEV" as a checkable category in their procurement pipeline, populated primarily by Skydock data.
+Our North Star is to become the validation library that AV safety teams reference by default when closing closed-loop collision-rate gates. Success looks like: every Tier-1 AV company and every major OEM safety team has a Skydock library subscription documented as part of their NHTSA AV STEP submission package, and the curation methodology (criticality scoring, OpenODD axis tagging) becomes a quoted reference point in safety-case documentation. The library is the artifact safety teams reach for; the site network is the substrate that produces it.
 
-**Q25. Tenets (unless you know better ones).**
+**Q25. Tenets.**
 
-1. **The customer's existing pipeline is sacred**. Our data drops into their existing OpenSCENARIO workflow without schema rewrite, naming-convention negotiation, or QA process changes. The customer should not have to do work to ingest us.
-2. **Every quantitative claim is grounded in the simulation**. No projection in any external document (pitch, pricing, customer SLA) is asserted without a corresponding sim configuration that produces it. If an investor or customer asks "how do you know?", the answer is "run this command."
-3. **Spec-target reliability is non-negotiable**. <90% mission success rate is unsellable at $300+ per scenario. Operational reliability is the wedge; we don't ship until the sim tells us we're at the target.
-4. **Cost-plus pricing is a starting position, not a destination**. The cost-to-replicate model gives us a defensible opening price. The actual price gets discovered through customer conversations. We update the model when we learn.
-5. **The drone is hardware; the operational system is software**. We buy commodity drones. We build operational excellence. Hardware is replaceable; operational learning is not.
-6. **One vehicle that works > five vehicles that don't**. Reliability over scale until reliability is proven. The MVP is one vehicle achieving spec targets, not six vehicles producing variance.
+1. **The safety case is the buyer's actual workflow.** Our product drops into closed-loop sim pipelines without schema rewrite, without QA process change, without naming-convention negotiation. The safety team should not have to do work to ingest us.
+2. **Curation methodology is the moat.** Every captured scenario passes through 5 independent scoring signals. Curation IP + multi-tenant corpus + safety-case integration are the layers raw drone captures cannot displace.
+3. **Independence is the validation principle.** Synthetic libraries cannot serve as ground truth in a safety case. We do not compete with synthetic generators on volume; we sell the structurally non-substitutable layer.
+4. **Subscription aligns incentives with library growth.** Per-scenario pricing taxes customers for each capture and incentivizes us to sell volume. Subscription pricing aligns us with making the library more useful over time.
+5. **Fixed-point operations is the unit-economic primitive.** levelXdata proved this for 7 years in Germany. We do not invent a new operational primitive; we extend the proven primitive with US coverage + curation IP.
+6. **One site that delivers validation-grade quality > five sites that don't.** Per-site reliability is non-negotiable. We do not expand site footprint past the per-site quality bar.
 
-**Q26. How do we control which scenes get captured? What's the operator interface?**
+**Q26. How does customer integration work? How is library access scoped?**
 
-The operator has three trigger modalities (spec §1.3):
-- **Manual**: physical button or app button to trigger capture at the current waypoint.
-- **Pre-planned waypoint**: a list of GPS coordinates with scene-class labels; the vehicle drives the route, and capture auto-triggers when the vehicle arrives at a waypoint (with operator confirmation override).
-- **Hard-brake event**: the vehicle's IMU detects a sudden deceleration (>0.3g); the operator gets a one-tap deploy prompt, useful for capturing the scene that caused the brake event.
+Library access is via the Skydock API + partner integrations:
 
-Per-scene metadata (scene class, target altitude, capture duration, custom waypoints) is set at the route-planning stage in a dispatcher UI. Customers requesting custom scenarios provide a waypoint specification (lat/lon + scene class + capture conditions); the dispatcher integrates it into the next operating day's route.
+- **Skydock API:** OAuth2 + scoped API keys per subscriber, with filterable queries on scene class, criticality bin, agent count, geography, time-of-day, weather, OpenODD axis match. Subscribers pull scenarios on demand into their closed-loop sim pipeline or build automated nightly integration jobs against their evolving safety case.
+- **Foretify integration:** library access exposed as a Foretify scenario library within the Foretify scenario-validation tool, with customer queries flowing through Foretify's existing UX.
+- **Applied Intuition Validation Toolset integration:** library access exposed as a data source within the Applied Intuition validation pipeline.
+- **CARLA / custom integration:** Production and Enterprise subscribers can request custom S3 bucket targeting, SFTP delivery, or streaming-API endpoints.
 
-V2 (post-pre-seed) adds ML-based scene anomaly detection from the forward camera (auto-trigger when the vehicle's view contains an interesting scene). Not in the MVP envelope.
+Scope of access is set by subscription tier (Q4). Multi-tenant access is the default; time-bounded exclusivity available at premium for safety-case-sensitive deployments.
 
-**Q27. How did we choose the camera + drone + dock specifications?**
+**Q27. How did we choose the camera + site deployment + capture geometry?**
 
 Three design decisions worth interrogating:
 
-1. **DJI Mini 4 Pro at 249g**: Selected for the sub-250g FAA Remote ID exemption (lowers regulatory burden), the 34-minute flight time (allows 30-120s captures with sufficient battery margin for return + landing), 4K/30fps camera (matches customer expectation for delivery resolution), and the OcuSync 4 transmission (12-mile range, useful for V2 BVLOS expansion). Alternatives considered: Skydio X10 (10× cost, defense-grade, deferred to V2); custom drone (R&D risk, not aligned with pre-seed scope).
-
-2. **Target altitude 80m AGL with 80° diagonal FOV**: Footprint radius = 80 × tan(40°) ≈ 67m, large enough to capture a typical signalized intersection. Higher altitude (120m+) gives wider coverage but pixel-per-agent drops below typical detection thresholds (see resolution penalty in quality methodology). Lower altitude (50m) gives better resolution but smaller footprint and more wind sensitivity. 80m is the sim-optimised midpoint and matches Part 107's 400ft (122m) ceiling with margin.
-
-3. **Custom dock with BLE precision-landing instead of DJI Dock 2**: DJI Dock 2 is $15K and designed for stationary installation; vehicle adaptation would require significant mechanical engineering and would still leave us at 10× the cost. Custom dock (~$1,200 materials + ~$10K engineering) gives equivalent functional precision-landing with the vehicle-mount form factor we actually need. Skydio Dock 2 is even further off the cost target.
+1. **Three deployment models (A rooftop / B tethered / C drone-in-a-box):** Selected to span the regulatory tractability + capex tradeoff space. Model A is the simplest path (stationary observation; no waiver) and the first 3-5 V2 sites use it. Model B is the next-tier path (tethered drone, simplified Part 107 tethered-ops registration, no Remote ID requirement for tethered) for sites where intersection geometry needs higher vantage. Model C is the production-scale path (drone-in-a-box for 24/7 continuous capture) but requires BVLOS waiver — filed M1 of operations as an explicit milestone.
+2. **Capture altitude 50-120m AGL (default 80m for signalized urban intersections):** Footprint radius = 80 × tan(40°) ≈ 67m, large enough to capture a typical signalized intersection. Higher altitude (120m+) gives wider coverage but pixel-per-agent drops below typical detection thresholds. Lower altitude (50m) gives better resolution but smaller footprint. 80m is the levelXdata-precedent midpoint matching Part 107's 400ft (122m) ceiling with margin.
+3. **Important regulatory correction (V1 PR-FAQ error):** V1 stated that DJI Mini 4 Pro at 249g qualifies for "sub-250g FAA Remote ID exemption." **This was wrong.** The sub-250g Remote ID exemption applies only to recreational flight, not commercial Part 107 operations. Skydock holds the FAA Part 107 commercial certificate; per-site operators hold individual remote pilot certificates. All non-tethered commercial drone operations require Remote ID compliance regardless of drone weight. Tethered drones (Model B) have a separate, simplified registration path that does not require Remote ID on the tethered aircraft. Model C drone-in-a-box requires BVLOS waiver — a separate, well-documented regulatory process with 6-12 month expected resolution time.
 
 **Q28. How did we choose the operational envelope (V1 vs V2)?**
 
-V1 envelope per spec §1.2: vehicle stationary or <5 mph during launch, capture, and recovery; VLOS only; altitude 50-120m AGL; daylight only; wind <20 mph. This is the minimum-viable envelope that we can operate under FAA Part 107 without any waiver, which is essential for pre-seed scope (waivers take 6-12 months and have low single-digit-percent approval rates for novel use cases).
+V1 envelope: Model A rooftop installations (stationary observation, no waiver) + Model B tethered drone (simplified Part 107 tethered-ops, no Remote ID for tethered drones). Daylight only for Model A (Part 107 stationary observation). Altitude 50-120m AGL. Wind <20 mph for Model B. This is the minimum-viable envelope that we can operate under FAA Part 107 without any waiver, which is essential for pre-seed scope (waivers take 6-12 months and have improved approval rates with Part 108 progress but remain time-uncertain).
 
-V2 envelope (post-CFP, seed-round-funded): BVLOS waiver, moving-vehicle launch and recovery up to 35 mph, night operations, broader weather. Each V2 capability roughly doubles capture capacity per vehicle. The pre-seed thesis does not depend on V2; V2 is the seed-round growth thesis.
+V2 envelope: Model C drone-in-a-box at expansion markets, requiring BVLOS waiver. Filed M1 of operations as an explicit milestone with expected resolution M9-M12. Enables 24/7 continuous capture and Phoenix + Austin expansion by Q3-Q4 2027. The pre-seed thesis does not depend on Model C; V2 envelope is the post-seed growth thesis.
 
 **Q29. Why "Skydock" — branding rationale?**
 
-Three options considered: "Skydock" (chose), "Aerial Scenarios", "Roof Drone Data". Skydock won because:
-- It names the *operational primitive* (the dock + drone unit) rather than the *output* (scenarios) or the *form factor* (roof drone). The output and form factor can change; the operational primitive is the wedge.
-- It's a defensible product mark, not generic. "Aerial Scenarios" is descriptive and unprotectable.
-- It generalises to future products (Skydock Lite for industrial inspection, Skydock Cloud for the corpus subscription product) without renaming.
+Three options considered: "Skydock" (chose), "Aerial Sentinel", "Skylib". Skydock won because:
 
-Risk of confusion with DJI Dock / Skydio Dock products: minimal, because those are stationary drone-in-a-box systems aimed at industrial inspection customers, not data services. Customer-discovery feedback on the name was positive in 7 of 8 conversations.
+- It names the *operational primitive* — the fixed-point capture installation that the entire system orbits around. The output (curated library) and the customer-facing API can evolve; the operational primitive doesn't change.
+- It's a defensible product mark, not generic. "Aerial Sentinel" and "Skylib" are descriptive and unprotectable.
+- It generalizes to future products (Skydock Cloud for the library API, Skydock for Compliance for regulatory-evidence-as-a-service) without renaming.
+
+Risk of confusion with DJI Dock / Skydio Dock products: minimal, because those are stationary drone-in-a-box hardware aimed at industrial inspection customers, not data services. The "Skydock V2 actually does use drone-in-a-box hardware at Model C sites" overlap is acceptable — we're a data + curation services company, not a hardware vendor.
 
 **Q30. How much do we need to invest in marketing and sales?**
 
-Pre-seed marketing investment is intentionally lean because the target customer base is small (~30 named decision-makers across §4.1 customers) and reached through direct founder-led outreach, not paid acquisition.
+Pre-seed sales motion is intentionally lean because the target customer base is small (~40 named safety-team decision-makers across V2 customer list) and reached through direct founder-led outreach + paid pilots.
 
-- **Months 1-9 (founder-led)**: $0 paid marketing. Founder handles all customer conversations directly. LinkedIn outreach, warm intros, conference presence at AV-Sim 2027 ($10K).
-- **Months 10-18 (GTM hire)**: dedicated GTM hire at $180K-$220K loaded compensation. Quota: 4 paid pilots by month 18.
-- **Total 18-month sales + marketing budget**: ~$200K in the Q21 financial summary.
+- **Months 1-10 (founder-led):** $0 paid marketing. Founder handles all customer conversations directly. Direct outreach to safety teams at named target accounts, conference presence at AV-Safety 2027 ($15K), Foretify and Applied Intuition partner alignment.
+- **Months 11-18 (GTM hire):** Dedicated GTM hire at $220K loaded compensation, specifically targeting AV safety teams. Quota: 4 paid subscriptions by M18 (plus the 2 founder-converted from M7-M10).
+- **Total 18-month sales + marketing budget:** ~$225K in the Q21 financial summary.
 
-This is dramatically lower than a typical consumer or SMB SaaS startup because the buyer is a small named cohort, not a broad market.
+This is dramatically lower than a typical SMB SaaS startup because the buyer is a small named cohort and the closed-loop pilot is structured so the customer self-validates value rather than requiring marketing-driven proof.
 
-**Q31. Why aren't we just licensing the data from internal AV company collections?**
+**Q31. Why don't we license data from internal AV company collections?**
 
 Three reasons:
-1. **They don't have aerial BEV in volume**. The point of FAQ #9 is that the category is empty *because* internal teams have failed to collect it.
-2. **What they have, they don't sell**. AV companies treat training data as IP. Waymo Open Dataset is the major exception, and it's general-purpose, not edge-case curated.
-3. **Even if available, licensing has structural problems**. Customer A's data goes to Customer B's training pipeline; competitive concerns block this.
 
-Skydock collecting data ourselves bypasses all three. We own the corpus, we license non-exclusively to multiple customers, and the data is captured to our specifications.
+1. **They don't have aerial BEV in volume.** Internal teams have failed to capture it economically (Q11). The few that have small internal datasets don't have curation pipelines.
+2. **What they have, they don't sell.** AV companies treat internal data as IP; competitive concerns block cross-customer licensing.
+3. **Independence requirement makes internal data structurally insufficient.** Even if a customer had aerial BEV from their own collection, it wouldn't satisfy the safety case's independence requirement for closed-loop validation.
+
+Skydock collecting independent multi-tenant data ourselves bypasses all three structural problems.
 
 **Q32. What's the launch timeline? What are the milestones?**
 
-Per spec §5.1, adapted for the pre-seed schedule:
+V2 milestones per [V2_EXECUTION_PLAN.md](V2_EXECUTION_PLAN.md):
 
 | Milestone | Target | Outcome |
 |---|---|---|
-| M0: Pre-seed close | Month 0 | $2.0M committed; founder + hardware contractor onboarded |
-| M1: First MVP capture | Month 4 | One vehicle operational; first scenario package emitted; reviewed by ≥3 prospects |
-| M2: First paid pilot signed | Month 7 | $30K-$80K commitment from a §4.1 customer |
-| M3: First paid pilot delivered | Month 9 | 100+ scenarios delivered, customer NPS ≥7 |
-| M4: Three-vehicle fleet operational | Month 11 | 1,500 scenarios/month capacity proven |
-| M5: Three paid customers | Month 14 | $200K+ MRR, fleet expanding to 5-6 vehicles |
-| M6: CFP achieved | Month 15-18 | Monthly net cash positive on operational revenue |
-| M7: Seed-round-ready milestone | Month 18 | $400K+ MRR, $5M+ ARR run-rate, 4-6 paid customers, ready for seed if raising |
+| M0: Pre-seed close | Month 0 | $2.2M committed; founder + ML/curation contractor + site/hardware contractor onboarded; BVLOS waiver application drafted |
+| M1: BVLOS waiver filed | Month 1 | FAA filing complete; rooftop partner negotiations in progress for first 3 sites |
+| M4: First Model A site live + first free closed-loop pilot in flight | Month 4 | One site capturing; curation pipeline alpha emits first scored scenarios; ≥1 free pilot customer reviewing |
+| M7: First paid subscription signed | Month 7 | $150K ARR; 3 Model A sites live; first paid customer ramped from free pilot |
+| M11: 5 sites live + 2nd paid subscription + GTM hire onboarded | Month 11 | $300K ARR; GTM hire owns prospect pipeline |
+| M14: 3rd-4th paid subscriptions + 1st custom site commissioned | Month 14 | $600K ARR; first $75K custom site revenue |
+| M16: 1st Model B tethered drone live | Month 16 | 6 sites live; production-grade BVLOS partial precedent |
+| M18: 5th-6th paid subscriptions + 7 sites operational | Month 18 | $900K-$1.2M ARR; CFP trajectory; seed conversations start |
+| M20-22: Seed-round close | Month 20-22 | $5-10M seed for Phoenix + Austin + Model C |
 
 **Q33. What resourcing is needed to get this launched?**
 
 Headcount + contractor plan over 18 months:
 
-- **Months 1-3**: Founder full-time + 1.0 FTE hardware engineering contractor + 0.5 FTE ML/pipeline contractor. Burn ~$50K/month.
-- **Months 4-9**: Founder + 1.0 FTE first full-time engineering hire (drone/ops integration) + 0.5 FTE part-time hardware contractor. Burn ~$45K/month.
-- **Months 10-15**: Founder + 2.0 FTE engineering + 1.0 FTE GTM/sales hire + 0.5 FTE operator. Burn ~$70K/month.
-- **Months 16-18**: Founder + 3.0 FTE (2 eng, 1 GTM) + 1.0 FTE operator + 0.5 FTE customer success. Burn ~$80K/month (offset by revenue).
+- **Months 1-3:** Founder full-time + 1.0 FTE ML/curation engineering contractor + 1.0 FTE hardware/site integration contractor + legal/aviation lawyer engagement. Burn ~$75K/month.
+- **Months 4-6:** Founder + 1.0 FTE curation eng first full-time hire starts M5 + 0.5 FTE curation operator starts M6 + 1.0 FTE hardware contractor wrapping M6. Burn ~$90K/month.
+- **Months 7-10:** Founder + curation eng + 1.0 FTE curation operator. Burn ~$90K/month.
+- **Months 11-13:** Above + 1.0 FTE GTM hire starts M11. Burn ~$110K/month.
+- **Months 14-17:** Above + 2nd curation eng hire M14 + 0.5 FTE customer success M17. Burn ~$130-140K/month.
 
-Total full-time headcount at CFP: 4 + founder = 5 people. This is intentionally small; the operational excellence required is process-driven more than headcount-driven.
+Total full-time headcount at CFP (end M18): 5 + founder = 6 people (founder + 2 curation eng + 1 GTM + 1 ops + 0.5 CS).
 
-Founder bio: [TO BE FILLED IN BY KRETHIK — what's your background, why are you specifically the right person to build this? This is the single highest-leverage paragraph in the document for a pre-seed investor.]
+Founder bio: Krethik Ram has spent the last several years leading product on autonomous hardware-software systems at scale — hardware, firmware, real-time sensor integration, and safety-critical control deployed across major US logistics operations. The same operational discipline applies to fixed-point aerial capture site network + curation pipeline + customer-facing safety-case integration. Earlier work includes a smart-access hardware and firmware system with a provisional patent. B.S. Computer Science, University of Wisconsin–Madison. Based in San Francisco.
 
 **Q34. What's launching first — US or other markets? Why sequential vs simultaneous?**
 
-US (specifically Bay Area) only for the pre-seed. Rationale:
-- FAA Part 107 is the regulatory envelope we know; EU EASA equivalent has different and slower-evolving rules.
-- §4.1 customer base is US-headquartered (Applied Intuition, Foretellix, Parallel Domain all US; Cognata Israel-based but US-active).
-- One regulatory regime + one operator pool + one customer relationship management = lower coordination overhead.
-- Bay Area specifically because (a) high customer concentration, (b) regulatory familiarity, (c) operator hiring depth.
+US only (specifically Bay Area) for the pre-seed. Rationale:
 
-Phoenix expansion (Q4 2027): warm-weather year-round operation, AV testing density, Waymo / Cruise presence. Austin expansion (Q1 2028): Tesla / GM partnership zone, growing AV test fleet, lower operating cost.
+- FAA Part 107 + BVLOS waiver process is the regulatory envelope we know; EU EASA equivalent has different and slower-evolving rules.
+- V2 customer base (safety teams at Tier-1 AV companies + OEMs) is concentrated in California, Michigan, Texas, and Arizona — Bay Area is the densest cluster.
+- Site selection requires deep knowledge of city/state DOT incident data + rooftop partner access; concentrating on one metro for V1 sites builds the methodology before geographic scaling.
+- One regulatory regime + one site-deployment methodology + one customer relationship pattern = lower coordination overhead.
 
-EU expansion deferred to post-seed; the regulatory work alone is 9-12 months of preparation.
+Phoenix expansion (Q3 2027): warm-weather year-round operation, AV testing density, Waymo + Cruise + Aurora presence. Austin expansion (Q4 2027): Tesla / GM partnership zone, growing AV deployment, lower operating cost. Both markets are post-BVLOS waiver clearance and post-seed.
+
+EU expansion deferred to post-Series A; the regulatory + site-selection + partner-integration work alone is 12-18 months of preparation.
 
 **Q35. What are the biggest risks and how are they mitigated?**
 
-Honest risk register, prioritised by impact-probability product:
+Honest risk register, prioritized by impact-probability product:
 
 | Risk | Probability | Impact | Mitigation |
 |---|---|---|---|
-| Customers refuse to pay $339/scenario; actual ASP lands at $150 | 40% | High | (a) Sim shows CFP still reachable at $150 with 6-month slip; (b) buffer in raise covers slip; (c) ASP signal in first 2 pilots informs fleet-size decision. |
-| MVP reliability < sim's month-6 priors; success rate stuck at 70% | 30% | High | (a) 6-month build phase before paid pilots; (b) sim's v0-defaults case is the 70% scenario, and CFP still reachable at 6 vehicles albeit slower; (c) explicit reliability gate at M2 (paid pilot signature) — if we're not at 80%+ success rate, we hold paid pilots. |
-| FAA Part 107 issue (e.g., novel-use-case review) | 20% | Medium | V1 envelope is intentionally inside well-trodden Part 107 territory. Pre-flight legal review with an aviation lawyer in month 1-2. |
-| Customer says "synthetic data is enough" | 15% | Medium | (a) Customer discovery already disconfirms this for 7 of 8 leads; (b) sim-grounded pricing band lets us drop price to $150 if needed. |
-| Skydio or DJI enters as a direct competitor | 10% | High | (a) 12-18 month time-to-market window; (b) operational moat + corpus + customer integration accrue over time; (c) pre-seed → seed transition should happen before any competitor ships. |
-| Solo founder burns out or has a critical event | 10% | Critical | First engineering hire in month 4-7 has operational + technical context to continue in founder's absence. Co-founder search active but not gating. |
-| Drone flyaway / fleet incident causing reputational damage | 5% | High | Insurance ($1-3K/year per spec §7.3), redundant fleet (3 drones per vehicle so a loss doesn't stop operations), public communications plan ready for incident. |
+| Closed-loop pilot conversion rate <40%; ASP averages $100K not $200K | 40% | High | (a) Pre-agreed pilot success criteria force binary conversion decision rather than slow customer drift; (b) closed-loop sim already integrated into target customer workflows so adoption friction is low; (c) Foretify + Applied Intuition partnerships create channel acceleration if direct sales slow. |
+| BVLOS waiver slip beyond M18 | 30% | Medium | (a) V1 envelope (Model A + Model B) is intentionally inside Part 107 territory, so V1 thesis doesn't depend on waiver; (b) Model B tethered drone provides expansion vector for higher-vantage sites without waiver; (c) Phoenix + Austin Model C deployment is post-seed, so pre-seed CFP doesn't depend on Model C. |
+| Synthetic data improves faster than expected; safety teams lower validation-data willingness-to-pay | 25% | High | (a) Validation independence requirement is a structural argument, not a "synthetic is bad" argument — better synthetic actually strengthens our independence case; (b) NHTSA AV STEP, EU AI Act, UK CCAV all push regulation toward independence; we sit on the right side of this curve; (c) library compounds in value over time so even reduced new-customer signups still grow corpus value. |
+| Rooftop access negotiations slip past M3 per site | 25% | Medium | (a) Founder-led negotiation focused on commercial real-estate partners with existing technical infrastructure (office towers, parking structures, transit hubs); (b) parallel site negotiations so timeline-slip on one doesn't delay all; (c) Model B tethered drone provides land-only deployment path that doesn't require rooftop access. |
+| Curation pipeline doesn't reach production scale by M5 | 20% | High | (a) 5 curation signals are individually well-published methods; the integration work is straightforward ML-ops; (b) curation engineering contractor onboarded from M1; (c) explicit M5 gate before first free pilot starts. |
+| Solo founder burns out or has a critical event | 10% | Critical | First engineering hire in M5 has operational + technical context to continue in founder's absence. Co-founder search active but not gating. |
+| Drone fleet incident at Model B/C site causing reputational damage | 5% | High | Insurance ($1-3K/year per site), redundancy across multi-site footprint (single-site outage doesn't stop library access), tethered + DIB hardware has demonstrated reliability records, public communications plan ready for incident. |
 
-The two risks with the largest impact-probability product (ASP < $339 and reliability < month-6-priors) both have sim-quantified mitigations and converging signals in the first 6 months. We will know early whether the thesis is on track.
+The two risks with the largest impact-probability product (pilot conversion <40% and synthetic data substitution) both have structural mitigations and converging signals in the first 8-10 months. We will know early whether the V2 thesis is on track.
 
 ---
 
-## Appendix B — Customer discovery summary (March-April 2026)
+## Appendix B — V2 customer discovery summary (May 2026 refocus)
 
-8 conversations with AV-industry leads, all under non-disclosure but anonymised here:
+V2-pivot discovery (May 2026) refocused on safety teams + regulatory safety officers, replacing V1's perception-team / training-data discovery from March-April 2026. V2 discovery is ongoing; this appendix updates as conversations close.
 
-| # | Role | Company type | Key takeaway |
+Key V2 discovery questions:
+1. Is closed-loop collision-rate evaluation a gating mechanism for your safety case? — Expected: ≥80% yes.
+2. Does your closed-loop sim library include aerial BEV scenarios from an independent source? — Expected: <20% yes.
+3. Would your team subscribe to a curated, criticality-scored library at $100K-$500K/year if the closed-loop pilot demonstrated measurable collision-rate reduction? — Expected: ≥50% yes subject to pilot evidence.
+
+V1 discovery (March-April 2026) remains relevant for context on the AV scenario-library market and the validation-platform landscape (Applied Intuition, Foretellix, Parallel Domain are still channel partners and competitive context), but V1 was anchored on perception/training-team buying behavior which doesn't map directly to V2's safety-team positioning.
+
+## Appendix C — V2 competitive analysis
+
+| Player | Product | Pricing | Distinction from V2 Skydock |
 |---|---|---|---|
-| 1 | Head of Scenario Engineering | Tier-1 validation platform | "Aerial BEV is the perspective we'd been trying to source internally for two years." Would commit to a 200-scenario pilot at $300-$400/scenario subject to quality review. |
-| 2 | VP of Simulation | Top-5 OEM | Confirmed aerial BEV gap in library. Procurement cycle 6-9 months. Pricing tolerance $200-$500/scenario. |
-| 3 | Head of Validation | Synthetic-data company | Buys real data to validate synthetic generators. Would buy aerial BEV non-exclusively. $200K annual budget mentioned. |
-| 4 | Director of AV Test | Top-10 AV company | Library budget $2M/year, currently 90% spent on simulated data. Open to aerial BEV at $300/scenario if quality validates. |
-| 5 | CTO | Sim-platform startup (post-Series A) | Less interested as a direct customer; more interested in partnership / data-sharing. Could become a channel partner for their customers. |
-| 6 | Research Lead | AV academic lab | Free / low-cost interest only; not a paying customer but useful for sample validation. |
-| 7 | Head of Data | Logistics-AV company | Strong interest in custom-scenario commissioning. Pricing tolerance higher ($500+/scenario) but smaller volume (50-100/year). |
-| 8 | VP of Engineering | Tier-2 robotaxi co. | Confirmed library gap. Procurement gate is internal QA validation of first 20 scenarios. |
+| levelXdata | German fixed-location aerial datasets (highD/inD/rounD/exiD) | $50K-$200K/yr per dataset | German-only; no US coverage; no criticality scoring; no library growth; no OpenODD axis tagging — the 7-year fixed-point hover precedent that validates our unit economics |
+| Foretify | Scenario-validation platform | Per-scenario / per-license | Channel partner — sells Foretify integrations alongside Skydock library subscriptions |
+| Applied Intuition Validation Toolset | AV validation pipeline | Per-scenario / per-license | Channel partner — Skydock library accessible as a data source in their toolset |
+| Parallel Domain | Synthetic BEV / sensor data | Per-scenario synthetic | Synthetic — fails independence requirement in closed-loop validation; complementary in training |
+| Mira | Synthetic AV library | Subscription | Synthetic; complementary |
+| Wayve GAIA-3 | Generative world model | Internal use / API access TBD | Training-data substitution thesis — explicitly what we positioned away from in V2 |
+| NVIDIA Cosmos | Generative world model | API access | Training-data substitution thesis |
+| DJI / Skydio (Dock 2 / X10) | Stationary drone-in-a-box hardware | $15K-$40K + hardware | Hardware vendor; sells installations not curated libraries |
+| Internal AV drone teams | Manual or semi-automated drone capture | Internal cost $500-$1K+/scenario | Cap at low daily capacity; no curation; no library growth |
 
-Across 8 conversations: 7 confirmed library gap, 6 confirmed pricing tolerance ≥$200, 4 expressed commit-intent for a pilot subject to quality evidence.
+## Appendix D — Sample library scenario schema
 
-## Appendix C — Competitive analysis table
-
-| Player | Product | Pricing | Distinction from Skydock |
-|---|---|---|---|
-| DJI | Mini 4 Pro + Dock 2 | $15K dock + $760 drone | Stationary; not vehicle-mounted; sells hardware not data services |
-| Skydio | Dock 2 + X10 | $40K+ | Defense-grade stationary; not vehicle-mounted; no data services |
-| Percepto | Air Mobile | Industrial pricing | Vehicle-mounted but industrial inspection use case; not AV data |
-| Parallel Domain | PD-Replica | Per-scenario synthetic | Synthetic BEV; complementary, not competitive |
-| Datagen | Synthetic CV data | Subscription | Synthetic; primarily indoor / vehicle interior |
-| Mira Scenario | Synthetic library | Per-scenario | Synthetic; AV-specific |
-| DataFromSky | Traffic analytics | Per-analysis | Aerial but stationary; analytics output, not training data |
-| Internal AV teams | Manual drone collection | Internal cost $1K+/scenario | Caps at 2-4/day capacity |
-
-## Appendix D — Sample deliverable schema
-
-Per-scenario file structure (auto-generated by `skydock/deliverable.py`):
+Per-scenario file structure (auto-generated by Skydock curation pipeline):
 
 ```
-scenario_skydock-mission-00042/
-  metadata.json           # scene class, location, capture geometry, camera calibration, GPS uncertainty, quality
-  agent_tracks.json       # per-agent ENU positions, 30 fps interpolated from sim agent model
+scenario_skydock-cap-00042/
+  metadata.json           # site ID, capture geometry, scene class, OpenLABEL tags,
+                           # 5-signal curation scores, OpenODD axis match
+  agent_tracks.json       # per-agent ENU positions, 30 fps from BEV transform + ByteTrack
   scenario.xosc           # OpenSCENARIO 2.0 stub with entities + road network reference
+  raw_video.mp4           # optional 4K H.265, toggleable per subscription tier
 ```
 
 Sample sizes:
-- metadata.json: ~2 KB
+- metadata.json: ~3 KB (includes 5-signal scores + OpenLABEL + OpenODD)
 - agent_tracks.json: 50-500 KB (depending on agent count and capture duration)
 - scenario.xosc: ~5 KB
-- Raw 4K video (optional): 200-600 MB
-
-A sample package can be auto-generated by running `python run.py --emit-packages out/scenarios` against the simulation; the output is the same shape and methodology as production.
+- raw_video.mp4 (optional): 200-600 MB
 
 ## Appendix E — Methodology references
 
-- Drone hardware spec: DJI Mini 4 Pro public datasheet.
-- Camera FOV: DJI Mini 4 Pro specifications; sensor 1/1.3" CMOS, 24mm equivalent focal length.
-- Battery model: linear discharge calibrated against DJI's 34-minute published flight time.
-- Wind physics: point-mass with proportional velocity control + horizontal wind coupling at 0.18 m/s per mph (calibrated against published quadcopter wind tolerance).
-- GPS uncertainty: consumer GPS 2.5m 2σ (standard reference: u-blox NEO-M9N spec).
-- Dock latch model: geometry-based, calibrated against commercial drone-in-a-box reported tolerances (DJI Dock 2 ~ 60cm; we use 1.5m to reflect BLE-augmented precision landing in our custom design).
-- OpenSCENARIO format: ASAM OpenSCENARIO 1.2 specification (publicly published standard).
-- Annotation rate references: Scale AI public S-1 filings (2024) and Mighty AI acquisition press materials (2019).
+- **Curation methodology:**
+  - Criticality: Westhofen et al. 2021 catalog (TTC, PET, jerk, near-miss)
+  - Epistemic uncertainty: Mining the Long Tail (arXiv 2508.18397)
+  - Corpus frequency: Waymo WOD-E2E methodology (<0.03% threshold)
+  - Multi-agent interaction density: InterHub (Nature Scientific Data 2025)
+  - Scene-class taxonomy: OpenODD axes per customer integration
+- **Aerial BEV unit economics precedent:** levelXdata commercial datasets (highD: 16.5h of drone capture, 110,000 vehicles, German highway); validates fixed-point hover commercial economics over 7 years.
+- **Standards:**
+  - ASAM OpenSCENARIO 2.0 (publicly published)
+  - ASAM OpenLABEL (publicly published)
+  - NHTSA AV STEP NPRM (December 2024); finalized framework 2025-2026
+- **Hardware references:**
+  - DJI Mini 4 Pro / Skydio X10 public datasheets
+  - DJI Dock 2 / Percepto drone-in-a-box specifications for Model C
+  - Commercial tethered drone systems for Model B
+- **Regulatory references:**
+  - FAA Part 107 commercial operations (commercial certificate held by Skydock; per-site operators hold remote pilot certificates)
+  - Part 107 tethered-drone simplified registration (Model B path)
+  - FAA BVLOS waiver process (Model C path; filed M1 of V2 operations)
 
-Full simulation methodology is in `brief.py` output and `skydock/` repo.
+Full execution plan in [V2_EXECUTION_PLAN.md](V2_EXECUTION_PLAN.md); financial model in [V2_FINANCIAL_MODEL.md](V2_FINANCIAL_MODEL.md); thesis in [SKYDOCK_V2_THESIS.md](SKYDOCK_V2_THESIS.md).
 
 ---
 
-*Last updated: May 2026. This is v2 of the PR-FAQ, restructured to match the Amazon canonical format. Source artefacts: [skydock simulation repo](.), [brief.md](out/brief/brief.md), [sample deliverable](out/scenarios/).*
+*v3 (V2 architecture rewrite), May 2026. Replaces v2 PR-FAQ (V1 mobile-dock architecture). The V1 PR-FAQ remains in git history for reference but does not reflect current product, financial model, customer cohort, or regulatory posture. V1 PR-FAQ Q27 contained an incorrect Remote ID exemption claim that is corrected in this V2 document.*
