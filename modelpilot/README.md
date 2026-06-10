@@ -58,6 +58,19 @@ A working gateway + router v0 + ledger + report lives here:
 | `goldenset/` | Tuning pipeline: Batch API fan-out, position-debiased non-inferiority judge, cheapest-non-inferior labeling, router evaluation + confidence-gate tuning |
 | `tests/` | 41 tests covering pricing, routing, modes, holdout, feedback, golden-set pipeline, continuation model, dashboard |
 
+### Two-minute demo
+
+```bash
+python -m modelpilot.demo --offline        # no API key, no spend
+python -m modelpilot.demo                  # real API (needs ANTHROPIC_API_KEY), < $1
+```
+
+Spawns a gateway in autopilot on :8401, replays a mixed workload through it,
+prints every routing decision live (switches, below-gate advice, holdout
+control requests), then leaves the dashboard up at
+`http://127.0.0.1:8401/modelpilot/dashboard?days=0`. Flags: `--mode`,
+`--prompts`, `--fresh`, `--max-tokens`.
+
 ### Quickstart
 
 ```bash
