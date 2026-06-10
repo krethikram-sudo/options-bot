@@ -48,7 +48,7 @@ These show the confidence gate doing its job — uncertain cases don't get touch
 | # | Prompt | What happens & the story |
 |---|---|---|
 | 13 | `Summarize this incident in two sentences for a status page: 09:02 deploy of build 4811. 09:14 p95 latency on /checkout rises to 2.4s. 09:21 errors hit 11% (pool exhaustion in payments-svc). 09:31 rollback complete but errors persist. 09:55 traffic shifted off the mis-provisioned read replica; normal by 10:02.` | ⚡ switches to haiku — this is the **known v0 false-downgrade** from calibration (judge said sonnet). Router v1 fixes it with content-difficulty features. |
-| 14 | `Prove that the sum of two even numbers is even.` | 🛡 stays on opus — calibration says haiku handles it; the router is **deliberately conservative**. Money left on the table beats a quality incident. |
+| 14 | `Prove that the sum of two even numbers is even.` | ⚡ lands on opus (from Fable) — calibration says haiku handles it, so this is a **deliberately conservative miss**. Money left on the table beats a quality incident. |
 
 ## 5. Multi-turn + session economics
 
