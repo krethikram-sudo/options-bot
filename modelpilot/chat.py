@@ -184,7 +184,7 @@ function preMeta(chip, p) {
            ' · generating…';
   } else {
     line = '🛡 keeping <span class="model">' + p.baseline_model + '</span> — ' +
-           (p.category || 'this task') + ' needs it · generating…';
+           (p.category || 'this task') + ' needs the full model, no savings taken here · generating…';
   }
   chip.innerHTML = line + ' <span style="color:#6b7080">· ' + p.category +
                    ' · conf ' + p.confidence + '</span>';
@@ -207,7 +207,8 @@ function meta(chip, r) {
            ', would save <b class="save">' + usd(r.potential) + '</b>';
   } else {
     line = '🛡 stayed on <span class="model">' + r.ran_on + '</span> — ' +
-           (r.category || 'this') + ' needs it (conf ' + r.confidence + ')';
+           (r.category || 'this') + ' needs it · cost ' + usd(r.cost_actual) +
+           ' · <b>saved $0.0000</b> — quality protected on purpose';
   }
   chip.innerHTML = line + ' <span style="color:#6b7080">· ' + r.category +
                    ' · conf ' + r.confidence + ' · ' + r.usage.input_tokens + '→' +
