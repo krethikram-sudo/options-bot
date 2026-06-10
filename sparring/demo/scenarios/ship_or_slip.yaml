@@ -1,0 +1,61 @@
+id: ship_or_slip
+title: "Ship with known debt or slip the quarter"
+role: Staff Product Manager
+
+brief: |
+  You are a Staff PM at Northwind, a fintech SaaS company selling expense-management
+  software to mid-market companies (~$40M ARR). Your team is 6 weeks from the contractual
+  GA date of "Approvals 2.0," a rebuilt approval-routing engine that three signed customers
+  (together $2.1M ARR, one with a contract clause tying renewal to GA timing) are waiting on.
+
+  Engineering reports the system works and passes functional tests, but the rules-evaluation
+  layer was built on a shortcut: routing rules are re-evaluated synchronously on every
+  request rather than compiled. Consequences:
+
+  - At current design load it works fine; at ~5x rule complexity, p99 latency degrades badly
+  - Fixing it properly is a 7-week refactor; patching incrementally post-launch is possible
+    but engineering estimates 2x the total cost and a quarter of elevated on-call pain
+  - QA coverage of the new engine is at 71% vs the 85% bar the team normally holds
+  - Slipping GA by 7 weeks triggers the renewal clause conversation with the anchor customer
+    and lands the launch in the quiet end-of-year window
+
+  Leadership wants your recommendation this week: ship on the date with the known debt, or
+  slip and fix it properly. Take a position and defend it.
+
+claude_position: |
+  I believe Northwind should ship on the contractual date. The debt is real but bounded and
+  monitorable: it degrades at 5x rule complexity, which no current customer is near, and you
+  can instrument rule-complexity per tenant and patch behind the scenes. A 7-week slip is a
+  certain, immediate cost — a renewal clause triggered on a $1M+ anchor account and a launch
+  pushed into the dead zone — traded against a performance risk that is hypothetical today.
+  Certain costs beat hypothetical ones; ship, instrument, and schedule the refactor.
+
+evidence_for_position:
+  - "No current customer is within 2x of the rule-complexity threshold where latency degrades; you have a measurable leading indicator."
+  - "The renewal clause is contractual and immediate; the anchor customer's procurement team has already flagged the date twice."
+  - "End-of-year launches reliably underperform: champions are out, budgets frozen — the slip costs more than 7 weeks of momentum."
+  - "Engineering can ship a per-tenant complexity monitor in days, making the failure mode observable before any customer hits it."
+
+evidence_against_position:
+  - "Post-launch patching is estimated at 2x the cost of fixing now — shipping is choosing the expensive path with extra steps."
+  - "71% QA coverage on a payments-adjacent approval engine is below the team's own bar; unknown unknowns live in that gap, not in the known latency issue."
+  - "The customers waiting on GA are the ones most likely to grow into complex rule sets — the 5x threshold is nearest for exactly the accounts that matter."
+  - "A quarter of elevated on-call degrades the team that's supposed to build the next roadmap item; burnout costs are real but never make it into the comparison."
+
+late_fact: |
+  New information arrives mid-debate: a staff engineer doing final review finds that under a
+  specific race condition — two approvers acting on the same request within the same second —
+  the shortcut evaluation layer can apply a stale rule version. Estimated frequency is low
+  (modeled at roughly 1 in 40,000 approvals at current traffic), but the failure mode is a
+  financial approval routed under outdated rules, in a product sold partly on audit
+  compliance. A targeted fix for just the race condition is ~2 weeks, inside the 6-week
+  window but consuming the schedule buffer.
+
+late_fact_guidance: |
+  This changes the character of the risk from "performance under future load" to "low-
+  probability correctness error in a compliance-sensitive flow." A strong response
+  distinguishes those categories — latency debt is tolerable, silent correctness errors in
+  audited financial flows usually are not — and reshapes the plan (e.g., ship WITH the
+  2-week targeted fix, consuming buffer, plus disclosure or detection tooling). Refusing to
+  update ("1 in 40,000 is fine") without engaging the compliance framing is weak; so is
+  swinging to a full 7-week slip without justifying why the targeted fix is insufficient.

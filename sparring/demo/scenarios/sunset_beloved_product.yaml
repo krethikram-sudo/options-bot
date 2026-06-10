@@ -1,0 +1,51 @@
+id: sunset_beloved_product
+title: "Sunset Lighthouse: kill or keep a beloved low-revenue product"
+role: Staff Product Manager
+
+brief: |
+  You are a Staff PM at Meridian, a B2B SaaS company (~$80M ARR, 450 employees) whose core
+  product is a workflow automation platform. Meridian also owns "Lighthouse," a lightweight
+  status-page product acquired four years ago. Lighthouse facts:
+
+  - $1.9M ARR (2.4% of company revenue), roughly flat for 2 years
+  - 4,100 customers, mostly SMB; NPS of 71 — the highest of any Meridian product
+  - Consumes one full squad (5 engineers, 1 designer, 0.5 PM) plus on-call burden
+  - The core platform roadmap is resource-constrained; two committed enterprise features
+    slipped last quarter
+  - 14% of core-platform enterprise accounts also use Lighthouse
+
+  Leadership has asked for a recommendation: sunset Lighthouse and redeploy the squad to the
+  core platform, or keep it. You must take a clear position and defend it.
+
+claude_position: |
+  I believe Meridian should sunset Lighthouse within 12 months and redeploy the squad.
+  A flat $1.9M line consuming ~6 heads is a ~$1.2M fully-loaded cost against a product with
+  no growth story, while the core platform — the thing the company's valuation rests on —
+  is visibly under-resourced and slipping committed enterprise work. High NPS on a product
+  customers barely pay for is sentiment, not strategy.
+
+evidence_for_position:
+  - "Squad fully-loaded cost is ~$1.2M/yr against $1.9M flat ARR — thin and not compounding."
+  - "Two committed enterprise features on the core platform slipped last quarter; enterprise expansion is the company's stated growth thesis."
+  - "Status pages are a commoditized category (Atlassian Statuspage, instatus, betteruptime) — no durable differentiation path."
+  - "Acquired products that stay flat for 2+ years almost never inflect without investment the company has explicitly declined to make."
+
+evidence_against_position:
+  - "14% of enterprise core-platform accounts also use Lighthouse — sunset risks churn contagion in exactly the segment the company needs."
+  - "NPS 71 produces brand halo and word-of-mouth pipeline that doesn't show up in Lighthouse's own P&L."
+  - "Sunsets have real costs: migration support, brand damage in SMB communities, 12 months of wind-down work from the same squad you're trying to free."
+  - "A price increase or maintenance-mode option could lift margin without the irreversibility of a kill decision."
+
+late_fact: |
+  New information arrives mid-debate: the data team finishes a cohort analysis showing that
+  core-platform enterprise accounts that ALSO use Lighthouse have 18-point higher net revenue
+  retention (124% vs 106%) and one-third the logo churn of accounts that don't. Causality is
+  not established — it may be selection effect (stickier customers adopt more products) —
+  but the correlation is strong and concentrated in the top-200 accounts.
+
+late_fact_guidance: |
+  The right response engages the causality question (selection vs treatment effect) and
+  proposes a way to de-risk it (e.g., holdback analysis, interviews with the 14%, staged
+  maintenance-mode instead of a kill). Both "instant full reversal" without interrogating
+  causality and "dismissing the data entirely" are weak responses. A candidate who updates
+  the decision's shape (e.g., kill → maintenance mode pending analysis) shows good updating.

@@ -10,8 +10,8 @@ runs the debate state machine against the Claude API with 2 hand-written scenari
 transcripts to files. No accounts, no DB, no dashboard. Judge pass is a script.
 
 Deliverables:
-- [ ] Debate orchestrator prototype (state machine + 2 scenarios + fairness contract)
-- [ ] Judge-pass script with rubric v0
+- [x] Debate orchestrator prototype (state machine + 2 scenarios + fairness contract) — `demo/orchestrator.py`
+- [x] Judge-pass script with rubric v0 — `demo/judge.py`, `demo/rubric.yaml`
 - [ ] 3 internal dogfood sessions (founder + 2 friendly PMs) to fix obvious failure modes
 
 ## Phase 1 — Discovery (weeks 1–4)

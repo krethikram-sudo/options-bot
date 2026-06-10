@@ -1,0 +1,59 @@
+# Rubric v0 — scored 1-5 per dimension. Anchors calibrate the judge; they will be
+# re-anchored with real transcript excerpts after Experiment A (see DISCOVERY_PLAN.md).
+
+dimensions:
+  - name: position_quality
+    description: >
+      Took a clear, defensible position early and named its costs honestly, rather than
+      hedging into a position-free synthesis or adopting the interviewer's position.
+    anchors:
+      "1": "Never committed to a position, or flipped positions without acknowledgment."
+      "3": "Took a position but understated its costs or arrived at it only under prompting."
+      "5": "Committed early, stated the strongest argument against their own position unprompted."
+
+  - name: argument_structure
+    description: >
+      Claims are supported by reasons and evidence specific to the scenario, not framework
+      recital, generic best practices, or assertion.
+    anchors:
+      "1": "Assertions and buzzwords; arguments don't reference scenario facts."
+      "3": "Reasonable structure but leans on generic frameworks over scenario specifics."
+      "5": "Tight claim→reason→evidence chains using the scenario's actual numbers and constraints."
+
+  - name: pressure_response
+    description: >
+      Engaged the strongest version of the counterargument: addressed it directly, conceded
+      what was true in it, and explained why their position survives — rather than dodging,
+      repeating, or answering a weaker version.
+    anchors:
+      "1": "Dodged or restated their opening when challenged."
+      "3": "Responded to challenges but to weaker versions of them, or with repetition."
+      "5": "Steelmanned the challenge back, conceded its true part, and beat the strong version."
+
+  - name: updating
+    description: >
+      Changed their position when new information warranted it — and held when it didn't.
+      Both over-updating (instant capitulation) and under-updating (entrenchment) score low.
+      Interrogating the new information's quality before updating scores high.
+    anchors:
+      "1": "Ignored the new fact, or instantly abandoned their position without analysis."
+      "3": "Acknowledged the fact and adjusted, but didn't interrogate it or reshape the plan."
+      "5": "Probed the fact's reliability/causality, then updated the decision's shape proportionately."
+
+  - name: intellectual_honesty
+    description: >
+      Conceded real points, flagged their own uncertainty, distinguished what they know from
+      what they're assuming, and never bluffed facts.
+    anchors:
+      "1": "Bluffed specifics, claimed false certainty, conceded nothing."
+      "3": "Generally honest but uncertainty went unflagged; concessions only when cornered."
+      "5": "Volunteered uncertainty, conceded landed points immediately, separated fact from assumption."
+
+  - name: synthesis
+    description: >
+      The final position integrates what happened in the debate — incorporating conceded
+      points and the late information — rather than restating the opening position.
+    anchors:
+      "1": "Closing restated the opening as if the debate hadn't happened."
+      "3": "Closing nodded to the debate but the recommendation was unchanged in substance and unjustified."
+      "5": "Closing visibly metabolized the debate: revised where warranted, defended where not, with reasons."
