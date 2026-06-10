@@ -34,10 +34,19 @@ CREATE TABLE IF NOT EXISTS requests (
     baseline_cost REAL,                -- same tokens re-priced at original_model
     routed_cost REAL,                  -- same tokens re-priced at recommended_model
     realized_saved REAL,               -- baseline - actual (0 unless applied)
-    potential_saved REAL               -- baseline - routed (what following advice saves)
+    potential_saved REAL,              -- baseline - routed (what following advice saves)
+    arm TEXT NOT NULL DEFAULT 'observe',  -- treatment | control | observe
+    retry_of TEXT                      -- request id this re-run escalates (quality failure)
 );
 CREATE INDEX IF NOT EXISTS idx_requests_ts ON requests (ts);
 CREATE INDEX IF NOT EXISTS idx_requests_category ON requests (category);
+CREATE TABLE IF NOT EXISTS feedback (
+    request_id TEXT NOT NULL,
+    ts REAL NOT NULL,
+    signal TEXT NOT NULL,              -- negative | positive
+    note TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_feedback_request ON feedback (request_id);
 """
 
 
@@ -50,22 +59,26 @@ class Ledger:
             self._conn.executescript(_SCHEMA)
             self._conn.commit()
 
-    def record(self, *, mode, recommendation, routed_model, applied, status_code, usage: Usage):
+    def record(self, *, mode, recommendation, routed_model, applied, status_code, usage: Usage,
+               arm: str = "observe", retry_of: str | None = None,
+               request_id: str | None = None) -> str:
         actual = request_cost(routed_model, usage)
         base = baseline_cost(recommendation.original_model, usage)
         routed = request_cost(recommendation.recommended_model, usage)
         realized = (base - actual) if (applied and base is not None and actual is not None) else 0.0
         potential = (base - routed) if (base is not None and routed is not None) else None
+        request_id = request_id or uuid.uuid4().hex
         with self._lock:
             self._conn.execute(
                 """INSERT INTO requests (
                        id, ts, mode, original_model, recommended_model, routed_model,
                        applied, action, confidence, category, rationale, status_code,
                        input_tokens, output_tokens, cache_read_tokens, cache_write_tokens,
-                       actual_cost, baseline_cost, routed_cost, realized_saved, potential_saved
-                   ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                       actual_cost, baseline_cost, routed_cost, realized_saved, potential_saved,
+                       arm, retry_of
+                   ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
-                    uuid.uuid4().hex,
+                    request_id,
                     time.time(),
                     mode,
                     recommendation.original_model,
@@ -86,9 +99,58 @@ class Ledger:
                     routed,
                     realized,
                     potential,
+                    arm,
+                    retry_of,
                 ),
             )
             self._conn.commit()
+        return request_id
+
+    def record_feedback(self, request_id: str, signal: str, note: str | None = None):
+        with self._lock:
+            self._conn.execute(
+                "INSERT INTO feedback (request_id, ts, signal, note) VALUES (?,?,?,?)",
+                (request_id, time.time(), signal, note),
+            )
+            self._conn.commit()
+
+    def arm_costs(self, since_ts: float = 0.0) -> dict[str, list[float]]:
+        """Per-request actual costs by holdout arm (autopilot traffic only)."""
+        with self._lock:
+            rows = self._conn.execute(
+                """SELECT arm, actual_cost FROM requests
+                   WHERE ts >= ? AND mode = 'autopilot' AND actual_cost IS NOT NULL
+                         AND arm IN ('treatment', 'control')""",
+                (since_ts,),
+            ).fetchall()
+        out: dict[str, list[float]] = {"treatment": [], "control": []}
+        for r in rows:
+            out[r["arm"]].append(r["actual_cost"])
+        return out
+
+    def quality_guardrails(self, since_ts: float = 0.0) -> list[dict]:
+        """Negative-feedback rate per arm — the quality-parity check."""
+        with self._lock:
+            rows = self._conn.execute(
+                """SELECT r.arm, COUNT(DISTINCT r.id) n,
+                          COUNT(DISTINCT CASE WHEN f.signal = 'negative' THEN r.id END) n_negative
+                   FROM requests r LEFT JOIN feedback f ON f.request_id = r.id
+                   WHERE r.ts >= ? AND r.arm IN ('treatment', 'control')
+                   GROUP BY r.arm""",
+                (since_ts,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def escalation_costs(self, since_ts: float = 0.0) -> dict:
+        """Re-runs linked via retry_of: count and total spend. Charged against
+        realized savings — our mistakes are not free."""
+        with self._lock:
+            row = self._conn.execute(
+                """SELECT COUNT(*) n, COALESCE(SUM(actual_cost), 0) cost
+                   FROM requests WHERE ts >= ? AND retry_of IS NOT NULL""",
+                (since_ts,),
+            ).fetchone()
+        return dict(row)
 
     def summary(self, since_ts: float = 0.0) -> dict:
         with self._lock:

@@ -13,8 +13,10 @@ Env:  MODELPILOT_MODE=shadow|advise|autopilot   (default shadow)
       MODELPILOT_CONFIDENCE=0.8                 (autopilot gate)
 """
 
+import hashlib
 import json
 import os
+import uuid
 from dataclasses import dataclass
 
 import httpx
@@ -29,6 +31,7 @@ from .router import Recommendation
 MODE = os.environ.get("MODELPILOT_MODE", "shadow")
 UPSTREAM = os.environ.get("MODELPILOT_UPSTREAM", "https://api.anthropic.com").rstrip("/")
 CONFIDENCE_GATE = float(os.environ.get("MODELPILOT_CONFIDENCE", "0.8"))
+HOLDOUT_PCT = float(os.environ.get("MODELPILOT_HOLDOUT_PCT", "0.10"))
 
 _FORWARD_HEADERS = {
     "x-api-key", "authorization", "anthropic-version", "anthropic-beta",
@@ -56,20 +59,38 @@ class Decision:
     recommendation: Recommendation
     routed_model: str
     applied: bool
+    arm: str = "observe"  # treatment | control | observe
 
 
-def decide(body: dict, mode: str, confidence_gate: float = CONFIDENCE_GATE) -> Decision:
+def assign_arm(session_key: str, holdout_pct: float) -> str:
+    """Deterministic session-level randomization for the RCT (Layer 3).
+
+    Hashing the session key keeps a whole conversation in one arm, avoiding
+    cache contamination between arms (SAVINGS_DASHBOARD.md §1).
+    """
+    if holdout_pct <= 0:
+        return "treatment"
+    h = int(hashlib.sha256(session_key.encode()).hexdigest()[:8], 16) / 0xFFFFFFFF
+    return "control" if h < holdout_pct else "treatment"
+
+
+def decide(body: dict, mode: str, confidence_gate: float = CONFIDENCE_GATE,
+           holdout_pct: float = 0.0, session_key: str = "") -> Decision:
     """Pure routing decision — what runs, given the mode. Shadow and advise
-    never alter the request; autopilot switches only above the confidence gate.
+    never alter the request; autopilot switches only above the confidence gate
+    and only in the treatment arm (control requests run the baseline so the
+    two arms can be compared).
     """
     rec = mp_router.recommend(body)
+    arm = assign_arm(session_key, holdout_pct) if mode == "autopilot" else "observe"
     applied = (
         mode == "autopilot"
+        and arm == "treatment"
         and rec.action == "switch"
         and rec.confidence >= confidence_gate
     )
     routed = rec.recommended_model if applied else rec.original_model
-    return Decision(recommendation=rec, routed_model=routed, applied=applied)
+    return Decision(recommendation=rec, routed_model=routed, applied=applied, arm=arm)
 
 
 def _advice_headers(decision: Decision) -> dict:
@@ -85,6 +106,8 @@ def _advice_headers(decision: Decision) -> dict:
         headers["x-modelpilot-est-net-benefit-usd"] = f"{rec.est_net_benefit:.6f}"
     if decision.applied:
         headers["x-modelpilot-routed-model"] = decision.routed_model
+    if decision.arm != "observe":
+        headers["x-modelpilot-arm"] = decision.arm
     return headers
 
 
@@ -125,7 +148,8 @@ class _SSEUsage:
                     setattr(self.usage, attr, usage[src])
 
 
-def _record(decision: Decision, status_code: int, usage: Usage):
+def _record(decision: Decision, status_code: int, usage: Usage,
+            request_id: str, retry_of: str | None):
     app.state.ledger.record(
         mode=MODE,
         recommendation=decision.recommendation,
@@ -133,7 +157,37 @@ def _record(decision: Decision, status_code: int, usage: Usage):
         applied=decision.applied,
         status_code=status_code,
         usage=usage,
+        arm=decision.arm,
+        retry_of=retry_of,
+        request_id=request_id,
     )
+
+
+def _session_key(request: Request, body: dict) -> str:
+    """Arm assignment key: explicit session header if the client sends one,
+    else a hash of the first message — keeping a conversation in one arm."""
+    explicit = request.headers.get("x-session-id")
+    if explicit:
+        return explicit
+    messages = body.get("messages") or [{}]
+    return hashlib.sha256(json.dumps(messages[0], sort_keys=True).encode()).hexdigest()
+
+
+@app.post("/modelpilot/feedback")
+async def feedback(request: Request):
+    """Quality signal from the customer's app: the escalation valve's input.
+
+    Body: {"request_id": "...", "signal": "negative"|"positive", "note": "..."}
+    request_id comes from the x-modelpilot-request-id response header. To link
+    a re-run after a failure, resend through the gateway with header
+    x-modelpilot-retry-of: <request_id> — its cost is charged against savings.
+    """
+    body = await request.json()
+    if body.get("signal") not in ("negative", "positive") or not body.get("request_id"):
+        return Response(content='{"error": "request_id and signal=negative|positive required"}',
+                        status_code=400, media_type="application/json")
+    app.state.ledger.record_feedback(body["request_id"], body["signal"], body.get("note"))
+    return {"ok": True}
 
 
 @app.post("/v1/messages")
@@ -144,15 +198,24 @@ async def messages(request: Request):
     except json.JSONDecodeError:
         return await _passthrough(request, raw)
 
-    decision = decide(body, MODE)
+    retry_of = request.headers.get("x-modelpilot-retry-of")
+    decision = decide(body, MODE, holdout_pct=HOLDOUT_PCT, session_key=_session_key(request, body))
+    if retry_of and decision.applied:
+        # An escalation retry after a quality failure must never be routed
+        # down again — run it exactly as the caller asked.
+        decision = Decision(recommendation=decision.recommendation,
+                            routed_model=decision.recommendation.original_model,
+                            applied=False, arm=decision.arm)
     if decision.applied:
         body["model"] = decision.routed_model
         raw = json.dumps(body).encode()
 
+    request_id = uuid.uuid4().hex
     fwd_headers = {k: v for k, v in request.headers.items() if k.lower() in _FORWARD_HEADERS}
     fwd_headers["content-length"] = str(len(raw))
     url = f"{UPSTREAM}/v1/messages"
     extra = _advice_headers(decision) if MODE in ("advise", "autopilot") else {"x-modelpilot-mode": MODE}
+    extra["x-modelpilot-request-id"] = request_id
 
     if body.get("stream"):
         upstream = await app.state.http.send(
@@ -168,7 +231,7 @@ async def messages(request: Request):
                     yield chunk
             finally:
                 await upstream.aclose()
-                _record(decision, upstream.status_code, sse.usage)
+                _record(decision, upstream.status_code, sse.usage, request_id, retry_of)
 
         resp_headers = {k: v for k, v in upstream.headers.items() if k.lower() in _RETURN_HEADERS}
         return StreamingResponse(relay(), status_code=upstream.status_code, headers={**resp_headers, **extra})
@@ -180,7 +243,7 @@ async def messages(request: Request):
             usage = Usage.from_api(upstream.json().get("usage") or {})
         except (json.JSONDecodeError, AttributeError):
             pass
-    _record(decision, upstream.status_code, usage)
+    _record(decision, upstream.status_code, usage, request_id, retry_of)
     resp_headers = {k: v for k, v in upstream.headers.items() if k.lower() in _RETURN_HEADERS}
     return Response(content=upstream.content, status_code=upstream.status_code, headers={**resp_headers, **extra})
 

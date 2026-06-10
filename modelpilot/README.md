@@ -52,8 +52,9 @@ A working gateway + router v0 + ledger + report lives here:
 | `pricing.py` | Price table, cost math, `net_switch_benefit` (the cache-trap guard) |
 | `taxonomy.py` | Task categories and the category→model-floor policy table |
 | `ledger.py` | SQLite counterfactual ledger (no prompt text stored) |
-| `report.py` | Shadow-mode savings report CLI |
-| `tests/` | 22 tests covering pricing, routing, modes, ledger, SSE usage parsing |
+| `report.py` | Savings report CLI — Layer-1 estimates, escalation netting, RCT arm comparison with bootstrap CIs |
+| `goldenset/` | Tuning pipeline: Batch API fan-out, position-debiased non-inferiority judge, cheapest-non-inferior labeling, router evaluation + confidence-gate tuning |
+| `tests/` | 35 tests covering pricing, routing, modes, holdout, feedback, golden-set pipeline |
 
 ### Quickstart
 
@@ -74,6 +75,34 @@ Modes: `MODELPILOT_MODE=shadow|advise|autopilot`; autopilot's confidence gate is
 `MODELPILOT_CONFIDENCE` (default 0.8). Advise mode returns
 `x-modelpilot-recommended-model` / `x-modelpilot-est-net-benefit-usd` headers on
 every response.
+
+### Autopilot trust machinery
+
+- **Randomized holdout:** `MODELPILOT_HOLDOUT_PCT` (default 0.10) keeps a
+  session-randomized control arm on the baseline model; the report compares
+  arms with bootstrap CIs once both have 30+ requests. Send `x-session-id` to
+  pin a conversation to one arm (otherwise the first message is hashed).
+- **Feedback / escalation valve:** every response carries
+  `x-modelpilot-request-id`. POST `/modelpilot/feedback` with
+  `{"request_id", "signal": "negative"}` to flag a bad routed answer, and
+  resend the request with `x-modelpilot-retry-of: <id>` — the retry bypasses
+  routing (runs exactly what you asked for) and its cost is charged against
+  reported savings.
+
+### Golden-set tuning pipeline
+
+```bash
+# prompts.jsonl rows: {"id", "prompt", "category"?, "expected"?}
+python -m modelpilot.goldenset.build submit  --workdir gs/   # fan out via Batch API (50% off)
+python -m modelpilot.goldenset.build collect --workdir gs/   # when the batch ends
+python -m modelpilot.goldenset.build judge   --workdir gs/   # position-debiased non-inferiority
+python -m modelpilot.goldenset.build label   --workdir gs/   # cheapest non-inferior model
+python -m modelpilot.goldenset.evaluate --labels gs/labels.jsonl
+```
+
+`evaluate` sweeps the confidence gate and recommends the lowest threshold whose
+false-downgrade rate meets the ≤2% safety target — that number goes into
+`MODELPILOT_CONFIDENCE`.
 
 Run tests: `python -m pytest modelpilot/tests/`
 
