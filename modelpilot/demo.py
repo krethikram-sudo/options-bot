@@ -16,12 +16,17 @@ import argparse
 import json
 import os
 import random
+import signal
 import subprocess
 import sys
 import threading
 import time
 
 import httpx
+
+# SIGTERM must run the finally-block cleanup, or the spawned gateway outlives
+# the demo and squats on the port for the next run.
+signal.signal(signal.SIGTERM, lambda *args: sys.exit(0))
 
 from .goldenset.seed_corpus import CORPUS
 
@@ -33,11 +38,15 @@ BASELINE_MODEL = "claude-opus-4-8"
 # ---------------------------------------------------------------------------
 
 def start_fake_upstream(port: int):
-    from http.server import BaseHTTPRequestHandler, HTTPServer
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
     rng = random.Random(7)
 
     class FakeUpstream(BaseHTTPRequestHandler):
+        # HTTP/1.1 keep-alive — the gateway pools connections, and a
+        # close-after-response HTTP/1.0 server races it into resets.
+        protocol_version = "HTTP/1.1"
+
         def do_POST(self):
             body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
             approx_in = max(len(json.dumps(body.get("messages", []))) // 4, 50)
@@ -59,12 +68,25 @@ def start_fake_upstream(port: int):
         def log_message(self, *args):
             pass
 
-    server = HTTPServer(("127.0.0.1", port), FakeUpstream)
+    server = ThreadingHTTPServer(("127.0.0.1", port), FakeUpstream)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     return server
 
 
+def _port_in_use(port: int) -> bool:
+    try:
+        httpx.get(f"http://127.0.0.1:{port}/modelpilot/stats", timeout=1)
+        return True
+    except httpx.HTTPError:
+        return False
+
+
 def start_gateway(port: int, mode: str, db: str, upstream: str) -> subprocess.Popen:
+    if _port_in_use(port):
+        raise SystemExit(
+            f"Port {port} already has a gateway on it (a previous demo still running?).\n"
+            f"Kill it or pass --port with a free port."
+        )
     env = {**os.environ,
            "MODELPILOT_MODE": mode,
            "MODELPILOT_DB": db,
@@ -78,13 +100,13 @@ def start_gateway(port: int, mode: str, db: str, upstream: str) -> subprocess.Po
     )
     deadline = time.time() + 20
     while time.time() < deadline:
-        try:
-            if httpx.get(f"http://127.0.0.1:{port}/modelpilot/stats", timeout=1).status_code == 200:
-                return proc
-        except httpx.HTTPError:
-            time.sleep(0.3)
+        if proc.poll() is not None:
+            raise RuntimeError(f"gateway exited with code {proc.returncode} during startup")
+        if _port_in_use(port):
+            return proc
+        time.sleep(0.3)
     proc.terminate()
-    raise RuntimeError("gateway did not come up — is the port free?")
+    raise RuntimeError("gateway did not come up within 20s")
 
 
 def run_workload(port: int, api_key: str, prompts: list[dict], max_tokens: int):
@@ -93,13 +115,17 @@ def run_workload(port: int, api_key: str, prompts: list[dict], max_tokens: int):
     print(f"\n{'#':>3} {'category':<22} {'decision':<9} {'ran on':<20} {'conf':>5}  rationale")
     print("-" * 100)
     for i, row in enumerate(prompts, 1):
-        resp = client.post(
-            f"{base}/v1/messages",
+        request = dict(
+            url=f"{base}/v1/messages",
             headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
                      "x-session-id": f"demo-{i}"},
             json={"model": BASELINE_MODEL, "max_tokens": max_tokens,
                   "messages": [{"role": "user", "content": row["prompt"]}]},
         )
+        try:
+            resp = client.post(**request)
+        except httpx.TransportError:
+            resp = client.post(**request)  # one retry on transient resets
         h = resp.headers
         ran_on = h.get("x-modelpilot-routed-model", BASELINE_MODEL)
         action = h.get("x-modelpilot-action", "stay")
