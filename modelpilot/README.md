@@ -41,6 +41,42 @@ trust than a hundred correct downgrades earn. The entire tuning methodology
 (`ROUTER_TUNING_PLAN.md`) is built around an asymmetric objective: **never downgrade unless
 confident the cheaper model is non-inferior for this prompt; when unsure, do nothing.**
 
+## Phase 0 implementation (this folder)
+
+A working gateway + router v0 + ledger + report lives here:
+
+| File | What it is |
+|---|---|
+| `gateway.py` | FastAPI drop-in proxy — shadow / advise / autopilot modes |
+| `router.py` | Heuristic classifier + cache-aware economics layer + optional Haiku-4.5 second opinion |
+| `pricing.py` | Price table, cost math, `net_switch_benefit` (the cache-trap guard) |
+| `taxonomy.py` | Task categories and the category→model-floor policy table |
+| `ledger.py` | SQLite counterfactual ledger (no prompt text stored) |
+| `report.py` | Shadow-mode savings report CLI |
+| `tests/` | 22 tests covering pricing, routing, modes, ledger, SSE usage parsing |
+
+### Quickstart
+
+```bash
+pip install -r modelpilot/requirements.txt
+
+# Start the gateway in shadow mode (nothing altered, everything scored)
+MODELPILOT_MODE=shadow uvicorn modelpilot.gateway:app --port 8400
+
+# Point your app at it — one line:
+#   client = anthropic.Anthropic(base_url="http://localhost:8400")
+
+# After traffic has flowed, print the would-have-saved report:
+python -m modelpilot.report --db modelpilot.db
+```
+
+Modes: `MODELPILOT_MODE=shadow|advise|autopilot`; autopilot's confidence gate is
+`MODELPILOT_CONFIDENCE` (default 0.8). Advise mode returns
+`x-modelpilot-recommended-model` / `x-modelpilot-est-net-benefit-usd` headers on
+every response.
+
+Run tests: `python -m pytest modelpilot/tests/`
+
 ## Docs in this folder
 
 | Doc | Contents |
