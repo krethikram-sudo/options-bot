@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.modelpilot.gateway</string>
+
+    <!--
+      ModelPilot gateway in shadow mode with prompt capture for golden-set
+      building. Binds to localhost only — it forwards API keys and must not
+      be reachable from the network.
+    -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>__BOT_DIR__/venv/bin/python</string>
+        <string>-m</string>
+        <string>uvicorn</string>
+        <string>modelpilot.gateway:app</string>
+        <string>--host</string>
+        <string>127.0.0.1</string>
+        <string>--port</string>
+        <string>8400</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>MODELPILOT_MODE</key>
+        <string>shadow</string>
+        <key>MODELPILOT_CAPTURE_PCT</key>
+        <string>0.25</string>
+        <key>MODELPILOT_DB</key>
+        <string>__BOT_DIR__/modelpilot.db</string>
+    </dict>
+
+    <key>WorkingDirectory</key>
+    <string>__BOT_DIR__</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>__BOT_DIR__/logs/modelpilot.gateway.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>__BOT_DIR__/logs/modelpilot.gateway.err.log</string>
+</dict>
+</plist>
