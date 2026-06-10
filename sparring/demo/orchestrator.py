@@ -177,8 +177,12 @@ def claude_turn(client, base_system: str, directive: str, messages: list) -> str
         )
 
 
-def candidate_turn() -> str | None:
-    """Read one candidate reply. Returns None if the candidate quits."""
+def candidate_turn(messages: list) -> str | None:
+    """Read one candidate reply interactively. Returns None if the candidate quits.
+
+    Takes the conversation so far to match the candidate_fn interface used by
+    simulate.py; the interactive candidate doesn't need it.
+    """
     print()
     try:
         text = input("You: ").strip()
@@ -193,7 +197,10 @@ def candidate_turn() -> str | None:
     return text
 
 
-def run_session(scenario_path: Path, candidate_name: str) -> Path:
+def run_session(scenario_path: Path, candidate_name: str, candidate_fn=None) -> Path:
+    """Run one session. candidate_fn(messages) -> str | None supplies candidate
+    replies; defaults to the interactive terminal candidate."""
+    candidate_fn = candidate_fn or candidate_turn
     scenario = load_scenario(scenario_path)
     client = anthropic.Anthropic()
     base_system = build_base_system(scenario)
@@ -242,7 +249,7 @@ def run_session(scenario_path: Path, candidate_name: str) -> Path:
             record(state, "claude", reply)
             if state == "close" or i >= n_candidate_turns:
                 break
-            answer = candidate_turn()
+            answer = candidate_fn(messages)
             if answer is None:
                 print("\n[Ending session early]")
                 quit_early = True

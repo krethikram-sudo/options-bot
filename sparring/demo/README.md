@@ -28,6 +28,31 @@ early; partial transcripts are still saved and scorable.
 
 Transcripts land in `transcripts/<session>.json` (+ a readable `.md`).
 
+## Automated test run (no typing required)
+
+A second Claude context can play the candidate under a persona. Running both personas on
+the same scenario and comparing judge scores is a one-command miniature of the validity
+experiment — the judge should clearly separate them:
+
+```bash
+python simulate.py scenarios/ship_or_slip.yaml --persona strong --judge
+python simulate.py scenarios/ship_or_slip.yaml --persona weak --judge
+```
+
+The `weak` persona is deliberately the dangerous profile: eloquent, framework-dropping,
+never committing — the candidate that fools panel interviews. If the judge can't score
+that persona below the `strong` one, the rubric or scenarios need work before Experiment A.
+
+## Offline smoke tests (no API key)
+
+```bash
+python test_demo.py
+```
+
+Mocks the model and verifies state-machine sequencing, transcript structure, early-quit
+handling, the cacheable system-prompt layout, simulator role-flipping, and the judge's
+no-citation-no-score rule.
+
 ## Score a transcript
 
 ```bash
