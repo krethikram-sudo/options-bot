@@ -26,11 +26,14 @@ class ContinuationModel:
         self._min_sessions = min_sessions
         self._refresh_seconds = refresh_seconds
         self._lengths: list[int] = []
-        self._loaded_at = 0.0
+        # None = never loaded. Don't use 0.0 as the sentinel: monotonic() has
+        # an arbitrary epoch and can be < refresh_seconds, which would skip
+        # the first load and silently pin the model to its default.
+        self._loaded_at: float | None = None
 
     def _lengths_fresh(self) -> list[int]:
         now = time.monotonic()
-        if now - self._loaded_at > self._refresh_seconds:
+        if self._loaded_at is None or now - self._loaded_at > self._refresh_seconds:
             self._lengths = self._ledger.session_lengths()
             self._loaded_at = now
         return self._lengths

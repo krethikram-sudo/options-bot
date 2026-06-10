@@ -140,7 +140,7 @@ _PAGE = """<!doctype html>
     <input type="password" id="key" placeholder="only if gateway has none">
   </details>
   <div id="ticker">saved $0.0000 <span class="muted">this session</span></div>
-  <a href="/modelpilot/dashboard?days=0" target="_blank">dashboard ↗</a>
+  <a href="/modelpilot/dashboard?days=0" target="_blank" id="dash">dashboard ↗</a>
 </header>
 <div id="log"></div>
 <form id="form">
@@ -154,6 +154,8 @@ const keyEl = document.getElementById('key');
 keyEl.value = localStorage.getItem('mp_key') || '';
 let messages = [], saved = 0, potential = 0;
 const sessionId = 'chat-' + Math.random().toString(36).slice(2, 10);
+// Deep-link the dashboard to THIS conversation's live view.
+document.getElementById('dash').href = '/modelpilot/dashboard?days=0&session=' + sessionId;
 const usd = x => '$' + x.toFixed(4);
 
 function bubble(who, text) {

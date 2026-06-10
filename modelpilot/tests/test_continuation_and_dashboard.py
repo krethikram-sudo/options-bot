@@ -217,3 +217,36 @@ def test_preview_matches_execution(monkeypatch, tmp_path):
     finally:
         server.shutdown()
         importlib.reload(gw)
+
+
+def test_session_view_and_history(tmp_path):
+    """Dashboard: live session strip + per-session history table."""
+    ledger = _seeded_ledger(tmp_path)
+    # one chat-style session with three turns, two routed
+    rec = recommend(_body(CLASSIFY))
+    u = Usage(input_tokens=2_000, output_tokens=300)
+    for applied in (True, True, False):
+        ledger.record(mode="autopilot", recommendation=rec,
+                      routed_model=rec.recommended_model if applied else rec.original_model,
+                      applied=applied, status_code=200, usage=u,
+                      arm="treatment", session_key="chat-demo1234")
+
+    sess = ledger.session_summary("chat-demo1234")
+    assert sess["n"] == 3 and sess["n_applied"] == 2
+    assert sess["realized"] > 0
+    recent = ledger.recent_sessions()
+    assert recent[0]["session_key"] == "chat-demo1234"  # most recently active first
+
+    stats = collect_stats(ledger, days=0, session="chat-demo1234")
+    assert stats["session"]["n"] == 3
+    html = render_html(stats)
+    assert "THIS SESSION" in html
+    assert "chat-demo1234" in html
+    assert "Recent sessions" in html
+    assert "setInterval(mpTick" in html          # live updates
+    assert 'id="s-realized"' in html
+
+    # Without a pinned session, the strip falls back to the latest one
+    html2 = render_html(collect_stats(ledger, days=0))
+    assert "LATEST SESSION" in html2
+    ledger.close()

@@ -243,6 +243,41 @@ class Ledger:
             ).fetchall()
         return [r["n"] for r in rows]
 
+    def session_summary(self, session_key: str) -> dict:
+        """Live aggregates for one conversation — powers the dashboard's
+        'this session' strip. No time window: a session is its own scope."""
+        with self._lock:
+            row = self._conn.execute(
+                """SELECT COUNT(*) n,
+                          COALESCE(SUM(applied), 0) n_applied,
+                          COALESCE(SUM(actual_cost), 0) actual,
+                          COALESCE(SUM(baseline_cost), 0) baseline,
+                          COALESCE(SUM(realized_saved), 0) realized,
+                          COALESCE(SUM(CASE WHEN action='switch' THEN potential_saved ELSE 0 END), 0) potential,
+                          MAX(ts) last_ts
+                   FROM requests WHERE session_key = ?""",
+                (session_key,),
+            ).fetchone()
+        return {"session_key": session_key, **dict(row)}
+
+    def recent_sessions(self, limit: int = 15) -> list[dict]:
+        """Most recently active conversations with their savings — the
+        trackable history view."""
+        with self._lock:
+            rows = self._conn.execute(
+                """SELECT session_key, COUNT(*) n,
+                          COALESCE(SUM(applied), 0) n_applied,
+                          COALESCE(SUM(actual_cost), 0) actual,
+                          COALESCE(SUM(baseline_cost), 0) baseline,
+                          COALESCE(SUM(realized_saved), 0) realized,
+                          COALESCE(SUM(CASE WHEN action='switch' THEN potential_saved ELSE 0 END), 0) potential,
+                          MIN(ts) first_ts, MAX(ts) last_ts
+                   FROM requests WHERE session_key != ''
+                   GROUP BY session_key ORDER BY last_ts DESC LIMIT ?""",
+                (limit,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
     def daily_series(self, since_ts: float = 0.0) -> list[dict]:
         with self._lock:
             rows = self._conn.execute(

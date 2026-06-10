@@ -27,7 +27,7 @@ _MODEL_COLORS = {
 _FALLBACK_COLOR = "#999999"
 
 
-def collect_stats(ledger, days: float = 30.0) -> dict:
+def collect_stats(ledger, days: float = 30.0, session: str = "") -> dict:
     since = time.time() - days * 86_400 if days else 0.0
     stats = {
         "window_days": days,
@@ -37,6 +37,8 @@ def collect_stats(ledger, days: float = 30.0) -> dict:
         "daily_mix": ledger.daily_model_mix(since),
         "escalations": ledger.escalation_costs(since),
         "guardrails": ledger.quality_guardrails(since),
+        "recent_sessions": ledger.recent_sessions(),
+        "session": ledger.session_summary(session) if session else None,
     }
     arms = ledger.arm_costs(since)
     rct = {"treatment_n": len(arms["treatment"]), "control_n": len(arms["control"]), "ready": False}
@@ -52,13 +54,13 @@ def collect_stats(ledger, days: float = 30.0) -> dict:
 
 
 @router.get("/modelpilot/stats")
-async def stats(request: Request, days: float = 30.0):
-    return collect_stats(request.app.state.ledger, days)
+async def stats(request: Request, days: float = 30.0, session: str = ""):
+    return collect_stats(request.app.state.ledger, days, session)
 
 
 @router.get("/modelpilot/dashboard")
-async def dashboard(request: Request, days: float = 30.0):
-    return HTMLResponse(render_html(collect_stats(request.app.state.ledger, days)))
+async def dashboard(request: Request, days: float = 30.0, session: str = ""):
+    return HTMLResponse(render_html(collect_stats(request.app.state.ledger, days, session)))
 
 
 # ---------------------------------------------------------------------------
@@ -159,11 +161,101 @@ def _rct_block(rct: dict, guardrails: list[dict]) -> str:
     """
 
 
+def _ago(ts: float | None) -> str:
+    if not ts:
+        return "—"
+    delta = max(time.time() - ts, 0)
+    if delta < 90:
+        return "just now"
+    if delta < 3600:
+        return f"{int(delta // 60)} min ago"
+    if delta < 86400:
+        return f"{delta / 3600:.0f} h ago"
+    return time.strftime("%b %d", time.localtime(ts))
+
+
+def _now_strip(stats: dict) -> str:
+    """The live 'this session' panel. Pinned session if the URL has one
+    (the chat links here), else the most recently active conversation."""
+    sess = stats["session"]
+    pinned = sess is not None
+    if not pinned and stats["recent_sessions"]:
+        sess = stats["recent_sessions"][0]
+    if not sess or not sess["n"]:
+        return ('<div class="now"><div class="nowhead">LIVE</div>'
+                '<p class="muted">No session activity yet — open the '
+                '<a href="/modelpilot/chat">chat</a> or send traffic through the gateway.</p></div>')
+    label = "THIS SESSION" if pinned else "LATEST SESSION"
+    return f"""
+<div class="now">
+  <div class="nowhead"><span class="pulse">●</span> {label}
+    <code>{sess['session_key'][:14]}</code>
+    <span class="muted" id="s-ago">{_ago(sess['last_ts'])}</span></div>
+  <div class="cards">
+    <div class="card hero"><div class="num save" id="s-realized">{_usd(sess['realized'])}</div>
+      <div class="label">saved this session</div></div>
+    <div class="card"><div class="num" id="s-potential">{_usd(sess['potential'])}</div>
+      <div class="label">potential (if all advice followed)</div></div>
+    <div class="card"><div class="num" id="s-n">{sess['n']}</div>
+      <div class="label">requests ({sess['n_applied']} auto-routed)</div></div>
+    <div class="card"><div class="num" id="s-actual">{_usd(sess['actual'])}</div>
+      <div class="label">spent (vs {_usd(sess['baseline'])} baseline)</div></div>
+  </div>
+</div>"""
+
+
+def _sessions_table(stats: dict, days: float) -> str:
+    rows = stats["recent_sessions"]
+    if not rows:
+        return '<p class="muted">No sessions recorded yet.</p>'
+    current = (stats["session"] or {}).get("session_key", "")
+    body = "".join(
+        f'<tr{(" class=current" if r["session_key"] == current else "")}>'
+        f'<td><a href="/modelpilot/dashboard?days={days:g}&session={r["session_key"]}">'
+        f'{r["session_key"][:14]}</a></td>'
+        f'<td>{_ago(r["last_ts"])}</td><td>{r["n"]:,}</td>'
+        f'<td class="save">{_usd(r["realized"])}</td><td>{_usd(r["potential"])}</td>'
+        f'<td>{_usd(r["actual"])}</td></tr>'
+        for r in rows
+    )
+    return (f'<table><tr><th>session</th><th>last active</th><th>requests</th>'
+            f'<th>saved</th><th>potential</th><th>spent</th></tr>{body}</table>')
+
+
+_POLL_SCRIPT = """
+<script>
+const MP_DAYS = "__DAYS__", MP_SESSION = "__SESSION__";
+const mpUsd = x => '$' + (Math.abs(x) >= 0.01 ? x.toFixed(2) : x.toFixed(4));
+async function mpTick() {
+  try {
+    const url = '/modelpilot/stats?days=' + MP_DAYS +
+                (MP_SESSION ? '&session=' + encodeURIComponent(MP_SESSION) : '');
+    const s = await (await fetch(url)).json();
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const sess = s.session || (s.recent_sessions && s.recent_sessions[0]);
+    if (sess && sess.n) {
+      set('s-realized', mpUsd(sess.realized));
+      set('s-potential', mpUsd(sess.potential));
+      set('s-n', sess.n);
+      set('s-actual', mpUsd(sess.actual));
+      set('s-ago', 'just now');
+    }
+    set('t-n', s.summary.n.toLocaleString());
+    set('t-realized', mpUsd(s.summary.realized - s.escalations.cost));
+    set('t-potential', mpUsd(s.summary.potential));
+  } catch (e) { /* gateway briefly unreachable — try again next tick */ }
+}
+setInterval(mpTick, 5000);
+</script>
+"""
+
+
 def render_html(stats: dict) -> str:
     s = stats["summary"]
     esc = stats["escalations"]
     net_realized = s["realized"] - esc["cost"]
     pct = f"{stats['summary']['potential'] / s['baseline']:.1%}" if s["baseline"] else "—"
+    window = f"last {stats['window_days']:g} days" if stats["window_days"] else "all time"
 
     days = [d["day"] for d in stats["daily"]]
     cum_potential, cum_realized, run_p, run_r = [], [], 0.0, 0.0
@@ -174,14 +266,15 @@ def render_html(stats: dict) -> str:
         cum_realized.append(run_r)
 
     cards = "".join(
-        f'<div class="card"><div class="num">{value}</div><div class="label">{label}</div></div>'
-        for label, value in [
-            ("requests scored", f"{s['n']:,}"),
-            ("actual spend", _usd(s["actual"])),
-            ("baseline spend", _usd(s["baseline"])),
-            ("net realized savings", _usd(net_realized)),
-            ("potential savings (est.)", _usd(s["potential"])),
-            ("potential vs baseline", pct),
+        f'<div class="card"><div class="num"{(" id=" + ident) if ident else ""}>{value}</div>'
+        f'<div class="label">{label}</div></div>'
+        for label, value, ident in [
+            ("requests scored", f"{s['n']:,}", "t-n"),
+            ("net realized savings", _usd(net_realized), "t-realized"),
+            ("potential savings (est.)", _usd(s["potential"]), "t-potential"),
+            ("actual spend", _usd(s["actual"]), ""),
+            ("baseline spend", _usd(s["baseline"]), ""),
+            ("potential vs baseline", pct, ""),
         ]
     )
     cat_rows = "".join(
@@ -193,24 +286,45 @@ def render_html(stats: dict) -> str:
         f'<p>{esc["n"]:,} escalation re-runs costing {_usd(esc["cost"])} — already deducted '
         f'from net realized savings.</p>' if esc["n"] else '<p class="muted">No escalations recorded.</p>'
     )
+    session_key = (stats["session"] or {}).get("session_key", "")
 
     return f"""<!doctype html>
 <html><head><meta charset="utf-8"><title>ModelPilot</title>
 <style>
   body {{ font: 14px/1.5 -apple-system, "Segoe UI", sans-serif; margin: 2rem auto; max-width: 800px;
          color: #1f2430; padding: 0 1rem; }}
-  h1 {{ font-size: 1.4rem; }} h2 {{ font-size: 1.05rem; margin-top: 2rem; }}
+  h1 {{ font-size: 1.4rem; }} h2 {{ font-size: 1.05rem; margin-top: 2.2rem; border-bottom: 1px solid #eee;
+       padding-bottom: 4px; }}
   .cards {{ display: flex; flex-wrap: wrap; gap: 10px; }}
   .card {{ border: 1px solid #e3e3e8; border-radius: 8px; padding: 10px 14px; min-width: 140px; }}
+  .card.hero {{ border-color: #bfe5cc; background: #f4fbf6; }}
   .num {{ font-size: 1.3rem; font-weight: 600; }} .label {{ color: #6b7080; font-size: 0.8rem; }}
+  .num.save, td.save {{ color: #2e9e5b; }}
+  .now {{ border: 1px solid #d8efe0; border-radius: 10px; padding: 12px 14px; background: #fbfefc; }}
+  .nowhead {{ font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em; color: #2e9e5b;
+              margin-bottom: 8px; }}
+  .nowhead code {{ color: #6b7080; font-weight: 400; }}
+  .pulse {{ animation: mp-pulse 2s infinite; }}
+  @keyframes mp-pulse {{ 0%, 100% {{ opacity: 1; }} 50% {{ opacity: 0.25; }} }}
   .chart {{ width: 100%; height: auto; }} .tick {{ font-size: 11px; fill: #6b7080; }}
   table {{ border-collapse: collapse; width: 100%; }} td, th {{ border-bottom: 1px solid #eee;
   padding: 5px 8px; text-align: left; }} th {{ color: #6b7080; font-weight: 600; }}
-  .muted {{ color: #6b7080; }}
+  tr.current {{ background: #f4fbf6; }}
+  .muted {{ color: #6b7080; }} a {{ color: #2f6fb6; }}
   .note {{ background: #f6f7f9; border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; }}
 </style></head><body>
-<h1>ModelPilot — last {stats['window_days']:g} days</h1>
+<h1>ModelPilot</h1>
+{_now_strip(stats)}
+
+<h2>History — {window} <span class="muted" style="font-weight:400">
+(<a href="?days=1{f'&session={session_key}' if session_key else ''}">day</a> ·
+ <a href="?days=7{f'&session={session_key}' if session_key else ''}">week</a> ·
+ <a href="?days=30{f'&session={session_key}' if session_key else ''}">month</a> ·
+ <a href="?days=0{f'&session={session_key}' if session_key else ''}">all</a>)</span></h2>
 <div class="cards">{cards}</div>
+
+<h2>Recent sessions</h2>
+{_sessions_table(stats, stats["window_days"])}
 
 <h2>Cumulative savings</h2>
 {_line_chart({"potential (est.)": cum_potential, "realized": cum_realized}, days,
@@ -229,4 +343,5 @@ def render_html(stats: dict) -> str:
 <p class="note">Potential savings are Layer-1 estimates (same tokens re-priced at the requested
 model). The verified number comes from the randomized holdout above; replay sampling further
 calibrates output-length differences. Savings are reported net of escalation re-runs.</p>
+{_POLL_SCRIPT.replace("__DAYS__", f"{stats['window_days']:g}").replace("__SESSION__", session_key)}
 </body></html>"""
