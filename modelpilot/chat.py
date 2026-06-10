@@ -86,7 +86,8 @@ async def chat_send(request: Request):
 
 @router.get("/modelpilot/chat")
 async def chat_page():
-    return HTMLResponse(_PAGE)
+    mode = os.environ.get("MODELPILOT_MODE", "shadow")
+    return HTMLResponse(_PAGE.replace("__MODE__", mode))
 
 
 _PAGE = """<!doctype html>
@@ -109,6 +110,9 @@ _PAGE = """<!doctype html>
   .meta { font-size: 0.78rem; margin-top: 4px; padding: 5px 10px; border-radius: 6px;
           background: #f0faf3; color: #1f2430; border: 1px solid #d8efe0; }
   .meta.stay { background: #f6f7f9; border-color: #e3e3e8; color: #6b7080; }
+  .meta.pre { background: #fff8e8; border-color: #f0e2b8; }
+  #modebadge { font-size: 0.72rem; padding: 2px 8px; border-radius: 10px; background: #eef3fa;
+               color: #2f6fb6; text-transform: uppercase; letter-spacing: 0.04em; }
   .meta b.save { color: #2e9e5b; }
   .meta .model { font-weight: 600; }
   form { display: flex; gap: 8px; padding: 12px 18px; border-top: 1px solid #e3e3e8; }
@@ -124,6 +128,7 @@ _PAGE = """<!doctype html>
 </style></head><body>
 <header>
   <h1>ModelPilot chat</h1>
+  <span id="modebadge">__MODE__</span>
   <label>baseline:
     <select id="model">
       <option>claude-opus-4-8</option>
@@ -160,13 +165,37 @@ function bubble(who, text) {
   return d;
 }
 
-function meta(d, r) {
-  const m = document.createElement('div');
+// Pre-execution: the routing decision, shown the moment you hit send —
+// BEFORE the model generates anything.
+function preMeta(chip, p) {
+  chip.className = 'meta pre';
+  let line;
+  if (p.applied) {
+    line = '⚡ ModelPilot selected <span class="model">' + p.will_run_on +
+           '</span> for this prompt — <b class="save">est. saving ~' + usd(p.est_saved) +
+           '</b> · generating…';
+  } else if (p.action === 'switch') {
+    line = (p.arm === 'control'
+            ? '🎯 holdout control — running ' + p.baseline_model + ' for measurement'
+            : '💡 ' + p.mode + ' mode: recommends ' + p.recommended_model +
+              ' (~' + usd(p.est_potential) + ') — running ' + p.baseline_model) +
+           ' · generating…';
+  } else {
+    line = '🛡 keeping <span class="model">' + p.baseline_model + '</span> — ' +
+           (p.category || 'this task') + ' needs it · generating…';
+  }
+  chip.innerHTML = line + ' <span style="color:#6b7080">· ' + p.category +
+                   ' · conf ' + p.confidence + '</span>';
+  log.scrollTop = log.scrollHeight;
+}
+
+// Post-execution: the same chip updates with what actually happened.
+function meta(chip, r) {
   const switched = r.applied;
-  m.className = 'meta' + (switched ? '' : ' stay');
+  chip.className = 'meta' + (switched ? '' : ' stay');
   let line;
   if (switched) {
-    line = 'routed to <span class="model">' + r.ran_on + '</span> — cost ' + usd(r.cost_actual) +
+    line = '⚡ ran on <span class="model">' + r.ran_on + '</span> — cost ' + usd(r.cost_actual) +
            ' vs ' + usd(r.cost_baseline) + ' on ' + r.baseline_model +
            ' → <b class="save">saved ' + usd(r.saved) + '</b>';
   } else if (r.action === 'switch') {
@@ -175,13 +204,13 @@ function meta(d, r) {
            ') — recommends ' + r.recommended_model +
            ', would save <b class="save">' + usd(r.potential) + '</b>';
   } else {
-    line = 'stayed on <span class="model">' + r.ran_on + '</span> — ' +
+    line = '🛡 stayed on <span class="model">' + r.ran_on + '</span> — ' +
            (r.category || 'this') + ' needs it (conf ' + r.confidence + ')';
   }
-  m.innerHTML = line + ' <span style="color:#6b7080">· ' + r.category +
-                ' · conf ' + r.confidence + ' · ' + r.usage.input_tokens + '→' +
-                r.usage.output_tokens + ' tok</span>';
-  d.appendChild(m); log.scrollTop = log.scrollHeight;
+  chip.innerHTML = line + ' <span style="color:#6b7080">· ' + r.category +
+                   ' · conf ' + r.confidence + ' · ' + r.usage.input_tokens + '→' +
+                   r.usage.output_tokens + ' tok</span>';
+  log.scrollTop = log.scrollHeight;
 }
 
 form.onsubmit = async (e) => {
@@ -193,25 +222,42 @@ form.onsubmit = async (e) => {
   bubble('user', text);
   messages.push({role: 'user', content: text});
   const thinking = bubble('assistant', '…');
+  const chip = document.createElement('div');
+  chip.className = 'meta pre';
+  chip.textContent = 'routing…';
+  thinking.appendChild(chip);
+  const model = document.getElementById('model').value;
+
+  // 1. Pre-execution: ask the gateway which model WILL run this prompt.
+  //    Deterministic, so it matches what the send below actually does.
+  try {
+    const pv = await fetch('/modelpilot/preview', {
+      method: 'POST', headers: {'content-type': 'application/json'},
+      body: JSON.stringify({model, max_tokens: 1024, messages, session_id: sessionId}),
+    });
+    if (pv.ok) preMeta(chip, await pv.json());
+  } catch (err) { /* preview is advisory — never blocks the send */ }
+
+  // 2. Execute through the gateway; the chip updates with realized numbers.
   try {
     const resp = await fetch('/modelpilot/chat/send', {
       method: 'POST',
       headers: {'content-type': 'application/json',
                 ...(keyEl.value ? {'x-api-key': keyEl.value} : {})},
-      body: JSON.stringify({messages, model: document.getElementById('model').value,
-                            session_id: sessionId}),
+      body: JSON.stringify({messages, model, session_id: sessionId}),
     });
     const r = await resp.json();
     if (!resp.ok) throw new Error(r.error || resp.status);
     thinking.querySelector('.bubble').textContent = r.text;
     messages.push({role: 'assistant', content: r.text});
-    meta(thinking, r);
+    meta(chip, r);
     saved += r.saved; potential += r.potential;
     document.getElementById('ticker').innerHTML =
       'saved ' + usd(saved) + ' <span class="muted">this session' +
       (potential > saved ? ' · ' + usd(potential) + ' potential' : '') + '</span>';
   } catch (err) {
     thinking.querySelector('.bubble').innerHTML = '<span class="error">' + err.message + '</span>';
+    chip.remove();
     messages.pop();
   }
   send.disabled = false; box.focus();

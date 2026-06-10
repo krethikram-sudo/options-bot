@@ -81,7 +81,8 @@ def _port_in_use(port: int) -> bool:
         return False
 
 
-def start_gateway(port: int, mode: str, db: str, upstream: str) -> subprocess.Popen:
+def start_gateway(port: int, mode: str, db: str, upstream: str,
+                  holdout: float = 0.0) -> subprocess.Popen:
     if _port_in_use(port):
         raise SystemExit(
             f"Port {port} already has a gateway on it (a previous demo still running?).\n"
@@ -91,7 +92,9 @@ def start_gateway(port: int, mode: str, db: str, upstream: str) -> subprocess.Po
            "MODELPILOT_MODE": mode,
            "MODELPILOT_DB": db,
            "MODELPILOT_UPSTREAM": upstream,
-           "MODELPILOT_HOLDOUT_PCT": "0.10",
+           # Demo default: no holdout, so interactive chat always routes —
+           # pass --holdout 0.1 to demonstrate the RCT control arm instead.
+           "MODELPILOT_HOLDOUT_PCT": str(holdout),
            "MODELPILOT_CAPTURE_PCT": "0"}
     proc = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "modelpilot.gateway:app",
@@ -162,6 +165,8 @@ def main():
     parser.add_argument("--max-tokens", type=int, default=256)
     parser.add_argument("--db", default="modelpilot_demo.db")
     parser.add_argument("--fresh", action="store_true", help="start with an empty demo ledger")
+    parser.add_argument("--holdout", type=float, default=0.0,
+                        help="control-arm fraction (default 0 so chat always routes)")
     args = parser.parse_args()
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -182,7 +187,7 @@ def main():
 
     print(f"Starting gateway on :{args.port}  mode={args.mode}  "
           f"upstream={'OFFLINE (synthetic)' if args.offline else 'api.anthropic.com'}")
-    proc = start_gateway(args.port, args.mode, args.db, upstream)
+    proc = start_gateway(args.port, args.mode, args.db, upstream, holdout=args.holdout)
     try:
         run_workload(args.port, api_key, prompts, args.max_tokens)
         print_summary(args.port)

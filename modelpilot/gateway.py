@@ -26,7 +26,7 @@ from fastapi.responses import StreamingResponse
 from . import router as mp_router
 from .continuation import ContinuationModel
 from .ledger import Ledger
-from .pricing import Usage
+from .pricing import Usage, request_cost
 from .router import Recommendation
 
 MODE = os.environ.get("MODELPILOT_MODE", "shadow")
@@ -223,6 +223,39 @@ from .dashboard import router as _dashboard_router  # noqa: E402
 
 app.include_router(_dashboard_router)
 app.include_router(_chat_router)
+
+
+@app.post("/modelpilot/preview")
+async def preview(request: Request):
+    """Pre-execution routing decision: which model WILL run this request,
+    and the estimated saving — without executing anything. Free and instant;
+    deterministic, so the answer matches what /v1/messages will then do.
+    """
+    body = await request.json()
+    session_key = body.get("session_id") or _session_key(request, body)
+    decision = decide(body, MODE, holdout_pct=HOLDOUT_PCT, session_key=session_key)
+    rec = decision.recommendation
+
+    # Pre-flight cost estimate: input from context size, nominal output.
+    feats = mp_router.extract_features(body)
+    est_usage = Usage(input_tokens=max(feats["approx_context_tokens"], 50), output_tokens=300)
+    cost_baseline = request_cost(rec.original_model, est_usage) or 0.0
+    cost_will_run = request_cost(decision.routed_model, est_usage) or cost_baseline
+    cost_recommended = request_cost(rec.recommended_model, est_usage) or cost_baseline
+    return {
+        "mode": MODE,
+        "action": rec.action,
+        "applied": decision.applied,
+        "arm": decision.arm,
+        "will_run_on": decision.routed_model,
+        "recommended_model": rec.recommended_model,
+        "baseline_model": rec.original_model,
+        "confidence": rec.confidence,
+        "category": rec.category,
+        "rationale": rec.rationale,
+        "est_saved": max(cost_baseline - cost_will_run, 0.0),
+        "est_potential": max(cost_baseline - cost_recommended, 0.0),
+    }
 
 
 @app.post("/v1/messages")

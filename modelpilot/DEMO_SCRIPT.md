@@ -25,9 +25,18 @@ Talk over the scrolling decisions:
 > decisions: classification and extraction get **switched** to Haiku — 80%
 > cheaper. The debugging and refactor prompts **stay** on Opus — we never
 > downgrade work that needs the big model. The `advise` rows are below our
-> confidence gate, so we *recommend* but don't touch them. And see `control`?
-> That's a randomized holdout — we deliberately leave a slice on the default
-> model so the savings number is measured, not estimated."
+> confidence gate, so we *recommend* but don't touch them."
+
+(Run with `--holdout 0.1` if you want `control` rows in the scripted output —
+the randomized holdout that makes the savings number measured, not estimated.
+For interactive chat demos leave it off so routing always fires.)
+
+**Better opener — let them drive.** Open the chat URL the demo prints
+(`/modelpilot/chat`) and hand them the keyboard: when they hit send, the
+amber chip shows the model being *selected for that prompt before generation*
+("⚡ selected claude-haiku-4-5 — est. saving ~$0.004"), then flips green with
+the realized number, and the session ticker climbs as they keep typing. Have
+them try an easy prompt, then a hard one — the contrast sells it.
 
 ## 2:00 — The summary line
 

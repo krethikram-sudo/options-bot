@@ -158,3 +158,62 @@ def test_chat_send_roundtrip(monkeypatch, tmp_path):
     finally:
         server.shutdown()
         importlib.reload(gw)  # restore module-level config for other tests
+
+
+def test_preview_matches_execution(monkeypatch, tmp_path):
+    """The pre-execution preview must predict exactly what /v1/messages does."""
+    import json, threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    from fastapi.testclient import TestClient
+
+    class FakeUpstream(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def do_POST(self):
+            body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            resp = json.dumps({"id": "m", "type": "message", "model": body["model"],
+                               "content": [{"type": "text", "text": "ok"}],
+                               "stop_reason": "end_turn",
+                               "usage": {"input_tokens": 100, "output_tokens": 10}}).encode()
+            self.send_response(200)
+            self.send_header("content-type", "application/json")
+            self.send_header("content-length", str(len(resp)))
+            self.end_headers()
+            self.wfile.write(resp)
+
+        def log_message(self, *a):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 8494), FakeUpstream)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    monkeypatch.setenv("MODELPILOT_MODE", "autopilot")
+    monkeypatch.setenv("MODELPILOT_UPSTREAM", "http://127.0.0.1:8494")
+    monkeypatch.setenv("MODELPILOT_DB", str(tmp_path / "pv.db"))
+    monkeypatch.setenv("MODELPILOT_HOLDOUT_PCT", "0")
+
+    import importlib
+    from modelpilot import gateway as gw
+    importlib.reload(gw)
+    try:
+        with TestClient(gw.app) as client:
+            req = {"model": "claude-opus-4-8", "max_tokens": 64, "session_id": "pv1",
+                   "messages": [{"role": "user", "content":
+                                 "Classify this as positive or negative: 'great'"}]}
+            pv = client.post("/modelpilot/preview", json=req).json()
+            assert pv["applied"] is True
+            assert pv["will_run_on"] == "claude-haiku-4-5"
+            assert pv["est_saved"] > 0
+
+            run = client.post("/v1/messages", json=req,
+                              headers={"x-api-key": "k", "x-session-id": "pv1"})
+            assert run.json()["model"] == pv["will_run_on"]  # prediction == execution
+
+            # A hard prompt previews as stay
+            hard = dict(req, messages=[{"role": "user", "content":
+                        "Debug why the nightly job intermittently deadlocks under load."}])
+            pv2 = client.post("/modelpilot/preview", json=hard).json()
+            assert pv2["applied"] is False
+            assert pv2["will_run_on"] == "claude-opus-4-8"
+    finally:
+        server.shutdown()
+        importlib.reload(gw)
