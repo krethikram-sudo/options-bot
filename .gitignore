@@ -26,3 +26,6 @@ launchd/*.plist
 # The empty premium/ dir + its README + __init__.py stay tracked.
 premium/*.py
 !premium/__init__.py
+
+# ModelPilot gateway runtime state (savings ledger)
+modelpilot*.db
