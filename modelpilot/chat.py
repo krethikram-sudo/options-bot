@@ -131,8 +131,8 @@ _PAGE = """<!doctype html>
   <span id="modebadge">__MODE__</span>
   <label>baseline:
     <select id="model">
-      <option>claude-opus-4-8</option>
       <option>claude-fable-5</option>
+      <option>claude-opus-4-8</option>
       <option>claude-sonnet-4-6</option>
     </select>
   </label>

@@ -2,7 +2,8 @@
 
 Run `python -m modelpilot.demo --prompts 0`, open `/modelpilot/chat`, and keep
 the dashboard (via the **dashboard ↗** link, pinned to your session) in a
-second tab. Baseline = `claude-opus-4-8` unless stated.
+second tab. Default baseline = `claude-fable-5` ($10/$50 per MTok), so simple
+work saves ~90% (→ haiku) and even hard work right-sizes ~50% (→ opus).
 
 ## 1. High-confidence switches (⚡ amber chip → green "saved")
 
@@ -17,14 +18,21 @@ second tab. Baseline = `claude-opus-4-8` unless stated.
 
 Ticker climbs with each; dashboard session strip updates within ~5s.
 
-## 2. Protected work (🛡 grey chip — never downgraded)
+## 2. Hard work right-sizes, never below its floor
+
+With the Fable baseline these switch to **opus** (50% off — hard work still
+saves, it just never drops below the tier it needs):
 
 | # | Prompt | Expect |
 |---|---|---|
-| 7 | `Refactor the billing module across multiple files to use an event-driven architecture.` | 🛡 stays opus · codegen_complex |
-| 8 | `Debug why my nightly job intermittently fails with a deadlock under load.` | 🛡 stays opus · debugging |
-| 9 | `Prove that there is no largest prime number.` | 🛡 stays opus · math_logic |
-| 10 | `What are the trade-offs of building vs buying a feature-flag system for a 15-person team?` | 🛡 stays opus · analysis_strategy (note: starts with "What" but the complex signal wins) |
+| 7 | `Refactor the billing module across multiple files to use an event-driven architecture.` | ⚡ opus · codegen_complex |
+| 8 | `Debug why my nightly job intermittently fails with a deadlock under load.` | ⚡ opus · debugging |
+| 9 | `Prove that there is no largest prime number.` | ⚡ opus · math_logic |
+| 10 | `What are the trade-offs of building vs buying a feature-flag system for a 15-person team?` | ⚡ opus · analysis_strategy (starts with "What" but the complex signal wins) |
+
+**To see the 🛡 "quality protected, saved $0.00" case:** set the baseline
+dropdown to `claude-opus-4-8` and resend any of 7–10 — they stay put because
+opus *is* their floor.
 
 ## 3. Below-the-gate advice (💡 — recommends, doesn't touch)
 
@@ -54,7 +62,7 @@ These show the confidence gate doing its job — uncertain cases don't get touch
 | # | Do | Expect |
 |---|---|---|
 | 17 | Set baseline to `claude-haiku-4-5`, send prompt #1 | 🛡 stays — "already at or below floor"; saved $0 (nothing cheaper exists) |
-| 18 | Set baseline to `claude-fable-5`, send prompt #1 | ⚡ haiku with a much bigger per-message saving (Fable is $10/$50/MTok) |
+| 18 | Set baseline to `claude-opus-4-8`, send prompt #1 then #7 | #1 still ⚡ haiku (smaller saving than from Fable); #7 now 🛡 stays with explicit saved $0.00 |
 
 ## 7. Edge behavior
 
@@ -65,7 +73,8 @@ These show the confidence gate doing its job — uncertain cases don't get touch
 
 ## What "all green" looks like
 
-Every ⚡ chip's estimated saving is replaced by a realized number; every 🛡 on
-prompts 7–10; both 💡 cases run the baseline; ticker total ≈ session strip on
-the dashboard; prompt #17 saves exactly $0. If any of those don't hold,
-that's a bug — capture the chip text and the prompt.
+Every ⚡ chip's estimated saving is replaced by a realized number; prompts
+7–10 land on opus (never lower); both 💡 cases run the baseline; ticker total
+≈ session strip on the dashboard; #17 saves exactly $0; #18's resent #7 shows
+the 🛡 saved-$0.00 line. If any of those don't hold, that's a bug — capture
+the chip text and the prompt.

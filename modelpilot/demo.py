@@ -30,7 +30,7 @@ signal.signal(signal.SIGTERM, lambda *args: sys.exit(0))
 
 from .goldenset.seed_corpus import CORPUS
 
-BASELINE_MODEL = "claude-opus-4-8"
+BASELINE_MODEL = "claude-fable-5"
 
 
 # ---------------------------------------------------------------------------
