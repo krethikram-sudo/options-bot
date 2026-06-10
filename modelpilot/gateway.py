@@ -33,6 +33,11 @@ MODE = os.environ.get("MODELPILOT_MODE", "shadow")
 UPSTREAM = os.environ.get("MODELPILOT_UPSTREAM", "https://api.anthropic.com").rstrip("/")
 CONFIDENCE_GATE = float(os.environ.get("MODELPILOT_CONFIDENCE", "0.8"))
 HOLDOUT_PCT = float(os.environ.get("MODELPILOT_HOLDOUT_PCT", "0.10"))
+# Opt-in prompt capture for golden-set building. 0 (default) = no prompt text
+# is ever stored. Set e.g. 0.25 to sample a quarter of requests into the
+# captures table; export with `python -m modelpilot.goldenset.export_corpus`.
+CAPTURE_PCT = float(os.environ.get("MODELPILOT_CAPTURE_PCT", "0"))
+CAPTURE_MAX_CHARS = 20_000
 
 _FORWARD_HEADERS = {
     "x-api-key", "authorization", "anthropic-version", "anthropic-beta",
@@ -170,6 +175,21 @@ def _record(decision: Decision, status_code: int, usage: Usage,
     )
 
 
+def maybe_capture(ledger, body: dict, decision: Decision, request_id: str,
+                  capture_pct: float, rng=None) -> bool:
+    """Sampled, opt-in prompt capture feeding the next golden-set round."""
+    import random as _random
+
+    if capture_pct <= 0 or (rng or _random).random() >= capture_pct:
+        return False
+    prompt = mp_router.extract_features(body)["prompt"][:CAPTURE_MAX_CHARS]
+    if not prompt.strip():
+        return False
+    rec = decision.recommendation
+    ledger.record_capture(request_id, rec.category, rec.confidence, prompt)
+    return True
+
+
 def _session_key(request: Request, body: dict) -> str:
     """Arm assignment key: explicit session header if the client sends one,
     else a hash of the first message — keeping a conversation in one arm."""
@@ -229,6 +249,7 @@ async def messages(request: Request):
         raw = json.dumps(body).encode()
 
     request_id = uuid.uuid4().hex
+    maybe_capture(app.state.ledger, body, decision, request_id, CAPTURE_PCT)
     fwd_headers = {k: v for k, v in request.headers.items() if k.lower() in _FORWARD_HEADERS}
     fwd_headers["content-length"] = str(len(raw))
     url = f"{UPSTREAM}/v1/messages"

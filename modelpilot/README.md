@@ -91,6 +91,25 @@ every response.
   routing (runs exactly what you asked for) and its cost is charged against
   reported savings.
 
+### Corpus v1 from real traffic (capture + export)
+
+Prompt text is never stored by default. To build the next golden set from
+real shadow traffic, opt in on the gateway, then export:
+
+```bash
+# on the gateway: sample 25% of requests into the captures table
+MODELPILOT_MODE=shadow MODELPILOT_CAPTURE_PCT=0.25 python -m uvicorn modelpilot.gateway:app --port 8400
+
+# later: stratified, deduped corpus (filename must stay prompts.jsonl)
+python -m modelpilot.goldenset.export_corpus --db modelpilot.db \
+    --out goldenset_data/live/prompts.jsonl --per-category 40
+# REVIEW THE FILE FOR PII/SECRETS, then run the pipeline on it:
+python -m modelpilot.goldenset.build submit --workdir goldenset_data/live
+```
+
+Calibration v0 results and the per-category analysis live in
+`goldenset_data/CALIBRATION.md`.
+
 ### Golden-set tuning pipeline
 
 ```bash

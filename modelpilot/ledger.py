@@ -49,6 +49,13 @@ CREATE TABLE IF NOT EXISTS feedback (
     note TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_feedback_request ON feedback (request_id);
+CREATE TABLE IF NOT EXISTS captures (
+    request_id TEXT PRIMARY KEY,
+    ts REAL NOT NULL,
+    category TEXT NOT NULL,
+    confidence REAL NOT NULL,
+    prompt TEXT NOT NULL
+);
 """
 
 
@@ -116,6 +123,26 @@ class Ledger:
                 (request_id, time.time(), signal, note),
             )
             self._conn.commit()
+
+    def record_capture(self, request_id: str, category: str, confidence: float, prompt: str):
+        """Opt-in prompt capture for golden-set building. Only called when
+        MODELPILOT_CAPTURE_PCT > 0 — by default no prompt text is ever stored."""
+        with self._lock:
+            self._conn.execute(
+                "INSERT OR IGNORE INTO captures (request_id, ts, category, confidence, prompt) "
+                "VALUES (?,?,?,?,?)",
+                (request_id, time.time(), category, confidence, prompt),
+            )
+            self._conn.commit()
+
+    def captures(self, since_ts: float = 0.0) -> list[dict]:
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT request_id, ts, category, confidence, prompt FROM captures "
+                "WHERE ts >= ? ORDER BY ts",
+                (since_ts,),
+            ).fetchall()
+        return [dict(r) for r in rows]
 
     def arm_costs(self, since_ts: float = 0.0) -> dict[str, list[float]]:
         """Per-request actual costs by holdout arm (autopilot traffic only)."""

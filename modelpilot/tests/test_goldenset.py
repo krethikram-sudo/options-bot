@@ -97,3 +97,53 @@ def test_seed_corpus_integrity():
     # Every row feeds the batch builder without error
     prompts = [{"id": f"p{i}", **r} for i, r in enumerate(CORPUS)]
     assert len(build_requests(prompts)) == len(CORPUS) * 3
+
+
+def test_export_corpus_stratifies_and_dedupes():
+    from modelpilot.goldenset.export_corpus import export
+
+    captures = []
+    # 5 classification prompts, one an exact duplicate (different whitespace)
+    for i in range(4):
+        captures.append({"ts": 100 + i, "category": "classification",
+                         "prompt": f"Classify ticket number {i} as billing or technical please."})
+    captures.append({"ts": 200, "category": "classification",
+                     "prompt": "Classify   ticket number 3 as billing or technical  please."})
+    # 3 debugging prompts and one too-short prompt
+    for i in range(3):
+        captures.append({"ts": 300 + i, "category": "debugging",
+                         "prompt": f"Why does service {i} crash under load with OOM errors?"})
+    captures.append({"ts": 400, "category": "debugging", "prompt": "why broken"})
+
+    rows = export(captures, per_category=2)
+    by_cat = {}
+    for r in rows:
+        by_cat.setdefault(r["category"], []).append(r)
+    assert len(by_cat["classification"]) == 2  # capped
+    assert len(by_cat["debugging"]) == 2       # capped; short one dropped anyway
+    assert all(r["id"].startswith("live-") for r in rows)
+    # Dedupe: the whitespace-variant duplicate occupies one slot, not two
+    prompts = [r["prompt"] for r in by_cat["classification"]]
+    assert len({p.lower().split("number")[1].strip()[0] for p in prompts}) == 2
+
+
+def test_capture_roundtrip(tmp_path):
+    import random
+    from modelpilot.gateway import decide, maybe_capture
+    from modelpilot.ledger import Ledger
+
+    ledger = Ledger(str(tmp_path / "cap.db"))
+    body = {"model": "claude-opus-4-8", "max_tokens": 64,
+            "messages": [{"role": "user", "content": "Classify this as positive or negative: 'ok'"}]}
+    decision = decide(body, "shadow")
+
+    # pct=0 (the default): nothing is ever stored
+    assert not maybe_capture(ledger, body, decision, "rid0", 0.0, rng=random.Random(1))
+    assert ledger.captures() == []
+    # pct=1: captured with category + confidence, text truncated path exercised
+    assert maybe_capture(ledger, body, decision, "rid1", 1.0, rng=random.Random(1))
+    caps = ledger.captures()
+    assert len(caps) == 1
+    assert caps[0]["category"] == "classification"
+    assert "positive or negative" in caps[0]["prompt"]
+    ledger.close()
