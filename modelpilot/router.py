@@ -137,7 +137,7 @@ def classify(features: dict) -> tuple[str, int, float, str]:
 
 def recommend(
     body: dict,
-    expected_remaining_turns: int = 5,
+    expected_remaining_turns: float = 5.0,
     classifier=classify,
 ) -> Recommendation:
     """Full routing decision for one request body."""
@@ -176,8 +176,8 @@ def recommend(
         original_model,
         candidate,
         cached_prefix_tokens=cached_prefix,
-        expected_remaining_input_tokens=per_turn_in * expected_remaining_turns,
-        expected_remaining_output_tokens=per_turn_out * expected_remaining_turns,
+        expected_remaining_input_tokens=int(per_turn_in * expected_remaining_turns),
+        expected_remaining_output_tokens=int(per_turn_out * expected_remaining_turns),
     )
     if benefit is not None and benefit <= 0:
         return stay(

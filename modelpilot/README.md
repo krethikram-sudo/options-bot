@@ -53,8 +53,10 @@ A working gateway + router v0 + ledger + report lives here:
 | `taxonomy.py` | Task categories and the category→model-floor policy table |
 | `ledger.py` | SQLite counterfactual ledger (no prompt text stored) |
 | `report.py` | Savings report CLI — Layer-1 estimates, escalation netting, RCT arm comparison with bootstrap CIs |
+| `dashboard.py` | Web dashboard at `/modelpilot/dashboard` (+ `/modelpilot/stats` JSON) — headline cards, cumulative savings curve, model-mix migration, RCT panel; server-rendered SVG, zero JS/CDN deps |
+| `continuation.py` | Expected-remaining-conversation model (mean residual life over observed session lengths) feeding the cache-switch economics |
 | `goldenset/` | Tuning pipeline: Batch API fan-out, position-debiased non-inferiority judge, cheapest-non-inferior labeling, router evaluation + confidence-gate tuning |
-| `tests/` | 35 tests covering pricing, routing, modes, holdout, feedback, golden-set pipeline |
+| `tests/` | 41 tests covering pricing, routing, modes, holdout, feedback, golden-set pipeline, continuation model, dashboard |
 
 ### Quickstart
 

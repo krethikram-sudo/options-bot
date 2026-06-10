@@ -24,6 +24,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import StreamingResponse
 
 from . import router as mp_router
+from .continuation import ContinuationModel
 from .ledger import Ledger
 from .pricing import Usage
 from .router import Recommendation
@@ -46,6 +47,7 @@ from contextlib import asynccontextmanager
 async def _lifespan(app):
     app.state.http = httpx.AsyncClient(timeout=httpx.Timeout(600.0, connect=10.0))
     app.state.ledger = Ledger(os.environ.get("MODELPILOT_DB", "modelpilot.db"))
+    app.state.continuation = ContinuationModel(app.state.ledger)
     yield
     await app.state.http.aclose()
     app.state.ledger.close()
@@ -75,13 +77,17 @@ def assign_arm(session_key: str, holdout_pct: float) -> str:
 
 
 def decide(body: dict, mode: str, confidence_gate: float = CONFIDENCE_GATE,
-           holdout_pct: float = 0.0, session_key: str = "") -> Decision:
+           holdout_pct: float = 0.0, session_key: str = "",
+           expected_remaining_turns: float | None = None) -> Decision:
     """Pure routing decision — what runs, given the mode. Shadow and advise
     never alter the request; autopilot switches only above the confidence gate
     and only in the treatment arm (control requests run the baseline so the
     two arms can be compared).
     """
-    rec = mp_router.recommend(body)
+    if expected_remaining_turns is None:
+        rec = mp_router.recommend(body)
+    else:
+        rec = mp_router.recommend(body, expected_remaining_turns=expected_remaining_turns)
     arm = assign_arm(session_key, holdout_pct) if mode == "autopilot" else "observe"
     applied = (
         mode == "autopilot"
@@ -149,7 +155,7 @@ class _SSEUsage:
 
 
 def _record(decision: Decision, status_code: int, usage: Usage,
-            request_id: str, retry_of: str | None):
+            request_id: str, retry_of: str | None, session_key: str = ""):
     app.state.ledger.record(
         mode=MODE,
         recommendation=decision.recommendation,
@@ -160,6 +166,7 @@ def _record(decision: Decision, status_code: int, usage: Usage,
         arm=decision.arm,
         retry_of=retry_of,
         request_id=request_id,
+        session_key=session_key,
     )
 
 
@@ -190,6 +197,12 @@ async def feedback(request: Request):
     return {"ok": True}
 
 
+# Dashboard routes must register before the catch-all passthrough below.
+from .dashboard import router as _dashboard_router  # noqa: E402
+
+app.include_router(_dashboard_router)
+
+
 @app.post("/v1/messages")
 async def messages(request: Request):
     raw = await request.body()
@@ -199,7 +212,12 @@ async def messages(request: Request):
         return await _passthrough(request, raw)
 
     retry_of = request.headers.get("x-modelpilot-retry-of")
-    decision = decide(body, MODE, holdout_pct=HOLDOUT_PCT, session_key=_session_key(request, body))
+    session_key = _session_key(request, body)
+    turns = app.state.ledger.turns_so_far(session_key) + 1
+    decision = decide(
+        body, MODE, holdout_pct=HOLDOUT_PCT, session_key=session_key,
+        expected_remaining_turns=app.state.continuation.expected_remaining(turns),
+    )
     if retry_of and decision.applied:
         # An escalation retry after a quality failure must never be routed
         # down again — run it exactly as the caller asked.
@@ -231,7 +249,7 @@ async def messages(request: Request):
                     yield chunk
             finally:
                 await upstream.aclose()
-                _record(decision, upstream.status_code, sse.usage, request_id, retry_of)
+                _record(decision, upstream.status_code, sse.usage, request_id, retry_of, session_key)
 
         resp_headers = {k: v for k, v in upstream.headers.items() if k.lower() in _RETURN_HEADERS}
         return StreamingResponse(relay(), status_code=upstream.status_code, headers={**resp_headers, **extra})
@@ -243,7 +261,7 @@ async def messages(request: Request):
             usage = Usage.from_api(upstream.json().get("usage") or {})
         except (json.JSONDecodeError, AttributeError):
             pass
-    _record(decision, upstream.status_code, usage, request_id, retry_of)
+    _record(decision, upstream.status_code, usage, request_id, retry_of, session_key)
     resp_headers = {k: v for k, v in upstream.headers.items() if k.lower() in _RETURN_HEADERS}
     return Response(content=upstream.content, status_code=upstream.status_code, headers={**resp_headers, **extra})
 

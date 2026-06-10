@@ -36,10 +36,12 @@ CREATE TABLE IF NOT EXISTS requests (
     realized_saved REAL,               -- baseline - actual (0 unless applied)
     potential_saved REAL,              -- baseline - routed (what following advice saves)
     arm TEXT NOT NULL DEFAULT 'observe',  -- treatment | control | observe
-    retry_of TEXT                      -- request id this re-run escalates (quality failure)
+    retry_of TEXT,                     -- request id this re-run escalates (quality failure)
+    session_key TEXT NOT NULL DEFAULT ''  -- conversation identity (for arm + continuation model)
 );
 CREATE INDEX IF NOT EXISTS idx_requests_ts ON requests (ts);
 CREATE INDEX IF NOT EXISTS idx_requests_category ON requests (category);
+CREATE INDEX IF NOT EXISTS idx_requests_session ON requests (session_key);
 CREATE TABLE IF NOT EXISTS feedback (
     request_id TEXT NOT NULL,
     ts REAL NOT NULL,
@@ -61,7 +63,7 @@ class Ledger:
 
     def record(self, *, mode, recommendation, routed_model, applied, status_code, usage: Usage,
                arm: str = "observe", retry_of: str | None = None,
-               request_id: str | None = None) -> str:
+               request_id: str | None = None, session_key: str = "") -> str:
         actual = request_cost(routed_model, usage)
         base = baseline_cost(recommendation.original_model, usage)
         routed = request_cost(recommendation.recommended_model, usage)
@@ -75,8 +77,8 @@ class Ledger:
                        applied, action, confidence, category, rationale, status_code,
                        input_tokens, output_tokens, cache_read_tokens, cache_write_tokens,
                        actual_cost, baseline_cost, routed_cost, realized_saved, potential_saved,
-                       arm, retry_of
-                   ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                       arm, retry_of, session_key
+                   ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     request_id,
                     time.time(),
@@ -101,6 +103,7 @@ class Ledger:
                     potential,
                     arm,
                     retry_of,
+                    session_key,
                 ),
             )
             self._conn.commit()
@@ -189,6 +192,51 @@ class Ledger:
                 """SELECT original_model, recommended_model, COUNT(*) n
                    FROM requests WHERE ts >= ?
                    GROUP BY original_model, recommended_model ORDER BY n DESC""",
+                (since_ts,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def turns_so_far(self, session_key: str) -> int:
+        if not session_key:
+            return 0
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT COUNT(*) n FROM requests WHERE session_key = ?", (session_key,)
+            ).fetchone()
+        return row["n"]
+
+    def session_lengths(self, since_ts: float = 0.0, max_sessions: int = 5000) -> list[int]:
+        """Observed turns-per-conversation — feeds the continuation model."""
+        with self._lock:
+            rows = self._conn.execute(
+                """SELECT COUNT(*) n FROM requests
+                   WHERE ts >= ? AND session_key != ''
+                   GROUP BY session_key ORDER BY MAX(ts) DESC LIMIT ?""",
+                (since_ts, max_sessions),
+            ).fetchall()
+        return [r["n"] for r in rows]
+
+    def daily_series(self, since_ts: float = 0.0) -> list[dict]:
+        with self._lock:
+            rows = self._conn.execute(
+                """SELECT date(ts, 'unixepoch') day, COUNT(*) n,
+                          COALESCE(SUM(actual_cost), 0) actual,
+                          COALESCE(SUM(baseline_cost), 0) baseline,
+                          COALESCE(SUM(realized_saved), 0) realized,
+                          COALESCE(SUM(CASE WHEN action='switch' THEN potential_saved ELSE 0 END), 0) potential
+                   FROM requests WHERE ts >= ?
+                   GROUP BY day ORDER BY day""",
+                (since_ts,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def daily_model_mix(self, since_ts: float = 0.0) -> list[dict]:
+        """Per-day traffic share by recommended model — the migration story."""
+        with self._lock:
+            rows = self._conn.execute(
+                """SELECT date(ts, 'unixepoch') day, recommended_model model, COUNT(*) n
+                   FROM requests WHERE ts >= ?
+                   GROUP BY day, model ORDER BY day""",
                 (since_ts,),
             ).fetchall()
         return [dict(r) for r in rows]
