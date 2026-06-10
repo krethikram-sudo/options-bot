@@ -100,3 +100,61 @@ def test_dashboard_html_renders(tmp_path):
                    "model mix", "<svg", "classification"):
         assert marker in html, marker
     ledger.close()
+
+
+def test_chat_send_roundtrip(monkeypatch, tmp_path):
+    """Chat playground loops back through the gateway's own /v1/messages."""
+    import json, os, threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    from fastapi.testclient import TestClient
+
+    class FakeUpstream(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def do_POST(self):
+            body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            resp = json.dumps({
+                "id": "m", "type": "message", "model": body["model"],
+                "content": [{"type": "text", "text": "negative"}], "stop_reason": "end_turn",
+                "usage": {"input_tokens": 500, "output_tokens": 20},
+            }).encode()
+            self.send_response(200)
+            self.send_header("content-type", "application/json")
+            self.send_header("content-length", str(len(resp)))
+            self.end_headers()
+            self.wfile.write(resp)
+
+        def log_message(self, *a):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 8495), FakeUpstream)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    monkeypatch.setenv("MODELPILOT_MODE", "autopilot")
+    monkeypatch.setenv("MODELPILOT_UPSTREAM", "http://127.0.0.1:8495")
+    monkeypatch.setenv("MODELPILOT_DB", str(tmp_path / "chat.db"))
+    monkeypatch.setenv("MODELPILOT_HOLDOUT_PCT", "0")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
+    import importlib
+    from modelpilot import gateway as gw
+    importlib.reload(gw)
+    try:
+        with TestClient(gw.app) as client:
+            page = client.get("/modelpilot/chat")
+            assert page.status_code == 200 and "ModelPilot chat" in page.text
+
+            r = client.post("/modelpilot/chat/send", json={
+                "messages": [{"role": "user", "content":
+                              "Classify this review as positive or negative: 'broke instantly'"}],
+                "model": "claude-opus-4-8", "session_id": "t1",
+            })
+            assert r.status_code == 200, r.text
+            data = r.json()
+            assert data["text"] == "negative"
+            assert data["applied"] is True
+            assert data["ran_on"] == "claude-haiku-4-5"
+            assert data["saved"] > 0
+            assert abs(data["cost_baseline"] - (500 * 5 + 20 * 25) / 1e6) < 1e-9
+    finally:
+        server.shutdown()
+        importlib.reload(gw)  # restore module-level config for other tests

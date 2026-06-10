@@ -149,6 +149,7 @@ def print_summary(port: int):
           f"POTENTIAL: ${s['potential']:.4f}"
           + (f"   ({s['potential'] / s['baseline']:.0%} of baseline)" if s["baseline"] else ""))
     print(f"\nDashboard:  http://127.0.0.1:{port}/modelpilot/dashboard?days=0")
+    print(f"Chat live:  http://127.0.0.1:{port}/modelpilot/chat   (type your own prompts)")
 
 
 def main():

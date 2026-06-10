@@ -217,10 +217,12 @@ async def feedback(request: Request):
     return {"ok": True}
 
 
-# Dashboard routes must register before the catch-all passthrough below.
+# Dashboard/chat routes must register before the catch-all passthrough below.
+from .chat import router as _chat_router  # noqa: E402
 from .dashboard import router as _dashboard_router  # noqa: E402
 
 app.include_router(_dashboard_router)
+app.include_router(_chat_router)
 
 
 @app.post("/v1/messages")
