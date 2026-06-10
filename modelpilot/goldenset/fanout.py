@@ -27,12 +27,16 @@ def dump_jsonl(rows: list[dict], path: str):
 
 def build_requests(prompts: list[dict], models: list[str] = CANDIDATE_MODELS,
                    max_tokens: int = DEFAULT_MAX_TOKENS) -> list[dict]:
-    """One batch request per (prompt, model). custom_id encodes both."""
+    """One batch request per (prompt, model). custom_id encodes both.
+
+    The API restricts custom_id to ^[a-zA-Z0-9_-]{1,64}$, so the separator is
+    "__" — prompt ids therefore must not contain a double underscore.
+    """
     requests = []
     for p in prompts:
         for model in models:
             requests.append({
-                "custom_id": f"{p['id']}::{model}",
+                "custom_id": f"{p['id']}__{model}",
                 "params": {
                     "model": model,
                     "max_tokens": max_tokens,
@@ -55,7 +59,7 @@ def collect(client, batch_id: str) -> list[dict]:
         raise RuntimeError(f"batch {batch_id} still {batch.processing_status}")
     rows = []
     for result in client.messages.batches.results(batch_id):
-        prompt_id, model = result.custom_id.split("::", 1)
+        prompt_id, model = result.custom_id.split("__", 1)
         if result.result.type != "succeeded":
             rows.append({"prompt_id": prompt_id, "model": model, "error": result.result.type})
             continue

@@ -28,7 +28,7 @@ def test_build_requests_covers_all_pairs():
     prompts = [{"id": "p1", "prompt": "hello"}, {"id": "p2", "prompt": "world"}]
     reqs = build_requests(prompts, models=["m-a", "m-b"])
     assert len(reqs) == 4
-    assert {r["custom_id"] for r in reqs} == {"p1::m-a", "p1::m-b", "p2::m-a", "p2::m-b"}
+    assert {r["custom_id"] for r in reqs} == {"p1__m-a", "p1__m-b", "p2__m-a", "p2__m-b"}
     assert all(r["params"]["messages"][0]["content"] in ("hello", "world") for r in reqs)
 
 
