@@ -83,3 +83,17 @@ def test_evaluate_threshold_sweep():
     assert report["recommended"]["false_downgrade"] <= 0.02
     # And at that gate the easy wins are captured.
     assert report["recommended"]["coverage"] >= 0.5
+
+
+def test_seed_corpus_integrity():
+    from modelpilot.goldenset.seed_corpus import CORPUS
+    from modelpilot.taxonomy import CATEGORIES
+
+    assert len(CORPUS) >= 60
+    assert all(row["category"] in CATEGORIES for row in CORPUS)
+    assert all(row["prompt"].strip() for row in CORPUS)
+    # Programmatic grading available for the exact-answer categories
+    assert sum(1 for r in CORPUS if "expected" in r) >= 20
+    # Every row feeds the batch builder without error
+    prompts = [{"id": f"p{i}", **r} for i, r in enumerate(CORPUS)]
+    assert len(build_requests(prompts)) == len(CORPUS) * 3
