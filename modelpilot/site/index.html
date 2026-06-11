@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ModelPilot — cut your Claude bill 30–50%, with proof</title>
+<meta name="description" content="A drop-in gateway that routes each Claude request to the cheapest model that's provably good enough — and shows you the savings live.">
+<style>
+  :root { --ink:#1f2430; --mut:#6b7080; --green:#2e9e5b; --blue:#2f6fb6; --line:#e3e3e8; }
+  * { box-sizing: border-box; }
+  body { font: 16px/1.6 -apple-system, "Segoe UI", sans-serif; color: var(--ink); margin: 0; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 1.2rem; }
+  header.hero { padding: 4.5rem 0 3rem; background: linear-gradient(#fbfefc, #fff); }
+  .tag { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--green); font-weight: 700; }
+  h1 { font-size: 2.3rem; line-height: 1.2; margin: .4rem 0 1rem; }
+  .sub { font-size: 1.15rem; color: var(--mut); max-width: 640px; }
+  .cta { margin-top: 1.6rem; display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn { display: inline-block; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; }
+  .btn.primary { background: var(--green); color: #fff; }
+  .btn.ghost { border: 1px solid var(--line); color: var(--ink); }
+  .term { background: #14181f; color: #d7e0ea; border-radius: 10px; padding: 16px 18px;
+          font: 13px/1.7 ui-monospace, Menlo, monospace; margin: 2.2rem 0 0; overflow-x: auto; }
+  .term .c { color: #6b7080; } .term .g { color: #79d29a; } .term .y { color: #e7c46b; }
+  section { padding: 2.6rem 0; border-top: 1px solid #f0f0f3; }
+  h2 { font-size: 1.35rem; margin: 0 0 1rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+  .card h3 { margin: 0 0 6px; font-size: 1rem; }
+  .card p { margin: 0; color: var(--mut); font-size: .92rem; }
+  .num { font-size: 1.7rem; font-weight: 700; color: var(--green); }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  td, th { border-bottom: 1px solid #eee; padding: 8px 10px; text-align: left; }
+  th { color: var(--mut); }
+  code { background: #f6f7f9; border-radius: 4px; padding: 1px 6px; font-size: .88em; }
+  pre.block { background: #f6f7f9; border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-size: .85rem; }
+  footer { padding: 2.5rem 0 3.5rem; color: var(--mut); font-size: .85rem; border-top: 1px solid #f0f0f3; }
+  .note { background: #fbfefc; border: 1px solid #d8efe0; border-radius: 10px; padding: 14px 18px; font-size: .92rem; }
+</style></head>
+<body>
+
+<header class="hero"><div class="wrap">
+  <div class="tag">ModelPilot · beta</div>
+  <h1>Cut your Claude bill 30–50%.<br>See the proof, live.</h1>
+  <p class="sub">A drop-in gateway that routes every request to the cheapest Claude
+  model that's provably good enough — informed by the whole conversation, never
+  downgrading hard work — and shows you exactly what you saved, per prompt and
+  per session, recalculated from the actual tokens each request consumed.</p>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/YOUR_ORG/modelpilot">Get the beta on GitHub →</a>
+    <a class="btn ghost" href="#quickstart">2-minute quickstart</a>
+  </div>
+  <pre class="term"><span class="c"># no API key, no spend — see it route in two minutes</span>
+$ pip install "modelpilot @ git+https://github.com/YOUR_ORG/modelpilot.git"
+$ modelpilot demo --offline
+
+  1 classification    <span class="g">SWITCH → claude-haiku-4-5</span>   conf 0.85
+  2 debugging         <span class="y">stay   → claude-opus-4-8</span>    quality protected
+  3 extraction        <span class="g">SWITCH → claude-haiku-4-5</span>   conf 0.85
+  ...
+REALIZED savings: <span class="g">$0.07</span>   POTENTIAL: $0.12  <span class="g">(48% of baseline)</span></pre>
+</div></header>
+
+<section><div class="wrap">
+  <h2>One line to install. Three levels of trust.</h2>
+  <div class="grid">
+    <div class="card"><h3>1 · Shadow</h3><p>Your traffic is untouched. ModelPilot
+      scores every request and builds a "what you would have saved" report.
+      Zero risk — this is how every deployment starts.</p></div>
+    <div class="card"><h3>2 · Advise</h3><p>Responses carry recommendation headers;
+      your team takes the action. Follow the advice and declare your baseline —
+      savings are tracked from the actual tokens consumed.</p></div>
+    <div class="card"><h3>3 · Autopilot</h3><p>Confidence-gated routing with a
+      built-in randomized holdout, so the savings number is <em>measured</em>,
+      not estimated — and an escalation valve whose costs count against us.</p></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Why the routing is trustworthy</h2>
+  <table>
+    <tr><th>Hard problem</th><th>How ModelPilot handles it</th></tr>
+    <tr><td>"Summarize" can be trivial or expert-level</td>
+        <td>Calibrated on a golden dataset with a ≤2% false-downgrade target;
+            when unsure, it doesn't touch your request</td></tr>
+    <tr><td>"why?" after a hard exchange looks trivial</td>
+        <td>Session-context routing: follow-ups inherit the conversation's
+            difficulty; mechanical tasks over existing content stay cheap</td></tr>
+    <tr><td>Prompt caches are model-scoped — naive switching loses money</td>
+        <td>Cache-aware economics price the rewrite before any mid-conversation
+            switch and veto switches that don't pay</td></tr>
+    <tr><td>Vendors grade their own homework</td>
+        <td>Randomized holdout + escalation costs deducted + side-by-side output
+            comparisons you can run yourself: <code>modelpilot compare --judge</code></td></tr>
+  </table>
+</div></section>
+
+<section><div class="wrap">
+  <h2>The proof artifact</h2>
+  <p>Run your own prompts through both arms — ModelPilot's routing vs everything
+  on the biggest model — and get one page with <b>costs and outputs side by side</b>,
+  plus independent non-inferiority verdicts per prompt:</p>
+  <pre class="block">$ modelpilot compare --prompts your_prompts.jsonl --judge
+routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
+report: compare_report.html</pre>
+  <p class="note">Savings claims you can audit: actual token counts at list prices,
+  the same prompts in both arms, and every output on the page for your own eyes —
+  not just a judge's verdict.</p>
+</div></section>
+
+<section id="quickstart"><div class="wrap">
+  <h2>Quickstart</h2>
+  <pre class="block"># 1. Install
+pip install "modelpilot @ git+https://github.com/YOUR_ORG/modelpilot.git"
+
+# 2. Prove it to yourself (no key, no spend)
+modelpilot demo --offline
+
+# 3. Production-shaped: shadow mode, then point your app at it
+modelpilot gateway --mode shadow --port 8400
+#    Python:  anthropic.Anthropic(base_url="http://localhost:8400")
+#    any SDK: ANTHROPIC_BASE_URL=http://localhost:8400
+
+# 4. Watch the dashboard fill up
+open http://localhost:8400/modelpilot/dashboard</pre>
+  <p>Your API keys pass through and are never stored. The ledger holds token
+  counts and routing metadata — no prompt text. Full details in the
+  <a href="https://github.com/YOUR_ORG/modelpilot#privacy--security">README</a>.</p>
+</div></section>
+
+<footer><div class="wrap">
+  ModelPilot · beta evaluation license ·
+  <a href="https://github.com/YOUR_ORG/modelpilot">GitHub</a> ·
+  <a href="https://github.com/YOUR_ORG/modelpilot/issues">Feedback &amp; issues</a><br>
+  Model prices referenced: Claude Fable 5 $10/$50 · Opus 4.8 $5/$25 ·
+  Sonnet 4.6 $3/$15 · Haiku 4.5 $1/$5 per MTok (June 2026 list).
+</div></footer>
+</body></html>

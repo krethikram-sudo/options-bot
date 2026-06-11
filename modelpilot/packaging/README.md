@@ -75,6 +75,20 @@ modelpilot report --days 7
 - `modelpilot share` produces a redacted diagnostics summary (counts and
   dollars only) for support.
 
+## Prove it on your own prompts
+
+```bash
+modelpilot compare --prompts your_prompts.jsonl --judge
+# routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
+# report: compare_report.html
+```
+
+Runs every prompt twice — ModelPilot's routing vs everything on the baseline
+model — and produces one page with **costs and outputs side by side** plus a
+position-debiased non-inferiority verdict per prompt. Savings you can audit
+with your own eyes, not just a number. (`--offline` previews the report shape
+with no spend.)
+
 ## Also in the box
 
 - **Live chat playground** at `/modelpilot/chat` — autopilot routing with

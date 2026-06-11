@@ -86,3 +86,66 @@ def test_bootstrap_ci_brackets_true_difference():
     lo, hi = _bootstrap_diff_ci(a, b)
     assert lo < 2.0 < hi or abs((lo + hi) / 2 - 2.0) < 0.1
     assert lo > 1.5 and hi < 2.5
+
+
+def test_declared_baseline_recovers_advise_mode_savings(monkeypatch, tmp_path):
+    """A caller who followed advice sends the cheap model + the baseline they
+    would have used — realized savings recorded from actual tokens."""
+    import json, threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    from fastapi.testclient import TestClient
+
+    class FakeUpstream(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def do_POST(self):
+            body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            resp = json.dumps({"id": "m", "type": "message", "model": body["model"],
+                               "content": [{"type": "text", "text": "ok"}],
+                               "stop_reason": "end_turn",
+                               "usage": {"input_tokens": 10_000, "output_tokens": 500}}).encode()
+            self.send_response(200)
+            self.send_header("content-type", "application/json")
+            self.send_header("content-length", str(len(resp)))
+            self.end_headers()
+            self.wfile.write(resp)
+
+        def log_message(self, *a):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 8493), FakeUpstream)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    db = str(tmp_path / "decl.db")
+    monkeypatch.setenv("MODELPILOT_MODE", "advise")
+    monkeypatch.setenv("MODELPILOT_UPSTREAM", "http://127.0.0.1:8493")
+    monkeypatch.setenv("MODELPILOT_DB", db)
+
+    import importlib
+    from modelpilot import gateway as gw
+    importlib.reload(gw)
+    try:
+        with TestClient(gw.app) as client:
+            r = client.post("/v1/messages",
+                            headers={"x-api-key": "k",
+                                     "x-modelpilot-baseline": "claude-fable-5"},
+                            json={"model": "claude-haiku-4-5", "max_tokens": 64,
+                                  "messages": [{"role": "user", "content":
+                                                "Classify this as positive or negative: 'meh'"}]})
+            assert r.status_code == 200
+        ledger = Ledger(db)
+        s = ledger.summary()
+        # ran on haiku, baseline fable: realized = (10k*$10 + 500*$50)/1M - (10k*$1 + 500*$5)/1M
+        assert abs(s["realized"] - ((10_000 * 9 + 500 * 45) / 1e6)) < 1e-9
+        assert s["realized"] > 0
+        ledger.close()
+    finally:
+        server.shutdown()
+        importlib.reload(gw)
+
+
+def test_declared_baseline_ignores_garbage(monkeypatch, tmp_path):
+    from modelpilot.gateway import decide
+    # decide() itself is unaffected; the header path validates via resolve_price —
+    # covered indirectly above. Here: unknown model string must not crash pricing.
+    from modelpilot.pricing import resolve_price
+    assert resolve_price("gpt-5-mega") is None

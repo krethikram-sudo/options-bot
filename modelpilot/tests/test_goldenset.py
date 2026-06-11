@@ -182,3 +182,30 @@ def test_cli_gateway_env_mapping():
     assert env["MODELPILOT_CONFIDENCE"] == "0.7"
     assert env["MODELPILOT_HOLDOUT_PCT"] == "0.05"
     assert env["MODELPILOT_CAPTURE_PCT"] == "0.25"
+
+
+def test_compare_harness_and_report():
+    from modelpilot.compare import offline_run_fn, render_report, run_comparison
+
+    prompts = [
+        {"id": "a", "prompt": "Classify this review as positive or negative: 'great!'"},
+        {"id": "b", "prompt": "Debug why the nightly job intermittently deadlocks under load."},
+        {"id": "c", "prompt": "Translate to French: The meeting moved to Thursday."},
+    ]
+    result = run_comparison(prompts, "claude-fable-5", offline_run_fn,
+                            judge_fn=lambda p, b, r: True, progress=lambda *_: None)
+    assert result["n"] == 3
+    assert result["n_switched"] >= 2          # classify + translate switch; debug→opus also switches from fable
+    assert result["savings"] > 0
+    assert result["non_inferior_rate"] == 1.0  # only switched rows judged
+    by_id = {r["id"]: r for r in result["rows"]}
+    assert by_id["a"]["routed_model"] == "claude-haiku-4-5"
+    assert by_id["b"]["routed_model"] == "claude-opus-4-8"  # hard work right-sizes, never below floor
+    assert by_id["a"]["baseline_cost"] > by_id["a"]["routed_cost"]
+
+    html_out = render_report(result)
+    for marker in ("side-by-side", "saved", "non-inferior", "claude-fable-5",
+                   "<details>", "claude-haiku-4-5"):
+        assert marker in html_out, marker
+    # outputs are escaped + present
+    assert "offline sample output" in html_out

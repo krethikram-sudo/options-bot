@@ -103,6 +103,10 @@ def main():
     r.add_argument("rest", nargs=argparse.REMAINDER)
     r.set_defaults(fn=lambda a: _delegate(__import__("modelpilot.report", fromlist=["main"]).main, a.rest))
 
+    c = sub.add_parser("compare", help="side-by-side proof: routed vs all-baseline")
+    c.add_argument("rest", nargs=argparse.REMAINDER)
+    c.set_defaults(fn=lambda a: _delegate(__import__("modelpilot.compare", fromlist=["main"]).main, a.rest))
+
     s = sub.add_parser("share", help="redacted diagnostics for feedback")
     s.add_argument("--db", default="modelpilot.db")
     s.set_defaults(fn=cmd_share)

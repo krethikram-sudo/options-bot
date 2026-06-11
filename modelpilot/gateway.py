@@ -17,7 +17,7 @@ import hashlib
 import json
 import os
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import httpx
 from fastapi import FastAPI, Request, Response
@@ -26,7 +26,7 @@ from fastapi.responses import StreamingResponse
 from . import router as mp_router
 from .continuation import ContinuationModel
 from .ledger import Ledger
-from .pricing import Usage, request_cost
+from .pricing import Usage, request_cost, resolve_price
 from .router import Recommendation
 
 MODE = os.environ.get("MODELPILOT_MODE", "shadow")
@@ -273,6 +273,18 @@ async def messages(request: Request):
         body, MODE, holdout_pct=HOLDOUT_PCT, session_key=session_key,
         expected_remaining_turns=app.state.continuation.expected_remaining(turns),
     )
+    # Advise-mode loop closure: a caller who followed our advice sends the
+    # cheap model in the body — savings would be invisible without knowing
+    # the real baseline. x-modelpilot-baseline declares it, so actual-token
+    # savings are recorded against the model they WOULD have used.
+    declared = request.headers.get("x-modelpilot-baseline")
+    if declared and resolve_price(declared) and declared != decision.recommendation.original_model:
+        decision = Decision(
+            recommendation=replace(decision.recommendation, original_model=declared),
+            routed_model=decision.routed_model,
+            applied=decision.applied,
+            arm=decision.arm,
+        )
     if retry_of and decision.applied:
         # An escalation retry after a quality failure must never be routed
         # down again — run it exactly as the caller asked.

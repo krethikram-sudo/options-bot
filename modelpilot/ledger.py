@@ -74,7 +74,11 @@ class Ledger:
         actual = request_cost(routed_model, usage)
         base = baseline_cost(recommendation.original_model, usage)
         routed = request_cost(recommendation.recommended_model, usage)
-        realized = (base - actual) if (applied and base is not None and actual is not None) else 0.0
+        # Realized whenever the request ran below its baseline — whether the
+        # gateway switched it (autopilot) or the caller followed advice and
+        # declared the baseline via x-modelpilot-baseline (advise mode).
+        ran_below_baseline = routed_model != recommendation.original_model
+        realized = (base - actual) if (ran_below_baseline and base is not None and actual is not None) else 0.0
         potential = (base - routed) if (base is not None and routed is not None) else None
         request_id = request_id or uuid.uuid4().hex
         with self._lock:

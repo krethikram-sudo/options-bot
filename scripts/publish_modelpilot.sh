@@ -23,13 +23,16 @@ fi
 
 echo "Assembling beta repo in $DEST"
 mkdir -p "$DEST/modelpilot/goldenset" "$DEST/tests" "$DEST/extension" \
-         "$DEST/scripts" "$DEST/launchd" "$DEST/docs"
+         "$DEST/scripts" "$DEST/launchd" "$DEST/docs" "$DEST/site"
 
 # --- package code ---
 cp "$SRC"/__init__.py "$SRC"/cli.py "$SRC"/gateway.py "$SRC"/router.py \
    "$SRC"/pricing.py "$SRC"/taxonomy.py "$SRC"/ledger.py "$SRC"/dashboard.py \
    "$SRC"/chat.py "$SRC"/continuation.py "$SRC"/demo.py "$SRC"/report.py \
-   "$SRC"/requirements.txt "$DEST/modelpilot/"
+   "$SRC"/compare.py "$SRC"/requirements.txt "$DEST/modelpilot/"
+
+# --- landing page (GitHub Pages deploys from site/ via pages.yml) ---
+cp "$SRC"/site/index.html "$DEST/site/"
 cp "$SRC"/goldenset/*.py "$DEST/modelpilot/goldenset/"
 
 # --- tests (ship them: beta users and CI both benefit) ---
