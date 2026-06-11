@@ -25,7 +25,7 @@
     <key>EnvironmentVariables</key>
     <dict>
         <key>MODELPILOT_MODE</key>
-        <string>shadow</string>
+        <string>__MODE__</string>
         <key>MODELPILOT_CAPTURE_PCT</key>
         <string>0.25</string>
         <key>MODELPILOT_DB</key>

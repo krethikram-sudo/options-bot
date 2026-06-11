@@ -7,8 +7,14 @@
 # Re-running is safe — it unloads first and the zshrc edit is idempotent.
 #
 # Usage:
-#   ./scripts/install_modelpilot_gateway.sh
+#   ./scripts/install_modelpilot_gateway.sh                       # shadow mode
+#   MODELPILOT_MODE=autopilot ./scripts/install_modelpilot_gateway.sh
 set -euo pipefail
+
+MODE="${MODELPILOT_MODE:-shadow}"
+case "$MODE" in shadow|advise|autopilot) ;; *)
+    echo "ERROR: MODELPILOT_MODE must be shadow|advise|autopilot (got '$MODE')" >&2; exit 1;;
+esac
 
 BOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEMPLATE="$BOT_DIR/launchd/com.modelpilot.gateway.plist.template"
@@ -27,8 +33,8 @@ fi
 
 mkdir -p "$BOT_DIR/logs"
 
-echo "Rendering plist with BOT_DIR=$BOT_DIR"
-sed "s|__BOT_DIR__|$BOT_DIR|g" "$TEMPLATE" > "$RENDERED"
+echo "Rendering plist with BOT_DIR=$BOT_DIR MODE=$MODE"
+sed -e "s|__BOT_DIR__|$BOT_DIR|g" -e "s|__MODE__|$MODE|g" "$TEMPLATE" > "$RENDERED"
 
 mkdir -p "$HOME/Library/LaunchAgents"
 cp "$RENDERED" "$TARGET"
@@ -67,7 +73,7 @@ echo "Status:"
 if launchctl list | grep -q com.modelpilot.gateway; then
     sleep 1
     if curl -sf -m 2 http://127.0.0.1:8400/modelpilot/stats >/dev/null 2>&1; then
-        echo "  gateway is UP at http://127.0.0.1:8400 (shadow mode, 25% prompt capture)"
+        echo "  gateway is UP at http://127.0.0.1:8400 ($MODE mode, 25% prompt capture)"
     else
         echo "  agent loaded; gateway still starting — check logs/modelpilot.gateway.err.log if it stays down"
     fi

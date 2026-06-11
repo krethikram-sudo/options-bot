@@ -71,6 +71,18 @@ control requests), then leaves the dashboard up at
 `http://127.0.0.1:8401/modelpilot/dashboard?days=0`. Flags: `--mode`,
 `--prompts`, `--fresh`, `--max-tokens`.
 
+### Using it with your Claude account
+
+| Surface | How | Modes |
+|---|---|---|
+| **API keys** | Point `base_url` at the gateway | shadow / advise / autopilot |
+| **Claude Code (subscription)** | The installer's `claude()` wrapper already routes it; the gateway forwards OAuth headers. For real routing: `MODELPILOT_MODE=autopilot ./scripts/install_modelpilot_gateway.sh` | all three |
+| **claude.ai web chat** | Load `modelpilot/extension/` as an unpacked browser extension — a chip shows the recommended model + est. value before you send, using the visible conversation for session-context routing | advisory (Mode 1) only in v0; auto-switching the picker needs a ToS review |
+
+Flat-rate subscription surfaces report *API-equivalent usage value* — the
+win is rate-limit headroom, not a smaller bill. Dollar savings live on the
+API surface.
+
 ### Quickstart
 
 ```bash
