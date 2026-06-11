@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "modelpilot"
+version = "0.1.0"
+description = "Model-routing cost optimizer for the Claude API: a drop-in gateway that routes each request to the cheapest model that's provably good enough, and proves the savings."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "httpx>=0.27",
+    "anthropic>=0.92",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+modelpilot = "modelpilot.cli:main"
+
+[tool.setuptools]
+packages = ["modelpilot", "modelpilot.goldenset"]

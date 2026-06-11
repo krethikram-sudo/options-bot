@@ -147,3 +147,38 @@ def test_capture_roundtrip(tmp_path):
     assert caps[0]["category"] == "classification"
     assert "positive or negative" in caps[0]["prompt"]
     ledger.close()
+
+
+def test_cli_share_report_is_redacted(tmp_path):
+    from modelpilot.cli import share_report
+    from modelpilot.ledger import Ledger
+    from modelpilot.pricing import Usage
+    from modelpilot.router import recommend
+
+    db = str(tmp_path / "s.db")
+    ledger = Ledger(db)
+    secret_prompt = "Classify this as positive or negative: 'SECRET-CUSTOMER-DATA'"
+    rec = recommend({"model": "claude-opus-4-8", "max_tokens": 64,
+                     "messages": [{"role": "user", "content": secret_prompt}]})
+    ledger.record(mode="autopilot", recommendation=rec, routed_model=rec.recommended_model,
+                  applied=True, status_code=200, usage=Usage(input_tokens=1000, output_tokens=100),
+                  arm="treatment")
+    ledger.close()
+
+    out = share_report(db)
+    assert "SECRET-CUSTOMER-DATA" not in out
+    assert "classification" in out
+    assert "requests scored: 1" in out
+
+
+def test_cli_gateway_env_mapping():
+    import argparse
+    from modelpilot.cli import _gateway_env
+
+    args = argparse.Namespace(mode="autopilot", db="x.db", upstream="https://api.anthropic.com",
+                              confidence=0.7, holdout=0.05, capture=0.25)
+    env = _gateway_env(args)
+    assert env["MODELPILOT_MODE"] == "autopilot"
+    assert env["MODELPILOT_CONFIDENCE"] == "0.7"
+    assert env["MODELPILOT_HOLDOUT_PCT"] == "0.05"
+    assert env["MODELPILOT_CAPTURE_PCT"] == "0.25"

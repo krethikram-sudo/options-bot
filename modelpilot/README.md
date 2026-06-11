@@ -152,6 +152,28 @@ false-downgrade rate meets the ≤2% safety target — that number goes into
 
 Run tests: `python -m pytest modelpilot/tests/`
 
+## Shipping the beta (publish workflow)
+
+This folder is the **dev home** (inside the private monorepo, next to the
+internal strategy docs). Customers get a separate, clean repo assembled by:
+
+```bash
+./scripts/publish_modelpilot.sh /tmp/modelpilot-beta \
+    git@github.com:YOUR_ORG/modelpilot.git
+```
+
+The script copies an explicit **allowlist** (package, tests, extension,
+installer, customer docs, packaging/) — internal docs can't leak by
+construction — runs the test suite against the assembled repo, and pushes.
+Customer-facing files live in `packaging/` (landing README, pyproject,
+LICENSE, CHANGELOG, CI, issue templates). The publish dry-run also runs in
+this repo's CI (`.github/workflows/modelpilot-ci.yml`) so a broken publish
+is caught on every push.
+
+Iteration loop: develop + calibrate here → `publish_modelpilot.sh` → beta
+repo → customers report via issue templates + `modelpilot share` →
+captured corpora recalibrate the router → republish.
+
 ## Docs in this folder
 
 | Doc | Contents |

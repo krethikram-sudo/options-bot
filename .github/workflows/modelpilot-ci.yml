@@ -1,0 +1,36 @@
+name: modelpilot-ci
+
+on:
+  push:
+    paths:
+      - "modelpilot/**"
+      - "scripts/publish_modelpilot.sh"
+      - "scripts/install_modelpilot_gateway.sh"
+      - ".github/workflows/modelpilot-ci.yml"
+  pull_request:
+    paths:
+      - "modelpilot/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r modelpilot/requirements.txt
+      - run: python -m pytest modelpilot/tests/ -q
+
+  publish-dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r modelpilot/requirements.txt
+      # The assembled beta repo must always build, import, and pass its tests —
+      # so a publish can never ship broken or half-assembled.
+      - run: ./scripts/publish_modelpilot.sh /tmp/beta-build
+      - run: pip install -e /tmp/beta-build && modelpilot --version

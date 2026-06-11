@@ -1,0 +1,20 @@
+ModelPilot Beta Evaluation License
+
+Copyright (c) 2026 ModelPilot. All rights reserved.
+
+Permission is granted to use this software solely to evaluate it within your
+organization during the beta program, subject to the following:
+
+1. You may install, run, and modify the software for internal evaluation.
+2. You may not redistribute the software or offer it as a service to third
+   parties.
+3. Feedback you choose to provide may be used to improve the product.
+4. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. IN NO
+   EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY ARISING FROM ITS USE. Routing decisions affect which model
+   serves your traffic; you remain responsible for validating outputs for
+   your use case.
+5. This license terminates when the beta program ends or upon notice; a
+   commercial license will be offered to continuing users.
+
+Contact the maintainers for commercial terms.
