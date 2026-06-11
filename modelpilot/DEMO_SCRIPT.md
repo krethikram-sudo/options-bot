@@ -78,6 +78,7 @@ Open the printed URL (`/modelpilot/dashboard?days=0`):
 |---|---|
 | "Our prompts are sensitive" | Shadow mode stores zero prompt text by default; the ledger is token counts and metadata. Capture for tuning is opt-in, sampled, and stays in your tenant. |
 | "What if it downgrades something important?" | Confidence-gated, downgrade-only, per-team never-touch policies, and an escalation valve that re-runs failures on the big model and charges the cost against our own savings number. |
-| "Anthropic will just build this" | Maybe — but you won't trust the vendor to grade its own savings. We're the independent measurement layer, and we'll cover OpenAI/Gemini next. |
+| "Anthropic will just build this" | As of June 2026 their docs ship no cost router (verified — see COMPETITIVE.md). And when they do, you'll want independent verification of it even more. We don't grade our own homework. |
+| "We use / evaluated Martian or Not Diamond" | They optimize; we verify. Ask them for a randomized holdout on YOUR traffic with escalation costs deducted, plus side-by-side outputs on YOUR prompts — we ship both, and we'd happily measure their routing too. |
 | "Does switching break prompt caching?" | Caches are model-scoped — naive routers lose money here. Our economics layer prices the cache rewrite before every switch and vetoes switches that don't pay. We can show you the math. |
 | "What's the catch?" | The router is conservative by design. We leave savings on the table rather than risk quality — the calibration report shows exactly how much, and it improves as it tunes on your traffic. |
