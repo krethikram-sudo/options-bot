@@ -71,6 +71,22 @@ These show the confidence gate doing its job — uncertain cases don't get touch
 | 19 | Send a one-word prompt like `hello` | conversation, low conf → 💡 or 🛡; no reckless switch |
 | 20 | Paste a very long text (several pages) + `Summarize the key points` | Watch the confidence drop / tier bump from the large-context penalty in the chip rationale |
 
+## 8. Session-context routing (the conversation, not just the prompt)
+
+Send these **in order, in one chat session** — the point is how the decision
+changes as the session evolves:
+
+| # | Prompt | Expect |
+|---|---|---|
+| 21 | `Debug why my nightly job intermittently fails with a deadlock under load.` | ⚡ opus · debugging (hard context now lives in this session) |
+| 22 | `why?` | ⚡ opus · **followup_in_context** — "inheriting session difficulty". A 4-character prompt that would naively look Haiku-trivial stays on the big model because answering it requires the hard context. |
+| 23 | `Extract the suggested fixes from the above as a JSON list.` | ⚡ haiku · extraction — mechanical work over existing content keeps its cheap tier even in a hard session (this is "leveraging existing contents") |
+| 24 | `Classify this unrelated review as positive or negative: 'lovely'` | ⚡ haiku — carries its own content, references nothing, so no inheritance |
+| 25 | In a **fresh session**, send just `why?` as the first message | no inheritance possible — low-confidence conversation handling, no reckless switch |
+
+The 22 vs 23 contrast is the demo moment: same hard session, but the router
+distinguishes "reasoning about the hard context" from "mechanical work over it."
+
 ## What "all green" looks like
 
 Every ⚡ chip's estimated saving is replaced by a realized number; prompts

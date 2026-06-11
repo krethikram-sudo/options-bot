@@ -26,6 +26,7 @@ CATEGORIES = {
     "analysis_strategy": (2, "open-ended analysis, planning, judgment"),
     "creative_longform": (1, "essays, marketing copy, stories"),
     "conversation": (1, "general chat, advice, brainstorming"),
+    "followup_in_context": (1, "short follow-up that depends on earlier session content; tier inherited from the session"),
     "unknown": (2, "could not classify — stay conservative"),
 }
 

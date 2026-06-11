@@ -48,7 +48,7 @@ A working gateway + router v0 + ledger + report lives here:
 | File | What it is |
 |---|---|
 | `gateway.py` | FastAPI drop-in proxy — shadow / advise / autopilot modes |
-| `router.py` | Heuristic classifier + cache-aware economics layer + optional Haiku-4.5 second opinion |
+| `router.py` | Session-context-aware classifier (follow-ups inherit session difficulty; mechanical tasks keep their cheap tier) + cache-aware economics layer + optional Haiku-4.5 second opinion |
 | `pricing.py` | Price table, cost math, `net_switch_benefit` (the cache-trap guard) |
 | `taxonomy.py` | Task categories and the category→model-floor policy table |
 | `ledger.py` | SQLite counterfactual ledger (no prompt text stored) |

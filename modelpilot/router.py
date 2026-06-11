@@ -7,6 +7,10 @@ Design rules (see ROUTER_TUNING_PLAN.md):
   - When unsure, recommend nothing (action="stay"). Do-no-harm is the default.
   - Capability (can the cheap model do it?) and economics (does switching pay,
     given cache state and expected continuation?) are separate, auditable steps.
+  - No turn is an independent decision: classification reconciles the prompt
+    with the whole session (follow-ups inherit session difficulty; mechanical
+    tasks over existing content keep their cheap tier). Stateless — the full
+    conversation arrives with every request.
 """
 
 import json
@@ -40,6 +44,25 @@ _COMPLEX_PATTERNS = {
 
 _CODE_HINT = re.compile(r"```|\bdef |\bclass |\bfunction\b|\bimport |\bSELECT\b.+\bFROM\b|\btraceback\b", re.IGNORECASE)
 
+# A short prompt that points back at earlier session content rather than
+# carrying its own task ("why?", "expand on that", "now fix it"). Such a
+# prompt inherits the session's difficulty — a cheap model can't answer
+# "why?" about an Opus-grade debugging exchange.
+_REFERENCE_HINTS = re.compile(
+    r"\b(that|this|it|those|above|previous|earlier|again|why|how come|expand|"
+    r"continue|go on|elaborate|instead|what about|and the|now (do|try|fix|make|"
+    r"apply|update|change)|the (code|bug|fix|function|error|output|result|"
+    r"analysis|plan|approach|answer|response))\b"
+)
+_FOLLOWUP_MAX_CHARS = 250  # longer prompts carry their own content/task
+_SESSION_SIGNAL_WINDOW = 30_000  # chars of recent history scanned for signals
+
+# Mechanical tasks operate on whatever content they're given — extraction over
+# a hard debugging transcript is still extraction, and calibration v0 measured
+# these categories near-perfect on haiku. They keep their own tier even when
+# the session is hard ("leverage existing contents" savings).
+_MECHANICAL = frozenset({"extraction", "rewrite_format", "translation", "classification"})
+
 
 @dataclass
 class Recommendation:
@@ -53,18 +76,47 @@ class Recommendation:
     features: dict = field(default_factory=dict)
 
 
+def _message_text(msg: dict) -> str:
+    content = msg.get("content")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "\n".join(b.get("text", "") for b in content
+                         if isinstance(b, dict) and b.get("type") == "text")
+    return ""
+
+
 def _last_user_text(messages: list) -> str:
     for msg in reversed(messages or []):
-        if msg.get("role") != "user":
-            continue
-        content = msg.get("content")
-        if isinstance(content, str):
-            return content
-        if isinstance(content, list):
-            texts = [b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text"]
-            if texts:
-                return "\n".join(texts)
+        if msg.get("role") == "user":
+            text = _message_text(msg)
+            if text:
+                return text
     return ""
+
+
+def _session_signals(messages: list, prompt: str) -> dict:
+    """What the conversation so far says about difficulty.
+
+    Scans prior turns (user AND assistant — code the assistant wrote is
+    session content too) for the same hard-work signals used on the current
+    prompt, so routing never treats a turn as an independent decision.
+    """
+    prior = "\n".join(_message_text(m) for m in messages[:-1])[-_SESSION_SIGNAL_WINDOW:].lower()
+    session_max_tier, session_hard = 0, []
+    if prior:
+        for category, pattern in _COMPLEX_PATTERNS.items():
+            if re.search(pattern, prior):
+                session_hard.append(category)
+                session_max_tier = max(session_max_tier, floor_tier(category))
+        if _CODE_HINT.search(prior):
+            session_max_tier = max(session_max_tier, floor_tier("codegen_simple"))
+    is_followup = (bool(prior)
+                   and len(prompt) < _FOLLOWUP_MAX_CHARS
+                   and bool(_REFERENCE_HINTS.search(prompt.lower())))
+    return {"session_max_tier": session_max_tier,
+            "session_hard": session_hard,
+            "is_followup": is_followup}
 
 
 def extract_features(body: dict) -> dict:
@@ -86,11 +138,33 @@ def extract_features(body: dict) -> dict:
         "has_code": bool(_CODE_HINT.search(prompt)),
         "has_cache_control": has_cache_control,
         "requested_max_tokens": body.get("max_tokens") or 0,
+        **_session_signals(messages, prompt),
     }
 
 
 def classify(features: dict) -> tuple[str, int, float, str]:
-    """Heuristic classification -> (category, target_tier, confidence, rationale).
+    """Session-context-aware classification.
+
+    Each prompt is first classified on its own, then reconciled with the
+    conversation: a short follow-up referencing earlier hard work inherits
+    the session's difficulty (a cheap model can't reason over Opus-grade
+    context), while mechanical tasks keep their own cheap tier even in hard
+    sessions — that's where existing content gets leveraged for savings.
+    """
+    category, tier, confidence, rationale = _classify_standalone(features)
+    session_tier = features.get("session_max_tier", 0)
+    if (features.get("is_followup")
+            and session_tier > tier
+            and category not in _MECHANICAL):
+        hard = "/".join(features.get("session_hard") or []) or "earlier work"
+        return ("followup_in_context", session_tier, 0.8,
+                f"short follow-up referencing {hard} in this session — "
+                f"inheriting session difficulty (standalone read: {category})")
+    return category, tier, confidence, rationale
+
+
+def _classify_standalone(features: dict) -> tuple[str, int, float, str]:
+    """Per-prompt heuristic -> (category, target_tier, confidence, rationale).
 
     Confidence reflects how unambiguous the signals are, not model quality.
     The golden-set-trained router replaces this in Phase 1; the interface stays.

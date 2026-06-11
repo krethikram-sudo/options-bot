@@ -70,3 +70,67 @@ def test_extract_features_counts_context():
     assert f["n_turns"] == 1
     assert f["approx_context_tokens"] > 0
     assert not f["has_tools"]
+
+
+# --- session-context-aware routing -----------------------------------------
+
+DEBUG_Q = "Debug why my nightly job intermittently fails with a deadlock under load."
+DEBUG_A = ("The deadlock comes from two workers acquiring the row locks in opposite "
+           "order. Serialize the lock acquisition or use SELECT ... FOR UPDATE SKIP LOCKED.")
+
+
+def _session(*texts, model="claude-opus-4-8"):
+    roles = ["user", "assistant"]
+    return {"model": model, "max_tokens": 1024,
+            "messages": [{"role": roles[i % 2], "content": t} for i, t in enumerate(texts)]}
+
+
+def test_followup_inherits_session_difficulty():
+    body = _session(DEBUG_Q, DEBUG_A, "why?")
+    rec = recommend(body)
+    assert rec.category == "followup_in_context"
+    assert "inheriting session difficulty" in rec.rationale
+    assert rec.action == "stay"  # opus baseline, inherited tier == opus
+    assert rec.recommended_model == "claude-opus-4-8"
+
+
+def test_followup_inheritance_from_fable_rightsizes_to_opus():
+    body = _session(DEBUG_Q, DEBUG_A, "ok now fix it", model="claude-fable-5")
+    rec = recommend(body)
+    assert rec.action == "switch"
+    assert rec.recommended_model == "claude-opus-4-8"  # not haiku/sonnet
+    assert rec.confidence >= 0.8
+
+
+def test_mechanical_task_keeps_cheap_tier_in_hard_session():
+    # "leverage existing contents": extraction over the hard transcript is
+    # still mechanical work — haiku-safe per calibration.
+    body = _session(DEBUG_Q, DEBUG_A,
+                    "Extract the two suggested fixes from the above as a JSON list.")
+    rec = recommend(body)
+    assert rec.action == "switch"
+    assert rec.recommended_model == "claude-haiku-4-5"
+
+
+def test_independent_fresh_task_in_hard_session_routes_cheap():
+    # Carries its own content, references nothing — no inheritance.
+    body = _session(DEBUG_Q, DEBUG_A,
+                    "Classify the sentiment of this unrelated review as positive or negative: 'lovely product'")
+    rec = recommend(body)
+    assert rec.action == "switch"
+    assert rec.recommended_model == "claude-haiku-4-5"
+
+
+def test_followup_in_easy_session_not_escalated():
+    body = _session("Translate to French: Good morning.", "Bonjour.",
+                    "now do it in Spanish instead")
+    rec = recommend(body)
+    # Easy session: nothing to inherit; the follow-up must not jump tiers.
+    assert rec.recommended_model in ("claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-8")
+    assert rec.category != "followup_in_context" or rec.recommended_model != "claude-opus-4-8"
+
+
+def test_single_turn_unaffected_by_context_layer():
+    rec = recommend(_body("Classify this review as positive or negative: 'great!'"))
+    assert rec.recommended_model == "claude-haiku-4-5"
+    assert rec.confidence >= 0.8
