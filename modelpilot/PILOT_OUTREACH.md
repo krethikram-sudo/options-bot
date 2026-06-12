@@ -32,6 +32,45 @@ API bill (≥$2k/mo makes the conversation easy), ideally someone you already
 know. The ask is deliberately tiny: a two-week shadow-mode trial on one
 service. Nothing about their traffic changes; they get a savings report.
 
+## Beta-access reply (send when someone requests access)
+
+> Subject: **ModelPilot beta — your access**
+>
+> Great to have you in the beta! Two quick things to get you going:
+>
+> 1. **Reply with your GitHub username** (and any teammates') — I'll add you
+>    to the private repo. You'll get an invite email from GitHub; accept it
+>    and you're in.
+>
+> 2. Once you have access, the two-minute proof (no API key, no spend):
+>
+>    ```
+>    git clone git@github.com:YOUR_ORG/modelpilot.git
+>    pip install -e modelpilot
+>    modelpilot demo --offline
+>    ```
+>
+>    Then the real thing — shadow mode, zero risk, one line in your app:
+>
+>    ```
+>    modelpilot gateway --mode shadow --port 8400
+>    # your app: ANTHROPIC_BASE_URL=http://localhost:8400  (key stays yours, never stored)
+>    ```
+>
+>    After a day of traffic, `http://localhost:8400/modelpilot/dashboard`
+>    shows what routing would have saved you.
+>
+> Happy to do a 30-minute setup call instead — usually faster, and we can
+> agree what a successful trial looks like for you up front. A few times
+> that work for me: {slots}.
+>
+> Updates ship to the repo automatically (`git pull` + CHANGELOG.md);
+> feedback via GitHub issues or just reply here. Welcome aboard!
+
+Then: add them as a **read-only collaborator** (repo → Settings →
+Collaborators), log them in `pilot_tracker.csv` as `shadow` once installed,
+and follow the GTM_PLAN.md pilot runbook (day-3 check, week-1 report).
+
 ## Cold/warm intro email
 
 Subject: **Cut your Claude bill ~30-50% — measured, not estimated (2-week free look)**
