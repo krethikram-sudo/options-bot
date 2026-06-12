@@ -22,6 +22,42 @@ jobs:
       - run: pip install -r modelpilot/requirements.txt
       - run: python -m pytest modelpilot/tests/ -q
 
+  version-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Shipped-code changes require a version bump
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            RANGE="origin/${{ github.base_ref }}...HEAD"
+          else
+            BEFORE="${{ github.event.before }}"
+            git cat-file -e "$BEFORE" 2>/dev/null || BEFORE="HEAD~1"
+            RANGE="$BEFORE..HEAD"
+          fi
+          # Shipped behavior = package code + extension + installer.
+          # Docs, tests, golden-set data, packaging copy can ride without a bump.
+          SHIPPED=$(git diff --name-only "$RANGE" -- \
+              'modelpilot/*.py' 'modelpilot/goldenset/*.py' \
+              'modelpilot/extension/*' 'scripts/install_modelpilot_gateway.sh' \
+              'launchd/com.modelpilot.gateway.plist.template')
+          if [ -z "$SHIPPED" ]; then
+            echo "No shipped-code changes — version bump not required."
+            exit 0
+          fi
+          if git diff "$RANGE" -- modelpilot/__init__.py | grep -q '^+__version__'; then
+            echo "Version bumped alongside shipped changes — OK."
+            exit 0
+          fi
+          echo "::error::Shipped code changed without a version bump."
+          echo "Changed files:"; echo "$SHIPPED"
+          echo "Policy: INTEGER bump for breaking changes; DECIMAL bump for"
+          echo "features/retunes/fixes. Update modelpilot/__init__.py and add"
+          echo "a modelpilot/packaging/CHANGELOG.md entry."
+          exit 1
+
   publish-dry-run:
     runs-on: ubuntu-latest
     steps:

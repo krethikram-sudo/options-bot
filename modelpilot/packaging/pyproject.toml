@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "modelpilot"
-version = "0.1.0"
+dynamic = ["version"]  # single source: modelpilot/__init__.py
 description = "Model-routing cost optimizer for the Claude API: a drop-in gateway that routes each request to the cheapest model that's provably good enough, and proves the savings."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -24,3 +24,6 @@ modelpilot = "modelpilot.cli:main"
 
 [tool.setuptools]
 packages = ["modelpilot", "modelpilot.goldenset"]
+
+[tool.setuptools.dynamic]
+version = { attr = "modelpilot.__version__" }
