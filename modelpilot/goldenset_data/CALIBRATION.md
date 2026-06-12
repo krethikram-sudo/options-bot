@@ -1,4 +1,28 @@
-# Golden-set calibration v0 — 2026-06-10
+# Golden-set calibration — v0 (2026-06-10) + router v0.1 retune (2026-06-12)
+
+## v0.1 retune: content-difficulty features (measured against the same labels)
+
+The labels showed the seed-027 false downgrade was an **audience constraint**
+(status-page rewrite), not the content domain — the postmortem and legal
+summaries of the same material were haiku-fine. Implemented accordingly:
+audience constraints floor summarization/rewrite at sonnet; dense
+operational/legal content only reduces confidence (below the 0.8 autopilot
+gate). Also fixed a float bug where accumulated penalties (0.85−0.05=0.7999…)
+missed the gate by epsilon.
+
+| gate | coverage | accuracy | false-dg | missed | (v0 false-dg) |
+|---|---|---|---|---|---|
+| 0.60–0.70 | 49.3% | **63.8%** | **0.0%** | 36.2% | 1.4% |
+| 0.80 (shipped) | 46.4% | 60.9% | **0.0%** | 39.1% | 1.4% |
+
+**Zero false downgrades at every gate ≥0.60**, accuracy up, coverage intact
+at the calibrated gate. Caveats unchanged: n=69 seed prompts; judge-labeled;
+seed-012's opus label is likely a programmatic-grading artifact ("38k" vs
+"38,000" mismatch) — fix the grader normalization in the next round.
+
+---
+
+# v0 baseline — 2026-06-10
 
 69 prompts (seed corpus) × Haiku 4.5 / Sonnet 4.6 / Opus 4.8, judged by
 position-debiased Opus pairwise judge + programmatic grading where `expected`

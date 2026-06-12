@@ -134,3 +134,34 @@ def test_single_turn_unaffected_by_context_layer():
     rec = recommend(_body("Classify this review as positive or negative: 'great!'"))
     assert rec.recommended_model == "claude-haiku-4-5"
     assert rec.confidence >= 0.8
+
+
+# --- content-difficulty features (calibration v0 -> v0.1) -------------------
+
+INCIDENT = ("09:02 deploy of build 4811. 09:14 p95 latency on /checkout rises to 2.4s. "
+            "09:21 errors hit 11% (pool exhaustion). 09:31 rollback complete but errors persist.")
+
+
+def test_audience_constraint_floors_summarization_at_sonnet():
+    # The seed-027 false downgrade: public-facing rewrite of incident content.
+    rec = recommend(_body(f"Summarize this incident in two sentences for a status page "
+                          f"(no internal details):\n\n{INCIDENT}"))
+    assert rec.recommended_model == "claude-sonnet-4-6"
+    assert rec.confidence >= 0.8  # clears the shipped autopilot gate
+    assert "audience-constrained" in rec.rationale
+
+
+def test_hard_content_reduces_confidence_not_tier():
+    # Postmortem summary of the same material was haiku-fine per the judge:
+    # keep the haiku recommendation but drop below the autopilot gate.
+    rec = recommend(_body(f"Summarize this incident for the postmortem doc:\n\n{INCIDENT}"))
+    assert rec.recommended_model == "claude-haiku-4-5"
+    assert 0.7 <= rec.confidence < 0.8
+    assert "dense operational/legal content" in rec.rationale
+
+
+def test_plain_summarization_unaffected_by_content_features():
+    rec = recommend(_body("TL;DR this support ticket in one sentence: customer was charged "
+                          "twice for the Pro plan and wants a refund."))
+    assert rec.recommended_model == "claude-haiku-4-5"
+    assert rec.confidence >= 0.85

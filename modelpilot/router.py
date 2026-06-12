@@ -44,6 +44,25 @@ _COMPLEX_PATTERNS = {
 
 _CODE_HINT = re.compile(r"```|\bdef |\bclass |\bfunction\b|\bimport |\bSELECT\b.+\bFROM\b|\btraceback\b", re.IGNORECASE)
 
+# Content-difficulty signals (calibration v0, seed-027): the judge found the
+# status-page rewrite of an incident needed sonnet while the postmortem and
+# legal summaries of the SAME material were haiku-fine. The hard part is the
+# audience constraint (public-facing wording under filtering rules), not the
+# content domain — so audience constraints floor the tier, while dense
+# operational/legal content only reduces confidence (below the autopilot
+# gate -> runs baseline; never forces a tier the labels don't support).
+_AUDIENCE_CONSTRAINT = re.compile(
+    r"\b(status page|customer[- ]facing|public[- ]facing|press release|"
+    r"for (customers|the public|the press|investors|executives|leadership|"
+    r"the board)|external (announcement|comms))\b"
+)
+_HARD_CONTENT = re.compile(
+    r"\b(indemnif\w+|liabilit\w+|notwithstanding|pursuant|herein|warrant\w+|"
+    r"aggregate liability|rollback|error rate|p9[59]|deadlock|outage|"
+    r"postmortem|stack trace|root[- ]cause)\b"
+)
+_CONTENT_SENSITIVE = frozenset({"summarization_short", "summarization_long", "rewrite_format"})
+
 # A short prompt that points back at earlier session content rather than
 # carrying its own task ("why?", "expand on that", "now fix it"). Such a
 # prompt inherits the session's difficulty — a cheap model can't answer
@@ -195,9 +214,19 @@ def _classify_standalone(features: dict) -> tuple[str, int, float, str]:
             tier = max(tier, 1)
             confidence -= 0.10
             rationale += "; code present (floor sonnet)"
+        if category in _CONTENT_SENSITIVE:
+            if _AUDIENCE_CONSTRAINT.search(prompt):
+                tier = max(tier, 1)
+                confidence -= 0.05
+                rationale += "; audience-constrained output (floor sonnet)"
+            elif _HARD_CONTENT.search(prompt):
+                confidence -= 0.10
+                rationale += "; dense operational/legal content (confidence reduced)"
         if len(simple_hits) > 1:
             confidence -= 0.05  # mixed signals
-        return category, min(tier, len(CAPABILITY_LADDER) - 1), max(confidence, 0.0), rationale
+        # Penalties accumulate in floating point (0.85 - 0.05 = 0.7999...);
+        # round so confidence compares cleanly against the gate.
+        return category, min(tier, len(CAPABILITY_LADDER) - 1), round(max(confidence, 0.0), 2), rationale
 
     if features["has_tools"] or features["n_turns"] > 12:
         return "agentic", floor_tier("agentic"), 0.6, "tool use / long multi-turn — treating as agentic"
