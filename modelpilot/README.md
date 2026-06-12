@@ -173,9 +173,18 @@ LICENSE, CHANGELOG, CI, issue templates). The publish dry-run also runs in
 this repo's CI (`.github/workflows/modelpilot-ci.yml`) so a broken publish
 is caught on every push.
 
-Iteration loop: develop + calibrate here → `publish_modelpilot.sh` → beta
-repo → customers report via issue templates + `modelpilot share` →
-captured corpora recalibrate the router → republish.
+Iteration loop: develop + calibrate here → publish → beta repo → customers
+report via issue templates + `modelpilot share` → captured corpora
+recalibrate the router → republish.
+
+**Auto-publish:** `.github/workflows/publish-beta.yml` republishes the beta
+repo on every merge to main that touches modelpilot (history-preserving sync;
+tests run against the build before any push). One-time setup in this repo's
+Settings: variable `BETA_REPO` (e.g. `krethikram-sudo/modelpilot`) + secret
+`BETA_PUBLISH_TOKEN` (fine-grained PAT, contents:write on the beta repo).
+Until those exist the workflow no-ops and manual publish works as before.
+Bump `__version__` + CHANGELOG when shipping behavior changes (e.g. router
+retunes) so customers can pin and `pip install --upgrade` meaningfully.
 
 ## Docs in this folder
 

@@ -1,0 +1,42 @@
+name: publish-beta
+
+# Auto-publish the customer beta repo whenever modelpilot changes land on main.
+# No-ops until two things exist in this repo's Settings:
+#   - repository VARIABLE  BETA_REPO          e.g. krethikram-sudo/modelpilot
+#   - repository SECRET    BETA_PUBLISH_TOKEN fine-grained PAT with contents:write
+#                                             on the beta repo
+on:
+  push:
+    branches: [main]
+    paths:
+      - "modelpilot/**"
+      - "scripts/publish_modelpilot.sh"
+      - "scripts/install_modelpilot_gateway.sh"
+      - "launchd/com.modelpilot.gateway.plist.template"
+      - ".github/workflows/publish-beta.yml"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: ${{ vars.BETA_REPO != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r modelpilot/requirements.txt
+
+      # Clone the beta repo's history, empty the worktree (keep .git), then let
+      # the publish script re-assemble from the allowlist — deletions propagate
+      # and history is preserved, so customers' clones pull cleanly.
+      - name: Sync beta repo
+        env:
+          TOKEN: ${{ secrets.BETA_PUBLISH_TOKEN }}
+          BETA_REPO: ${{ vars.BETA_REPO }}
+        run: |
+          git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/${BETA_REPO}.git" /tmp/beta
+          find /tmp/beta -mindepth 1 -maxdepth 1 -not -name .git -exec rm -rf {} +
+          ./scripts/publish_modelpilot.sh /tmp/beta
+          cd /tmp/beta
+          git push origin HEAD:main
