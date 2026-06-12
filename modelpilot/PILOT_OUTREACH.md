@@ -1,5 +1,32 @@
 # ModelPilot — design-partner outreach kit
 
+## ICP (who to pursue, in order)
+
+**Bullseye:** engineering-led product companies (Series A–C), **$5K–$100K/mo
+Claude API spend**, traffic that is mixed-difficulty defaulting to an
+expensive model. Buyer = CTO / founding engineer / platform lead **who sees
+the Anthropic invoice and can change a base_url without a meeting**.
+
+| Priority | Segment | Why it fits |
+|---|---|---|
+| 1 | AI customer-support products/teams (triage, drafting, summarization) | Highest volume, ~70% Haiku-able, quality measurable via CSAT/escalations; calibration shows our best categories |
+| 2 | Document pipelines (legal/insurance/compliance/healthcare ops) | Extract/classify/summarize mix; audit-minded buyers love the proof artifact |
+| 3 | SaaS with embedded Claude assistants | AI gross margin is a board topic; CFO report lands |
+| 4 | Agent platforms / Claude Code-heavy dev shops | High burn but conservative routing — pitch headroom + smaller %, second wave |
+
+**Disqualify fast:** large enterprises (no SOC2/SLA yet), multi-provider
+shoppers (OpenRouter/Martian's customers), <$2K/mo spend,
+latency-hypercritical real-time paths, teams behind another gateway (unless
+via the advisory-API sidecar path).
+
+**Sourcing:** Anthropic "powered by Claude" showcases; job posts mentioning
+the Claude API; Anthropic Discord / Claude dev communities; YC support- and
+doc-AI companies; public complaints about Anthropic bills or rate limits;
+and above all, warm contacts matching the profile — personal trust
+substitutes for the case studies a beta doesn't have yet.
+
+Target profile detail and the ask below.
+
 Target profile: engineering/platform leader at a company with a real Claude
 API bill (≥$2k/mo makes the conversation easy), ideally someone you already
 know. The ask is deliberately tiny: a two-week shadow-mode trial on one
