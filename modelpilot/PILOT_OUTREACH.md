@@ -45,7 +45,7 @@ service. Nothing about their traffic changes; they get a savings report.
 > 2. Once you have access, the two-minute proof (no API key, no spend):
 >
 >    ```
->    git clone git@github.com:YOUR_ORG/modelpilot.git
+>    git clone git@github.com:krethikram-sudo/modelpilot.git
 >    pip install -e modelpilot
 >    modelpilot demo --offline
 >    ```

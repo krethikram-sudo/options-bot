@@ -8,7 +8,7 @@
 #
 # Usage:
 #   ./scripts/publish_modelpilot.sh /tmp/modelpilot-beta
-#   ./scripts/publish_modelpilot.sh /tmp/modelpilot-beta git@github.com:YOUR_ORG/modelpilot.git
+#   ./scripts/publish_modelpilot.sh /tmp/modelpilot-beta git@github.com:krethikram-sudo/modelpilot.git
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -98,10 +98,10 @@ else
     cat <<'EOF'
 
 Next steps:
-  1. Create a PRIVATE repo on GitHub (e.g. github.com/YOUR_ORG/modelpilot)
+  1. Create a PRIVATE repo on GitHub (e.g. github.com/krethikram-sudo/modelpilot)
      — keep it private for the beta; invite customers as collaborators.
   2. Re-run with the remote:
-       ./scripts/publish_modelpilot.sh <dest-dir> git@github.com:YOUR_ORG/modelpilot.git
-  3. Edit the install URL in README.md (YOUR_ORG placeholder), commit, push.
+       ./scripts/publish_modelpilot.sh <dest-dir> git@github.com:krethikram-sudo/modelpilot.git
+  3. Edit the install URL in README.md (krethikram-sudo placeholder), commit, push.
 EOF
 fi

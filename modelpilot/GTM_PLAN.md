@@ -19,7 +19,7 @@ generalized effort.
 ## Phase 0 — launch checklist (this week, ~2 days)
 
 - [ ] Publish the beta repo (`./scripts/publish_modelpilot.sh ~/modelpilot-beta
-      git@github.com:YOUR_ORG/modelpilot.git`), fix YOUR_ORG placeholders,
+      git@github.com:krethikram-sudo/modelpilot.git`), fix krethikram-sudo placeholders,
       enable Pages on it or keep using the live gated page
 - [ ] Run `modelpilot compare --judge` ONCE live with your key on the seed
       corpus → keep the HTML as the demo's proof exhibit

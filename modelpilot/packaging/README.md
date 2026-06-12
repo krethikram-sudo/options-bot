@@ -18,7 +18,7 @@ your app ──► ModelPilot gateway ──► api.anthropic.com
 ## Two-minute proof (no API key, no spend)
 
 ```bash
-pip install "modelpilot @ git+https://github.com/YOUR_ORG/modelpilot.git"
+pip install "modelpilot @ git+https://github.com/krethikram-sudo/modelpilot.git"
 modelpilot demo --offline
 ```
 

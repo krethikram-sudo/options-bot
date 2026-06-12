@@ -162,7 +162,7 @@ internal strategy docs). Customers get a separate, clean repo assembled by:
 
 ```bash
 ./scripts/publish_modelpilot.sh /tmp/modelpilot-beta \
-    git@github.com:YOUR_ORG/modelpilot.git
+    git@github.com:krethikram-sudo/modelpilot.git
 ```
 
 The script copies an explicit **allowlist** (package, tests, extension,
