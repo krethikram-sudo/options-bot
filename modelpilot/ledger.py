@@ -56,6 +56,14 @@ CREATE TABLE IF NOT EXISTS captures (
     confidence REAL NOT NULL,
     prompt TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS replay_calibration (
+    category TEXT NOT NULL,
+    baseline_model TEXT NOT NULL,
+    output_ratio REAL NOT NULL,        -- baseline output tokens / routed output tokens
+    n INTEGER NOT NULL,
+    updated_at REAL NOT NULL,
+    PRIMARY KEY (category, baseline_model)
+);
 """
 
 
@@ -147,6 +155,77 @@ class Ledger:
                 (since_ts,),
             ).fetchall()
         return [dict(r) for r in rows]
+
+    # --- Layer-2 replay calibration (see SAVINGS_DASHBOARD.md §1) ----------
+
+    def replayable_sample(self, since_ts: float = 0.0, limit: int = 50) -> list[dict]:
+        """Switch-recommended requests that have a captured prompt — the only
+        rows replay can use, by design (no prompt text outside opt-in capture)."""
+        with self._lock:
+            rows = self._conn.execute(
+                """SELECT r.id, r.category, r.original_model, r.routed_model,
+                          r.output_tokens, c.prompt
+                   FROM requests r JOIN captures c ON c.request_id = r.id
+                   WHERE r.ts >= ? AND r.action = 'switch' AND r.output_tokens > 0
+                   ORDER BY RANDOM() LIMIT ?""",
+                (since_ts, limit),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def set_replay_coefficient(self, category: str, baseline_model: str,
+                               output_ratio: float, n: int):
+        with self._lock:
+            self._conn.execute(
+                """INSERT INTO replay_calibration (category, baseline_model, output_ratio, n, updated_at)
+                   VALUES (?,?,?,?,?)
+                   ON CONFLICT(category, baseline_model)
+                   DO UPDATE SET output_ratio=excluded.output_ratio, n=excluded.n,
+                                 updated_at=excluded.updated_at""",
+                (category, baseline_model, output_ratio, n, time.time()),
+            )
+            self._conn.commit()
+
+    def replay_coefficients(self) -> list[dict]:
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT category, baseline_model, output_ratio, n, updated_at "
+                "FROM replay_calibration ORDER BY category"
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def corrected_potential(self, since_ts: float = 0.0) -> dict:
+        """Potential savings with the output-length bias corrected: the Layer-1
+        estimate re-prices the ROUTED model's output tokens at baseline rates,
+        but the baseline would have produced ratio× as many output tokens.
+        correction per group = sum(output_tokens) × baseline_out_price × (ratio − 1).
+        """
+        from .pricing import resolve_price
+
+        coefficients = {(c["category"], c["baseline_model"]): c["output_ratio"]
+                        for c in self.replay_coefficients()}
+        with self._lock:
+            rows = self._conn.execute(
+                """SELECT category, original_model,
+                          COALESCE(SUM(output_tokens), 0) out_tokens,
+                          COALESCE(SUM(potential_saved), 0) potential
+                   FROM requests
+                   WHERE ts >= ? AND action = 'switch'
+                   GROUP BY category, original_model""",
+                (since_ts,),
+            ).fetchall()
+        raw = corrected = 0.0
+        covered = set()
+        for r in rows:
+            raw += r["potential"]
+            adjustment = 0.0
+            ratio = coefficients.get((r["category"], r["original_model"]))
+            price = resolve_price(r["original_model"])
+            if ratio is not None and price is not None:
+                adjustment = r["out_tokens"] * (price.output_per_mtok / 1e6) * (ratio - 1)
+                covered.add(r["category"])
+            corrected += r["potential"] + adjustment
+        return {"raw_potential": raw, "corrected_potential": corrected,
+                "covered_categories": sorted(covered)}
 
     def arm_costs(self, since_ts: float = 0.0) -> dict[str, list[float]]:
         """Per-request actual costs by holdout arm (autopilot traffic only)."""

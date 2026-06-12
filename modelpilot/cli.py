@@ -41,9 +41,26 @@ def cmd_gateway(args):
                 log_level="warning")
 
 
-def _delegate(main_fn, rest):
-    sys.argv = ["modelpilot"] + rest
-    main_fn()
+# Subcommands that own their full flag set. Dispatched before argparse:
+# REMAINDER positionals don't reliably capture leading --flags, so a plain
+# `modelpilot demo --offline` would die with "unrecognized arguments".
+_DELEGATED = {
+    "demo": "modelpilot.demo",
+    "report": "modelpilot.report",
+    "compare": "modelpilot.compare",
+    "replay": "modelpilot.replay",
+}
+
+
+def _dispatch_delegated(argv) -> bool:
+    if len(argv) > 1 and argv[1] in _DELEGATED:
+        import importlib
+
+        module = importlib.import_module(_DELEGATED[argv[1]])
+        sys.argv = [f"modelpilot {argv[1]}"] + argv[2:]
+        module.main()
+        return True
+    return False
 
 
 def share_report(db_path: str) -> str:
@@ -79,6 +96,8 @@ def cmd_share(args):
 
 
 def main():
+    if _dispatch_delegated(sys.argv):
+        return
     parser = argparse.ArgumentParser(prog="modelpilot", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--version", action="version", version=f"modelpilot {__version__}")
@@ -95,17 +114,11 @@ def main():
                    help="opt-in prompt-capture sampling for tuning (default 0 = never)")
     g.set_defaults(fn=cmd_gateway)
 
-    d = sub.add_parser("demo", help="self-contained two-minute demo")
-    d.add_argument("rest", nargs=argparse.REMAINDER)
-    d.set_defaults(fn=lambda a: _delegate(__import__("modelpilot.demo", fromlist=["main"]).main, a.rest))
-
-    r = sub.add_parser("report", help="savings report")
-    r.add_argument("rest", nargs=argparse.REMAINDER)
-    r.set_defaults(fn=lambda a: _delegate(__import__("modelpilot.report", fromlist=["main"]).main, a.rest))
-
-    c = sub.add_parser("compare", help="side-by-side proof: routed vs all-baseline")
-    c.add_argument("rest", nargs=argparse.REMAINDER)
-    c.set_defaults(fn=lambda a: _delegate(__import__("modelpilot.compare", fromlist=["main"]).main, a.rest))
+    # Delegated subcommands (handled by _dispatch_delegated; listed for --help)
+    sub.add_parser("demo", help="self-contained two-minute demo")
+    sub.add_parser("report", help="savings report")
+    sub.add_parser("compare", help="side-by-side proof: routed vs all-baseline")
+    sub.add_parser("replay", help="Layer-2 calibration: replay samples on the baseline")
 
     s = sub.add_parser("share", help="redacted diagnostics for feedback")
     s.add_argument("--db", default="modelpilot.db")

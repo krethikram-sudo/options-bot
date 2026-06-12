@@ -149,3 +149,64 @@ def test_declared_baseline_ignores_garbage(monkeypatch, tmp_path):
     # covered indirectly above. Here: unknown model string must not crash pricing.
     from modelpilot.pricing import resolve_price
     assert resolve_price("gpt-5-mega") is None
+
+
+def test_replay_calibration_end_to_end(tmp_path):
+    """Capture -> replay on baseline -> coefficient -> corrected potential."""
+    from modelpilot.pricing import Usage as U
+    from modelpilot.replay import run_replay
+    from modelpilot.router import recommend as rec_fn
+
+    ledger = Ledger(str(tmp_path / "rp.db"))
+    prompt = "Classify this review as positive or negative: 'great product'"
+    rec = rec_fn({"model": "claude-fable-5", "max_tokens": 64,
+                  "messages": [{"role": "user", "content": prompt}]})
+    assert rec.action == "switch"
+
+    # 4 routed-to-haiku requests, each with a captured prompt, 100 output tokens
+    for i in range(4):
+        rid = ledger.record(mode="autopilot", recommendation=rec,
+                            routed_model=rec.recommended_model, applied=True,
+                            status_code=200,
+                            usage=U(input_tokens=1_000, output_tokens=100),
+                            arm="treatment")
+        ledger.record_capture(rid, rec.category, rec.confidence, prompt)
+
+    # Baseline (fable) is twice as verbose: 200 output tokens per replay
+    def fake_run(model, p):
+        assert model == "claude-fable-5"
+        return "(baseline output)", U(input_tokens=1_000, output_tokens=200)
+
+    result = run_replay(ledger, fake_run, progress=lambda *_: None)
+    assert result["sampled"] == 4
+    assert len(result["written"]) == 1
+    coef = result["written"][0]
+    assert coef["output_ratio"] == 2.0 and coef["n"] == 4
+
+    corr = ledger.corrected_potential()
+    # raw potential per row: (1000*10 + 100*50)/1e6 - (1000*1 + 100*5)/1e6 = 0.0135
+    assert abs(corr["raw_potential"] - 4 * 0.0135) < 1e-9
+    # correction per row: 100 tokens * $50/MTok * (2.0 - 1) = 0.005
+    assert abs(corr["corrected_potential"] - 4 * (0.0135 + 0.005)) < 1e-9
+    assert corr["covered_categories"] == ["classification"]
+    ledger.close()
+
+
+def test_replay_requires_captures(tmp_path):
+    """No capture opt-in -> nothing replayable, by design (privacy)."""
+    from modelpilot.pricing import Usage as U
+    from modelpilot.replay import run_replay
+    from modelpilot.router import recommend as rec_fn
+
+    ledger = Ledger(str(tmp_path / "nr.db"))
+    rec = rec_fn({"model": "claude-fable-5", "max_tokens": 64,
+                  "messages": [{"role": "user", "content":
+                                "Classify this as positive or negative: 'ok'"}]})
+    ledger.record(mode="autopilot", recommendation=rec,
+                  routed_model=rec.recommended_model, applied=True,
+                  status_code=200, usage=U(input_tokens=500, output_tokens=50),
+                  arm="treatment")
+    result = run_replay(ledger, lambda m, p: (_ for _ in ()).throw(AssertionError("must not run")),
+                        progress=lambda *_: None)
+    assert result["sampled"] == 0 and result["written"] == []
+    ledger.close()

@@ -53,6 +53,7 @@ A working gateway + router v0 + ledger + report lives here:
 | `taxonomy.py` | Task categories and the category→model-floor policy table |
 | `ledger.py` | SQLite counterfactual ledger (no prompt text stored) |
 | `report.py` | Savings report CLI — Layer-1 estimates, escalation netting, RCT arm comparison with bootstrap CIs |
+| `replay.py` | Layer-2 calibration (`modelpilot replay`): replays captured switch-traffic on the baseline model, stores per-category output-length ratios, report shows replay-calibrated potential |
 | `compare.py` | Side-by-side proof harness: routed vs all-baseline on the same prompts, HTML report with costs + outputs + non-inferiority verdicts (`modelpilot compare`) |
 | `site/` | Static landing page — deployed to GitHub Pages from the published beta repo (`pages.yml`) |
 | `dashboard.py` | Web dashboard at `/modelpilot/dashboard` (+ `/modelpilot/stats` JSON) — headline cards, cumulative savings curve, model-mix migration, RCT panel; server-rendered SVG, zero JS/CDN deps |

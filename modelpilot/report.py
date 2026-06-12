@@ -82,6 +82,12 @@ def render(db_path: str, days: float) -> str:
         ]
     if s["baseline"]:
         lines.append(f"Potential as % of baseline:    {s['potential'] / s['baseline']:.1%}")
+    corr = ledger.corrected_potential(since)
+    if corr["covered_categories"]:
+        lines.append(
+            f"Replay-calibrated potential:   {_fmt_usd(corr['corrected_potential'])} "
+            f"(output-length corrected; {len(corr['covered_categories'])} categories)"
+        )
     lines += _rct_section(ledger, since)
     lines += ["", "By category (top opportunities):", "-" * 60]
     for row in ledger.by_category(since)[:10]:
