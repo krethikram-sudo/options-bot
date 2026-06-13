@@ -1,20 +1,13 @@
 name: publish-beta
 
-# Auto-publish the customer beta repo whenever modelpilot changes land on main.
-# No-ops until two things exist in this repo's Settings:
-#   - repository VARIABLE  BETA_REPO          e.g. krethikram-sudo/modelpilot
-#   - repository SECRET    BETA_PUBLISH_TOKEN fine-grained PAT with contents:write
-#                                             on the beta repo
+# DISABLED after the source-of-truth migration (2026-06-13). The modelpilot repo
+# is now the full development repo, not a generated customer subset, so the old
+# options-bot -> modelpilot auto-publish would CLOBBER it. The push trigger is
+# removed; this is kept manual-only (workflow_dispatch) for reference. Customer
+# publishing will be reconfigured to run FROM the modelpilot repo to a separate
+# customer repo when we onboard the first pilot.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "modelpilot/**"
-      - "scripts/publish_modelpilot.sh"
-      - "scripts/install_modelpilot_gateway.sh"
-      - "launchd/com.modelpilot.gateway.plist.template"
-      - ".github/workflows/publish-beta.yml"
-  workflow_dispatch:  # also: push to main touching the paths above auto-publishes
+  workflow_dispatch:
 
 jobs:
   publish:
