@@ -80,13 +80,13 @@ cp "$SRC"/site/index.html "$WORK/site/"
 cp -R "$SRC"/packaging/.github/ISSUE_TEMPLATE "$WORK/.github/ISSUE_TEMPLATE" 2>/dev/null || \
   { mkdir -p "$WORK/.github"; cp -R "$SRC"/packaging/.github/ISSUE_TEMPLATE "$WORK/.github/"; }
 
-# NOTE: we intentionally do NOT push .github/workflows here. Creating workflow
-# files over git needs a `workflow`-scoped token, which the default Mac OAuth
-# credential lacks. Add CI after the migration from the GitHub web UI (Actions
-# tab -> "Python application" -> commit) — the web path doesn't need that scope.
-# A ready-to-paste ci.yml is dropped at .github/workflows/ci.yml.disabled below.
-mkdir -p "$WORK/.github/workflows"
-cat > "$WORK/.github/workflows/ci.yml.disabled" <<'EOF'
+# NOTE: we deliberately do NOT push anything under .github/workflows/. GitHub
+# rejects creating/updating ANY file there (any extension) unless the pushing
+# token has the `workflow` scope — which neither the default Mac OAuth
+# credential nor the publish PAT has. So we drop a ready-to-use CI config at
+# docs/ci-workflow.yml; activate it after the migration from the GitHub web UI
+# (create .github/workflows/ci.yml and paste it in — the web path needs no scope).
+cat > "$WORK/docs/ci-workflow.yml" <<'EOF'
 name: ci
 on: [push, pull_request]
 jobs:
