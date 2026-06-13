@@ -4,6 +4,17 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.3.0 — 2026-06-13
+
+- **`modelpilot digest`: the proactive proof surface.** A short, buyer-facing
+  savings summary ("Saved $X — Y% of your Claude spend; quality held") that
+  prints, emits JSON, or posts to a Slack incoming webhook
+  (`--slack-webhook` / `MODELPILOT_SLACK_WEBHOOK`). Repositions the value where
+  the buyer lives instead of a dashboard they have to open: the gateway stays
+  invisible infrastructure, and the digest is what renews the contract. Adapts
+  to mode (potential savings in shadow, net realized once routing is live),
+  projects an annualized run-rate, and reports the holdout quality verdict.
+
 ## 0.2.0 — 2026-06-12
 
 - **Router retune (behavior change):** content-difficulty features —

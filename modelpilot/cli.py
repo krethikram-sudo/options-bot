@@ -3,6 +3,7 @@
   modelpilot gateway [--mode shadow|advise|autopilot] [--port 8400] ...
   modelpilot demo [--offline] [...]        # self-contained two-minute demo
   modelpilot report [--days 7] [...]       # savings report in the terminal
+  modelpilot digest [--days 7] [--slack-webhook ...]  # buyer-facing savings digest
   modelpilot share                         # redacted summary for bug reports
 
 The gateway flags map onto the MODELPILOT_* environment variables, so launchd/
@@ -49,6 +50,7 @@ _DELEGATED = {
     "report": "modelpilot.report",
     "compare": "modelpilot.compare",
     "replay": "modelpilot.replay",
+    "digest": "modelpilot.digest",
 }
 
 
@@ -119,6 +121,7 @@ def main():
     sub.add_parser("report", help="savings report")
     sub.add_parser("compare", help="side-by-side proof: routed vs all-baseline")
     sub.add_parser("replay", help="Layer-2 calibration: replay samples on the baseline")
+    sub.add_parser("digest", help="buyer-facing savings digest (print or post to Slack)")
 
     s = sub.add_parser("share", help="redacted diagnostics for feedback")
     s.add_argument("--db", default="modelpilot.db")
