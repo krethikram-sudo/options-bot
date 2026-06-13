@@ -77,6 +77,19 @@ def test_digest_slack_payload_is_text(tmp_path):
     assert "text" in payload and "ModelPilot" in payload["text"]
 
 
+def test_errored_requests_excluded_from_summary(tmp_path):
+    db = str(tmp_path / "e.db")
+    ledger = Ledger(db)
+    rec = recommend(_body(CLASSIFY))
+    ledger.record(mode="autopilot", recommendation=rec, routed_model=rec.recommended_model,
+                  applied=True, status_code=200, usage=Usage(input_tokens=5_000, output_tokens=1_000))
+    ledger.record(mode="autopilot", recommendation=rec, routed_model=rec.recommended_model,
+                  applied=True, status_code=401, usage=Usage())
+    s = ledger.summary()
+    ledger.close()
+    assert s["n"] == 1  # only the successful request counts
+
+
 def test_digest_quality_warming_up_without_holdout(tmp_path):
     db = str(tmp_path / "d.db")
     ledger = Ledger(db)

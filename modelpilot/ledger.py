@@ -281,7 +281,7 @@ class Ledger:
                           COALESCE(SUM(CASE WHEN action='switch' AND confidence >= ? THEN potential_saved ELSE 0 END), 0) gated_potential,
                           COALESCE(SUM(CASE WHEN action='switch' THEN 1 ELSE 0 END), 0) n_switch_recs,
                           COALESCE(SUM(applied), 0) n_applied
-                   FROM requests WHERE ts >= ?""",
+                   FROM requests WHERE ts >= ? AND status_code = 200""",
                 (gate, since_ts),
             ).fetchone()
         return dict(row)
@@ -294,7 +294,7 @@ class Ledger:
                           COALESCE(SUM(baseline_cost), 0) baseline,
                           COALESCE(SUM(CASE WHEN action='switch' THEN potential_saved ELSE 0 END), 0) potential,
                           AVG(confidence) avg_confidence
-                   FROM requests WHERE ts >= ?
+                   FROM requests WHERE ts >= ? AND status_code = 200
                    GROUP BY category ORDER BY potential DESC""",
                 (since_ts,),
             ).fetchall()

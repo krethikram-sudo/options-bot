@@ -4,6 +4,16 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.3.3 — 2026-06-13
+
+- **Failed requests no longer pollute the numbers.** `summary()` and
+  `by_category()` now count only successful (HTTP 200) requests, so upstream
+  errors (e.g. a bad API key returning 401) can't inflate request counts or
+  skew the savings report.
+- `seed_demo_traffic.py`: now models a representative support/document-ops (ICP)
+  workload instead of a hard-heavy worst case, and fails fast with a clear
+  message when `ANTHROPIC_API_KEY` is missing or still the placeholder.
+
 ## 0.3.2 — 2026-06-13
 
 - **Router recall (behavior change):** the classifier was dropping easy

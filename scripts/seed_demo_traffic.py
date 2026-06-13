@@ -26,35 +26,35 @@ import sys
 
 import httpx
 
-# A representative mix: ~half cheap/mechanical (routable to Haiku), some mid
-# (Sonnet), some genuinely hard (stays on the top model). This spread is what
-# makes the savings number honest rather than rosy.
+# A representative *ICP* workload: a support/document-ops pipeline, which is
+# what ModelPilot targets — mostly cheap, routable tasks (triage, extraction,
+# summarization, drafting) with a few genuinely hard ones that correctly stay
+# on the top model. This mirrors where real customer spend is routable, so the
+# number is representative rather than a worst case.
 PROMPTS = [
-    # --- cheap / mechanical: should route down to Haiku ---
-    "Classify the sentiment as positive, negative, or neutral: 'the app keeps crashing but support was kind'.",
-    "Extract the dates from: 'Invoice issued 2024-03-02, due 2024-04-01, paid 2024-03-28.'",
-    "Translate to French: 'Your order has shipped and will arrive Tuesday.'",
-    "What is the boiling point of water at sea level in Celsius?",
-    "Turn these into a numbered list: buy milk, call dentist, submit report.",
-    "What does HTTP status code 404 mean?",
-    "Pull out the email and phone number from: 'Reach me at sam@acme.co or 555-0142.'",
-    "Is this likely spam? 'Congratulations, you won a $1000 gift card, click here now.'",
-    "Summarize in one sentence: 'Q3 revenue rose 12% on enterprise demand, while support costs fell after automation.'",
-    "Translate to Spanish: 'The meeting has been moved to 3pm.'",
-    "Give the past tense of: run, swim, bring, think.",
-    # --- mid: should hold at Sonnet (incl. audience-constrained rewrite) ---
-    "Rewrite this for a customer-facing status page: 'db fell over, oncall paged, fixed in 20m'.",
-    "Write a Python function that returns True if a string is a palindrome.",
-    "Make this more concise and professional: 'hey just wanted to check in and see if maybe you had a sec to look at the thing'.",
-    "Summarize the key decisions from these notes: 'Agreed to ship beta Friday, postpone billing redesign, hire one SRE.'",
+    # --- cheap support/doc tasks: route to Haiku ---
+    "Classify this support ticket's sentiment as positive, negative, or neutral: 'Been waiting 3 days for a reply, getting frustrated.'",
+    "What priority is this ticket — low, medium, or high? 'Production is down for all users.'",
+    "Is this message spam or abuse? 'WIN a FREE iPhone!!! click bit.ly/xyz now'",
+    "Extract the order number and email from: 'Order #A-48217 never arrived, reach me at lee@acme.io.'",
+    "Extract the invoice number, amount, and due date from: 'Invoice INV-2042 for $3,180 is due 2024-05-01.'",
+    "Translate this support reply to Spanish: 'Your refund has been processed and will arrive in 3 to 5 days.'",
+    "Summarize this ticket thread in two sentences: 'Customer cannot log in; reset email not arriving; confirmed correct address; escalated to the auth team.'",
+    "Summarize this release note in one line: 'v4.2 adds SSO, fixes a CSV export crash, and improves dashboard load time by 40%.'",
+    "Reformat these notes as bullet points: follow up with vendor, renew SSL cert, archive Q1 logs.",
+    "Tag the intent of this message (billing, technical, sales, or other): 'Can I upgrade to the annual plan and get a discount?'",
+    "What does an HTTP 429 response from an API mean?",
+    "Make this reply more concise and professional: 'hey so um the thing you asked about is basically done i think, lmk'.",
+    "Extract the action items from these meeting notes: 'Decided to ship beta Friday. Sam to write docs. Priya to set up billing.'",
+    "What language is this written in? 'Bonjour, je voudrais annuler mon abonnement.'",
+    "Classify this review as a bug report, feature request, or praise: 'Would love a dark mode option.'",
+    "Summarize the key point of this policy: 'Refunds are available within 30 days of purchase for unused annual plans.'",
+    # --- mid: should hold at Sonnet ---
+    "Draft a short customer-facing status-page update: API latency was elevated for 25 minutes and is now resolved.",
+    "Write a SQL query to count orders per customer in the last 30 days from an orders(id, customer_id, created_at) table.",
     # --- hard: should stay on the top model ---
-    "Why does this recurse infinitely, and how do you fix it? def f(n): return f(n-1) if n else f(0)",
-    "A bat and a ball cost $1.10 total; the bat costs $1.00 more than the ball. How much is the ball?",
-    "Design a caching strategy for a read-heavy API at 100M requests/day with strict read-after-write consistency.",
-    "Implement a thread-safe LRU cache in Python with O(1) get and put.",
-    "This SQL deadlocks under load; give the likely causes and concrete fixes: UPDATE accounts SET bal=bal-1 WHERE id=?; UPDATE accounts SET bal=bal+1 WHERE id=?;",
-    "Compare event sourcing vs CRUD for an audit-heavy fintech ledger and recommend one with reasoning.",
-    "Prove that the sum of the first n odd numbers equals n squared.",
+    "Design a data-retention and deletion architecture for GDPR across a multi-service system with an audit trail.",
+    "Debug an intermittent race condition: two workers occasionally double-process the same queue job under load. Likely causes and fixes?",
 ]
 
 
@@ -64,6 +64,9 @@ def main():
     baseline = sys.argv[1] if len(sys.argv) > 1 else "claude-opus-4-8"
     if not key:
         sys.exit("Set ANTHROPIC_API_KEY (the gateway forwards it upstream).")
+    if "PASTE" in key or "..." in key or key in ("your-key", "sk-ant-"):
+        sys.exit("ANTHROPIC_API_KEY is still the placeholder — paste your real key "
+                 "(starts with sk-ant-) and re-run.")
     if "127.0.0.1" not in base and "localhost" not in base:
         print(f"WARNING: ANTHROPIC_BASE_URL={base} is not the local gateway — "
               "traffic won't be measured.")
