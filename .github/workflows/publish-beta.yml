@@ -14,7 +14,7 @@ on:
       - "scripts/install_modelpilot_gateway.sh"
       - "launchd/com.modelpilot.gateway.plist.template"
       - ".github/workflows/publish-beta.yml"
-  workflow_dispatch:
+  workflow_dispatch:  # also: push to main touching the paths above auto-publishes
 
 jobs:
   publish:
