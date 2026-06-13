@@ -50,10 +50,15 @@ chmod +x "$DEST/scripts/install_modelpilot_gateway.sh"
 # --- customer docs ---
 cp "$SRC/CHAT_TEST_PROMPTS.md" "$DEST/docs/TESTING.md"
 
-# --- repo root: packaging (README, pyproject, LICENSE, CHANGELOG, CI) ---
+# --- repo root: packaging (README, pyproject, LICENSE, CHANGELOG) ---
 cp "$SRC/packaging/README.md" "$SRC/packaging/pyproject.toml" \
    "$SRC/packaging/LICENSE" "$SRC/packaging/CHANGELOG.md" "$DEST/"
-cp -R "$SRC/packaging/.github" "$DEST/.github"
+# Ship issue templates (customer feedback channel) but NOT .github/workflows:
+# pushing workflow files needs a `workflow`-scoped token, and they add nothing
+# to the beta — Pages can't run on a private repo, and the build is already
+# tested in-place above before it's committed, so customer-side CI is redundant.
+mkdir -p "$DEST/.github"
+cp -R "$SRC/packaging/.github/ISSUE_TEMPLATE" "$DEST/.github/"
 
 cat > "$DEST/.gitignore" <<'EOF'
 __pycache__/
