@@ -80,9 +80,13 @@ cp "$SRC"/site/index.html "$WORK/site/"
 cp -R "$SRC"/packaging/.github/ISSUE_TEMPLATE "$WORK/.github/ISSUE_TEMPLATE" 2>/dev/null || \
   { mkdir -p "$WORK/.github"; cp -R "$SRC"/packaging/.github/ISSUE_TEMPLATE "$WORK/.github/"; }
 
-# --- dev CI: install + test on every push (kept simple so it stays green) ---
+# NOTE: we intentionally do NOT push .github/workflows here. Creating workflow
+# files over git needs a `workflow`-scoped token, which the default Mac OAuth
+# credential lacks. Add CI after the migration from the GitHub web UI (Actions
+# tab -> "Python application" -> commit) — the web path doesn't need that scope.
+# A ready-to-paste ci.yml is dropped at .github/workflows/ci.yml.disabled below.
 mkdir -p "$WORK/.github/workflows"
-cat > "$WORK/.github/workflows/ci.yml" <<'EOF'
+cat > "$WORK/.github/workflows/ci.yml.disabled" <<'EOF'
 name: ci
 on: [push, pull_request]
 jobs:
