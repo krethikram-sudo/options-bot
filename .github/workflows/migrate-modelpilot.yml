@@ -1,0 +1,29 @@
+name: migrate-modelpilot
+
+# One-shot: promote the full ModelPilot source of truth from this monorepo into
+# the standalone modelpilot repo. Runs scripts/migrate_to_modelpilot.sh on a
+# runner using BETA_PUBLISH_TOKEN (Contents:write on the modelpilot repo).
+# Trigger by pushing a change to the MIGRATE_NOW sentinel file on main.
+on:
+  push:
+    branches: [main]
+    paths: ["MIGRATE_NOW"]
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    if: ${{ vars.BETA_REPO != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Promote source of truth to modelpilot
+        env:
+          TOKEN: ${{ secrets.BETA_PUBLISH_TOKEN }}
+          BETA_REPO: ${{ vars.BETA_REPO }}
+        run: |
+          CLEAN_TOKEN="$(printf '%s' "$TOKEN" | tr -d '[:space:]')"
+          REMOTE="https://x-access-token:${CLEAN_TOKEN}@github.com/${BETA_REPO}.git"
+          ./scripts/migrate_to_modelpilot.sh "$REMOTE"
