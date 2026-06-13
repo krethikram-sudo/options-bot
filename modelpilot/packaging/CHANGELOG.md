@@ -4,6 +4,16 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.3.1 — 2026-06-13
+
+- **Fix: `modelpilot gateway` now respects `MODELPILOT_*` env vars.** The CLI
+  built its config from argparse defaults and `os.environ.update(...)`, which
+  silently clobbered any env var the operator had set (e.g. `MODELPILOT_DB`,
+  `MODELPILOT_UPSTREAM`) when the matching flag wasn't passed — so launchd/
+  systemd deployments and `export MODELPILOT_DB=...` were ignored, sending the
+  ledger to the wrong file. Flag defaults now fall back to the env var:
+  explicit flag > env var > built-in default. Adds `MODELPILOT_PORT`.
+
 ## 0.3.0 — 2026-06-13
 
 - **`modelpilot digest`: the proactive proof surface.** A short, buyer-facing

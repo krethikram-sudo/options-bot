@@ -97,22 +97,27 @@ def cmd_share(args):
           "description of the prompt (not the prompt itself) for routing misses.")
 
 
-def main():
-    if _dispatch_delegated(sys.argv):
-        return
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="modelpilot", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--version", action="version", version=f"modelpilot {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
     g = sub.add_parser("gateway", help="run the routing gateway")
-    g.add_argument("--mode", default="shadow", choices=["shadow", "advise", "autopilot"])
-    g.add_argument("--port", type=int, default=8400)
-    g.add_argument("--db", default="modelpilot.db")
-    g.add_argument("--upstream", default="https://api.anthropic.com")
-    g.add_argument("--confidence", type=float, default=0.8, help="autopilot gate")
-    g.add_argument("--holdout", type=float, default=0.10, help="RCT control fraction")
-    g.add_argument("--capture", type=float, default=0.0,
+    # Defaults fall back to the MODELPILOT_* env vars so an explicit flag
+    # overrides env, env overrides the built-in default, and a flag we then
+    # re-export in _gateway_env never clobbers an env var the user already set.
+    g.add_argument("--mode", default=os.environ.get("MODELPILOT_MODE", "shadow"),
+                   choices=["shadow", "advise", "autopilot"])
+    g.add_argument("--port", type=int, default=int(os.environ.get("MODELPILOT_PORT", "8400")))
+    g.add_argument("--db", default=os.environ.get("MODELPILOT_DB", "modelpilot.db"))
+    g.add_argument("--upstream", default=os.environ.get("MODELPILOT_UPSTREAM", "https://api.anthropic.com"))
+    g.add_argument("--confidence", type=float,
+                   default=float(os.environ.get("MODELPILOT_CONFIDENCE", "0.8")), help="autopilot gate")
+    g.add_argument("--holdout", type=float,
+                   default=float(os.environ.get("MODELPILOT_HOLDOUT_PCT", "0.10")), help="RCT control fraction")
+    g.add_argument("--capture", type=float,
+                   default=float(os.environ.get("MODELPILOT_CAPTURE_PCT", "0.0")),
                    help="opt-in prompt-capture sampling for tuning (default 0 = never)")
     g.set_defaults(fn=cmd_gateway)
 
@@ -124,10 +129,15 @@ def main():
     sub.add_parser("digest", help="buyer-facing savings digest (print or post to Slack)")
 
     s = sub.add_parser("share", help="redacted diagnostics for feedback")
-    s.add_argument("--db", default="modelpilot.db")
+    s.add_argument("--db", default=os.environ.get("MODELPILOT_DB", "modelpilot.db"))
     s.set_defaults(fn=cmd_share)
+    return parser
 
-    args = parser.parse_args()
+
+def main():
+    if _dispatch_delegated(sys.argv):
+        return
+    args = build_parser().parse_args()
     args.fn(args)
 
 
