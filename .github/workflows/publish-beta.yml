@@ -35,22 +35,21 @@ jobs:
           TOKEN: ${{ secrets.BETA_PUBLISH_TOKEN }}
           BETA_REPO: ${{ vars.BETA_REPO }}
         run: |
-          # Pass credentials via an Authorization header, not inline in the URL:
-          # a PAT inlined as userinfo trips curl's "Malformed input to a URL
-          # function" on tokens with reserved characters or a stray newline.
+          # Strip any whitespace/newline the PAT may have picked up when it was
+          # pasted into the secret — a stray newline is what produced curl's
+          # "Malformed input to a URL function". A clean PAT (only [A-Za-z0-9_])
+          # is URL-safe, so embedding it as userinfo authenticates clone + push.
           CLEAN_TOKEN="$(printf '%s' "$TOKEN" | tr -d '[:space:]')"
-          AUTH="$(printf 'x-access-token:%s' "$CLEAN_TOKEN" | base64 | tr -d '\n')"
-          git() { command git -c http.extraheader="Authorization: Basic ${AUTH}" "$@"; }
-          REMOTE="https://github.com/${BETA_REPO}.git"
+          REMOTE="https://x-access-token:${CLEAN_TOKEN}@github.com/${BETA_REPO}.git"
 
           # The beta repo may be empty (just created, no commits). Clone if it has
           # history; otherwise init a fresh worktree pointed at the remote.
-          if git clone --depth 1 "$REMOTE" /tmp/beta 2>/dev/null && [ -e /tmp/beta/.git ]; then
+          if git clone --depth 1 "$REMOTE" /tmp/beta 2>/dev/null && [ -d /tmp/beta/.git ]; then
             find /tmp/beta -mindepth 1 -maxdepth 1 -not -name .git -exec rm -rf {} +
           else
             rm -rf /tmp/beta
-            command git init -b main /tmp/beta
-            command git -C /tmp/beta remote add origin "$REMOTE"
+            git init -b main /tmp/beta
+            git -C /tmp/beta remote add origin "$REMOTE"
           fi
 
           ./scripts/publish_modelpilot.sh /tmp/beta
