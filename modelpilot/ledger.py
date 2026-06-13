@@ -265,7 +265,10 @@ class Ledger:
             ).fetchone()
         return dict(row)
 
-    def summary(self, since_ts: float = 0.0) -> dict:
+    def summary(self, since_ts: float = 0.0, gate: float = 0.0) -> dict:
+        """`gated_potential` counts only switches whose confidence clears `gate`
+        — i.e. what autopilot would actually apply at that gate. With the default
+        gate=0 it equals `potential` (every recommendation)."""
         with self._lock:
             row = self._conn.execute(
                 """SELECT COUNT(*) n,
@@ -275,10 +278,11 @@ class Ledger:
                           COALESCE(SUM(baseline_cost), 0) baseline,
                           COALESCE(SUM(realized_saved), 0) realized,
                           COALESCE(SUM(CASE WHEN action='switch' THEN potential_saved ELSE 0 END), 0) potential,
+                          COALESCE(SUM(CASE WHEN action='switch' AND confidence >= ? THEN potential_saved ELSE 0 END), 0) gated_potential,
                           COALESCE(SUM(CASE WHEN action='switch' THEN 1 ELSE 0 END), 0) n_switch_recs,
                           COALESCE(SUM(applied), 0) n_applied
                    FROM requests WHERE ts >= ?""",
-                (since_ts,),
+                (gate, since_ts),
             ).fetchone()
         return dict(row)
 

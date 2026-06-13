@@ -26,10 +26,17 @@ CHARS_PER_TOKEN = 4  # coarse pre-flight estimate; exact counts come from the re
 # Phrases that mark a request as simple enough for the floor tier. Matched on
 # the final user message, lowercased.
 _SIMPLE_PATTERNS = {
-    "classification": r"\b(classif(y|ied)|categori[sz]e|label|sentiment|spam or not|which of the following|yes or no|true or false|intent)\b",
+    "classification": r"\b(classif(y|ied)|categori[sz]e|label|sentiment|spam|which of the following|yes or no|true or false|intent)\b",
     "extraction": r"\b(extract|pull out|parse out|list (all|the) (names|dates|emails|entities|fields)|into json|as json|csv of)\b",
     "translation": r"\b(translate|translation|in (french|spanish|german|japanese|chinese|korean|italian|portuguese|hindi))\b",
-    "rewrite_format": r"\b(rephrase|reword|rewrite this|fix (the )?grammar|proofread|reformat|convert (this|to)|bullet points|title case)\b",
+    "rewrite_format": (
+        r"\b(rephrase|reword|rewrite this|fix (the )?grammar|proofread|reformat|"
+        r"convert (this|to)|bullet points?|bulleted list|numbered list|"
+        r"(turn|format) (this|these|it) (in)?to|(as|into) an? .{0,12}list|title case|"
+        r"make (this|it)\b.{0,30}\b(concise|professional|formal|polished|clearer|shorter|simpler)|"
+        r"more concise|tighten (this|it|up)|past tense|present tense|plural of|"
+        r"conjugat\w*|opposite of|synonyms?|antonyms?)\b"
+    ),
     "summarization_short": r"\b(summari[sz]e|tl;?dr|key points|main takeaways)\b",
     "short_qa": r"^(what|who|when|where|which|how (many|much|long|old))\b",
 }

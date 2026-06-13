@@ -22,11 +22,30 @@ def test_digest_shadow_reports_potential(tmp_path):
 
     d = build_digest(db, days=7)
     assert d["routing_live"] is False
-    assert d["headline_saved"] == d["potential"] > 0
+    # classification is high-confidence (0.85 >= 0.8 gate), so the gated headline
+    # equals the raw potential here.
+    assert d["headline_saved"] == d["gated_potential"] == d["potential"] > 0
     assert d["requests"] == 3
     md = render_markdown(d)
     assert "Could have saved" in md
     assert d["top_categories"][0]["category"] == rec.category
+
+
+def test_digest_gated_potential_excludes_low_confidence(tmp_path):
+    db = str(tmp_path / "d.db")
+    ledger = Ledger(db)
+    usage = Usage(input_tokens=10_000, output_tokens=2_000)
+    rec = recommend(_body("Help me plan my week."))  # conversation, low confidence
+    assert rec.action == "switch" and rec.confidence < 0.8
+    for _ in range(3):
+        ledger.record(mode="shadow", recommendation=rec, routed_model=rec.original_model,
+                      applied=False, status_code=200, usage=usage)
+    ledger.close()
+
+    d = build_digest(db, days=7)  # default gate 0.8
+    assert d["potential"] > 0            # raw recommendations exist
+    assert d["gated_potential"] == 0     # but none clear the gate
+    assert d["headline_saved"] == 0      # so shadow doesn't oversell
 
 
 def test_digest_autopilot_reports_net_realized(tmp_path):

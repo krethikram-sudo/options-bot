@@ -4,6 +4,21 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.3.2 — 2026-06-13
+
+- **Router recall (behavior change):** the classifier was dropping easy
+  mechanical tasks into the low-confidence `conversation` catch-all, so the
+  autopilot gate withheld them and the savings were lost. `rewrite_format` now
+  catches list-reformatting ("turn these into a numbered list"), concision/tone
+  rewrites ("make this more concise/professional"), and simple linguistic
+  transforms (past tense, plural, synonym/antonym); `classification` catches
+  bare "spam". Measured on the golden set: false-downgrade stays 0.0% at every
+  gate ≥0.60.
+- **Honest shadow numbers:** the digest headline now uses *gated* potential —
+  only switches that clear the confidence gate, i.e. what autopilot would
+  actually apply — so shadow no longer oversells versus autopilot. `summary()`
+  gains a `gate` parameter and a `gated_potential` field.
+
 ## 0.3.1 — 2026-06-13
 
 - **Fix: `modelpilot gateway` now respects `MODELPILOT_*` env vars.** The CLI

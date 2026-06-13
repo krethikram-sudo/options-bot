@@ -26,10 +26,14 @@ def _usd(x: float) -> str:
 
 def build_digest(db_path: str, days: float = 7.0) -> dict:
     """Compute the buyer-facing headline numbers for a reporting window."""
+    # The confidence gate autopilot would use: shadow's headline must reflect
+    # what autopilot will *actually* apply at that gate, not every recommendation
+    # (otherwise shadow oversells and autopilot disappoints).
+    gate = float(os.environ.get("MODELPILOT_CONFIDENCE", "0.8"))
     ledger = Ledger(db_path)
     try:
         since = time.time() - days * 86_400 if days else 0.0
-        s = ledger.summary(since)
+        s = ledger.summary(since, gate=gate)
         esc = ledger.escalation_costs(since)
         cats = ledger.by_category(since)
         arms = ledger.arm_costs(since)
@@ -38,10 +42,11 @@ def build_digest(db_path: str, days: float = 7.0) -> dict:
         ledger.close()
 
     # Routing is "live" once anything has actually been auto-routed; before that
-    # (shadow mode) the honest headline is potential, not realized, savings.
+    # (shadow mode) the honest headline is the GATED potential — only switches
+    # confident enough to clear the autopilot gate.
     routing_live = bool(s["n_applied"]) or s["realized"] > 0
     net_realized = s["realized"] - esc["cost"]
-    headline = net_realized if routing_live else s["potential"]
+    headline = net_realized if routing_live else s["gated_potential"]
     pct_baseline = (headline / s["baseline"]) if s["baseline"] else 0.0
     annualized = (headline / days * 365.0) if days else 0.0
 
@@ -73,6 +78,8 @@ def build_digest(db_path: str, days: float = 7.0) -> dict:
         "headline_saved": headline,
         "net_realized": net_realized,
         "potential": s["potential"],
+        "gated_potential": s["gated_potential"],
+        "gate": gate,
         "escalations": esc["n"],
         "pct_of_baseline": pct_baseline,
         "annualized": annualized,
@@ -115,7 +122,8 @@ def render_markdown(d: dict) -> str:
         (f"- {d['applied']:,} requests auto-routed"
          + (f", {d['escalations']} escalations charged back" if d["escalations"] else ""))
         if d["routing_live"]
-        else f"- {d['switch_recs']:,} requests are safe to route (shadow mode — nothing changed yet)",
+        else (f"- {d['switch_recs']:,} switch recommendations; headline counts only those "
+              f"above the {d['gate']:.2f} confidence gate (what autopilot would actually apply)"),
         f"- {_quality_line(d)}",
         "",
         "**Where the savings are:**",
