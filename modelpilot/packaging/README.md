@@ -19,8 +19,12 @@ your app ──► ModelPilot gateway ──► api.anthropic.com
 
 ModelPilot optimizes **pay-as-you-go Anthropic API** traffic. You need an
 **Anthropic API key with billing enabled** ([console.anthropic.com](https://console.anthropic.com))
-and an app/service that calls the Claude API. A Claude.ai or Claude Code
-*subscription* can't be optimized — it's flat-rate, not per-token. Python 3.10+.
+and an app/service that calls the Claude API. **Use your real key from the start** —
+you begin in **guidance mode**, which uses your key but changes nothing about your
+traffic (zero risk), then switch to autopilot once the dashboard convinces you.
+A Claude.ai or Claude Code *subscription* can't be optimized — it's flat-rate, not
+per-token. Python 3.10+. *(No key handy? `modelpilot demo --offline` previews routing
+on synthetic data.)*
 
 ## Two-minute proof (no API key, no spend)
 

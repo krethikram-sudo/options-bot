@@ -201,11 +201,15 @@ routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
       <section id="quickstart"><div class="wrap">
         <h2>How to use it — start to finish</h2>
         <p class="note" style="border-color:#f0d9a8;background:#fffdf5">
-          <b>Before you start:</b> ModelPilot optimizes <b>pay-as-you-go Anthropic API</b>
-          traffic, so you'll need an <b>Anthropic API key with billing enabled</b> (from
-          <a href="https://console.anthropic.com">console.anthropic.com</a>) and an app or
-          service that calls the Claude API. A Claude.ai/Claude Code <em>subscription</em>
-          can't be optimized — it's flat-rate, not per-token. Python 3.10+ required.</p>
+          <b>What you need:</b> a <b>billable Anthropic API key</b>
+          (<a href="https://console.anthropic.com">console.anthropic.com</a>) and an
+          app or service that calls the Claude API. <b>Use your real key from the
+          start</b> — you begin in <b>guidance mode</b>, which uses your key but
+          <em>changes nothing</em> about your traffic (zero risk), then switch to
+          autopilot once the dashboard convinces you. A Claude.ai / Claude Code
+          <em>subscription</em> can't be optimized (it's flat-rate, not per-token).
+          Python 3.10+. <span class="muted">(Want a no-key peek first?
+          <code>modelpilot demo --offline</code> shows routing on synthetic data.)</span></p>
         <ol class="steps">
           <li><b>Get access.</b> Reply to your invite with your GitHub username; we
             add you to the private repo and you'll get an email from GitHub.</li>
@@ -213,13 +217,16 @@ routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
           <li><b>Install</b> (Python 3.10+):
             <pre class="block">pip install "modelpilot @ git+https://github.com/krethikram-sudo/modelpilot.git"</pre></li>
 
-          <li><b>See it route — no API key, no spend:</b>
+          <li><b>(Optional) Kick the tires with no key:</b>
             <pre class="block">modelpilot demo --offline</pre></li>
 
-          <li><b>Start the gateway in guidance mode</b> — it measures and recommends,
-            but changes nothing. Turn on prompt capture so you can generate the proof
-            in step 7:
-            <pre class="block">MODELPILOT_CAPTURE_PCT=1.0 modelpilot gateway --mode guidance --port 8400</pre></li>
+          <li><b>Set your Anthropic API key</b>, then <b>start the gateway in guidance
+            mode</b> — it measures and recommends but changes nothing. Turn on prompt
+            capture so you can generate the proof in step 7:
+            <pre class="block">export ANTHROPIC_API_KEY=sk-ant-...
+MODELPILOT_CAPTURE_PCT=1.0 modelpilot gateway --mode guidance --port 8400</pre>
+            <span class="muted">Tip: the key lives in your app (step 5); the gateway just
+            forwards it. Setting it here is only needed for the chat playground / demo.</span></li>
 
           <li><b>Point one app at the gateway</b> — a one-line base-URL change. Your
             API key stays in your app, passes through, and is never stored:
