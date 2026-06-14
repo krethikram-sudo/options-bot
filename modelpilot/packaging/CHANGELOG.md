@@ -4,6 +4,23 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.5.2 — 2026-06-14
+
+Beta-tester feedback fixes:
+
+- **Savings % no longer diluted by the guidance period.** Once autopilot is live,
+  the dashboard panel and digest measure realized savings against the
+  *autopilot-era* baseline (via `summary(mode="autopilot")`), so the headline
+  doesn't appear to drop after switching from guidance. `summary()` gains a
+  `mode` filter.
+- **Digest all-time wording:** `--days 0` now reads "all time" instead of
+  "0 days".
+- **Demo table clarity:** columns relabeled `task (seed)` and `classified as`
+  (they show the seed label vs the live classification — previously looked like
+  misrouting).
+- **Prerequisites up front** on the landing page and README: a billable
+  Anthropic API key is required; subscriptions can't be optimized.
+
 ## 0.5.1 — 2026-06-14
 
 - **"Savings rate over time" chart** on the dashboard — daily savings as % of

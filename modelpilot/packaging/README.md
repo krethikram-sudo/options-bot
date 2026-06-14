@@ -15,6 +15,13 @@ your app ──► ModelPilot gateway ──► api.anthropic.com
                   └── every request           → savings ledger + live dashboard
 ```
 
+## Prerequisites
+
+ModelPilot optimizes **pay-as-you-go Anthropic API** traffic. You need an
+**Anthropic API key with billing enabled** ([console.anthropic.com](https://console.anthropic.com))
+and an app/service that calls the Claude API. A Claude.ai or Claude Code
+*subscription* can't be optimized — it's flat-rate, not per-token. Python 3.10+.
+
 ## Two-minute proof (no API key, no spend)
 
 ```bash

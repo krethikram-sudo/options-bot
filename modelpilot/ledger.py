@@ -278,13 +278,17 @@ class Ledger:
             ).fetchone()
         return dict(row)
 
-    def summary(self, since_ts: float = 0.0, gate: float = 0.0) -> dict:
+    def summary(self, since_ts: float = 0.0, gate: float = 0.0, mode: str | None = None) -> dict:
         """`gated_potential` counts only switches whose confidence clears `gate`
         — i.e. what autopilot would actually apply at that gate. With the default
-        gate=0 it equals `potential` (every recommendation)."""
+        gate=0 it equals `potential` (every recommendation). Pass `mode` to scope
+        to one mode (e.g. 'autopilot') so realized savings aren't diluted by the
+        guidance/shadow period that never routed."""
+        mode_clause = " AND mode = ?" if mode else ""
+        params = (gate, since_ts) + ((mode,) if mode else ())
         with self._lock:
             row = self._conn.execute(
-                """SELECT COUNT(*) n,
+                f"""SELECT COUNT(*) n,
                           COALESCE(SUM(input_tokens + cache_read_tokens + cache_write_tokens), 0) tok_in,
                           COALESCE(SUM(output_tokens), 0) tok_out,
                           COALESCE(SUM(actual_cost), 0) actual,
@@ -294,8 +298,8 @@ class Ledger:
                           COALESCE(SUM(CASE WHEN action='switch' AND confidence >= ? THEN potential_saved ELSE 0 END), 0) gated_potential,
                           COALESCE(SUM(CASE WHEN action='switch' THEN 1 ELSE 0 END), 0) n_switch_recs,
                           COALESCE(SUM(applied), 0) n_applied
-                   FROM requests WHERE ts >= ? AND status_code = 200""",
-                (gate, since_ts),
+                   FROM requests WHERE ts >= ? AND status_code = 200{mode_clause}""",
+                params,
             ).fetchone()
         return dict(row)
 

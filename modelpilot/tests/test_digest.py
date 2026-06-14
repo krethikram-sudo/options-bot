@@ -77,6 +77,39 @@ def test_digest_slack_payload_is_text(tmp_path):
     assert "text" in payload and "ModelPilot" in payload["text"]
 
 
+def test_digest_pct_uses_autopilot_baseline_not_diluted(tmp_path):
+    db = str(tmp_path / "d.db")
+    ledger = Ledger(db)
+    rec = recommend(_body(CLASSIFY))
+    big = Usage(input_tokens=100_000, output_tokens=20_000)
+    # A long prior GUIDANCE period that never routed (big baseline, no savings)...
+    for _ in range(10):
+        ledger.record(mode="advise", recommendation=rec, routed_model=rec.original_model,
+                      applied=False, status_code=200, usage=big)
+    # ...then autopilot actually routing a few.
+    for _ in range(4):
+        ledger.record(mode="autopilot", recommendation=rec, routed_model=rec.recommended_model,
+                      applied=True, status_code=200, usage=Usage(input_tokens=10_000, output_tokens=2_000))
+    ledger.close()
+
+    d = build_digest(db, days=7)
+    assert d["routing_live"] is True
+    # % is measured against autopilot-era baseline, so the huge guidance period
+    # doesn't crush it toward zero.
+    assert d["pct_of_baseline"] > 0.5
+
+
+def test_digest_all_time_window_phrase(tmp_path):
+    db = str(tmp_path / "d.db")
+    ledger = Ledger(db)
+    ledger.record(mode="shadow", recommendation=recommend(_body(CLASSIFY)),
+                  routed_model="claude-opus-4-8", applied=False, status_code=200,
+                  usage=Usage(input_tokens=5_000, output_tokens=1_000))
+    ledger.close()
+    md = render_markdown(build_digest(db, days=0))
+    assert "all time" in md and "0 day" not in md
+
+
 def test_errored_requests_excluded_from_summary(tmp_path):
     db = str(tmp_path / "e.db")
     ledger = Ledger(db)

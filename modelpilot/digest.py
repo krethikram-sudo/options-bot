@@ -34,6 +34,7 @@ def build_digest(db_path: str, days: float = 7.0) -> dict:
     try:
         since = time.time() - days * 86_400 if days else 0.0
         s = ledger.summary(since, gate=gate)
+        ap = ledger.summary(since, gate=gate, mode="autopilot")
         esc = ledger.escalation_costs(since)
         cats = ledger.by_category(since)
         arms = ledger.arm_costs(since)
@@ -47,7 +48,11 @@ def build_digest(db_path: str, days: float = 7.0) -> dict:
     routing_live = bool(s["n_applied"]) or s["realized"] > 0
     net_realized = s["realized"] - esc["cost"]
     headline = net_realized if routing_live else s["gated_potential"]
-    pct_baseline = (headline / s["baseline"]) if s["baseline"] else 0.0
+    # When routing is live, measure realized % against the AUTOPILOT-era baseline
+    # only — a prior guidance period would otherwise dilute it and make savings
+    # look like they dropped after enabling autopilot.
+    pct_denom = ap["baseline"] if (routing_live and ap["baseline"]) else s["baseline"]
+    pct_baseline = (headline / pct_denom) if pct_denom else 0.0
     annualized = (headline / days * 365.0) if days else 0.0
 
     # Quality verdict from the randomized holdout, if it has enough data.
@@ -88,11 +93,17 @@ def build_digest(db_path: str, days: float = 7.0) -> dict:
     }
 
 
+def _window_phrase(days: float) -> str:
+    if not days:
+        return "all time"
+    return f"the last {days:g} day" + ("" if days == 1 else "s")
+
+
 def _headline_line(d: dict) -> str:
     verb = "Saved" if d["routing_live"] else "Could have saved"
     return (f"{verb} {_usd(d['headline_saved'])} "
             f"({d['pct_of_baseline']:.0%} of your Claude spend) "
-            f"in the last {d['days']:g} days")
+            f"over {_window_phrase(d['days'])}")
 
 
 def _quality_line(d: dict) -> str:
@@ -110,8 +121,9 @@ def _quality_line(d: dict) -> str:
 
 def render_markdown(d: dict) -> str:
     """Human/email-friendly digest."""
+    window = "all-time" if not d["days"] else f"{d['days']:g}-day"
     lines = [
-        f"# ModelPilot — your Claude savings ({d['days']:g}-day digest)",
+        f"# ModelPilot — your Claude savings ({window} digest)",
         "",
         f"**{_headline_line(d)}.**",
         "",

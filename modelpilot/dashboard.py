@@ -41,6 +41,7 @@ def collect_stats(ledger, days: float = 30.0, session: str = "") -> dict:
         "mode": mode,
         "display_mode": display_mode,
         "summary": ledger.summary(since, gate=gate),
+        "autopilot_summary": ledger.summary(since, gate=gate, mode="autopilot"),
         "by_category": ledger.by_category(since),
         "daily": ledger.daily_series(since),
         "daily_mix": ledger.daily_model_mix(since),
@@ -305,11 +306,15 @@ def _conversion_panel(stats: dict) -> str:
 
     if mode == "autopilot":
         net = s["realized"] - stats["escalations"]["cost"]
-        rpct = (net / s["baseline"]) if s["baseline"] else 0.0
+        # % of the AUTOPILOT-era baseline, so a prior guidance period doesn't
+        # dilute it (and make savings look like they fell after the switch).
+        ap = stats.get("autopilot_summary") or s
+        denom = ap["baseline"] or s["baseline"]
+        rpct = (net / denom) if denom else 0.0
         return f"""<div class="now" style="border-color:#bfe5cc">
   <div class="nowhead">AUTOPILOT — CAPTURING SAVINGS</div>
   <div style="font-size:1.5rem;font-weight:700;color:#2e9e5b">{_usd(net)} saved
-    <span style="font-size:0.9rem;font-weight:500;color:#6b7080">({rpct:.0%} of spend, this {("day" if days==1 else f"{days:g}d")})</span></div>
+    <span style="font-size:0.9rem;font-weight:500;color:#6b7080">({rpct:.0%} of routed spend, this {("day" if days==1 else f"{days:g}d")})</span></div>
   <p class="muted" style="margin:6px 0 0">{verdict}.</p>
   {learned_note}
 </div>"""

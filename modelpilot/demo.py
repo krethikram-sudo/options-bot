@@ -115,7 +115,7 @@ def start_gateway(port: int, mode: str, db: str, upstream: str,
 def run_workload(port: int, api_key: str, prompts: list[dict], max_tokens: int):
     base = f"http://127.0.0.1:{port}"
     client = httpx.Client(timeout=120.0)
-    print(f"\n{'#':>3} {'category':<22} {'decision':<9} {'ran on':<20} {'conf':>5}  rationale")
+    print(f"\n{'#':>3} {'task (seed)':<22} {'decision':<9} {'ran on':<20} {'conf':>5}  classified as")
     print("-" * 100)
     for i, row in enumerate(prompts, 1):
         request = dict(
