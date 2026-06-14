@@ -21,6 +21,7 @@ This module depends only on the publishable commodity modules (router_classify,
 brain_client) plus fastapi/httpx/uvicorn — nothing IP-bearing.
 """
 
+import json
 import os
 
 import httpx
@@ -45,6 +46,45 @@ CACHE_ON = os.environ.get("MODELPILOT_CACHE", "") in ("1", "true", "yes", "on")
 CACHE = _cache.ResponseCache(
     ttl=float(os.environ.get("MODELPILOT_CACHE_TTL", str(_cache.DEFAULT_TTL))),
     maxsize=int(os.environ.get("MODELPILOT_CACHE_MAX", str(_cache.DEFAULT_MAX))))
+# Semantic cache (opt-in): near-duplicate requests hit too. Needs an embeddings
+# endpoint you choose (OpenAI-compatible); cached responses stay local.
+SEMANTIC_ON = os.environ.get("MODELPILOT_SEMANTIC_CACHE", "") in ("1", "true", "yes", "on")
+EMBED_URL = os.environ.get("MODELPILOT_EMBED_URL", "").rstrip("/")
+EMBED_KEY = os.environ.get("MODELPILOT_EMBED_KEY") or os.environ.get("ANTHROPIC_API_KEY")
+EMBED_MODEL = os.environ.get("MODELPILOT_EMBED_MODEL", "text-embedding-3-small")
+SEM_CACHE = _cache.SemanticCache(
+    ttl=float(os.environ.get("MODELPILOT_CACHE_TTL", str(_cache.DEFAULT_TTL))),
+    maxsize=int(os.environ.get("MODELPILOT_SEMANTIC_MAX", "200")),
+    threshold=float(os.environ.get("MODELPILOT_SEMANTIC_THRESHOLD", str(_cache.DEFAULT_SIM))))
+
+
+def _embed_text(body: dict) -> str:
+    """Text we embed for semantic matching — the last user message."""
+    for m in reversed(body.get("messages") or []):
+        if m.get("role") == "user":
+            c = m.get("content")
+            if isinstance(c, str):
+                return c
+            if isinstance(c, list):
+                return "\n".join(b.get("text", "") for b in c
+                                 if isinstance(b, dict) and b.get("type") == "text")
+    return ""
+
+
+async def _embed(text: str):
+    """Vector for `text` via the configured embeddings endpoint, or None."""
+    if not (EMBED_URL and text):
+        return None
+    try:
+        headers = {"content-type": "application/json"}
+        if EMBED_KEY:
+            headers["authorization"] = f"Bearer {EMBED_KEY}"
+        r = await _client().post(EMBED_URL, headers=headers,
+                                 content=json.dumps({"model": EMBED_MODEL, "input": text[:8000]}).encode())
+        r.raise_for_status()
+        return r.json()["data"][0]["embedding"]
+    except Exception:  # noqa: BLE001 — semantic cache is best-effort
+        return None
 
 # Headers we never echo back from upstream (hop-by-hop / length recomputed).
 _DROP_RESP_HEADERS = {"content-length", "content-encoding", "transfer-encoding", "connection"}
@@ -160,6 +200,19 @@ async def messages(request: Request):
                                      "x-modelpilot-decision": "cache-hit"})
 
     original = body.get("model", "")
+
+    # Semantic cache: a near-duplicate request (same model) serves a stored response.
+    sem_vec = None
+    if SEMANTIC_ON and body and not streaming and EMBED_URL:
+        sem_vec = await _embed(_embed_text(body))
+        if sem_vec:
+            shit = SEM_CACHE.get(sem_vec, bucket=original)
+            if shit:
+                content, ctype = shit
+                return Response(content=content, status_code=200,
+                                headers={"content-type": ctype, "x-modelpilot-cache": "HIT-SEMANTIC",
+                                         "x-modelpilot-decision": "cache-hit-semantic"})
+
     routed_model, annotation = (original, "bad-body")
     if body:
         routed_model, annotation = _decide(body)
@@ -208,11 +261,14 @@ async def messages(request: Request):
         return StreamingResponse(relay(), status_code=upstream.status_code,
                                  headers={**_resp_headers(upstream), **extra})
 
-    # Store successful non-streaming responses for exact-match reuse.
-    if cache_key and upstream.status_code == 200:
-        CACHE.put(cache_key, upstream.content,
-                  upstream.headers.get("content-type", "application/json"))
-        extra["x-modelpilot-cache"] = "MISS"
+    # Store successful non-streaming responses for exact + semantic reuse.
+    if upstream.status_code == 200:
+        ctype = upstream.headers.get("content-type", "application/json")
+        if cache_key:
+            CACHE.put(cache_key, upstream.content, ctype)
+            extra["x-modelpilot-cache"] = "MISS"
+        if sem_vec:
+            SEM_CACHE.put(sem_vec, upstream.content, ctype, bucket=original)
     return Response(content=upstream.content, status_code=upstream.status_code,
                     headers={**_resp_headers(upstream), **extra})
 

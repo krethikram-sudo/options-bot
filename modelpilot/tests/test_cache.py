@@ -16,6 +16,26 @@ def test_request_key_stable_and_order_independent():
     assert cache.request_key(a) != cache.request_key(c)
 
 
+def test_cosine_and_semantic_cache_match():
+    assert cache.cosine([1, 0], [1, 0]) == 1.0
+    assert abs(cache.cosine([1, 0], [0, 1])) < 1e-9
+    sc = cache.SemanticCache(ttl=100, maxsize=10, threshold=0.95)
+    sc.put([1.0, 0.0, 0.0], b"resp", bucket="claude-opus-4-8")
+    # near-identical vector -> hit (same bucket)
+    assert sc.get([0.99, 0.01, 0.0], bucket="claude-opus-4-8")[0] == b"resp"
+    # different bucket (model) -> no cross-hit
+    assert sc.get([1.0, 0.0, 0.0], bucket="claude-haiku-4-5") is None
+    # below threshold -> miss
+    assert sc.get([0.0, 1.0, 0.0], bucket="claude-opus-4-8") is None
+
+
+def test_semantic_cache_ttl_and_evict():
+    sc = cache.SemanticCache(ttl=10, maxsize=2, threshold=0.9)
+    sc.put([1, 0], b"a", bucket="m", now=100)
+    assert sc.get([1, 0], bucket="m", now=105)[0] == b"a"
+    assert sc.get([1, 0], bucket="m", now=120) is None   # expired
+
+
 def test_cache_get_put_ttl_and_evict():
     c = cache.ResponseCache(ttl=10, maxsize=2)
     c.put("k1", b"one", now=100)
@@ -70,6 +90,28 @@ def test_proxy_caches_then_serves_hit(proxy, monkeypatch):
     r2 = asyncio.run(proxy.messages(_Req(raw)))
     assert r2.headers["x-modelpilot-cache"] == "HIT" and r2.body == b'{"answer":42}'
     assert fake.calls == 1
+
+
+def test_proxy_semantic_hit_skips_upstream(proxy, monkeypatch):
+    import modelpilot.client_proxy as cp
+    monkeypatch.setattr(cp, "CACHE_ON", False)           # isolate semantic path
+    monkeypatch.setattr(cp, "SEMANTIC_ON", True)
+    monkeypatch.setattr(cp, "EMBED_URL", "http://embed")
+    monkeypatch.setattr(cp, "SEM_CACHE", cache.SemanticCache(ttl=60, maxsize=10, threshold=0.95))
+    # deterministic "embedding": same vector for any text
+    async def _fake_embed(text): return [1.0, 0.0, 0.0]
+    monkeypatch.setattr(cp, "_embed", _fake_embed)
+    fake = _FakeClient([_Resp(200, b'{"a":1}')])         # only ONE upstream response
+    monkeypatch.setattr(cp, "_client", lambda: fake)
+    raw1 = json.dumps({"model": "claude-opus-4-8", "max_tokens": 8,
+                       "messages": [{"role": "user", "content": "what is the capital of France?"}]}).encode()
+    raw2 = json.dumps({"model": "claude-opus-4-8", "max_tokens": 8,
+                       "messages": [{"role": "user", "content": "tell me France's capital city"}]}).encode()
+    r1 = asyncio.run(cp.messages(_Req(raw1)))
+    assert r1.status_code == 200 and fake.calls == 1
+    # a differently-worded but semantically-identical (same fake vector) request -> HIT, no upstream
+    r2 = asyncio.run(cp.messages(_Req(raw2)))
+    assert r2.headers["x-modelpilot-cache"] == "HIT-SEMANTIC" and fake.calls == 1
 
 
 def test_proxy_does_not_cache_streaming(proxy, monkeypatch):

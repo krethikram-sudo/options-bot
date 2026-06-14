@@ -4,6 +4,16 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.32.0 — 2026-06-14
+
+- **Semantic caching (opt-in, more savings).** Beyond exact-match, near-duplicate
+  requests (same model) now serve a cached response when their embeddings are within
+  a cosine threshold — big for RAG/agent apps with reworded-but-equivalent prompts.
+  Pluggable + privacy-preserving: embeddings come from an endpoint *you* configure
+  (`MODELPILOT_EMBED_URL`, OpenAI-compatible) and the cache stays on your box; off
+  unless `MODELPILOT_SEMANTIC_CACHE=1`. `x-modelpilot-cache: HIT-SEMANTIC`. New
+  `cache.SemanticCache` + `cosine` (stdlib) in the publishable thin-client closure.
+
 ## 0.31.0 — 2026-06-14
 
 - **Full-gateway request-path parity.** The full gateway (`gateway.py`, with the
