@@ -1,6 +1,7 @@
 :root{
-  --ink:#0b1220;--body:#1f2733;--mut:#5b6676;--line:#e6e9ef;--bg:#fff;--soft:#f6f8fb;
-  --green:#16a34a;--green-d:#15803d;--green-l:#dcfce7;--dark:#0a0f1e;--dl:#27324a;--max:1080px;
+  --ink:#0a0a0a;--body:#232326;--mut:#71717a;--line:#e6e6e8;--bg:#fff;--soft:#f6f6f7;
+  /* monochrome: the "green" tokens are now black/grey so existing rules stay valid */
+  --green:#111111;--green-d:#000000;--green-l:#f0f0f0;--dark:#0a0a0a;--dl:#2a2a2d;--max:1080px;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -17,7 +18,7 @@ p{margin:0 0 14px}
 .top{position:sticky;top:0;z-index:50;background:rgba(10,15,30,.92);backdrop-filter:blur(10px);
      border-bottom:1px solid rgba(255,255,255,.08)}
 .top .row{max-width:var(--max);margin:0 auto;display:flex;align-items:center;gap:22px;height:58px;padding:0 22px}
-.brand{font-weight:800;font-size:18px;color:#fff;letter-spacing:-.02em}.brand .dot{color:#34d27b}
+.brand{font-weight:800;font-size:18px;color:#fff;letter-spacing:-.02em}.brand .dot{color:#d4d4d4}
 .top .tag{color:#8b97ad;font-size:13px;font-weight:600;border-left:1px solid #2b3650;padding-left:14px}
 .top .sp{flex:1}.top a.lnk{color:#c2cbdb;font-size:14px;font-weight:500}.top a.lnk:hover{color:#fff;text-decoration:none}
 .top a.cta{background:var(--green);color:#fff;padding:8px 14px;border-radius:8px;font-size:14px;font-weight:600}
@@ -36,11 +37,11 @@ main{min-width:0;max-width:720px}
 /* content */
 pre{background:var(--ink);color:#cdd6e6;border-radius:10px;padding:15px 17px;overflow-x:auto;
     font:13px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;margin:0 0 16px}
-pre .c{color:#6a7790}pre .g{color:#48d07f}pre .y{color:#e7c66b}pre .b{color:#6db0f5}
+pre .c{color:#8a8a93}pre .g{color:#d4d4d4}pre .y{color:#cfcfcf}pre .b{color:#bdbdbd}
 code{background:#eef2f7;color:#0b1220;padding:1.5px 6px;border-radius:5px;
      font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 pre code{background:none;padding:0;color:inherit}
-.note{background:#f0fdf4;border:1px solid #bbf7d0;color:#14532d;padding:12px 15px;border-radius:9px;margin:0 0 16px;font-size:14.5px}
+.note{background:#f6f6f7;border:1px solid #e2e2e5;color:#1a1a1a;padding:12px 15px;border-radius:9px;margin:0 0 16px;font-size:14.5px}
 .note.warn{background:#fffbeb;border-color:#fde68a;color:#92400e}
 table{width:100%;border-collapse:collapse;font-size:14px;margin:0 0 16px}
 th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}

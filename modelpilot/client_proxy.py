@@ -27,7 +27,7 @@ import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import Response, StreamingResponse
 
-from . import brain_client, retry
+from . import brain_client, cache as _cache, retry
 
 UPSTREAM = os.environ.get("MODELPILOT_UPSTREAM", "https://api.anthropic.com").rstrip("/")
 BRAIN_URL = os.environ.get("MODELPILOT_BRAIN_URL", "").rstrip("/")
@@ -40,6 +40,11 @@ MODE = os.environ.get("MODELPILOT_MODE", "autopilot")
 # failure fall back to the model the caller asked for.
 MAX_RETRIES = int(os.environ.get("MODELPILOT_MAX_RETRIES", str(retry.DEFAULT_MAX_RETRIES)))
 FALLBACK = os.environ.get("MODELPILOT_FALLBACK", "1") not in ("0", "false", "no", "")
+# Exact-match response cache (opt-in). Identical requests return instantly at $0.
+CACHE_ON = os.environ.get("MODELPILOT_CACHE", "") in ("1", "true", "yes", "on")
+CACHE = _cache.ResponseCache(
+    ttl=float(os.environ.get("MODELPILOT_CACHE_TTL", str(_cache.DEFAULT_TTL))),
+    maxsize=int(os.environ.get("MODELPILOT_CACHE_MAX", str(_cache.DEFAULT_MAX))))
 
 # Headers we never echo back from upstream (hop-by-hop / length recomputed).
 _DROP_RESP_HEADERS = {"content-length", "content-encoding", "transfer-encoding", "connection"}
@@ -142,6 +147,18 @@ async def messages(request: Request):
     except ValueError:
         body = {}
 
+    streaming = bool(body.get("stream"))
+
+    # Exact-match cache: identical, non-streaming requests return instantly at $0.
+    cache_key = _cache.request_key(body) if (CACHE_ON and body and not streaming) else None
+    if cache_key:
+        hit = CACHE.get(cache_key)
+        if hit:
+            content, ctype = hit
+            return Response(content=content, status_code=200,
+                            headers={"content-type": ctype, "x-modelpilot-cache": "HIT",
+                                     "x-modelpilot-decision": "cache-hit"})
+
     original = body.get("model", "")
     routed_model, annotation = (original, "bad-body")
     if body:
@@ -149,7 +166,6 @@ async def messages(request: Request):
 
     url = f"{UPSTREAM}/v1/messages"
     base_headers = _fwd_headers(request)
-    streaming = bool(body.get("stream"))
 
     # Retry transient failures; fall back to the original model if the routed
     # (cheaper) one errors, so routing never costs reliability.
@@ -191,6 +207,12 @@ async def messages(request: Request):
                 await upstream.aclose()
         return StreamingResponse(relay(), status_code=upstream.status_code,
                                  headers={**_resp_headers(upstream), **extra})
+
+    # Store successful non-streaming responses for exact-match reuse.
+    if cache_key and upstream.status_code == 200:
+        CACHE.put(cache_key, upstream.content,
+                  upstream.headers.get("content-type", "application/json"))
+        extra["x-modelpilot-cache"] = "MISS"
     return Response(content=upstream.content, status_code=upstream.status_code,
                     headers={**_resp_headers(upstream), **extra})
 

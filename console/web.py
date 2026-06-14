@@ -9,12 +9,12 @@ import html
 import time
 from datetime import datetime, timezone
 
-ACCENT = "#16a34a"
+ACCENT = "#111111"
 BRAND = "ModelPilot"
 
 _CSS = """
-:root{--accent:#16a34a;--accent-d:#15803d;--ink:#0f172a;--muted:#64748b;
-  --line:#e2e8f0;--bg:#f8fafc;--card:#fff;--warn:#b45309;--bad:#dc2626;}
+:root{--accent:#111111;--accent-d:#000000;--ink:#0a0a0a;--muted:#6b6b70;
+  --line:#e6e6e8;--bg:#fafafa;--card:#fff;--warn:#b45309;--bad:#b91c1c;}
 *{box-sizing:border-box}
 body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   color:var(--ink);background:var(--bg)}
@@ -47,20 +47,20 @@ th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
 th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
 tr:hover td{background:#fafcff}
 .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600}
-.badge.trial{background:#fef9c3;color:#854d0e}.badge.paid{background:#dcfce7;color:#166534}
-.badge.suspended{background:#fee2e2;color:#991b1b}.badge.admin{background:#e0e7ff;color:#3730a3}
+.badge.trial{background:#ececec;color:#444}.badge.paid{background:#111;color:#fff}
+.badge.suspended{background:#fee2e2;color:#991b1b}.badge.admin{background:#e6e6e8;color:#1a1a1a}
 .badge.off{background:#f1f5f9;color:#475569}
 .bar{height:10px;background:#eef2f7;border-radius:6px;overflow:hidden}
 .bar>span{display:block;height:100%;background:var(--accent)}
 .field{margin:14px 0}.field label{display:block;font-weight:600;margin-bottom:6px}
 .field input,.field select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px}
-.note{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:10px 14px;border-radius:8px;margin:12px 0}
+.note{background:#f3f3f4;border:1px solid #e2e2e5;color:#1a1a1a;padding:10px 14px;border-radius:8px;margin:12px 0}
 .note.warn{background:#fffbeb;border-color:#fde68a;color:#92400e}
 .note.bad{background:#fef2f2;border-color:#fecaca;color:#991b1b}
 .modes{display:flex;gap:8px;flex-wrap:wrap}
 .modes button{flex:1;min-width:150px;text-align:left;padding:14px;border:2px solid var(--line);
   border-radius:10px;background:#fff;cursor:pointer}
-.modes button.on{border-color:var(--accent);background:#f0fdf4}
+.modes button.on{border-color:var(--accent);background:#f3f3f4}
 .modes b{display:block;font-size:15px}.modes .small{color:var(--muted)}
 code{background:#0f172a;color:#e2e8f0;padding:2px 6px;border-radius:5px;font-size:13px}
 pre{background:#0f172a;color:#e2e8f0;padding:16px;border-radius:10px;overflow:auto;font-size:13px;line-height:1.6}

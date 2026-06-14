@@ -17,10 +17,10 @@
 <meta name="twitter:description" content="Routes each Claude request to the cheapest model that's provably good enough — measured on your own traffic. Pay 20% of savings. Free 7-day trial.">
 <style>
   :root{
-    --ink:#0b1220; --body:#1f2733; --mut:#5b6676; --line:#e6e9ef; --bg:#ffffff;
-    --soft:#f6f8fb; --green:#16a34a; --green-d:#15803d; --green-l:#dcfce7;
+    --ink:#0a0a0a; --body:#232326; --mut:#71717a; --line:#e6e6e8; --bg:#ffffff;
+    --soft:#f6f6f7; --green:#111111; --green-d:#000000; --green-l:#f0f0f0;
     --nav-h:60px; --max:1080px;
-    --dark:#0a0f1e; --dark2:#111a2e; --dl:#27324a;
+    --dark:#0a0a0a; --dark2:#141416; --dl:#2a2a2d;
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
@@ -48,7 +48,7 @@
       border-bottom:1px solid rgba(255,255,255,.08);height:var(--nav-h)}
   nav .wrap{display:flex;align-items:center;gap:26px;height:var(--nav-h)}
   .brand{font-weight:800;font-size:19px;color:#fff;letter-spacing:-.02em}
-  .brand .dot{color:#34d27b}
+  .brand .dot{color:#d4d4d4}
   .navlinks{display:flex;gap:22px;margin-left:6px}
   .navlinks a{color:#c2cbdb;font-size:14.5px;font-weight:500}
   .navlinks a:hover{color:#fff;text-decoration:none}
@@ -59,8 +59,8 @@
 
   /* hero */
   .hero{background:
-      radial-gradient(900px 480px at 78% -8%, rgba(34,197,94,.16), transparent 60%),
-      radial-gradient(700px 420px at 12% 0%, rgba(59,130,246,.10), transparent 55%),
+      radial-gradient(900px 480px at 78% -8%, rgba(255,255,255,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 0%, rgba(255,255,255,.05), transparent 55%),
       var(--dark);
     color:#e7ecf5;padding:84px 0 92px;border-bottom:1px solid var(--dl)}
   .hero h1{color:#fff;font-size:54px;max-width:15ch}
@@ -79,11 +79,11 @@
   .term .bar i{width:11px;height:11px;border-radius:50%;display:inline-block;background:#37425c}
   .term pre{margin:0;padding:16px 18px;font:13.5px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
             color:#cdd6e6;overflow-x:auto}
-  .term .c{color:#5f6e88}.term .g{color:#48d07f}.term .y{color:#e7c66b}.term .b{color:#6db0f5}
+  .term .c{color:#7a7a83}.term .g{color:#d4d4d4}.term .y{color:#cfcfcf}.term .b{color:#bdbdbd}
   .resultcard{background:linear-gradient(180deg,#0f1830,#0c1426);border:1px solid var(--dl);
               border-radius:12px;padding:18px 20px}
   .resultcard .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#8b97ad;font-weight:700}
-  .resultcard .big{font-size:34px;font-weight:800;color:#34d27b;letter-spacing:-.02em;margin-top:2px}
+  .resultcard .big{font-size:34px;font-weight:800;color:#ffffff;letter-spacing:-.02em;margin-top:2px}
   .resultcard .meta{font-size:13px;color:#9aa6bc;margin-top:2px}
   .barwrap{margin-top:14px}
   .barrow{display:flex;justify-content:space-between;font-size:12.5px;color:#aeb9cc;margin:9px 0 4px}
@@ -115,7 +115,7 @@
   .step code,.codeblock{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   .codeblock{display:block;background:var(--ink);color:#cdd6e6;border-radius:9px;padding:11px 13px;
              font-size:12.5px;line-height:1.6;overflow-x:auto;white-space:pre}
-  .codeblock .g{color:#48d07f}.codeblock .c{color:#6a7790}
+  .codeblock .g{color:#d4d4d4}.codeblock .c{color:#8a8a93}
 
   /* proof */
   .proofgrid{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
@@ -168,7 +168,7 @@
   details p{color:var(--mut);font-size:14.5px;margin:0 0 14px}
 
   /* final cta */
-  .final{background:radial-gradient(700px 360px at 50% -20%,rgba(34,197,94,.16),transparent 60%),var(--dark);
+  .final{background:radial-gradient(700px 360px at 50% -20%,rgba(255,255,255,.08),transparent 60%),var(--dark);
          color:#fff;text-align:center}
   .final h2{color:#fff;font-size:34px}
   .final p{color:#aeb9cc;font-size:18px;max-width:54ch;margin:14px auto 26px}
@@ -202,7 +202,7 @@
 <!-- HERO -->
 <header class="hero"><div class="wrap herogrid">
   <div>
-    <div class="eyebrow" style="color:#34d27b">For teams building on the Claude API</div>
+    <div class="eyebrow" style="color:#d4d4d4">For teams building on the Claude API</div>
     <h1>Cut your Claude bill — typically 20–40%.</h1>
     <p class="sub">ModelPilot is a drop-in proxy that routes every request to the cheapest model
       that's <b style="color:#d7deea">provably</b> good enough — proven on your own traffic, never
@@ -234,7 +234,7 @@ client = Anthropic(base_url=<span class="y">"http://127.0.0.1:8400"</span>)
         <div class="barrow"><span>Baseline (all top-model)</span><span>$4,000</span></div>
         <div class="bar"><span style="width:100%;background:#5b6b8c"></span></div>
         <div class="barrow"><span>With ModelPilot</span><span>$2,760</span></div>
-        <div class="bar"><span style="width:69%;background:#22c55e"></span></div>
+        <div class="bar"><span style="width:69%;background:#e5e5e5"></span></div>
       </div>
     </div>
   </div>

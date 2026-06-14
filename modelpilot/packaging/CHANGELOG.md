@@ -4,6 +4,20 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.30.0 — 2026-06-14
+
+- **Exact-match response cache (P1, more savings).** Opt-in (`MODELPILOT_CACHE=1`):
+  identical, non-streaming requests return a stored response instantly at **zero
+  upstream cost**, keyed on the caller's original request body. Entirely in-process
+  and on your machine (cached responses never leave your box). TTL + capacity
+  bounded (`MODELPILOT_CACHE_TTL`, `MODELPILOT_CACHE_MAX`); responses carry
+  `x-modelpilot-cache: HIT|MISS`. New `modelpilot/cache.py` (commodity); in the
+  publishable thin-client closure (leak audit clean) + the publish allowlist.
+- **Black-and-white redesign.** The landing pages, docs/security/legal site, and
+  the customer + admin console were recolored from green to a classy monochrome
+  palette (near-black ink, white/grey surfaces, black primary actions) — simpler
+  and more modern. No behavior change.
+
 ## 0.29.0 — 2026-06-14
 
 - **Fallbacks & retries (P1 reliability).** The thin-client proxy now retries
