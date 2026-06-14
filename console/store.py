@@ -179,6 +179,16 @@ CREATE TABLE IF NOT EXISTS webhooks (
     created_at REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_webhook_acct ON webhooks(account_id);
+CREATE TABLE IF NOT EXISTS sso_configs (
+    account_id INTEGER PRIMARY KEY REFERENCES accounts(id),
+    enabled INTEGER NOT NULL DEFAULT 0,
+    domain TEXT,                                  -- email domain that routes to this IdP
+    client_id TEXT, client_secret TEXT,
+    auth_url TEXT, token_url TEXT, userinfo_url TEXT,
+    default_role TEXT NOT NULL DEFAULT 'member',
+    scim_token_hash TEXT                          -- sha256 of the SCIM bearer token
+);
+CREATE INDEX IF NOT EXISTS idx_sso_domain ON sso_configs(domain);
 """
 
 WEBHOOK_EVENTS = ("budget.warn", "budget.over", "proposal.pending", "account.suspended")
@@ -1244,6 +1254,118 @@ def deliver_event(account_id: int, event_type: str, data: dict, path: str | None
             import threading
             threading.Thread(target=_send, args=(w["url"], w["secret"]), daemon=True).start()
     return len(hooks)
+
+
+# --------------------------------------------------------------------------- #
+# SSO (OIDC) + SCIM provisioning (per account)
+# --------------------------------------------------------------------------- #
+
+def get_sso(account_id: int, path: str | None = None) -> dict:
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT * FROM sso_configs WHERE account_id=?", (account_id,)).fetchone()
+        return dict(row) if row else {"account_id": account_id, "enabled": 0}
+    finally:
+        conn.close()
+
+
+def set_sso(account_id: int, *, enabled: bool | None = None, domain: str | None = None,
+            client_id: str | None = None, client_secret: str | None = None,
+            auth_url: str | None = None, token_url: str | None = None,
+            userinfo_url: str | None = None, default_role: str | None = None,
+            path: str | None = None) -> dict:
+    cur = get_sso(account_id, path)
+    conn = connect(path)
+    try:
+        if "id" not in cur and not cur.get("client_id"):
+            conn.execute("INSERT OR IGNORE INTO sso_configs(account_id) VALUES(?)", (account_id,))
+        new = {
+            "enabled": int(cur.get("enabled") or 0) if enabled is None else int(enabled),
+            "domain": (cur.get("domain") if domain is None else domain.strip().lower()) or None,
+            "client_id": cur.get("client_id") if client_id is None else client_id.strip(),
+            "client_secret": cur.get("client_secret") if client_secret is None else client_secret.strip(),
+            "auth_url": cur.get("auth_url") if auth_url is None else auth_url.strip(),
+            "token_url": cur.get("token_url") if token_url is None else token_url.strip(),
+            "userinfo_url": cur.get("userinfo_url") if userinfo_url is None else userinfo_url.strip(),
+            "default_role": (cur.get("default_role") or "member") if default_role is None
+                            else (default_role if default_role in TEAM_ROLES else "member"),
+        }
+        conn.execute("UPDATE sso_configs SET enabled=?, domain=?, client_id=?, client_secret=?,"
+                     " auth_url=?, token_url=?, userinfo_url=?, default_role=? WHERE account_id=?",
+                     (new["enabled"], new["domain"], new["client_id"], new["client_secret"],
+                      new["auth_url"], new["token_url"], new["userinfo_url"], new["default_role"],
+                      account_id))
+        conn.commit()
+    finally:
+        conn.close()
+    return get_sso(account_id, path)
+
+
+def sso_by_domain(domain: str, path: str | None = None) -> dict | None:
+    domain = (domain or "").strip().lower()
+    if not domain:
+        return None
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT * FROM sso_configs WHERE domain=? AND enabled=1", (domain,)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def rotate_scim_token(account_id: int, path: str | None = None) -> str:
+    """Mint a SCIM bearer token (shown once; stored hashed)."""
+    token = "scim_" + secrets.token_urlsafe(24)
+    get_sso(account_id, path)  # ensure a row exists
+    conn = connect(path)
+    try:
+        conn.execute("INSERT OR IGNORE INTO sso_configs(account_id) VALUES(?)", (account_id,))
+        conn.execute("UPDATE sso_configs SET scim_token_hash=? WHERE account_id=?",
+                     (hashlib.sha256(token.encode()).hexdigest(), account_id))
+        conn.commit()
+    finally:
+        conn.close()
+    return token
+
+
+def resolve_scim_token(token: str, path: str | None = None) -> int | None:
+    if not token or not token.startswith("scim_"):
+        return None
+    h = hashlib.sha256(token.strip().encode()).hexdigest()
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT account_id FROM sso_configs WHERE scim_token_hash=?", (h,)).fetchone()
+        return row["account_id"] if row else None
+    finally:
+        conn.close()
+
+
+def provision_member(account_id: int, email: str, role: str | None = None,
+                     path: str | None = None) -> dict:
+    """JIT/SCIM provisioning: return the existing active member or create one
+    (active). Used by SSO login and SCIM."""
+    email = (email or "").strip().lower()
+    existing = get_member_by_email(email, path)
+    if existing and existing["account_id"] == account_id:
+        if existing["status"] == "removed":
+            conn = connect(path)
+            try:
+                conn.execute("UPDATE members SET status='active' WHERE id=?", (existing["id"],))
+                conn.commit()
+            finally:
+                conn.close()
+        return get_member(existing["id"], path)
+    if existing:  # belongs to another org
+        raise StoreError("email already belongs to another account")
+    m = create_member(account_id, email, role or "member", path)
+    # SSO/SCIM members are active immediately (no password; they sign in via IdP)
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE members SET status='active' WHERE id=?", (m["id"],))
+        conn.commit()
+    finally:
+        conn.close()
+    return get_member(m["id"], path)
 
 
 def cycle_start(now: float | None = None) -> float:

@@ -465,7 +465,8 @@ def team_get(request: Request):
         return redir
     tok = request.query_params.get("invite_token", "")
     invite_link = notify.reset_link(tok) if tok else ""
-    return _html(web.team_page(acct, store.list_members(acct["id"]), invite_link))
+    return _html(web.team_page(acct, store.list_members(acct["id"]), invite_link,
+                               store.get_sso(acct["id"]), request.query_params.get("scim_token", "")))
 
 
 @app.post("/app/team/invite")
@@ -876,6 +877,156 @@ def _check_components() -> list[dict]:
 @app.get("/status", response_class=HTMLResponse)
 def status_page(request: Request):
     return _html(web.status_page(_check_components()))
+
+
+# --------------------------------------------------------------------------- #
+# SSO (OIDC) — per-account, email-domain routed. Token/userinfo fetch is a
+# module function so it's testable without a live IdP.
+# --------------------------------------------------------------------------- #
+
+def _redirect_uri() -> str:
+    return os.environ.get("CONSOLE_BASE_URL", "http://127.0.0.1:8700").rstrip("/") + "/sso/callback"
+
+
+def _oidc_email(cfg: dict, code: str, redirect_uri: str) -> str | None:
+    """Exchange an auth code for the user's email via the account's IdP."""
+    import urllib.parse
+    import urllib.request
+    try:
+        data = urllib.parse.urlencode({
+            "grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri,
+            "client_id": cfg["client_id"], "client_secret": cfg["client_secret"]}).encode()
+        req = urllib.request.Request(cfg["token_url"], data=data,
+                                     headers={"accept": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=8) as r:
+            tok = json.loads(r.read())
+        access = tok.get("access_token")
+        if not access:
+            return None
+        ui = urllib.request.Request(cfg["userinfo_url"],
+                                    headers={"authorization": f"Bearer {access}"})
+        with urllib.request.urlopen(ui, timeout=8) as r:
+            info = json.loads(r.read())
+        return (info.get("email") or "").strip().lower() or None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+@app.get("/sso/start")
+def sso_start(request: Request, email: str = ""):
+    import urllib.parse
+    domain = email.split("@")[-1].strip().lower() if "@" in email else ""
+    cfg = store.sso_by_domain(domain) if domain else None
+    if not cfg or not cfg.get("auth_url"):
+        return _redirect("/login?sso=unknown")
+    state = store.make_session(cfg["account_id"], "sso", "state", 0)
+    q = urllib.parse.urlencode({"response_type": "code", "client_id": cfg["client_id"],
+                                "redirect_uri": _redirect_uri(), "scope": "openid email", "state": state})
+    return _redirect(f"{cfg['auth_url']}?{q}")
+
+
+@app.get("/sso/callback")
+def sso_callback(request: Request):
+    code = request.query_params.get("code", "")
+    state = request.query_params.get("state", "")
+    sess = store.read_session(state)
+    if not code or not sess or sess.get("team_role") != "state":
+        return _redirect("/login?sso=failed")
+    account_id = sess["account_id"]
+    cfg = store.get_sso(account_id)
+    if not cfg.get("enabled"):
+        return _redirect("/login?sso=failed")
+    email = _oidc_email(cfg, code, _redirect_uri())
+    if not email:
+        return _redirect("/login?sso=failed")
+    # optional domain guard
+    if cfg.get("domain") and not email.endswith("@" + cfg["domain"]):
+        return _redirect("/login?sso=domain")
+    try:
+        member = store.provision_member(account_id, email, cfg.get("default_role", "member"))
+    except store.StoreError:
+        return _redirect("/login?sso=failed")
+    org = store.get_account(account_id)
+    resp = _redirect("/app")
+    _set_session(resp, org, member["role"], member["id"], platform_role="customer")
+    return resp
+
+
+# --------------------------------------------------------------------------- #
+# SCIM 2.0 (Users) — automated provisioning from the IdP (Bearer SCIM token)
+# --------------------------------------------------------------------------- #
+
+def _scim_account(request: Request) -> int | None:
+    auth = request.headers.get("authorization", "")
+    tok = auth[7:].strip() if auth[:7].lower() == "bearer " else ""
+    return store.resolve_scim_token(tok)
+
+
+def _scim_user(m: dict) -> dict:
+    return {"schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"], "id": str(m["id"]),
+            "userName": m["email"], "active": m["status"] != "removed",
+            "emails": [{"value": m["email"], "primary": True}]}
+
+
+@app.post("/scim/v2/Users")
+async def scim_create(request: Request):
+    aid = _scim_account(request)
+    if aid is None:
+        return JSONResponse({"detail": "unauthorized"}, status_code=401)
+    body = await request.json()
+    email = (body.get("userName") or (body.get("emails") or [{}])[0].get("value") or "").lower()
+    if not email:
+        return JSONResponse({"detail": "userName required"}, status_code=400)
+    try:
+        m = store.provision_member(aid, email, store.get_sso(aid).get("default_role", "member"))
+    except store.StoreError as e:
+        return JSONResponse({"detail": str(e)}, status_code=409)
+    return JSONResponse(_scim_user(m), status_code=201)
+
+
+@app.get("/scim/v2/Users")
+def scim_list(request: Request):
+    aid = _scim_account(request)
+    if aid is None:
+        return JSONResponse({"detail": "unauthorized"}, status_code=401)
+    members = store.list_members(aid)
+    return JSONResponse({"schemas": ["urn:ietf:params:scim:api:messages:2.0:ListResponse"],
+                         "totalResults": len(members), "Resources": [_scim_user(m) for m in members]})
+
+
+@app.api_route("/scim/v2/Users/{member_id}", methods=["DELETE", "PATCH"])
+async def scim_deactivate(request: Request, member_id: int):
+    aid = _scim_account(request)
+    if aid is None:
+        return JSONResponse({"detail": "unauthorized"}, status_code=401)
+    store.remove_member(member_id, aid)
+    return JSONResponse({}, status_code=204)
+
+
+# --------------------------------------------------------------------------- #
+# SSO config (owner/admin)
+# --------------------------------------------------------------------------- #
+
+@app.post("/app/sso")
+async def sso_save(request: Request):
+    acct, redir = _require_team_admin(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    store.set_sso(acct["id"], enabled=("enabled" in f), domain=f.get("domain", ""),
+                  client_id=f.get("client_id", ""), client_secret=f.get("client_secret", ""),
+                  auth_url=f.get("auth_url", ""), token_url=f.get("token_url", ""),
+                  userinfo_url=f.get("userinfo_url", ""), default_role=f.get("default_role", "member"))
+    return _redirect("/app/team")
+
+
+@app.post("/app/sso/scim")
+async def sso_scim_token(request: Request):
+    acct, redir = _require_team_admin(request)
+    if redir:
+        return redir
+    token = store.rotate_scim_token(acct["id"])
+    return _redirect(f"/app/team?scim_token={token}")
 
 
 @app.get("/api/health")

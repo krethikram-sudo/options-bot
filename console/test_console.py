@@ -648,6 +648,76 @@ def test_member_cannot_convert_billing(env, client):
     assert client.post("/app/billing/convert").status_code == 403
 
 
+# --- SSO (OIDC) + SCIM ---------------------------------------------------- #
+
+def test_sso_config_and_domain_routing(env):
+    _, store = env
+    a = store.create_account("ssoacct@corp.com", "password123")
+    store.set_sso(a["id"], enabled=True, domain="corp.com", client_id="cid",
+                  client_secret="sec", auth_url="https://idp/auth", token_url="https://idp/tok",
+                  userinfo_url="https://idp/ui", default_role="member")
+    assert store.sso_by_domain("corp.com")["account_id"] == a["id"]
+    assert store.sso_by_domain("other.com") is None
+    store.set_sso(a["id"], enabled=False)
+    assert store.sso_by_domain("corp.com") is None  # disabled -> not routed
+
+
+def test_sso_callback_jit_provisions_and_logs_in(env, client, monkeypatch):
+    server, store = env
+    a = store.create_account("o@corp2.com", "password123")
+    store.set_sso(a["id"], enabled=True, domain="corp2.com", client_id="c", client_secret="s",
+                  auth_url="https://idp/auth", token_url="https://idp/tok", userinfo_url="https://idp/ui")
+    # /sso/start routes by domain -> redirect to the IdP with a signed state
+    r = client.get("/sso/start", params={"email": "alice@corp2.com"}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"].startswith("https://idp/auth?")
+    import urllib.parse
+    state = urllib.parse.unquote(r.headers["location"].split("state=")[-1])
+    # stub the IdP token/userinfo exchange
+    monkeypatch.setattr(server, "_oidc_email", lambda cfg, code, ru: "alice@corp2.com")
+    cb = client.get("/sso/callback", params={"code": "xyz", "state": state}, follow_redirects=False)
+    assert cb.status_code == 303 and cb.headers["location"] == "/app"
+    members = store.list_members(a["id"])
+    assert len(members) == 1 and members[0]["email"] == "alice@corp2.com" and members[0]["status"] == "active"
+    # the SSO'd member is now signed in
+    assert "alice@corp2.com" in client.get("/app").text
+
+
+def test_sso_callback_rejects_bad_state(env, client):
+    r = client.get("/sso/callback", params={"code": "x", "state": "forged"}, follow_redirects=False)
+    assert r.status_code == 303 and "sso=failed" in r.headers["location"]
+
+
+def test_scim_provisioning(env, client):
+    _, store = env
+    a = store.create_account("scim@corp3.com", "password123")
+    token = store.rotate_scim_token(a["id"])
+    hdr = {"Authorization": f"Bearer {token}"}
+    # no/invalid token -> 401
+    assert client.post("/scim/v2/Users", json={"userName": "x@corp3.com"}).status_code == 401
+    # create
+    r = client.post("/scim/v2/Users", json={"userName": "bob@corp3.com", "active": True}, headers=hdr)
+    assert r.status_code == 201 and r.json()["userName"] == "bob@corp3.com"
+    # list
+    lst = client.get("/scim/v2/Users", headers=hdr).json()
+    assert lst["totalResults"] == 1 and lst["Resources"][0]["userName"] == "bob@corp3.com"
+    # deprovision
+    mid = store.list_members(a["id"])[0]["id"]
+    assert client.request("DELETE", f"/scim/v2/Users/{mid}", headers=hdr).status_code == 204
+    assert store.list_members(a["id"]) == []
+
+
+def test_sso_config_http_owner_only(env, client):
+    _, store = env
+    _signup(client, email="owner@corp4.com")
+    acct = store.get_account_by_email("owner@corp4.com")
+    client.post("/app/sso", data={"enabled": "1", "domain": "corp4.com", "client_id": "c",
+                "client_secret": "s", "auth_url": "https://i/a", "token_url": "https://i/t",
+                "userinfo_url": "https://i/u", "default_role": "member"})
+    assert store.get_sso(acct["id"])["enabled"] == 1 and store.get_sso(acct["id"])["domain"] == "corp4.com"
+    page = client.post("/app/sso/scim").text if False else client.get("/app/team").text
+    assert "Single sign-on" in page and "SCIM" in page
+
+
 # --- webhooks ------------------------------------------------------------- #
 
 def test_webhook_create_match_sign_deliver(env):

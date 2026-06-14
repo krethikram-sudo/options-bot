@@ -6,6 +6,7 @@ consistent with the existing dashboard/ingest pages.
 """
 
 import html
+import os
 import time
 from datetime import datetime, timezone
 
@@ -490,7 +491,49 @@ client = Anthropic(base_url="http://127.0.0.1:8400")  # your key stays local</pr
     return page("Connect", body, account, "/app/connect")
 
 
-def team_page(account: dict, members: list[dict], invite_link: str = "") -> str:
+def _sso_section(sso: dict, scim_token: str = "") -> str:
+    from .store import TEAM_ROLES
+    s = sso or {}
+    chk = "checked" if s.get("enabled") else ""
+    role_opts = "".join(f'<option value="{r}"{" selected" if s.get("default_role")==r else ""}>{r}</option>'
+                        for r in TEAM_ROLES)
+
+    def v(k):
+        return _e(s.get(k) or "")
+    scim_note = (f'<div class="note">SCIM token (shown once): <code>{_e(scim_token)}</code><br>'
+                 f'<span class=small>Use it as a Bearer token at <code>/scim/v2/Users</code>.</span></div>'
+                 if scim_token else "")
+    return f"""
+    <h2>Single sign-on (OIDC) <span class="small muted">— Enterprise</span></h2>
+    <p class="small muted">Let your team sign in via your identity provider. Users go to
+    <code>/sso/start?email=you@yourdomain</code>; we route by email domain. Redirect/callback URL:
+    <code>{_e(os.environ.get('CONSOLE_BASE_URL','http://127.0.0.1:8700').rstrip('/'))}/sso/callback</code></p>
+    <div class=card><form method=post action="/app/sso">
+      <div class=field><label class=row><input type=checkbox name=enabled value=1 {chk}
+        style="width:auto;margin-right:8px"> Enable SSO</label></div>
+      <div class="grid cols-2">
+        <div class=field><label>Email domain</label><input name=domain value="{v('domain')}" placeholder="yourdomain.com"></div>
+        <div class=field><label>Default role for new users</label><select name=default_role>{role_opts}</select></div>
+        <div class=field><label>Client ID</label><input name=client_id value="{v('client_id')}"></div>
+        <div class=field><label>Client secret</label><input name=client_secret type=password value="{v('client_secret')}"></div>
+        <div class=field><label>Authorization URL</label><input name=auth_url value="{v('auth_url')}" placeholder="https://idp/authorize"></div>
+        <div class=field><label>Token URL</label><input name=token_url value="{v('token_url')}" placeholder="https://idp/token"></div>
+        <div class=field><label>Userinfo URL</label><input name=userinfo_url value="{v('userinfo_url')}" placeholder="https://idp/userinfo"></div>
+      </div>
+      <button class=btn>Save SSO</button>
+    </form></div>
+
+    <h2>SCIM provisioning</h2>
+    <p class="small muted">Auto-provision/deprovision members from your IdP via SCIM 2.0
+    (<code>/scim/v2/Users</code>). Generate a bearer token for your IdP connector.</p>
+    {scim_note}
+    <div class=card><form method=post action="/app/sso/scim">
+      <button class="btn sec">{'Regenerate' if s.get('scim_token_hash') else 'Generate'} SCIM token</button>
+    </form></div>"""
+
+
+def team_page(account: dict, members: list[dict], invite_link: str = "",
+              sso: dict | None = None, scim_token: str = "") -> str:
     from .store import TEAM_ROLES
     invite_note = (f'<div class="note">Invite sent. Share this set-password link (valid 1h): '
                    f'<a href="{_e(invite_link)}">{_e(invite_link)}</a></div>' if invite_link else "")
@@ -524,7 +567,8 @@ def team_page(account: dict, members: list[dict], invite_link: str = "") -> str:
         <button class=btn>Invite</button>
       </form>
       <p class="small muted" style="margin-top:8px">They'll get a link to set a password and sign in.</p>
-    </div>"""
+    </div>
+    {_sso_section(sso or {}, scim_token)}"""
     return page("Team", body, account, "/app/team")
 
 
