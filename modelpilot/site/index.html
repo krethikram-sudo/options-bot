@@ -34,6 +34,8 @@
   pre.block { background: #f6f7f9; border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-size: .85rem; }
   footer { padding: 2.5rem 0 3.5rem; color: var(--mut); font-size: .85rem; border-top: 1px solid #f0f0f3; }
   .note { background: #fbfefc; border: 1px solid #d8efe0; border-radius: 10px; padding: 14px 18px; font-size: .92rem; }
+  .muted { color: var(--mut); }
+  em { font-style: italic; }
 </style></head>
 <body>
 
@@ -95,21 +97,130 @@ REALIZED savings: <span class="g">$0.07</span>   POTENTIAL: $0.12  <span class="
 
 <section><div class="wrap">
   <h2>Why the routing is trustworthy</h2>
+  <p class="note"><b>The thing naive routers get wrong:</b> prompt caches are
+    <b>model-scoped</b>, so switching models mid-conversation can forfeit your
+    cache discount and cost <em>more</em>. ModelPilot prices the cache break before
+    every switch and vetoes any move that doesn't actually pay.</p>
   <table>
     <tr><th>Hard problem</th><th>How ModelPilot handles it</th></tr>
+    <tr><td><b>Prompt caches are model-scoped</b> — naive switching loses money</td>
+        <td>Cache-aware economics price the rewrite before any mid-conversation
+            switch and veto switches that don't pay</td></tr>
+    <tr><td>Does the router itself add latency?</td>
+        <td>The decision is local heuristics: <b>~0.05&nbsp;ms</b> per request —
+            negligible next to multi-second generation</td></tr>
+    <tr><td>Structured outputs / JSON schemas can break brittle parsers</td>
+        <td>Requests with a tool or output-schema contract are never downgraded
+            below Sonnet, so the response shape your code depends on is preserved</td></tr>
     <tr><td>"Summarize" can be trivial or expert-level</td>
         <td>Calibrated on a golden dataset with a ≤2% false-downgrade target;
             when unsure, it doesn't touch your request</td></tr>
     <tr><td>"why?" after a hard exchange looks trivial</td>
         <td>Session-context routing: follow-ups inherit the conversation's
             difficulty; mechanical tasks over existing content stay cheap</td></tr>
-    <tr><td>Prompt caches are model-scoped — naive switching loses money</td>
-        <td>Cache-aware economics price the rewrite before any mid-conversation
-            switch and veto switches that don't pay</td></tr>
     <tr><td>Vendors grade their own homework</td>
         <td>Randomized holdout + escalation costs deducted + side-by-side output
             comparisons you can run yourself: <code>modelpilot compare --judge</code></td></tr>
   </table>
+</div></section>
+
+<section><div class="wrap">
+  <h2>It adapts to your traffic — and gets cheaper the more you use it</h2>
+  <p>A generic router leaves money on the table on <em>your</em> workload. ModelPilot
+    learns four things from your own traffic — every change earned by evidence on
+    your prompts, never a blunt global default:</p>
+  <div class="grid">
+    <div class="card"><h3>1 · Gates tune themselves</h3>
+      <p>Each category's confidence gate loosens where routing has proven safe at
+        volume and tightens the instant anything escalates — live, no restart.</p></div>
+    <div class="card"><h3>2 · Floors drop when proven</h3>
+      <p>It samples your own prompts, runs the next-cheaper model against the
+        baseline, and lowers the floor only when the cheaper output is judged
+        non-inferior on <em>your</em> data. <code>modelpilot learn-floors</code></p></div>
+    <div class="card"><h3>3 · Rules learn your domain</h3>
+      <p>Domain phrasing ("redline this clause", "triage this ticket") a generic
+        router dumps into a catch-all gets mapped to the right category, so it's
+        actually optimized. <code>modelpilot learn-rules</code></p></div>
+    <div class="card"><h3>4 · Savings beyond routing</h3>
+      <p>Finds uncached repeated context and oversized prompts in your ledger and
+        tells you the dollars caching or trimming would save — it never rewrites
+        your prompts. <code>modelpilot prompt-audit</code></p></div>
+  </div>
+  <p class="note">Every downgrade is gated by non-inferiority on your own prompts
+    and protected by the structured-output guard, so "cheaper" never means
+    "riskier". The longer it runs, the more it can safely route down — savings
+    compound with use.</p>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Day-one fit: starter packs for your segment</h2>
+  <p>Don't wait for the learning loop to warm up. Drop in a starter pack for your
+    space and routing fits your workload from the first request — then your own
+    traffic refines it:</p>
+  <pre class="block">MODELPILOT_POLICY=packs/doc-extraction.json modelpilot gateway --mode guidance</pre>
+  <div class="grid">
+    <div class="card"><h3>Aggressive packs</h3>
+      <p><code>doc-extraction</code>, <code>support</code>, <code>coding</code> —
+        route bulk extraction, classification, triage and simple codegen to the
+        cheapest model that holds up (where the savings are largest).</p></div>
+    <div class="card"><h3>Regulated packs</h3>
+      <p><code>legal</code>, <code>healthcare</code> — conservative by design: never
+        below Sonnet, with a built-in compliance profile (model floor + cautious
+        gate) for legal and clinical work.</p></div>
+  </div>
+  <p class="note">Packs are a strong starting prior, not a black box: every guardrail
+    still applies, and <code>learn-floors</code> confirms or pulls back each
+    category on your own traffic over time.</p>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Fits how your company actually buys</h2>
+  <p>A deployment profile makes routing obey your constraints, so cost optimization
+    never fights compliance or your contract:</p>
+  <div class="grid">
+    <div class="card"><h3>Approved models only</h3>
+      <p>Allow- and block-lists keep routing inside the models you've cleared. A
+        blocked cheap model falls back to the next approved tier — never silently
+        somewhere you didn't sanction.</p></div>
+    <div class="card"><h3>Your quality floor</h3>
+      <p>Set a <code>min_model</code> and nothing — not the heuristics, not the
+        learned floors — ever routes below it.</p></div>
+    <div class="card"><h3>Your negotiated rates</h3>
+      <p>Drop in your committed-use / enterprise pricing and every number reflects
+        <em>your</em> bill, not list price.</p></div>
+    <div class="card"><h3>Your risk posture</h3>
+      <p>One dial — conservative, balanced, or aggressive — sets how confident the
+        router must be before it switches.</p></div>
+  </div>
+  <p class="note">It runs in your infrastructure with your own API key: keys and
+    prompt text stay on your side — the ledger stores token counts and routing
+    metadata, never prompt content. <b>Telemetry is opt-in and aggregate-only</b>
+    (<code>modelpilot telemetry --preview</code> shows the exact payload first —
+    never prompts, outputs, or keys).</p>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Already on Bedrock?</h2>
+  <p>AWS Bedrock has a cost router — Intelligent Prompt Routing. If you're on the
+    first-party Anthropic API it isn't available to you at all, and ModelPilot is the
+    only cost router for your traffic. If you <em>are</em> on Bedrock, the honest
+    comparison:</p>
+  <table>
+    <tr><th></th><th>Bedrock IPR</th><th>ModelPilot</th></tr>
+    <tr><td>Models it routes</td>
+        <td>Two <b>older</b> models per router (Claude 3.x era)</td>
+        <td>The current lineup — Opus 4.8, Sonnet 4.6, Haiku 4.5, Fable 5</td></tr>
+    <tr><td>Quality evidence</td>
+        <td>Vendor <em>prediction</em>; no holdout, no output proof</td>
+        <td>RCT holdout + both outputs side by side on your own prompts</td></tr>
+    <tr><td>Whose interest</td>
+        <td>The vendor billing you also picks the model</td>
+        <td>Customer-side; our only job is your bill going down</td></tr>
+    <tr><td>Lock-in</td><td>AWS Bedrock only</td>
+        <td>Your infra, first-party key, portable</td></tr>
+  </table>
+  <p class="note">Run the head-to-head on your own prompts:
+    <code>modelpilot compare --bedrock-router &lt;your-router-arn&gt; --judge</code>.</p>
 </div></section>
 
 <section><div class="wrap">
