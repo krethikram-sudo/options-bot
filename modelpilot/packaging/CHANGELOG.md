@@ -4,6 +4,16 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.11.1 — 2026-06-14
+
+- **Fix: a judge error no longer crashes `modelpilot compare --judge`.** The LLM
+  judge now falls back gracefully when the installed Anthropic SDK doesn't accept
+  the `output_config` structured-output parameter (older SDKs): it re-asks for
+  JSON in the prompt and parses it robustly. And if any individual verdict still
+  fails, `compare` degrades that verdict to "unjudged" and surfaces the error,
+  instead of aborting the whole run — the cost comparison is always produced.
+  (Found via `validate_local.sh` on a real key.)
+
 ## 0.11.0 — 2026-06-14
 
 - **Per-customer deployment profile (Track B) — route to the customer's utility,

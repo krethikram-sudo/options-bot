@@ -47,24 +47,40 @@ def programmatic_grade(expected: str, candidate_text: str) -> bool:
     return _norm(expected) in _norm(candidate_text)
 
 
+def _extract_verdict(text: str) -> bool:
+    """Parse the JSON verdict, tolerating prose around it (when the SDK can't
+    enforce a schema and the model wraps the JSON in text)."""
+    try:
+        return bool(json.loads(text)["candidate_non_inferior"])
+    except (ValueError, KeyError, TypeError):
+        m = re.search(r'\{.*"candidate_non_inferior".*\}', text, re.DOTALL)
+        if m:
+            return bool(json.loads(m.group(0))["candidate_non_inferior"])
+        raise
+
+
 def _ask(client, prompt: str, first: str, second: str, candidate_position: str) -> bool:
-    response = client.messages.create(
-        model=JUDGE_MODEL,
-        max_tokens=400,
-        system=_JUDGE_SYSTEM,
-        messages=[{
-            "role": "user",
-            "content": (
-                f"<request>\n{prompt}\n</request>\n\n"
-                f"<response_one>\n{first}\n</response_one>\n\n"
-                f"<response_two>\n{second}\n</response_two>\n\n"
-                f"The CANDIDATE is response_{candidate_position}; the other is the BASELINE."
-            ),
-        }],
-        output_config={"format": {"type": "json_schema", "schema": _VERDICT_SCHEMA}},
+    content = (
+        f"<request>\n{prompt}\n</request>\n\n"
+        f"<response_one>\n{first}\n</response_one>\n\n"
+        f"<response_two>\n{second}\n</response_two>\n\n"
+        f"The CANDIDATE is response_{candidate_position}; the other is the BASELINE."
     )
+    base = dict(model=JUDGE_MODEL, max_tokens=400, system=_JUDGE_SYSTEM,
+                messages=[{"role": "user", "content": content}])
+    try:
+        response = client.messages.create(
+            output_config={"format": {"type": "json_schema", "schema": _VERDICT_SCHEMA}},
+            **base,
+        )
+    except TypeError:
+        # Older SDK without output_config: ask for JSON in the prompt instead.
+        base["messages"][0]["content"] += (
+            '\n\nReply with ONLY this JSON, nothing else: '
+            '{"candidate_non_inferior": true|false, "defect": "<text>"}')
+        response = client.messages.create(**base)
     text = next(b.text for b in response.content if b.type == "text")
-    return bool(json.loads(text)["candidate_non_inferior"])
+    return _extract_verdict(text)
 
 
 def judge_pair(client, prompt: str, baseline_text: str, candidate_text: str) -> bool:

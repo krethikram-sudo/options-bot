@@ -97,6 +97,18 @@ def run_comparison(prompts: list[dict], baseline: str, run_fn,
     """
     from .bedrock import bedrock_cost
 
+    judge_errors: list[str] = []
+
+    def _judge(prompt, base_text, cand_text):
+        """Judge one pair, but never let a judge failure crash the whole run —
+        degrade to unjudged (None) and remember the first error to surface."""
+        try:
+            return judge_fn(prompt, base_text, cand_text)
+        except Exception as e:  # noqa: BLE001 — one flaky verdict shouldn't nuke the proof
+            if not judge_errors:
+                judge_errors.append(f"{type(e).__name__}: {e}")
+            return None
+
     rows = []
     for i, p in enumerate(prompts, 1):
         body = {"model": baseline, "max_tokens": 1024,
@@ -110,7 +122,7 @@ def run_comparison(prompts: list[dict], baseline: str, run_fn,
         base_text, base_usage = run_fn(baseline, p["prompt"])
         verdict = None
         if judge_fn is not None and routed_model != baseline:
-            verdict = judge_fn(p["prompt"], base_text, routed_text)
+            verdict = _judge(p["prompt"], base_text, routed_text)
 
         row = {
             "id": p.get("id", f"p{i}"),
@@ -132,7 +144,7 @@ def run_comparison(prompts: list[dict], baseline: str, run_fn,
             row["bedrock_text"] = br_text
             row["bedrock_cost"] = bedrock_cost(br_model, br_usage) or 0.0
             row["bedrock_non_inferior"] = (
-                judge_fn(p["prompt"], base_text, br_text)
+                _judge(p["prompt"], base_text, br_text)
                 if judge_fn is not None else None)
         rows.append(row)
 
@@ -151,6 +163,7 @@ def run_comparison(prompts: list[dict], baseline: str, run_fn,
         "non_inferior_rate": (sum(r["non_inferior"] for r in judged) / len(judged)
                               if judged else None),
         "rows": rows,
+        "judge_errors": judge_errors,
         "generated_at": time.strftime("%Y-%m-%d %H:%M"),
     }
 
@@ -359,6 +372,10 @@ def main():
             ledger.record_proof(row)
         ledger.close()
         print(f"saved {len(result['rows'])} rows to the dashboard proof panel ({args.db})")
+    if result.get("judge_errors"):
+        print(f"\n⚠ judging hit an error (verdicts shown as unjudged): "
+              f"{result['judge_errors'][0]}\n  The cost comparison above is still valid; "
+              f"only the non-inferiority verdicts were affected.", file=sys.stderr)
     print(f"\nModelPilot: routed {result['n_switched']}/{result['n']} prompts · "
           f"saved {result['savings_pct']:.0%} (${result['savings']:.2f})"
           + (f" · non-inferior {result['non_inferior_rate']:.0%}"

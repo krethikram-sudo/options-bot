@@ -47,6 +47,43 @@ def test_three_arm_comparison_populates_bedrock_fields():
         assert row["bedrock_cost"] >= 0.0
 
 
+def test_judge_failure_degrades_instead_of_crashing():
+    def boom(prompt, base, routed):
+        raise RuntimeError("output_config unsupported")
+    res = run_comparison(PROMPTS, "claude-fable-5", offline_run_fn,
+                         judge_fn=boom, progress=lambda *_: None)
+    assert res["non_inferior_rate"] is None           # nothing judged
+    assert res["judge_errors"] and "output_config" in res["judge_errors"][0]
+    # the cost comparison is unaffected
+    assert res["total_routed_cost"] >= 0 and res["n"] == len(PROMPTS)
+
+
+def test_judge_falls_back_when_output_config_unsupported():
+    from modelpilot.goldenset.judge import _ask
+
+    class _Block:
+        type = "text"
+        text = '{"candidate_non_inferior": true, "defect": ""}'
+
+    class _Resp:
+        content = [_Block()]
+
+    calls = {"with_oc": 0, "without_oc": 0}
+
+    class _Client:
+        class messages:
+            @staticmethod
+            def create(**kwargs):
+                if "output_config" in kwargs:
+                    calls["with_oc"] += 1
+                    raise TypeError("unexpected keyword argument 'output_config'")
+                calls["without_oc"] += 1
+                return _Resp()
+
+    assert _ask(_Client(), "p", "a", "b", "one") is True
+    assert calls["with_oc"] == 1 and calls["without_oc"] == 1  # tried, then fell back
+
+
 def test_report_renders_head_to_head_only_with_bedrock():
     base = run_comparison(PROMPTS, "claude-fable-5", offline_run_fn,
                           progress=lambda *_: None)

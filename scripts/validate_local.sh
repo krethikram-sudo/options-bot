@@ -80,8 +80,8 @@ done
 [ "$sent" -ge 4 ] && ok "$sent/${#prompts[@]} requests succeeded through the gateway" \
                    || bad "only $sent/${#prompts[@]} requests succeeded (check key/network)"
 
-# Give the ledger a moment to flush, then stop the gateway.
-sleep 1; kill "$GW_PID" 2>/dev/null; GW_PID=""
+# Give the ledger a moment to flush, then stop the gateway (quietly).
+sleep 1; kill "$GW_PID" 2>/dev/null; wait "$GW_PID" 2>/dev/null; GW_PID=""
 
 say "Ledger + recommendations recorded"
 if $MP report --db "$DB" >/dev/null 2>&1; then ok "report ran"; else bad "report failed"; fi
@@ -106,7 +106,7 @@ if [ "${SKIP_COMPARE:-0}" != "1" ]; then
   say "Real routed-vs-baseline proof (modelpilot compare --judge — small spend)"
   REPORT="$PWD/modelpilot_validate_report.html"
   if $MP compare --from-captures --judge --db "$DB" --baseline "$BASELINE" \
-        --out "$REPORT" 2>/dev/null; then
+        --out "$REPORT"; then
     ok "compare produced a side-by-side proof report"
     echo "  report saved to: $REPORT  (open it to see routed vs baseline outputs + costs)"
   else
