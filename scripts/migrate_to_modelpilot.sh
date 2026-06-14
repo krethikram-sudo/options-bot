@@ -80,7 +80,7 @@ cp "$ROOT"/scripts/publish_modelpilot.sh "$ROOT"/scripts/install_modelpilot_gate
    "$ROOT"/scripts/seed_demo_traffic.py "$ROOT"/scripts/validate_local.sh "$WORK/scripts/"
 mkdir -p "$WORK/packs"; cp "$ROOT"/packs/*.json "$ROOT"/packs/README.md "$WORK/packs/"
 cp "$ROOT"/launchd/com.modelpilot.gateway.plist.template "$WORK/launchd/"
-cp "$SRC"/site/index.html "$WORK/site/"
+cp -R "$SRC"/site/. "$WORK/site/"     # full public site: landing + docs + security + legal
 cp -R "$SRC"/packaging/.github/ISSUE_TEMPLATE "$WORK/.github/ISSUE_TEMPLATE" 2>/dev/null || \
   { mkdir -p "$WORK/.github"; cp -R "$SRC"/packaging/.github/ISSUE_TEMPLATE "$WORK/.github/"; }
 

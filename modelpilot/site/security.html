@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security &amp; trust — ModelPilot</title>
+<meta name="description" content="How ModelPilot keeps your data safe: prompts never leave your box, encryption in transit, least-privilege access, fail-open availability, and our compliance posture.">
+<link rel="canonical" href="https://modelpilot.pages.dev/security.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/docs/docs.css">
+</head><body>
+<div class="top"><div class="row">
+  <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
+  <span class="tag">Security &amp; trust</span><span class="sp"></span>
+  <a class="lnk" href="/docs/">Docs</a>
+  <a class="lnk" href="https://app.modelpilot.app/login">Sign in</a>
+  <a class="cta" href="https://app.modelpilot.app/signup">Start free trial</a>
+</div></div>
+
+<main style="max-width:760px;margin:0 auto;padding:34px 22px 80px">
+  <h1>Security &amp; trust</h1>
+  <p class="lead">ModelPilot is built so the sensitive data physically can't reach us. This page
+    describes exactly how your data is handled, our security practices, and our compliance posture —
+    stated plainly, without overclaiming.</p>
+
+  <div class="note"><b>The core guarantee:</b> your prompts, your model outputs, and your Anthropic API
+    key never transit ModelPilot's servers. Classification happens locally in the client; only a task
+    category and numeric features (token estimates, flags) are sent to our routing brain.</div>
+
+  <h2 id="data">What we receive — and what we never do</h2>
+  <table>
+    <thead><tr><th>Never sent to ModelPilot</th><th>Sent to ModelPilot</th></tr></thead>
+    <tbody>
+      <tr><td>Prompt text &amp; system prompts</td><td>Task category (e.g. <code>classification</code>)</td></tr>
+      <tr><td>Model outputs / completions</td><td>Numeric features (token estimates, boolean flags)</td></tr>
+      <tr><td>Your Anthropic API key</td><td>Requested model + your deployment id / API key</td></tr>
+      <tr><td>Any of your customers' data</td><td>Aggregate savings dollars &amp; counts (billing)</td></tr>
+    </tbody>
+  </table>
+  <p>Your application calls a local proxy that forwards requests to Anthropic <b>with your key, directly</b>.
+    ModelPilot is not in the path of your prompt content. See the
+    <a href="/docs/architecture.html">architecture page</a> for the full request flow.</p>
+  <p><b>Defense in depth.</b> Our routing, metering, telemetry, and logging endpoints <b>reject any payload</b>
+    that contains prompt/output/secret-looking fields (HTTP 422) — even though the client already guarantees
+    aggregates only.</p>
+
+  <h2 id="logs">Optional request logs</h2>
+  <p>Per-request logging is <b>opt-in and metadata-only</b> (timestamps, models, category, token counts,
+    cost, status, routed/escalated flags) — never content. You can also export this telemetry to your own
+    OTLP collector so it never reaches us at all. Logging is off until you enable it.</p>
+
+  <h2 id="encryption">Encryption</h2>
+  <ul>
+    <li><b>In transit:</b> all traffic to ModelPilot services is over TLS (HTTPS).</li>
+    <li><b>At rest:</b> our datastores (accounts, aggregates, opt-in metadata) are encrypted at rest by our
+      cloud provider.</li>
+    <li><b>Your API key:</b> stays on your machine and is used by the local proxy to call Anthropic; we never
+      store or transmit it.</li>
+  </ul>
+
+  <h2 id="access">Access &amp; account security</h2>
+  <ul>
+    <li>Passwords are hashed with <b>PBKDF2-SHA256</b> (200k iterations); we never store plaintext.</li>
+    <li>API keys are shown once and stored only as a <b>SHA-256 hash</b>; they're scoped to a deployment,
+      revocable, and track last use.</li>
+    <li>Sessions are HMAC-signed; suspended accounts lose access immediately.</li>
+    <li>Per-deployment isolation; least-privilege internal access to production systems.</li>
+  </ul>
+
+  <h2 id="availability">Availability</h2>
+  <p>The proxy <b>fails open</b>: if ModelPilot is ever unreachable, your request is forwarded straight to the
+    Claude API, unrouted. We can degrade your savings, never your uptime. A public status page is on our
+    roadmap (below).</p>
+
+  <h2 id="retention">Data retention &amp; deletion</h2>
+  <p>We retain account data while your account is active, aggregate savings data for billing history, and any
+    opt-in metadata logs you choose to send. You can export your data (CSV) from the console and request
+    deletion at any time by emailing <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a>.</p>
+
+  <h2 id="compliance">Compliance posture <span class="muted" style="font-size:15px">— stated honestly</span></h2>
+  <p>We believe in being precise about what is and isn't true today:</p>
+  <ul>
+    <li><b>Architectural guarantees (today):</b> prompts/outputs/keys never reach us; aggregates-only metering;
+      opt-in metadata logging; fail-open routing; inspectable thin client. These are properties of the
+      design, verifiable in the client.</li>
+    <li><b>Data Processing Addendum:</b> we will sign a <a href="/legal/dpa.html">DPA</a> with customers (a
+      template is published for review).</li>
+    <li><b>Subprocessors:</b> a current list is published <a href="/legal/subprocessors.html">here</a>.</li>
+    <li><b>Formal certifications (SOC 2 Type II, etc.):</b> we are <b>not yet certified</b>. If your
+      procurement requires SOC 2, HIPAA/BAA, penetration-test summaries, or a security questionnaire, email
+      us — we'll share our current posture and roadmap. We will not claim certifications we don't hold.</li>
+  </ul>
+
+  <h2 id="vuln">Reporting a vulnerability</h2>
+  <p>Found a security issue? Please email <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a> with
+    details and steps to reproduce. We'll acknowledge promptly, keep you updated, and credit you if you'd
+    like once it's resolved. Please don't disclose publicly until we've had a chance to fix it.</p>
+
+  <p class="foot" style="margin-top:40px">Questions about security or procurement?
+    <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a> ·
+    <a href="/legal/dpa.html">DPA</a> · <a href="/legal/subprocessors.html">Subprocessors</a> ·
+    <a href="/docs/architecture.html">Architecture</a></p>
+</main>
+</body></html>

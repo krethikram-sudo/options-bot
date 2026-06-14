@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Processing Addendum (template) — ModelPilot</title>
+<meta name="description" content="ModelPilot's Data Processing Addendum template — roles, scope (metadata only), security, subprocessors, breach notification, deletion, and transfers.">
+<link rel="canonical" href="https://modelpilot.pages.dev/legal/dpa.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/docs/docs.css">
+</head><body>
+<div class="top"><div class="row">
+  <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
+  <span class="tag">DPA</span><span class="sp"></span>
+  <a class="lnk" href="/security.html">Security</a>
+  <a class="lnk" href="/legal/subprocessors.html">Subprocessors</a>
+  <a class="cta" href="https://app.modelpilot.app/signup">Start free trial</a>
+</div></div>
+
+<main style="max-width:800px;margin:0 auto;padding:34px 22px 80px">
+  <h1>Data Processing Addendum</h1>
+  <p class="lead">This DPA governs ModelPilot's processing of personal data on your behalf.</p>
+
+  <div class="note warn"><b>Template / draft.</b> This is a starting point published for your review — it
+    is not legal advice and is not yet a counsel-reviewed, executable contract. For a signed DPA (or to
+    redline this one), email <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a>.</div>
+
+  <h2 id="1">1. Roles &amp; definitions</h2>
+  <p>"Customer" is the controller of the personal data; "ModelPilot" (the provider of the ModelPilot
+    service, the "Service") acts as processor on Customer's documented instructions. "Personal data,"
+    "processing," "controller," "processor," and "data subject" have the meanings given under applicable
+    data-protection law (incl. the GDPR/UK GDPR and CCPA where relevant). This DPA forms part of the
+    agreement between the parties for use of the Service.</p>
+
+  <h2 id="2">2. Scope &amp; nature of processing</h2>
+  <p>The Service routes Claude API requests to cost-efficient models. <b>By design, prompt content, model
+    outputs, and Customer's API keys are not transmitted to or processed by ModelPilot</b> — they pass from
+    Customer's infrastructure directly to Anthropic using Customer's key. ModelPilot processes only:</p>
+  <ul>
+    <li>account data (e.g. the email address and company of authorized users);</li>
+    <li>operational metadata (task category, token counts, model identifiers, cost/savings figures, status
+      and routing flags) — including any <b>opt-in</b> per-request metadata Customer chooses to send; and</li>
+    <li>aggregate usage figures used to calculate billing.</li>
+  </ul>
+  <p>Duration of processing is the term of the agreement; the subject matter is provision of the Service;
+    categories of data subjects are Customer's authorized users.</p>
+
+  <h2 id="3">3. Customer instructions</h2>
+  <p>ModelPilot processes personal data only on Customer's documented instructions (including via the
+    Service's configuration), unless required by law, in which case ModelPilot will inform Customer where
+    legally permitted.</p>
+
+  <h2 id="4">4. Confidentiality</h2>
+  <p>ModelPilot ensures persons authorized to process the personal data are bound by appropriate
+    confidentiality obligations.</p>
+
+  <h2 id="5">5. Security</h2>
+  <p>ModelPilot implements appropriate technical and organizational measures, including TLS in transit,
+    encryption at rest, hashed credentials, scoped/revocable API keys, least-privilege access, and an
+    architecture in which prompt content never reaches ModelPilot. Current measures are described at
+    <a href="/security.html">/security</a>.</p>
+
+  <h2 id="6">6. Subprocessors</h2>
+  <p>Customer authorizes ModelPilot to engage the subprocessors listed at
+    <a href="/legal/subprocessors.html">/legal/subprocessors</a>. ModelPilot imposes data-protection
+    obligations on subprocessors no less protective than this DPA, remains responsible for their
+    performance, and will give Customer notice of intended changes with a reasonable opportunity to object.</p>
+
+  <h2 id="7">7. Data subject rights</h2>
+  <p>Taking into account the nature of the processing, ModelPilot assists Customer with appropriate
+    technical and organizational measures, insofar as possible, to respond to data-subject requests
+    (access, rectification, erasure, portability, objection).</p>
+
+  <h2 id="8">8. Personal data breach</h2>
+  <p>ModelPilot notifies Customer without undue delay after becoming aware of a personal data breach
+    affecting Customer's personal data, with information reasonably available to assist Customer's own
+    obligations.</p>
+
+  <h2 id="9">9. Deletion &amp; return</h2>
+  <p>On termination, and at Customer's choice, ModelPilot deletes or returns the personal data it processes
+    on Customer's behalf, except where retention is required by law. Customer may also export data and
+    request deletion during the term.</p>
+
+  <h2 id="10">10. International transfers</h2>
+  <p>Where processing involves transfers of personal data subject to GDPR/UK GDPR to a country without an
+    adequacy decision, the parties agree the applicable Standard Contractual Clauses (and UK Addendum,
+    where relevant) are incorporated by reference and completed with the details in this DPA and the
+    subprocessors page.</p>
+
+  <h2 id="11">11. Audit &amp; information</h2>
+  <p>ModelPilot makes available information reasonably necessary to demonstrate compliance with this DPA
+    and, on reasonable request and subject to confidentiality, supports audits consistent with applicable
+    law.</p>
+
+  <h2 id="12">12. General</h2>
+  <p>If there is a conflict between this DPA and the agreement on data-protection matters, this DPA
+    prevails. Liability is subject to the limitations in the agreement.</p>
+
+  <p class="foot" style="margin-top:36px">To execute or redline this DPA, contact
+    <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a>. ·
+    <a href="/security.html">Security</a> · <a href="/legal/subprocessors.html">Subprocessors</a></p>
+</main>
+</body></html>

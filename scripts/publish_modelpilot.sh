@@ -39,7 +39,7 @@ cp "$SRC"/__init__.py "$SRC"/cli.py "$SRC"/gateway.py "$SRC"/router.py \
 [ -f "$SRC/license_pubkey.pem" ] && cp "$SRC/license_pubkey.pem" "$DEST/modelpilot/"
 
 # --- landing page (GitHub Pages deploys from site/ via pages.yml) ---
-cp "$SRC"/site/index.html "$DEST/site/"
+cp -R "$SRC"/site/. "$DEST/site/"     # full public site: landing + docs + security + legal
 cp "$SRC"/goldenset/*.py "$DEST/modelpilot/goldenset/"
 
 # --- per-segment starter packs ---
