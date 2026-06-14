@@ -384,6 +384,13 @@ dashboard → autopilot would save <span class="g">48% of baseline</span> — sw
           keys and prompt text stay on your side and pass straight through — the
           ledger stores token counts and routing metadata, never prompt content.
           Validate the active profile any time with <code>modelpilot profile</code>.</p>
+        <p class="note" style="margin-top:.6rem"><b>Telemetry is opt-in and
+          aggregate-only.</b> Nothing is sent unless you configure it.
+          <code>modelpilot telemetry --preview</code> prints the exact payload first —
+          per-category rates, savings totals, version — <b>never prompts, outputs, or
+          keys</b> (enforced in code and tests). Any optional phrasing signals that
+          help us improve routing are k-anonymized (only patterns seen across many
+          prompts, with no example text).</p>
       </div></section>
 
       <section><div class="wrap">
