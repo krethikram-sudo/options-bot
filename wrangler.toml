@@ -1,0 +1,10 @@
+# Cloudflare deploy config for the ModelPilot landing page.
+# This repo (options-bot) is multi-purpose; Cloudflare only serves the static
+# ModelPilot site below. `wrangler deploy` uploads it as a static-assets-only
+# Worker (no server code) — that's what fixes the build's
+# "Could not detect a directory containing static files" error.
+name = "modelpilot"
+compatibility_date = "2026-06-14"
+
+[assets]
+directory = "./modelpilot/site"
