@@ -338,6 +338,34 @@ dashboard → autopilot would save <span class="g">48% of baseline</span> — sw
       </div></section>
 
       <section><div class="wrap">
+        <h2>Fits how your company actually buys</h2>
+        <p>A deployment profile makes routing obey your constraints, so cost
+          optimization never fights compliance or your contract:</p>
+        <div class="grid">
+          <div class="card"><h3>Approved models only</h3>
+            <p>Allow- and block-lists keep routing inside the models you've
+              cleared. A blocked cheap model falls back to the next approved tier
+              — it never silently sends traffic somewhere you didn't sanction.</p></div>
+          <div class="card"><h3>Your quality floor</h3>
+            <p>Set a <code>min_model</code> and nothing — not the heuristics, not
+              the learned floors — ever routes below it. A hard quality or latency
+              bar, enforced.</p></div>
+          <div class="card"><h3>Your negotiated rates</h3>
+            <p>Drop in your committed-use / enterprise pricing and every number —
+              routing decisions, dashboard, digest, proof — reflects <em>your</em>
+              bill, not list price.</p></div>
+          <div class="card"><h3>Your risk posture</h3>
+            <p>One dial — conservative, balanced, or aggressive — sets how
+              confident the router must be before it switches. Start cautious,
+              loosen as the proof accumulates.</p></div>
+        </div>
+        <p class="note">It runs in your infrastructure with your own API key:
+          keys and prompt text stay on your side and pass straight through — the
+          ledger stores token counts and routing metadata, never prompt content.
+          Validate the active profile any time with <code>modelpilot profile</code>.</p>
+      </div></section>
+
+      <section><div class="wrap">
         <h2>Already on Bedrock?</h2>
         <p>AWS Bedrock has a cost router — Intelligent Prompt Routing. If you're
           on the first-party Anthropic API, it isn't available to you at all, and

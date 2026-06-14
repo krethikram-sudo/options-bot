@@ -76,7 +76,7 @@ mkdir -p "$WORK/extension" "$WORK/scripts" "$WORK/launchd" "$WORK/site"
 cp "$SRC"/extension/manifest.json "$SRC"/extension/background.js \
    "$SRC"/extension/content.js "$SRC"/extension/README.md "$WORK/extension/"
 cp "$ROOT"/scripts/publish_modelpilot.sh "$ROOT"/scripts/install_modelpilot_gateway.sh \
-   "$ROOT"/scripts/seed_demo_traffic.py "$WORK/scripts/"
+   "$ROOT"/scripts/seed_demo_traffic.py "$ROOT"/scripts/validate_local.sh "$WORK/scripts/"
 cp "$ROOT"/launchd/com.modelpilot.gateway.plist.template "$WORK/launchd/"
 cp "$SRC"/site/index.html "$WORK/site/"
 cp -R "$SRC"/packaging/.github/ISSUE_TEMPLATE "$WORK/.github/ISSUE_TEMPLATE" 2>/dev/null || \
