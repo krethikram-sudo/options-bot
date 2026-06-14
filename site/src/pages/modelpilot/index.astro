@@ -1,480 +1,293 @@
 ---
 const CONTACT = "krethikram@gmail.com";
+const SIGNUP = "https://app.modelpilot.app/signup";
+const LOGIN = "https://app.modelpilot.app/login";
 ---
-
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <meta name="robots" content="index, follow" />
-    <meta name="description" content="ModelPilot routes each Claude request to the cheapest model that's provably good enough — typically 20–40% lower spend, measured on your own traffic." />
     <title>ModelPilot — cut your Claude bill, typically 20–40% (proven on your traffic)</title>
+    <meta name="description" content="A drop-in proxy that routes each Claude request to the cheapest model that's provably good enough — measured on your own traffic. You pay 20% of what we save you. Prompts never leave your box." />
+    <link rel="canonical" href="https://modelpilot.pages.dev/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ModelPilot — cut your Claude bill, typically 20–40%" />
+    <meta property="og:description" content="Routes each Claude request to the cheapest model that's provably good enough — measured on your own traffic. Pay 20% of savings. Prompts never leave your box." />
     <style is:global>
-      :root { --ink:#1f2430; --mut:#6b7080; --green:#2e9e5b; --blue:#2f6fb6; --line:#e3e3e8; }
-      * { box-sizing: border-box; }
-      body { font: 16px/1.6 -apple-system, "Segoe UI", sans-serif; color: var(--ink); margin: 0; }
-      .wrap { max-width: 880px; margin: 0 auto; padding: 0 1.2rem; }
-      header.hero { padding: 4rem 0 3rem; background: linear-gradient(#fbfefc, #fff); }
-      .tag { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--green); font-weight: 700; }
-      h1 { font-size: 2.2rem; line-height: 1.2; margin: .4rem 0 1rem; }
-      .sub { font-size: 1.12rem; color: var(--mut); max-width: 640px; }
-      .cta { margin-top: 1.6rem; display: flex; gap: 12px; flex-wrap: wrap; }
-      .btn { display: inline-block; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; }
-      .btn.primary { background: var(--green); color: #fff; }
-      .btn.ghost { border: 1px solid var(--line); color: var(--ink); }
-      .term { background: #14181f; color: #d7e0ea; border-radius: 10px; padding: 16px 18px;
-              font: 13px/1.7 ui-monospace, Menlo, monospace; margin: 2.2rem 0 0; overflow-x: auto; }
-      .term .c { color: #6b7080; } .term .g { color: #79d29a; } .term .y { color: #e7c46b; }
-      section { padding: 2.4rem 0; border-top: 1px solid #f0f0f3; }
-      h2 { font-size: 1.3rem; margin: 0 0 1rem; }
-      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-      .card { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
-      .card h3 { margin: 0 0 6px; font-size: 1rem; }
-      .card p { margin: 0; color: var(--mut); font-size: .92rem; }
-      table { border-collapse: collapse; width: 100%; font-size: .92rem; }
-      td, th { border-bottom: 1px solid #eee; padding: 8px 10px; text-align: left; }
-      th { color: var(--mut); }
-      code { background: #f6f7f9; border-radius: 4px; padding: 1px 6px; font-size: .88em; }
-      pre.block { background: #f6f7f9; border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-size: .85rem; }
-      footer { padding: 2.4rem 0 3.4rem; color: var(--mut); font-size: .85rem; border-top: 1px solid #f0f0f3; }
-      .note { background: #fbfefc; border: 1px solid #d8efe0; border-radius: 10px; padding: 14px 18px; font-size: .92rem; }
-      ol.steps { padding-left: 1.3rem; margin: 0; }
-      ol.steps > li { margin: 0 0 1.1rem; }
-      ol.steps pre.block { margin: 8px 0 0; }
-
-      /* ---- self-playing animated product demo ---- */
-      .demo-wrap { max-width: 760px; margin: 1.4rem auto 0; }
-      .demo-win { border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
-                  box-shadow: 0 10px 40px rgba(31,36,48,.10); background: #fff; }
-      .demo-top { display: flex; align-items: center; gap: 6px; padding: 9px 12px;
-                  background: #f3f4f6; border-bottom: 1px solid var(--line); }
-      .demo-top i { width: 11px; height: 11px; border-radius: 50%; background: #d7d9de; display: inline-block; }
-      .demo-top i.r { background: #ef6a5e; } .demo-top i.y { background: #f4be4f; } .demo-top i.g { background: #61c25a; }
-      .demo-top span { margin-left: 8px; color: var(--mut); font-size: .8rem; }
-      .demo-cap { text-align: center; font-size: .8rem; color: var(--mut); padding: 8px 0 0; }
-      .demo-screen { position: relative; min-height: 290px; padding: 18px 20px; }
-      .scene { display: none; }
-      .scene.on { display: block; animation: dfade .45s ease; }
-      @keyframes dfade { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: none; } }
-      .term2 { font: 13px/1.8 ui-monospace, Menlo, monospace; color: #1f2430; }
-      .term2 .cmd { color: #1f2430; } .term2 .dim { color: #9aa0ab; }
-      .scene.on .row { opacity: 0; animation: rowin .4s ease forwards; }
-      .scene.on .row:nth-child(1){animation-delay:.10s}.scene.on .row:nth-child(2){animation-delay:.45s}
-      .scene.on .row:nth-child(3){animation-delay:.80s}.scene.on .row:nth-child(4){animation-delay:1.15s}
-      .scene.on .row:nth-child(5){animation-delay:1.5s}.scene.on .row:nth-child(6){animation-delay:1.85s}
-      .scene.on .row:nth-child(7){animation-delay:2.2s}
-      @keyframes rowin { from { opacity: 0; transform: translateX(-6px);} to { opacity: 1; transform: none; } }
-      .pill { font-size: .72rem; padding: 1px 7px; border-radius: 10px; }
-      .pill.save { background: #eaf7ef; color: #1e7a44; } .pill.keep { background: #f6f7f9; color: #6b7080; }
-      .kpi { font-size: 2.2rem; font-weight: 800; color: var(--green); line-height: 1.1; }
-      .kpi small { font-size: .95rem; font-weight: 600; color: var(--mut); }
-      .sxs2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
-      .sxs2 .col { border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; font-size: .82rem; }
-      .sxs2 .col.win { border-color: #cfead9; background: #f6fbf8; }
-      .sxs2 h5 { margin: 0 0 5px; font-size: .76rem; color: var(--mut); font-weight: 600; }
-      .bars { margin-top: 10px; } .barrow { display: flex; align-items: center; gap: 10px; margin: 9px 0; }
-      .barrow .lab { width: 70px; color: var(--mut); font-size: .8rem; }
-      .barrow .track { flex: 1; background: #f1f2f4; border-radius: 6px; height: 18px; overflow: hidden; }
-      .barrow .fill { height: 100%; background: linear-gradient(90deg,#9ad9b3,#2e9e5b); width: 0; border-radius: 6px; }
-      .scene.on .fill { animation: grow 1.1s cubic-bezier(.2,.7,.3,1) forwards; }
-      .barrow .pct { width: 42px; text-align: right; font-weight: 700; color: var(--green); font-size: .85rem; }
-      @keyframes grow { from { width: 0; } }
-      /* live-demo product-screen look */
-      .reqlog { font: 12.5px/2 ui-monospace, Menlo, monospace; }
-      .reqlog .m { color: #9aa0ab; } .reqlog b { color: #1f2430; }
-      .reqlog .ok { color: #1e7a44; } .reqlog .keep2 { color: #6b7080; }
-      .dashhead { display: flex; gap: 8px; align-items: baseline; margin-bottom: 12px; flex-wrap: wrap; }
-      .dashhead b { font-size: 1rem; } .dashhead .mode { color: var(--mut); font-size: .78rem; }
-      .convbox { border: 1px solid #f0d9a8; background: #fffdf5; border-radius: 10px; padding: 12px 14px; }
-      .convbox .h { font-size: .72rem; letter-spacing: .05em; font-weight: 700; color: #b8860b; }
-      .convbox .big { font-size: 1.6rem; font-weight: 800; color: var(--green); line-height: 1.2; margin-top: 4px; }
-      .convbox .big small { font-size: .85rem; font-weight: 600; color: var(--mut); }
-      .stripline { display: flex; gap: 20px; margin-top: 12px; font-size: .82rem; color: var(--mut); flex-wrap: wrap; }
-      .stripline b { color: var(--ink); }
-
-      /* Password gate */
-      #content { display: block; }
-      #gate { position: fixed; inset: 0; background: #fbfefc; display: flex;
-              align-items: center; justify-content: center; z-index: 1000; }
-      .gate-card { background: #fff; border: 1px solid var(--line); border-radius: 12px;
-                   padding: 28px 30px; max-width: 420px; width: 92%;
-                   box-shadow: 0 4px 24px rgba(31,36,48,.08); }
-      .gate-card .tag { margin-bottom: 4px; display: block; }
-      .gate-card h2 { margin: 0 0 8px; font-size: 1.2rem; }
-      .gate-card p { color: var(--mut); font-size: .92rem; margin: 0 0 14px; }
-      .gate-card form { display: flex; gap: 8px; }
-      .gate-card input[type=password] { flex: 1; font: inherit; padding: 9px 12px;
-        border: 1px solid var(--line); border-radius: 8px; }
-      .gate-card input[type=password]:focus { outline: none; border-color: var(--green); }
-      .gate-card button { font: inherit; font-weight: 600; padding: 9px 18px; border: 0;
-        border-radius: 8px; background: var(--green); color: #fff; cursor: pointer; }
-      .gate-error { color: #b3372f; font-size: .85rem; margin-top: 10px; min-height: 1.2em; }
-      .gate-footnote { color: var(--mut); font-size: .8rem; margin-top: 14px;
-        border-top: 1px solid #f0f0f3; padding-top: 12px; }
-      .gate-footnote a { color: var(--blue); }
+      :root{
+        --ink:#0b1220;--body:#1f2733;--mut:#5b6676;--line:#e6e9ef;--bg:#fff;--soft:#f6f8fb;
+        --green:#16a34a;--green-d:#15803d;--green-l:#dcfce7;--nav-h:60px;--max:1080px;
+        --dark:#0a0f1e;--dark2:#111a2e;--dl:#27324a;
+      }
+      *{box-sizing:border-box}
+      html{scroll-behavior:smooth}
+      body{margin:0;font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--body);background:var(--bg);-webkit-font-smoothing:antialiased}
+      a{color:var(--green-d);text-decoration:none}a:hover{text-decoration:underline}
+      h1,h2,h3{color:var(--ink);letter-spacing:-.02em;line-height:1.12;margin:0}
+      p{margin:0 0 1rem}
+      .wrap{max-width:var(--max);margin:0 auto;padding:0 22px}
+      .muted{color:var(--mut)}.center{text-align:center}
+      .btn{display:inline-block;border-radius:9px;padding:12px 20px;font-weight:600;font-size:15px;cursor:pointer;border:1px solid transparent;transition:.15s}
+      .btn.primary{background:var(--green);color:#fff}.btn.primary:hover{background:var(--green-d);text-decoration:none}
+      .btn.ghost{background:transparent;color:#fff;border-color:#3a465f}.btn.ghost:hover{background:rgba(255,255,255,.06);text-decoration:none}
+      .btn.lg{padding:14px 26px;font-size:16px}
+      .eyebrow{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--green-d)}
+      nav{position:sticky;top:0;z-index:50;background:rgba(10,15,30,.85);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);height:var(--nav-h)}
+      nav .wrap{display:flex;align-items:center;gap:26px;height:var(--nav-h)}
+      .brand{font-weight:800;font-size:19px;color:#fff;letter-spacing:-.02em}.brand .dot{color:#34d27b}
+      .navlinks{display:flex;gap:22px;margin-left:6px}.navlinks a{color:#c2cbdb;font-size:14.5px;font-weight:500}.navlinks a:hover{color:#fff;text-decoration:none}
+      .navspace{flex:1}.navcta{display:flex;gap:12px;align-items:center}.navcta a.signin{color:#c2cbdb;font-size:14.5px;font-weight:600}
+      @media(max-width:760px){.navlinks{display:none}}
+      .hero{background:radial-gradient(900px 480px at 78% -8%,rgba(34,197,94,.16),transparent 60%),radial-gradient(700px 420px at 12% 0%,rgba(59,130,246,.10),transparent 55%),var(--dark);color:#e7ecf5;padding:84px 0 92px;border-bottom:1px solid var(--dl)}
+      .hero h1{color:#fff;font-size:54px;max-width:15ch}
+      .hero .sub{font-size:20px;color:#aeb9cc;max-width:60ch;margin:20px 0 28px}
+      .hero .ctarow{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+      .trustline{margin-top:18px;font-size:13.5px;color:#8b97ad}.trustline b{color:#cdd6e6;font-weight:600}
+      .herogrid{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center}
+      @media(max-width:900px){.herogrid{grid-template-columns:1fr;gap:34px}.hero h1{font-size:40px}}
+      .demo{display:grid;gap:16px}
+      .term{background:#0d1426;border:1px solid var(--dl);border-radius:12px;overflow:hidden;box-shadow:0 24px 60px -28px rgba(0,0,0,.7)}
+      .term .bar{display:flex;gap:7px;padding:11px 14px;border-bottom:1px solid var(--dl);background:#0b1120}
+      .term .bar i{width:11px;height:11px;border-radius:50%;display:inline-block;background:#37425c}
+      .term pre{margin:0;padding:16px 18px;font:13.5px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cdd6e6;overflow-x:auto}
+      .term .c{color:#5f6e88}.term .g{color:#48d07f}.term .y{color:#e7c66b}.term .b{color:#6db0f5}
+      .resultcard{background:linear-gradient(180deg,#0f1830,#0c1426);border:1px solid var(--dl);border-radius:12px;padding:18px 20px}
+      .resultcard .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#8b97ad;font-weight:700}
+      .resultcard .big{font-size:34px;font-weight:800;color:#34d27b;letter-spacing:-.02em;margin-top:2px}
+      .resultcard .meta{font-size:13px;color:#9aa6bc;margin-top:2px}
+      .barwrap{margin-top:14px}.barrow{display:flex;justify-content:space-between;font-size:12.5px;color:#aeb9cc;margin:9px 0 4px}
+      .bar{height:9px;border-radius:6px;background:#1b2540;overflow:hidden}.bar>span{display:block;height:100%;border-radius:6px}
+      .strip{background:var(--dark2);color:#aeb9cc;border-bottom:1px solid var(--dl)}
+      .strip .wrap{display:flex;align-items:center;gap:30px;padding:18px 22px;flex-wrap:wrap;justify-content:center}
+      .strip .lead{font-size:13px;font-weight:600;color:#8b97ad}
+      .chip{display:flex;align-items:baseline;gap:8px;font-size:14px}.chip b{color:#fff;font-size:18px;font-weight:800}
+      section{padding:78px 0}
+      .sec-head{max-width:62ch;margin:0 auto 46px;text-align:center}.sec-head h2{font-size:34px}.sec-head p{font-size:18px;color:var(--mut);margin-top:12px}
+      .soft{background:var(--soft);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+      .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}@media(max-width:820px){.steps{grid-template-columns:1fr}}
+      .step{background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px}
+      .step .n{width:30px;height:30px;border-radius:8px;background:var(--green-l);color:var(--green-d);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px}
+      .step h3{font-size:18px;margin:14px 0 8px}.step p{font-size:14.5px;color:var(--mut);margin:0 0 12px}
+      .codeblock{display:block;background:var(--ink);color:#cdd6e6;border-radius:9px;padding:11px 13px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.6;overflow-x:auto;white-space:pre}
+      .codeblock .g{color:#48d07f}.codeblock .c{color:#6a7790}
+      .proofgrid{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}@media(max-width:860px){.proofgrid{grid-template-columns:1fr}}
+      .proofcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:26px;box-shadow:0 18px 40px -30px rgba(15,23,42,.4)}
+      .proofcard .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);font-weight:700}
+      .lbar{height:11px;border-radius:7px;background:#eef2f7;overflow:hidden}.lbar>span{display:block;height:100%;border-radius:7px}
+      .statlist{display:grid;gap:22px}.statlist .s{display:flex;gap:14px;align-items:flex-start}
+      .statlist .v{font-size:30px;font-weight:800;color:var(--ink);min-width:130px;letter-spacing:-.02em}.statlist .d{font-size:14.5px;color:var(--mut)}
+      .feat{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}@media(max-width:880px){.feat{grid-template-columns:1fr}}
+      .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px}.card .ic{font-size:20px}.card h3{font-size:16.5px;margin:12px 0 7px}.card p{font-size:14px;color:var(--mut);margin:0}
+      .flow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;margin:8px 0 30px}
+      .flow .node{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 16px;font-size:14px;font-weight:600}
+      .flow .node small{display:block;font-weight:400;color:var(--mut);font-size:12px}.flow .arrow{color:var(--green);font-weight:800}
+      .guards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 30px;max-width:760px;margin:0 auto}@media(max-width:680px){.guards{grid-template-columns:1fr}}
+      .guard{display:flex;gap:11px;align-items:flex-start;font-size:14.5px}.guard .ck{color:var(--green);font-weight:800}
+      .price{max-width:520px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:18px;padding:34px;text-align:center;box-shadow:0 30px 70px -40px rgba(15,23,42,.5)}
+      .price .tag{display:inline-block;background:var(--green-l);color:var(--green-d);font-weight:700;font-size:13px;padding:5px 12px;border-radius:999px}
+      .price .amt{font-size:46px;font-weight:800;color:var(--ink);margin:16px 0 2px;letter-spacing:-.02em}.price .amt span{font-size:18px;color:var(--mut);font-weight:600}
+      .price ul{list-style:none;padding:0;margin:20px 0 24px;text-align:left;display:grid;gap:11px}.price li{display:flex;gap:10px;font-size:15px}.price li .ck{color:var(--green);font-weight:800}
+      .faq{max-width:760px;margin:0 auto}
+      details{border:1px solid var(--line);border-radius:11px;padding:4px 18px;margin-bottom:12px;background:#fff}
+      summary{cursor:pointer;font-weight:600;color:var(--ink);padding:14px 0;list-style:none;font-size:16px}
+      summary::-webkit-details-marker{display:none}summary::after{content:"+";float:right;color:var(--mut);font-weight:700}details[open] summary::after{content:"–"}
+      details p{color:var(--mut);font-size:14.5px;margin:0 0 14px}
+      .final{background:radial-gradient(700px 360px at 50% -20%,rgba(34,197,94,.16),transparent 60%),var(--dark);color:#fff;text-align:center}
+      .final h2{color:#fff;font-size:34px}.final p{color:#aeb9cc;font-size:18px;max-width:54ch;margin:14px auto 26px}
+      footer{background:var(--dark);color:#8b97ad;border-top:1px solid var(--dl);padding:40px 0}
+      footer .wrap{display:flex;flex-wrap:wrap;gap:18px;align-items:center}footer a{color:#aeb9cc;font-size:14px}footer a:hover{color:#fff}footer .sep{flex:1}
     </style>
   </head>
   <body>
-    <div id="content">
-      <header class="hero"><div class="wrap">
-        <div class="tag">ModelPilot · free 7-day trial</div>
-        <h1>Cut your Claude bill — typically 20–40%.<br />Measured on your own traffic, not promised.</h1>
-        <p class="sub">A drop-in gateway that routes every request to the cheapest Claude
-        model that's provably good enough — informed by the whole conversation, never
-        downgrading hard work — and shows you exactly what you saved, per prompt and
-        per session, recalculated from the actual tokens each request consumed.</p>
-        <div class="cta">
-          <a class="btn primary" href="https://app.modelpilot.app/signup">Start your free 7-day trial →</a>
-          <a class="btn ghost" href="https://app.modelpilot.app/login">Sign in</a>
-          <a class="btn ghost" href="#quickstart">2-minute quickstart</a>
+    <nav><div class="wrap">
+      <span class="brand">Model<span class="dot">Pilot</span></span>
+      <div class="navlinks"><a href="#how">How it works</a><a href="#proof">Proof</a><a href="#features">Features</a><a href="#pricing">Pricing</a></div>
+      <div class="navspace"></div>
+      <div class="navcta"><a class="signin" href={LOGIN}>Sign in</a><a class="btn primary" href={SIGNUP}>Start free trial</a></div>
+    </div></nav>
+
+    <header class="hero"><div class="wrap herogrid">
+      <div>
+        <div class="eyebrow" style="color:#34d27b">For teams building on the Claude API</div>
+        <h1>Cut your Claude bill — typically 20–40%.</h1>
+        <p class="sub">ModelPilot is a drop-in proxy that routes every request to the cheapest model that's
+          <b style="color:#d7deea">provably</b> good enough — proven on your own traffic, never downgrading hard
+          work. You pay <b style="color:#d7deea">20% of what we save you</b>. Nothing saved, nothing owed.</p>
+        <div class="ctarow">
+          <a class="btn primary lg" href={SIGNUP}>Start your 7-day free trial →</a>
+          <a class="btn ghost lg" href="#how">See how it works</a>
         </div>
-        <pre class="term"><span class="c"># guidance mode — your key, zero change to your traffic</span>
-$ export ANTHROPIC_API_KEY=sk-ant-...
-$ modelpilot gateway --mode guidance --port 8400
-<span class="c"># point one app at it:  ANTHROPIC_BASE_URL=http://localhost:8400</span>
+        <div class="trustline">No card to start · <b>your prompts never leave your box</b> · cancel anytime</div>
+      </div>
+      <div class="demo">
+        <div class="term">
+          <div class="bar"><i></i><i></i><i></i></div>
+          <pre><span class="c"># 1. drop the proxy in front of the Claude API</span>
+$ pip install modelpilot-client
+$ <span class="b">export</span> MODELPILOT_API_KEY=mp_live_…
+$ modelpilot-client            <span class="c"># your key stays local</span>
 
-  classification   <span class="g">→ would route to claude-haiku-4-5</span>   conf 0.85
-  debugging        <span class="y">→ stays on claude-opus-4-8</span>         quality protected
-  extraction       <span class="g">→ would route to claude-haiku-4-5</span>   conf 0.85
-  ...
-dashboard → autopilot would save <span class="g">48% of baseline</span> — switch when ready</pre>
-      </div></header>
-
-      <section><div class="wrap">
-        <h2>See it in action</h2>
-        <div class="demo-wrap">
-          <div class="demo-win">
-            <div class="demo-top"><i class="r"></i><i class="y"></i><i class="g"></i>
-              <span>ModelPilot — live</span></div>
-            <div class="demo-screen" id="mp-demo">
-
-              <div class="scene on" data-scene="1">
-                <div class="reqlog">
-                  <div class="row"><span class="m">$</span> export ANTHROPIC_BASE_URL=http://localhost:8400 &nbsp;<span class="m"># the only change to your app</span></div>
-                  <div class="row"><span class="m">$</span> modelpilot gateway --mode guidance --port 8400</div>
-                  <div class="row"><span class="m"># measuring — nothing rerouted; your traffic is untouched</span></div>
-                  <div class="row"><span class="m">POST /v1/messages</span> "Classify ticket: 'charged twice'" &nbsp;opus→<b>haiku</b> <span class="ok">0.86 ✓</span></div>
-                  <div class="row"><span class="m">POST /v1/messages</span> "Write SQL: top accounts by MRR" &nbsp;opus→<b>haiku</b> <span class="ok">0.85 ✓</span></div>
-                  <div class="row"><span class="m">POST /v1/messages</span> "Debug: workers double-process" &nbsp;opus→opus <span class="keep2">keep · hard</span></div>
-                  <div class="row"><span class="m">POST /v1/messages</span> "Summarize this PR diff" &nbsp;opus→<b>haiku</b> <span class="ok">0.85 ✓</span></div>
-                </div>
-              </div>
-
-              <div class="scene" data-scene="2">
-                <div class="dashhead"><b>ModelPilot</b><span class="mode">guidance mode · localhost:8400/modelpilot/dashboard</span></div>
-                <div class="convbox">
-                  <div class="row h">READY TO SWITCH TO AUTOPILOT?</div>
-                  <div class="row big">$312 you could save <small>— 41% of your Claude spend this week · ~$16k/yr</small></div>
-                  <div class="row" style="color:var(--mut);font-size:.82rem;margin-top:6px">Only the routes we're confident in. Nothing rerouted yet — you're in guidance.</div>
-                </div>
-                <div class="stripline">
-                  <div>requests <b>1,284</b></div><div>baseline <b>$760</b></div>
-                  <div>would route <b>71%</b></div><div>top win <b>support-triage</b></div>
-                </div>
-              </div>
-
-              <div class="scene" data-scene="3">
-                <div class="dashhead"><b>Proof</b><span class="mode">recommended vs standard — your own prompts</span></div>
-                <div class="row" style="font-size:.82rem;color:var(--mut);margin-bottom:8px">Across 50 of your prompts, routing saved <b style="color:var(--green)">$41 (54%)</b> · 96% of outputs judged non-inferior to the standard model.</div>
-                <div class="sxs2">
-                  <div class="col"><h5>Prompt</h5>"Classify: 'I was charged twice this month' — billing / technical / sales?"</div>
-                  <div class="col win"><h5>ModelPilot → Haiku · $0.0004</h5>billing &nbsp;<span class="pill save">✓ non-inferior</span></div>
-                </div>
-                <div class="sxs2" style="margin-top:8px">
-                  <div class="col"><h5>Standard → Opus · $0.0028</h5>billing</div>
-                  <div class="col win"><h5>identical answer · saved 86%</h5>same result, 7× cheaper</div>
-                </div>
-              </div>
-
-              <div class="scene" data-scene="4">
-                <div class="reqlog">
-                  <div class="row"><span class="m">$</span> modelpilot gateway --mode autopilot --port 8400</div>
-                  <div class="row"><b>autopilot ON</b> <span class="m">— routing live, quality-gated</span></div>
-                  <div class="row">saved this week &nbsp;<span class="ok">$298 realized (40%)</span></div>
-                  <div class="row">quality parity &nbsp;<span class="ok">holding</span> <span class="m">— regen/escalation flat vs holdout control</span></div>
-                  <div class="row">auto-tuning &nbsp;<span class="ok">on</span> <span class="m">— savings climb as it learns your traffic</span></div>
-                  <div class="row"><span class="m"># kill switch: one line back to the direct API, anytime</span></div>
-                </div>
-              </div>
-
-            </div>
+<span class="c"># 2. point your SDK at it — that's the whole change</span>
+client = Anthropic(base_url=<span class="y">"http://127.0.0.1:8400"</span>)
+<span class="g">✓ routing live — guidance mode</span></pre>
+        </div>
+        <div class="resultcard">
+          <div class="lbl">Saved this month</div>
+          <div class="big">$1,240 <span style="font-size:18px;color:#9aa6bc;font-weight:600">· 31%</span></div>
+          <div class="meta">48,210 requests · 27,905 routed · 0 quality regressions</div>
+          <div class="barwrap">
+            <div class="barrow"><span>Baseline (all top-model)</span><span>$4,000</span></div>
+            <div class="bar"><span style="width:100%;background:#5b6b8c"></span></div>
+            <div class="barrow"><span>With ModelPilot</span><span>$2,760</span></div>
+            <div class="bar"><span style="width:69%;background:#22c55e"></span></div>
           </div>
-          <p class="demo-cap">A recreation of an actual ModelPilot session — the request log, dashboard, and proof you'd see on your own traffic.</p>
         </div>
-      </div></section>
+      </div>
+    </div></header>
 
-      <section><div class="wrap">
-        <h2>Two modes. Start in guidance, switch when convinced.</h2>
-        <div class="grid">
-          <div class="card"><h3>Guidance <span style="color:var(--green)">· start here</span></h3>
-            <p>Nothing about your traffic changes. ModelPilot scores every request and
-            shows you, on the dashboard, exactly what autopilot <em>would</em> save —
-            so you decide with evidence, at zero risk.</p></div>
-          <div class="card"><h3>Autopilot <span style="color:var(--mut)">· when ready</span></h3>
-            <p>Confidence-gated routing with a built-in randomized holdout, so the
-            savings are <em>measured</em>, not estimated — and an escalation valve whose
-            costs count against us. Flip one flag when the dashboard convinces you.</p></div>
+    <div class="strip"><div class="wrap">
+      <span class="lead">Works with the Claude API — no app rewrite</span>
+      <span class="chip"><b>20–40%</b> typical savings</span>
+      <span class="chip"><b>0%</b> false-downgrades on our golden set</span>
+      <span class="chip"><b>0</b> prompts stored by us</span>
+    </div></div>
+
+    <section id="how"><div class="wrap">
+      <div class="sec-head"><div class="eyebrow">How it works</div>
+        <h2>Live in five minutes. Savings on day one.</h2>
+        <p>A drop-in proxy plus a hosted dashboard. Start in shadow mode to measure, then flip to autopilot
+           when you trust the numbers — all from the console, no redeploy.</p></div>
+      <div class="steps">
+        <div class="step"><div class="n">1</div><h3>Drop in the proxy</h3>
+          <p>Install the client and point your SDK's base URL at it. Your Anthropic key never leaves your
+             machine — we only ever see a task category and token counts.</p>
+          <code class="codeblock"><span class="c"># one line in your app</span>
+base_url=<span class="g">"127.0.0.1:8400"</span></code></div>
+        <div class="step"><div class="n">2</div><h3>It routes, you stay in control</h3>
+          <p>Each request is classified and sent to the cheapest model that's good enough. Choose
+             <b>shadow</b>, <b>guidance</b>, or <b>autopilot</b> — toggle anytime.</p>
+          <code class="codeblock"><span class="c"># classify → floor → economics</span>
+opus → <span class="g">haiku</span>  <span class="c">(non-inferior)</span></code></div>
+        <div class="step"><div class="n">3</div><h3>See the savings</h3>
+          <p>Your dashboard shows realized savings by task type, baseline-vs-actual, and a non-inferiority
+             proof rate — recalculated from the actual tokens each request used.</p>
+          <code class="codeblock"><span class="c"># billed only on this</span>
+realized savings × <span class="g">20%</span></code></div>
+      </div>
+    </div></section>
+
+    <section id="proof" class="soft"><div class="wrap">
+      <div class="sec-head"><div class="eyebrow">Proof, not promises</div>
+        <h2>Savings you can audit — measured on your own traffic.</h2>
+        <p>We don't ask you to trust a marketing number. Every dollar is recomputed from the real tokens
+           each request consumed, with quality checked side-by-side.</p></div>
+      <div class="proofgrid">
+        <div class="proofcard">
+          <div class="lbl">Baseline vs. actual — last 30 days</div>
+          <div style="margin:14px 0 4px;display:flex;justify-content:space-between;font-size:13px;color:var(--mut)"><span>Baseline (all top-model)</span><b style="color:var(--ink)">$4,000</b></div>
+          <div class="lbar"><span style="width:100%;background:#94a3b8"></span></div>
+          <div style="margin:14px 0 4px;display:flex;justify-content:space-between;font-size:13px;color:var(--mut)"><span>With ModelPilot</span><b style="color:var(--green-d)">$2,760</b></div>
+          <div class="lbar"><span style="width:69%;background:var(--green)"></span></div>
+          <p class="muted" style="font-size:13px;margin:16px 0 0">Illustrative. Your dashboard shows your numbers, per prompt and per session.</p>
         </div>
-        <p class="note" style="margin-top:1rem">The recommended rollout:
-        <b>run in guidance → read the dashboard → switch to autopilot.</b>
-        The dashboard is built to earn that switch — it shows the would-have-saved
-        number and the side-by-side proof that the cheaper model's output holds up.</p>
-      </div></section>
-
-      <section><div class="wrap">
-        <h2>Why the routing is trustworthy</h2>
-        <p class="note"><b>The thing naive routers get wrong:</b> prompt caches are
-          <b>model-scoped</b>, so switching models mid-conversation can forfeit your
-          cache discount and cost <em>more</em>. ModelPilot prices the cache break
-          before every switch and vetoes any move that doesn't actually pay — the
-          difference between a real bill reduction and a vanity routing metric.</p>
-        <table>
-          <tr><th>Hard problem</th><th>How ModelPilot handles it</th></tr>
-          <tr><td><b>Prompt caches are model-scoped</b> — naive switching loses money</td>
-              <td>Cache-aware economics price the rewrite before any mid-conversation
-                  switch and veto switches that don't pay</td></tr>
-          <tr><td>Does the router itself add latency?</td>
-              <td>The routing decision is local heuristics: <b>~0.05&nbsp;ms</b> per request
-                  (≈3&nbsp;ms even on a 24k-token conversation) — negligible next to
-                  multi-second generation</td></tr>
-          <tr><td>Structured outputs / JSON schemas can break brittle parsers</td>
-              <td>Requests with a tool or output-schema contract are never downgraded
-                  below Sonnet, so the response shape your code depends on is preserved</td></tr>
-          <tr><td>"Summarize" can be trivial or expert-level</td>
-              <td>Calibrated on a golden dataset with a ≤2% false-downgrade target;
-                  when unsure, it doesn't touch your request</td></tr>
-          <tr><td>"why?" after a hard exchange looks trivial</td>
-              <td>Session-context routing: follow-ups inherit the conversation's
-                  difficulty; mechanical tasks over existing content stay cheap</td></tr>
-          <tr><td>Vendors grade their own homework</td>
-              <td>Randomized holdout + escalation costs deducted + side-by-side output
-                  comparisons on your own traffic: <code>modelpilot compare --from-captures --judge</code></td></tr>
-        </table>
-      </div></section>
-
-      <section><div class="wrap">
-        <h2>It adapts to your traffic — and gets cheaper the more you use it</h2>
-        <p>A generic router leaves money on the table on <em>your</em> workload.
-          ModelPilot learns four things from your own traffic — every change
-          earned by evidence on your prompts, never a blunt global default:</p>
-        <div class="grid">
-          <div class="card"><h3>1 · Gates tune themselves</h3>
-            <p>Each category's confidence gate loosens where routing has proven
-              safe at volume and tightens the instant anything escalates — live,
-              no restart. <span class="muted">Automatic.</span></p></div>
-          <div class="card"><h3>2 · Floors drop when proven</h3>
-            <p>It samples your own prompts in a category, runs the next-cheaper
-              model against the baseline, and lowers the floor only when the
-              cheaper output is judged non-inferior on <em>your</em> data.
-              <code>modelpilot learn-floors</code></p></div>
-          <div class="card"><h3>3 · Rules learn your domain</h3>
-            <p>Domain phrasing ("redline this clause", "triage this ticket") that
-              a generic router dumps into a catch-all gets mapped to the right
-              category, so it's actually optimized. <code>modelpilot learn-rules</code></p></div>
-          <div class="card"><h3>4 · Savings beyond routing</h3>
-            <p>Finds uncached repeated context and oversized prompts in your
-              ledger and tells you the dollars caching or trimming would save —
-              it never rewrites your prompts. <code>modelpilot prompt-audit</code></p></div>
+        <div class="statlist">
+          <div class="s"><div class="v">20–40%</div><div class="d">Typical bill reduction, measured on real customer traffic — not a best-case headline.</div></div>
+          <div class="s"><div class="v">0%</div><div class="d">False-downgrades on our golden set. Hard work stays on the top model.</div></div>
+          <div class="s"><div class="v">RCT holdout</div><div class="d">A held-out control arm runs the baseline so savings are measured against a real counterfactual.</div></div>
+          <div class="s"><div class="v">Side-by-side</div><div class="d">A non-inferiority rate shows how often the cheaper model held up, judged on your own prompts.</div></div>
         </div>
-        <p class="note">Every downgrade is gated by non-inferiority on your own
-          prompts and protected by the structured-output guard, so "cheaper"
-          never means "riskier". The longer it runs, the more of your traffic it
-          can safely route down — savings compound with use.</p>
-      </div></section>
+      </div>
+    </div></section>
 
-      <section><div class="wrap">
-        <h2>Day-one fit: starter packs for your segment</h2>
-        <p>Don't wait for the learning loop to warm up. Drop in a starter pack for
-          your space and routing fits your workload from the first request — then
-          your own traffic refines it:</p>
-        <pre class="block">MODELPILOT_POLICY=packs/doc-extraction.json modelpilot gateway --mode guidance</pre>
-        <div class="grid">
-          <div class="card"><h3>Aggressive packs</h3>
-            <p><code>doc-extraction</code>, <code>support</code>, <code>coding</code> —
-              route bulk extraction, classification, triage and simple codegen to
-              the cheapest model that holds up (where the savings are largest).</p></div>
-          <div class="card"><h3>Regulated packs</h3>
-            <p><code>legal</code>, <code>healthcare</code> — conservative by design:
-              never below Sonnet, with a built-in compliance profile (model floor +
-              cautious gate) for legal and clinical work.</p></div>
-        </div>
-        <p class="note">Packs are a strong starting prior, not a black box: every
-          guardrail still applies, and <code>learn-floors</code> confirms or pulls
-          back each category on your own traffic over time.</p>
-      </div></section>
+    <section id="features"><div class="wrap">
+      <div class="sec-head"><div class="eyebrow">Everything in one console</div><h2>Built to earn a place in your request path.</h2></div>
+      <div class="feat">
+        <div class="card"><div class="ic">🎚️</div><h3>Shadow → guidance → autopilot</h3><p>Adopt at your own pace — measure first, recommend next, auto-route when convinced. Switched server-side, no redeploy.</p></div>
+        <div class="card"><div class="ic">📊</div><h3>Live savings dashboard</h3><p>Realized savings by task type, baseline-vs-actual, lifetime totals, and your projected bill — from real tokens.</p></div>
+        <div class="card"><div class="ic">🔒</div><h3>Prompts never leave your box</h3><p>Classification happens locally. Only a category label and numeric features reach us — never prompt text, outputs, or your key.</p></div>
+        <div class="card"><div class="ic">✅</div><h3>Quality, proven</h3><p>Per-category floors, a guard that never downgrades structured-output or tool calls, and side-by-side non-inferiority checks.</p></div>
+        <div class="card"><div class="ic">🧠</div><h3>Adapts to your traffic</h3><p>Learns per-customer floors and rules from your own usage (judge-validated) and gets cheaper-safe over time — with your approval.</p></div>
+        <div class="card"><div class="ic">🛟</div><h3>Fails open, always</h3><p>If our brain is ever unreachable, traffic passes straight through to Anthropic, unrouted. We can never block your requests.</p></div>
+      </div>
+    </div></section>
 
-      <section><div class="wrap">
-        <h2>Fits how your company actually buys</h2>
-        <p>A deployment profile makes routing obey your constraints, so cost
-          optimization never fights compliance or your contract:</p>
-        <div class="grid">
-          <div class="card"><h3>Approved models only</h3>
-            <p>Allow- and block-lists keep routing inside the models you've
-              cleared. A blocked cheap model falls back to the next approved tier
-              — it never silently sends traffic somewhere you didn't sanction.</p></div>
-          <div class="card"><h3>Your quality floor</h3>
-            <p>Set a <code>min_model</code> and nothing — not the heuristics, not
-              the learned floors — ever routes below it. A hard quality or latency
-              bar, enforced.</p></div>
-          <div class="card"><h3>Your negotiated rates</h3>
-            <p>Drop in your committed-use / enterprise pricing and every number —
-              routing decisions, dashboard, digest, proof — reflects <em>your</em>
-              bill, not list price.</p></div>
-          <div class="card"><h3>Your risk posture</h3>
-            <p>One dial — conservative, balanced, or aggressive — sets how
-              confident the router must be before it switches. Start cautious,
-              loosen as the proof accumulates.</p></div>
-        </div>
-        <p class="note">It runs in your infrastructure with your own API key:
-          keys and prompt text stay on your side and pass straight through — the
-          ledger stores token counts and routing metadata, never prompt content.
-          Validate the active profile any time with <code>modelpilot profile</code>.</p>
-        <p class="note" style="margin-top:.6rem"><b>Telemetry is opt-in and
-          aggregate-only.</b> Nothing is sent unless you configure it.
-          <code>modelpilot telemetry --preview</code> prints the exact payload first —
-          per-category rates, savings totals, version — <b>never prompts, outputs, or
-          keys</b> (enforced in code and tests). Any optional phrasing signals that
-          help us improve routing are k-anonymized (only patterns seen across many
-          prompts, with no example text).</p>
-      </div></section>
+    <section class="soft"><div class="wrap">
+      <div class="sec-head"><div class="eyebrow">Privacy by architecture</div>
+        <h2>Observability without shipping us your prompts.</h2>
+        <p>Most gateways see everything you send. ModelPilot is built so the sensitive data physically can't reach us.</p></div>
+      <div class="flow">
+        <span class="node">Your app<small>prompt + API key</small></span><span class="arrow">→</span>
+        <span class="node">Local proxy<small>classifies on your box</small></span><span class="arrow">→</span>
+        <span class="node">ModelPilot<small>category + token counts only</small></span><span class="arrow">→</span>
+        <span class="node">Anthropic<small>your key, your prompt</small></span>
+      </div>
+      <div class="guards">
+        <div class="guard"><span class="ck">✓</span><div>Prompt text, model outputs, and API keys never transit our servers — and are rejected at our edge if present.</div></div>
+        <div class="guard"><span class="ck">✓</span><div>Savings are metered as aggregate dollars and counts, not content.</div></div>
+        <div class="guard"><span class="ck">✓</span><div>The thin client is publishable and inspectable — routing IP stays server-side, your data stays with you.</div></div>
+        <div class="guard"><span class="ck">✓</span><div>Self-serve, per-deployment isolation, leave anytime — your key, your traffic.</div></div>
+      </div>
+    </div></section>
 
-      <section><div class="wrap">
-        <h2>Already on Bedrock?</h2>
-        <p>AWS Bedrock has a cost router — Intelligent Prompt Routing. If you're
-          on the first-party Anthropic API, it isn't available to you at all, and
-          ModelPilot is the only cost router for your traffic. If you <em>are</em>
-          on Bedrock, here's the honest comparison:</p>
-        <table>
-          <tr><th></th><th>Bedrock IPR</th><th>ModelPilot</th></tr>
-          <tr><td>Models it routes</td>
-              <td>Two <b>older</b> models per router (Claude 3.x era)</td>
-              <td>The current lineup — Opus 4.8, Sonnet 4.6, Haiku 4.5, Fable 5 —
-                  where the bill actually is</td></tr>
-          <tr><td>Quality evidence</td>
-              <td>Vendor <em>prediction</em>; no holdout, no output proof</td>
-              <td>RCT holdout + both outputs side by side on your own prompts</td></tr>
-          <tr><td>Whose interest</td>
-              <td>The vendor billing you also picks the model</td>
-              <td>Customer-side; our only job is your bill going down</td></tr>
-          <tr><td>Lock-in</td><td>AWS Bedrock only</td>
-              <td>Your infra, first-party key, portable</td></tr>
-        </table>
-        <p class="note">Don't take our word for it — run the head-to-head on your
-          own prompts: <code>modelpilot compare --bedrock-router &lt;your-router-arn&gt; --judge</code>
-          puts both routers' costs and outputs on one page.</p>
-      </div></section>
+    <section id="pricing"><div class="wrap">
+      <div class="sec-head"><div class="eyebrow">Pricing</div><h2>You only pay for savings we actually deliver.</h2>
+        <p>No seats, no per-request fees, no token markup. We make money only when we cut your bill.</p></div>
+      <div class="price">
+        <span class="tag">Free 7-day trial · no card</span>
+        <div class="amt">20%<span> of realized savings</span></div>
+        <p class="muted" style="margin:0">No savings, no bill. Cancel anytime.</p>
+        <ul>
+          <li><span class="ck">✓</span> Drop-in proxy + hosted savings dashboard</li>
+          <li><span class="ck">✓</span> Shadow, guidance &amp; autopilot modes</li>
+          <li><span class="ck">✓</span> Per-task savings, proof, and your live bill</li>
+          <li><span class="ck">✓</span> Prompts never leave your box</li>
+          <li><span class="ck">✓</span> Per-customer tuning that improves with use</li>
+        </ul>
+        <a class="btn primary lg" style="width:100%" href={SIGNUP}>Start your free trial</a>
+      </div>
+    </div></section>
 
-      <section><div class="wrap">
-        <h2>The proof — embedded in your dashboard, on your own traffic</h2>
-        <p>This is what turns a guidance trial into an autopilot customer. Your own
-        captured prompts, run through both arms — ModelPilot's routing vs everything
-        on the biggest model — rendered <b>side by side right on the dashboard</b>:
-        each prompt, both outputs, per-chat and cumulative savings, and an independent
-        non-inferiority verdict.</p>
-        <pre class="block">$ modelpilot compare --from-captures --judge --save-to-db
-routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
-# → now rendered in the dashboard's side-by-side proof panel</pre>
-        <p class="note">Savings you can audit: actual token counts at list prices, the
-        same prompts in both arms, every output on the page for your own eyes.
-        <b>And it improves with use</b> — the gateway auto-tunes routing to your traffic
-        as it accumulates, and <code>learn-floors</code> / <code>learn-rules</code>
-        deepen it (see "It adapts to your traffic" above), so savings climb the longer
-        you run it.</p>
-      </div></section>
+    <section class="soft"><div class="wrap">
+      <div class="sec-head"><div class="eyebrow">FAQ</div><h2>Questions, answered.</h2></div>
+      <div class="faq">
+        <details open><summary>Do you see my prompts or my customers' data?</summary>
+          <p>No. Classification runs locally in the client; only a task category and numeric features are sent
+            to ModelPilot. Prompt text, model outputs, and your API key never reach our servers — and our
+            endpoints reject any payload that contains them.</p></details>
+        <details><summary>What happens if ModelPilot goes down?</summary>
+          <p>The proxy fails open: if our routing brain is unreachable, your request is forwarded straight to
+            the Claude API, unrouted. We can degrade your savings, never your uptime.</p></details>
+        <details><summary>How is the 20% bill computed?</summary>
+          <p>We meter the realized savings on each routed request — baseline cost minus actual cost — as
+            aggregate dollars. Your bill each cycle is 20% of that, with a line-item breakdown in the console.
+            If we save you nothing, you owe nothing.</p></details>
+        <details><summary>Will it downgrade my hard or quality-sensitive requests?</summary>
+          <p>No. Routing only ever moves down to a model that's provably good enough, with per-category floors
+            and a guard that keeps structured-output and tool-using calls on a capable model. Our golden set
+            shows 0% false-downgrades, and you can run side-by-side non-inferiority checks on your own prompts.</p></details>
+        <details><summary>Can I keep full control?</summary>
+          <p>Yes. Start in shadow mode, move to guidance, and flip to autopilot when ready — all from the
+            dashboard, no redeploy. Set a minimum model, risk tolerance, and a spend budget per deployment.</p></details>
+      </div>
+    </div></section>
 
-      <section id="quickstart"><div class="wrap">
-        <h2>How to use it — start to finish</h2>
-        <p class="note" style="border-color:#f0d9a8;background:#fffdf5">
-          <b>What you need:</b> a <b>billable Anthropic API key</b>
-          (<a href="https://console.anthropic.com">console.anthropic.com</a>) and an
-          app or service that calls the Claude API. Python 3.10+.
-          <b>Your first 7 days are free</b> — the trial starts automatically on your
-          first gateway run, no key needed, full functionality (guidance and
-          autopilot). After the trial, a license keeps it running
-          (<a href={`mailto:${CONTACT}?subject=ModelPilot license`}>email us</a>). A
-          Claude.ai / Claude Code <em>subscription</em> can't be optimized (flat-rate,
-          not per-token); the offline <code>modelpilot demo</code> is always free.</p>
-        <ol class="steps">
-          <li><b>Install</b> (Python 3.10+):
-            <pre class="block">pip install "modelpilot @ git+https://github.com/krethikram-sudo/modelpilot.git"</pre></li>
+    <section class="final"><div class="wrap">
+      <h2>See what you'd save this week.</h2>
+      <p>Start in shadow mode, watch the savings add up on real traffic, and only pay when we actually cut your bill.</p>
+      <div class="center"><a class="btn primary lg" href={SIGNUP}>Start your 7-day free trial →</a></div>
+      <p style="font-size:13px;color:#8b97ad;margin-top:18px">No card to start · prompts never leave your box · cancel anytime</p>
+    </div></section>
 
-          <li><b>(Optional) Validate it on your own key</b> — one command runs the
-            gateway in guidance, sends a few real requests, exercises every
-            analysis command, and finishes with a real routed-vs-baseline proof.
-            Nothing is rerouted; spend is a few cents. Prints PASS/FAIL:
-            <pre class="block">export ANTHROPIC_API_KEY=sk-ant-...
-bash scripts/validate_local.sh</pre></li>
-
-          <li><b>Set your API key and start the gateway in guidance mode</b> — it
-            measures and recommends but changes nothing. <b>Your 7-day free trial
-            starts now.</b> Turn on prompt capture so you can generate the proof later:
-            <pre class="block">export ANTHROPIC_API_KEY=sk-ant-...
-MODELPILOT_CAPTURE_PCT=1.0 modelpilot gateway --mode guidance --port 8400</pre>
-            <span class="muted">No license needed during the trial. The key lives in
-            your app (next step); the gateway just forwards it.</span></li>
-
-          <li><b>Point one app at the gateway</b> — a one-line base-URL change. Your
-            API key stays in your app, passes through, and is never stored:
-            <pre class="block">Python:      anthropic.Anthropic(base_url="http://localhost:8400")
-TypeScript:  new Anthropic(&#123; baseURL: "http://localhost:8400" &#125;)
-Claude Code / any SDK:  export ANTHROPIC_BASE_URL=http://localhost:8400</pre>
-            Then use your app exactly as you do today — every request flows through and is scored.</li>
-
-          <li><b>Open the dashboard</b> and read the headline: what autopilot
-            <em>would</em> save, per chat and cumulative.
-            <pre class="block">open http://localhost:8400/modelpilot/dashboard</pre></li>
-
-          <li><b>Generate the side-by-side proof</b> on your own prompts — recommended
-            model vs standard model, both outputs, costs, and non-inferiority verdicts,
-            rendered right on the dashboard:
-            <pre class="block">modelpilot compare --from-captures --judge --save-to-db</pre></li>
-
-          <li><b>Switch to autopilot</b> when the evidence convinces you — one flag
-            (free during your trial). It routes automatically, keeps a randomized
-            holdout running to prove quality parity, and continuously re-tunes:
-            <pre class="block">modelpilot gateway --mode autopilot --port 8400</pre></li>
-
-          <li><b>After 7 days</b>, keep it running with a license — set
-            <code>MODELPILOT_LICENSE</code> and you're done:
-            <pre class="block">export MODELPILOT_LICENSE="&lt;your license token&gt;"</pre></li>
-        </ol>
-        <p class="note"><b>Kill switch any time:</b> revert the base URL, or run
-        <code>--mode guidance</code> to stop all rerouting. <b>Privacy:</b> no prompt
-        text is stored by default — the ledger holds token counts and routing metadata
-        only (capture in step 4 is opt-in and stays in your deployment). <b>It improves
-        with use:</b> in autopilot ModelPilot keeps re-tuning per-category routing to
-        your workload — capturing more where it's proven safe, backing off anywhere
-        quality slips.</p>
-      </div></section>
-
-      <footer><div class="wrap">
-        ModelPilot · free 7-day trial · <a href={`mailto:${CONTACT}`}>{CONTACT}</a><br />
-        Model prices referenced: Claude Fable 5 $10/$50 · Opus 4.8 $5/$25 ·
-        Sonnet 4.6 $3/$15 · Haiku 4.5 $1/$5 per MTok (June 2026 list).
-      </div></footer>
+    <footer><div class="wrap">
+      <span class="brand">Model<span class="dot">Pilot</span></span>
+      <span class="sep"></span>
+      <a href={SIGNUP}>Start free trial</a><a href={LOGIN}>Sign in</a>
+      <a href="#how">How it works</a><a href="#pricing">Pricing</a>
+      <a href={`mailto:${CONTACT}`}>Contact</a>
     </div>
-    <script is:inline>
-      (function () {
-        function start() {
-          var demo = document.getElementById("mp-demo");
-          if (!demo) return;
-          var scenes = demo.querySelectorAll(".scene");
-          if (!scenes.length) return;
-          var i = 0;
-          // per-scene dwell (ms): request log, dashboard, proof (longest to read), autopilot
-          var dwell = [5600, 5200, 6000, 5400];
-          function tick() {
-            scenes.forEach(function (s, k) { s.classList.toggle("on", k === i); });
-            var wait = dwell[i] || 4800;
-            i = (i + 1) % scenes.length;
-            setTimeout(tick, wait);
-          }
-          tick();
-        }
-        if (document.readyState !== "loading") start();
-        else document.addEventListener("DOMContentLoaded", start);
-      })();
-    </script>
+    <div class="wrap" style="margin-top:14px;font-size:12.5px;color:#5b6676">© 2026 ModelPilot · Cut your Claude bill, proven on your own traffic.</div>
+    </footer>
   </body>
 </html>
