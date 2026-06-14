@@ -88,8 +88,9 @@ def _usd(x: float | None) -> str:
 
 
 def _line_chart(series: dict[str, list[float]], labels: list[str],
-                w: int = 720, h: int = 220, colors: dict | None = None) -> str:
+                w: int = 720, h: int = 220, colors: dict | None = None, fmt=None) -> str:
     """Multi-line SVG chart over a shared x axis (one point per label)."""
+    fmt = fmt or _usd
     pad = 44
     flat = [v for vals in series.values() for v in vals] or [0.0]
     vmax = max(flat) or 1.0
@@ -104,8 +105,8 @@ def _line_chart(series: dict[str, list[float]], labels: list[str],
     parts = [f'<svg viewBox="0 0 {w} {h}" class="chart">']
     parts.append(f'<line x1="{pad}" y1="{h-pad}" x2="{w-pad}" y2="{h-pad}" stroke="#ccc"/>')
     parts.append(f'<line x1="{pad}" y1="{pad}" x2="{pad}" y2="{h-pad}" stroke="#ccc"/>')
-    parts.append(f'<text x="{pad-6}" y="{pad+4}" text-anchor="end" class="tick">{_usd(vmax)}</text>')
-    parts.append(f'<text x="{pad-6}" y="{h-pad+4}" text-anchor="end" class="tick">$0</text>')
+    parts.append(f'<text x="{pad-6}" y="{pad+4}" text-anchor="end" class="tick">{fmt(vmax)}</text>')
+    parts.append(f'<text x="{pad-6}" y="{h-pad+4}" text-anchor="end" class="tick">{fmt(0)}</text>')
     if labels:
         parts.append(f'<text x="{pad}" y="{h-pad+16}" class="tick">{labels[0]}</text>')
         parts.append(f'<text x="{w-pad}" y="{h-pad+16}" text-anchor="end" class="tick">{labels[-1]}</text>')
@@ -333,6 +334,26 @@ def _conversion_panel(stats: dict) -> str:
 </div>"""
 
 
+def _savings_rate_chart(stats: dict) -> str:
+    """Daily savings as % of baseline — the line that climbs as continuous
+    auto-tuning learns the customer's traffic. Realized once routing is live,
+    otherwise the would-have-saved (potential) rate."""
+    daily = stats["daily"]
+    routing_live = stats["mode"] == "autopilot" or stats["summary"]["realized"] > 0
+    pts, labels = [], []
+    for d in daily:
+        base = d["baseline"] or 0.0
+        val = d["realized"] if routing_live else d["potential"]
+        pts.append(100.0 * val / base if base else 0.0)
+        labels.append(d["day"])
+    if len(pts) < 2:
+        return ('<p class="muted">A few days of traffic will plot the trend here — '
+                'the savings rate climbs as auto-tuning learns your workload.</p>')
+    label = "realized %" if routing_live else "would-save %"
+    return _line_chart({label: pts}, labels, colors={label: "#2e9e5b"},
+                       fmt=lambda v: f"{v:.0f}%")
+
+
 def _proof_section(stats: dict) -> str:
     """The embedded conversion proof: the customer's own prompts, recommended
     model vs standard model, outputs side by side, with per-chat + cumulative
@@ -460,6 +481,9 @@ def render_html(stats: dict) -> str:
  <a href="?days=0{f'&session={session_key}' if session_key else ''}">all</a>)</span></h2>
 {_line_chart({"potential (est.)": cum_potential, "realized": cum_realized}, days,
              colors={"potential (est.)": "#2f6fb6", "realized": "#2e9e5b"})}
+
+<h2>Savings rate over time <span class="muted" style="font-size:0.8rem;font-weight:400">— watch it learn</span></h2>
+{_savings_rate_chart(stats)}
 
 <details class="adv"><summary>Details &amp; methodology</summary>
 <h3>Totals</h3>

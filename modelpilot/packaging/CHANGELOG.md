@@ -4,6 +4,12 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.5.1 — 2026-06-14
+
+- **"Savings rate over time" chart** on the dashboard — daily savings as % of
+  baseline, so customers can watch the rate climb as continuous auto-tuning
+  learns their traffic. (`_line_chart` gained a y-axis formatter.)
+
 ## 0.5.0 — 2026-06-14
 
 - **Continuous auto-tuning (live, no restart).** In autopilot the gateway now

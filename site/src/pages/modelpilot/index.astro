@@ -42,6 +42,9 @@ const CONTACT = "krethikram@gmail.com";
       pre.block { background: #f6f7f9; border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-size: .85rem; }
       footer { padding: 2.4rem 0 3.4rem; color: var(--mut); font-size: .85rem; border-top: 1px solid #f0f0f3; }
       .note { background: #fbfefc; border: 1px solid #d8efe0; border-radius: 10px; padding: 14px 18px; font-size: .92rem; }
+      ol.steps { padding-left: 1.3rem; margin: 0; }
+      ol.steps > li { margin: 0 0 1.1rem; }
+      ol.steps pre.block { margin: 8px 0 0; }
 
       /* Password gate */
       #content { display: none; }
@@ -196,25 +199,50 @@ routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
       </div></section>
 
       <section id="quickstart"><div class="wrap">
-        <h2>Quickstart (with your beta repo invite)</h2>
-        <pre class="block"># 1. Install from the private beta repo
-pip install "modelpilot @ git+https://github.com/krethikram-sudo/modelpilot.git"
+        <h2>How to use it — start to finish</h2>
+        <ol class="steps">
+          <li><b>Get access.</b> Reply to your invite with your GitHub username; we
+            add you to the private repo and you'll get an email from GitHub.</li>
 
-# 2. Prove it to yourself (no key, no spend)
-modelpilot demo --offline
+          <li><b>Install</b> (Python 3.10+):
+            <pre class="block">pip install "modelpilot @ git+https://github.com/krethikram-sudo/modelpilot.git"</pre></li>
 
-# 3. Guidance mode: point your app at it — behavior is unchanged
-modelpilot gateway --mode guidance --port 8400
-#    Python:  anthropic.Anthropic(base_url="http://localhost:8400")
-#    any SDK: ANTHROPIC_BASE_URL=http://localhost:8400
+          <li><b>See it route — no API key, no spend:</b>
+            <pre class="block">modelpilot demo --offline</pre></li>
 
-# 4. Read the dashboard — what autopilot would save + the side-by-side proof
-open http://localhost:8400/modelpilot/dashboard
+          <li><b>Start the gateway in guidance mode</b> — it measures and recommends,
+            but changes nothing. Turn on prompt capture so you can generate the proof
+            in step 7:
+            <pre class="block">MODELPILOT_CAPTURE_PCT=1.0 modelpilot gateway --mode guidance --port 8400</pre></li>
 
-# 5. Convinced? Capture it.
-modelpilot gateway --mode autopilot --port 8400</pre>
-        <p>Your API keys pass through and are never stored. The ledger holds token
-        counts and routing metadata — no prompt text.</p>
+          <li><b>Point one app at the gateway</b> — a one-line base-URL change. Your
+            API key stays in your app, passes through, and is never stored:
+            <pre class="block">Python:      anthropic.Anthropic(base_url="http://localhost:8400")
+TypeScript:  new Anthropic(&#123; baseURL: "http://localhost:8400" &#125;)
+Claude Code / any SDK:  export ANTHROPIC_BASE_URL=http://localhost:8400</pre>
+            Then use your app exactly as you do today — every request flows through and is scored.</li>
+
+          <li><b>Open the dashboard</b> and read the headline: what autopilot
+            <em>would</em> save, per chat and cumulative.
+            <pre class="block">open http://localhost:8400/modelpilot/dashboard</pre></li>
+
+          <li><b>Generate the side-by-side proof</b> on your own prompts — recommended
+            model vs standard model, both outputs, costs, and non-inferiority verdicts,
+            rendered right on the dashboard:
+            <pre class="block">modelpilot compare --from-captures --judge --save-to-db</pre></li>
+
+          <li><b>Switch to autopilot</b> when the evidence convinces you. It routes
+            automatically, keeps a randomized holdout running to prove quality parity,
+            and continuously re-tunes to your traffic:
+            <pre class="block">modelpilot gateway --mode autopilot --port 8400</pre></li>
+        </ol>
+        <p class="note"><b>Kill switch any time:</b> revert the base URL, or run
+        <code>--mode guidance</code> to stop all rerouting. <b>Privacy:</b> no prompt
+        text is stored by default — the ledger holds token counts and routing metadata
+        only (capture in step 4 is opt-in and stays in your deployment). <b>It improves
+        with use:</b> in autopilot ModelPilot keeps re-tuning per-category routing to
+        your workload — capturing more where it's proven safe, backing off anywhere
+        quality slips.</p>
       </div></section>
 
       <footer><div class="wrap">
