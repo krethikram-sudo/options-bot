@@ -4,6 +4,16 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.20.1 — 2026-06-14
+
+- **Packaging fix for the router split.** `scripts/publish_modelpilot.sh` now
+  ships the two new modules (`router_classify.py`, `client_proxy.py`) in the
+  customer package allowlist — without `router_classify`, the assembled package's
+  `router.py` couldn't import and the publish dry-run's in-place test suite
+  failed. Also made `test_client_split.py` resolve the package dir from the
+  import (not the test file path) so it passes in both the monorepo and the
+  published `tests/`-as-sibling layout.
+
 ## 0.20.0 — 2026-06-14
 
 - **Router split → a genuinely publishable thin client (IP stays server-side).**

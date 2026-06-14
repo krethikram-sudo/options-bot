@@ -9,10 +9,14 @@ a future change pulls the IP back into the client's import closure.
 import ast
 import pathlib
 
+import modelpilot
 import modelpilot.router_classify as rc
 from modelpilot.router import classify as tier_classify
 
-PKG = pathlib.Path(__file__).resolve().parent.parent
+# Resolve the package dir from the import, not the test file's location, so this
+# passes in both the monorepo (modelpilot/tests/) and the published repo layout
+# (tests/ as a sibling of modelpilot/).
+PKG = pathlib.Path(modelpilot.__file__).resolve().parent
 PUBLISHABLE = ["router_classify.py", "brain_client.py", "client_proxy.py"]
 FORBIDDEN = {"pricing", "taxonomy", "router", "gateway", "ledger", "floorlearn",
              "profile", "rules", "promptsavings", "telemetry", "compare", "bedrock"}
