@@ -50,6 +50,10 @@ def collect_stats(ledger, days: float = 30.0, session: str = "") -> dict:
         "session": ledger.session_summary(session) if session else None,
         "proof": {"summary": ledger.proof_summary(), "rows": ledger.proof_rows(8)},
     }
+    from .tune import policy_from_quality
+    stats["learned_gates"] = policy_from_quality(
+        ledger.category_quality(since), default_gate=gate, loosen_to=0.7)["category_gates"]
+
     arms = ledger.arm_costs(since)
     rct = {"treatment_n": len(arms["treatment"]), "control_n": len(arms["control"]), "ready": False}
     if rct["treatment_n"] >= 30 and rct["control_n"] >= 30:
@@ -285,6 +289,19 @@ def _conversion_panel(stats: dict) -> str:
     annual = (gated / days * 365.0) if days else 0.0
     verdict = _quality_verdict(stats)
 
+    learned = stats.get("learned_gates") or {}
+    loosened = sum(1 for v in learned.values() if v < stats.get("gate", 0.8))
+    held = sum(1 for v in learned.values() if v >= 0.99)
+    learned_note = ""
+    if learned:
+        bits = []
+        if loosened:
+            bits.append(f"{loosened} categor{'y' if loosened == 1 else 'ies'} routing more aggressively")
+        if held:
+            bits.append(f"{held} held back for quality")
+        learned_note = ('<p class="muted" style="margin:6px 0 0;font-size:0.8rem">'
+                        f'Auto-tuned to your traffic: {", ".join(bits)} — improves as you use it.</p>')
+
     if mode == "autopilot":
         net = s["realized"] - stats["escalations"]["cost"]
         rpct = (net / s["baseline"]) if s["baseline"] else 0.0
@@ -293,6 +310,7 @@ def _conversion_panel(stats: dict) -> str:
   <div style="font-size:1.5rem;font-weight:700;color:#2e9e5b">{_usd(net)} saved
     <span style="font-size:0.9rem;font-weight:500;color:#6b7080">({rpct:.0%} of spend, this {("day" if days==1 else f"{days:g}d")})</span></div>
   <p class="muted" style="margin:6px 0 0">{verdict}.</p>
+  {learned_note}
 </div>"""
 
     # guidance / shadow: sell the switch
@@ -311,6 +329,7 @@ def _conversion_panel(stats: dict) -> str:
   <p class="muted" style="margin:4px 0 0;font-size:0.8rem">See the proof on your own traffic:
     <code>modelpilot compare --from-captures --judge</code> — same prompts, recommended vs standard
     model, side by side.</p>
+  {learned_note}
 </div>"""
 
 

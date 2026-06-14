@@ -27,6 +27,33 @@ MIN_APPLIED = 20         # need this many clean routes before we trust loosening
 INCIDENT_RATE = 0.02     # >2% escalation/negative rate -> tighten
 
 
+def policy_from_quality(rows: list[dict], default_gate: float = DEFAULT_GATE,
+                        loosen_to: float = AGGRESSIVE_GATE, block_to: float = BLOCK_GATE,
+                        min_applied: int = MIN_APPLIED, incident_rate: float = INCIDENT_RATE) -> dict:
+    """Turn per-category outcomes into a gate policy. Pure — shared by the manual
+    `modelpilot tune` command and the gateway's live auto-tuner.
+
+      - a category with >=2 incidents above the incident-rate threshold is blocked
+        (gate raised toward 1.0) — quality protection always wins;
+      - a category with enough clean routes and zero incidents is loosened to
+        capture more — only ever for traffic that has proven safe HERE.
+    """
+    gates, notes = {}, []
+    for r in rows:
+        cat, n = r["category"], r["n_applied"]
+        incidents = r["n_escalation"] + r["n_negative"]
+        rate = incidents / n if n else 0.0
+        if incidents >= 2 and rate > incident_rate:
+            gates[cat] = block_to
+            notes.append(f"{cat}: {incidents} incidents in {n} routes ({rate:.0%}) "
+                         f"-> gate {block_to} (stop routing here)")
+        elif incidents == 0 and n >= min_applied and default_gate > loosen_to:
+            gates[cat] = loosen_to
+            notes.append(f"{cat}: {n} clean routes, 0 incidents "
+                         f"-> gate {loosen_to} (capture more)")
+    return {"category_gates": gates, "notes": notes}
+
+
 def build_policy(db_path: str, since_days: float = 30.0,
                  default_gate: float = DEFAULT_GATE) -> dict:
     ledger = Ledger(db_path)
@@ -36,25 +63,13 @@ def build_policy(db_path: str, since_days: float = 30.0,
     finally:
         ledger.close()
 
-    gates, notes = {}, []
-    for r in rows:
-        cat, n = r["category"], r["n_applied"]
-        incidents = r["n_escalation"] + r["n_negative"]
-        rate = incidents / n if n else 0.0
-        if incidents >= 2 and rate > INCIDENT_RATE:
-            gates[cat] = BLOCK_GATE
-            notes.append(f"{cat}: {incidents} incidents in {n} routes ({rate:.0%}) "
-                         f"-> gate {BLOCK_GATE} (stop routing here)")
-        elif incidents == 0 and n >= MIN_APPLIED and default_gate > AGGRESSIVE_GATE:
-            gates[cat] = AGGRESSIVE_GATE
-            notes.append(f"{cat}: {n} clean routes, 0 incidents "
-                         f"-> gate {AGGRESSIVE_GATE} (capture more)")
+    learned = policy_from_quality(rows, default_gate=default_gate)
     return {
         "generated_at": time.strftime("%Y-%m-%d %H:%M"),
         "since_days": since_days,
         "default_gate": default_gate,
-        "category_gates": gates,
-        "notes": notes,
+        "category_gates": learned["category_gates"],
+        "notes": learned["notes"],
     }
 
 

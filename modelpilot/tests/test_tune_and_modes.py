@@ -69,6 +69,34 @@ def test_build_policy_blocks_category_with_incidents(tmp_path):
     assert policy["category_gates"].get("classification") == 0.99  # BLOCK_GATE
 
 
+def test_policy_from_quality_pure():
+    from modelpilot.tune import policy_from_quality
+    rows = [{"category": "classification", "n_applied": 25, "n_escalation": 0, "n_negative": 0},
+            {"category": "debugging", "n_applied": 3, "n_escalation": 2, "n_negative": 0}]
+    gates = policy_from_quality(rows, default_gate=0.8, loosen_to=0.7)["category_gates"]
+    assert gates["classification"] == 0.7   # proven safe -> loosen
+    assert gates["debugging"] == 0.99        # incidents -> block
+
+
+def test_gateway_autotune_refreshes_live_policy(tmp_path):
+    import modelpilot.gateway as gw
+    if not gw.AUTOTUNE:
+        import pytest
+        pytest.skip("autotune disabled in env")
+    db = str(tmp_path / "a.db")
+    ledger = Ledger(db)
+    rec = _rec_for(CLASSIFY)
+    for _ in range(25):
+        ledger.record(mode="autopilot", recommendation=rec, routed_model=rec.recommended_model,
+                      applied=True, status_code=200, usage=Usage(input_tokens=500, output_tokens=100))
+    gw.app.state.ledger = ledger
+    gw.app.state.policy_gates = {}
+    gw.app.state.autotune_n = gw.AUTOTUNE_EVERY - 1
+    gw._maybe_autotune()  # tips the counter over the interval -> recompute
+    ledger.close()
+    assert gw.app.state.policy_gates.get("classification") == gw.AUTOTUNE_LOOSEN
+
+
 def test_category_quality_counts(tmp_path):
     db = str(tmp_path / "t.db")
     ledger = Ledger(db)

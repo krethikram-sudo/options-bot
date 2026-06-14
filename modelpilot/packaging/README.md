@@ -57,10 +57,14 @@ modelpilot gateway --mode autopilot --port 8400
 
 `guidance` is the customer-facing name for advise mode (both work).
 
-**It improves with use.** As traffic accumulates, `modelpilot tune --db modelpilot.db --out policy.json`
-learns a per-category policy from *your* outcomes — loosening routing where it has
-proven safe on your workload, backing off any category that caused an escalation —
-then run with `MODELPILOT_POLICY=policy.json`. The more you use it, the more it saves.
+**It improves with use — automatically.** In autopilot the gateway continuously
+re-derives a per-category policy from *your own* traffic (every `MODELPILOT_AUTOTUNE_EVERY`
+requests, default 100) and applies it live, no restart: it loosens routing on
+categories that have proven safe on your workload and backs off any that caused an
+escalation or negative feedback. The longer it runs, the more it saves. Disable with
+`MODELPILOT_AUTOTUNE=0`; for a reviewable, pinned policy instead, run
+`modelpilot tune --out policy.json` and start with `MODELPILOT_POLICY=policy.json`
+(manual entries always override the learned ones).
 
 ## What makes the routing trustworthy
 

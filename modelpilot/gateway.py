@@ -52,7 +52,17 @@ def _load_policy(path: str) -> dict:
         return {}
 
 
-POLICY_GATES = _load_policy(os.environ.get("MODELPILOT_POLICY", ""))
+POLICY_FILE_GATES = _load_policy(os.environ.get("MODELPILOT_POLICY", ""))
+
+# Continuous auto-tuning: every AUTOTUNE_EVERY requests the gateway re-derives the
+# per-category policy from its OWN accumulating traffic and applies it live, no
+# restart. The product gets better the more it's used. Loosening is conservative
+# (down to AUTOTUNE_LOOSEN, never lower) and only for categories with proven-safe
+# volume; any escalation/negative-feedback tightens that category immediately.
+# Manual MODELPILOT_POLICY entries always win. Disable with MODELPILOT_AUTOTUNE=0.
+AUTOTUNE = os.environ.get("MODELPILOT_AUTOTUNE", "1") not in ("0", "false", "no", "")
+AUTOTUNE_EVERY = int(os.environ.get("MODELPILOT_AUTOTUNE_EVERY", "100"))
+AUTOTUNE_LOOSEN = float(os.environ.get("MODELPILOT_AUTOTUNE_LOOSEN", "0.7"))
 # Opt-in prompt capture for golden-set building. 0 (default) = no prompt text
 # is ever stored. Set e.g. 0.25 to sample a quarter of requests into the
 # captures table; export with `python -m modelpilot.goldenset.export_corpus`.
@@ -73,6 +83,8 @@ async def _lifespan(app):
     app.state.http = httpx.AsyncClient(timeout=httpx.Timeout(600.0, connect=10.0))
     app.state.ledger = Ledger(os.environ.get("MODELPILOT_DB", "modelpilot.db"))
     app.state.continuation = ContinuationModel(app.state.ledger)
+    app.state.policy_gates = dict(POLICY_FILE_GATES)  # live, refreshed by auto-tune
+    app.state.autotune_n = 0
     yield
     await app.state.http.aclose()
     app.state.ledger.close()
@@ -199,6 +211,26 @@ def _record(decision: Decision, status_code: int, usage: Usage,
         request_id=request_id,
         session_key=session_key,
     )
+    _maybe_autotune()
+
+
+def _maybe_autotune():
+    """Refresh the live per-category policy from accumulated traffic. Cheap
+    (three small aggregate queries) and only every AUTOTUNE_EVERY requests."""
+    if not AUTOTUNE:
+        return
+    app.state.autotune_n += 1
+    if app.state.autotune_n % AUTOTUNE_EVERY != 0:
+        return
+    try:
+        from .tune import policy_from_quality
+        rows = app.state.ledger.category_quality()
+        learned = policy_from_quality(rows, default_gate=CONFIDENCE_GATE,
+                                      loosen_to=AUTOTUNE_LOOSEN)["category_gates"]
+        # Manual policy-file entries always override the learned ones.
+        app.state.policy_gates = {**learned, **POLICY_FILE_GATES}
+    except Exception:  # noqa: BLE001 — tuning must never break the request path
+        pass
 
 
 def maybe_capture(ledger, body: dict, decision: Decision, request_id: str,
@@ -260,7 +292,7 @@ async def preview(request: Request):
     body = await request.json()
     session_key = body.get("session_id") or _session_key(request, body)
     decision = decide(body, MODE, holdout_pct=HOLDOUT_PCT, session_key=session_key,
-                      category_gates=POLICY_GATES)
+                      category_gates=app.state.policy_gates)
     rec = decision.recommendation
 
     # Pre-flight cost estimate: input from context size, nominal output.
@@ -299,7 +331,7 @@ async def messages(request: Request):
     decision = decide(
         body, MODE, holdout_pct=HOLDOUT_PCT, session_key=session_key,
         expected_remaining_turns=app.state.continuation.expected_remaining(turns),
-        category_gates=POLICY_GATES,
+        category_gates=app.state.policy_gates,
     )
     # Advise-mode loop closure: a caller who followed our advice sends the
     # cheap model in the body — savings would be invisible without knowing

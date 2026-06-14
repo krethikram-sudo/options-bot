@@ -4,6 +4,19 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.5.0 — 2026-06-14
+
+- **Continuous auto-tuning (live, no restart).** In autopilot the gateway now
+  re-derives its per-category policy from its own accumulating traffic every
+  `MODELPILOT_AUTOTUNE_EVERY` requests (default 100) and applies it in place:
+  categories that route safely at volume are loosened (down to a conservative
+  0.7 gate) to capture more; any category that draws an escalation or negative
+  feedback is tightened immediately. Manual `MODELPILOT_POLICY` entries still
+  win; disable with `MODELPILOT_AUTOTUNE=0`. The dashboard's conversion panel
+  shows what it has learned ("auto-tuned to your traffic: N categories…").
+  This is the "gets better the more you use it" loop, now automatic rather than
+  a manual `modelpilot tune` + restart.
+
 ## 0.4.2 — 2026-06-14
 
 - **Decluttered dashboard.** Default view is now just the conversion story:
