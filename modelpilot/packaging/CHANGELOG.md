@@ -4,6 +4,19 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.7.0 — 2026-06-14
+
+- **License gate for autopilot.** Autopilot now requires a valid license token
+  (`MODELPILOT_LICENSE`); guidance and shadow run free so prospects can measure
+  potential savings. Tokens are named (accountability) and expiring (revocation
+  by lapse). Issue with `python -m modelpilot.license issue --licensee … --days …`.
+  Honest scope: an HMAC-signed in-client gate is a deterrent + usage control for
+  the beta, not unbreakable DRM — see `internal/SPLIT_ARCHITECTURE.md` for the
+  server-side path that makes it real.
+- **Strengthened LICENSE** into a proper proprietary beta-evaluation agreement
+  (named licensee, no redistribution / reverse-engineering / derivative works,
+  ownership, revocation, confidentiality, liability cap).
+
 ## 0.6.0 — 2026-06-14
 
 - **Structured-output safety (behavior change).** Requests carrying a

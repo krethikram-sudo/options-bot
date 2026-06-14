@@ -1,20 +1,75 @@
-ModelPilot Beta Evaluation License
-
+ModelPilot Beta Evaluation License Agreement
 Copyright (c) 2026 ModelPilot. All rights reserved.
 
-Permission is granted to use this software solely to evaluate it within your
-organization during the beta program, subject to the following:
+This is a proprietary software license. The software is licensed, not sold. By
+installing, accessing, or using ModelPilot ("the Software"), the individual and
+the organization on whose behalf they act ("Licensee") agree to these terms. If
+Licensee does not agree, Licensee must not use the Software.
 
-1. You may install, run, and modify the software for internal evaluation.
-2. You may not redistribute the software or offer it as a service to third
-   parties.
-3. Feedback you choose to provide may be used to improve the product.
-4. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. IN NO
-   EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY ARISING FROM ITS USE. Routing decisions affect which model
-   serves your traffic; you remain responsible for validating outputs for
-   your use case.
-5. This license terminates when the beta program ends or upon notice; a
-   commercial license will be offered to continuing users.
+1. GRANT. Subject to these terms, ModelPilot grants Licensee a limited,
+   non-exclusive, non-transferable, non-sublicensable, revocable license to
+   install and run the Software solely for Licensee's internal evaluation of the
+   product during the beta program, on systems Licensee controls.
 
-Contact the maintainers for commercial terms.
+2. RESTRICTIONS. Licensee shall not, and shall not permit any third party to:
+   (a) copy the Software except as strictly necessary to run it for the licensed
+       purpose, or retain copies beyond the license term;
+   (b) distribute, publish, sublicense, sell, rent, lease, host, or otherwise
+       make the Software (in whole or in part) available to any third party, or
+       operate it as or within a service offered to third parties;
+   (c) modify, adapt, translate, or create derivative works of the Software,
+       except minimal configuration needed to run it for the licensed purpose;
+   (d) reverse engineer, decompile, or disassemble the Software, or attempt to
+       derive source from any non-source artifact, except to the limited extent
+       this restriction is prohibited by applicable law;
+   (e) remove, obscure, or alter any proprietary notices, or circumvent or
+       disable any license, activation, or usage-control mechanism;
+   (f) use the Software to build or train a competing product, or use it after
+       the license term or any revocation.
+
+3. OWNERSHIP. The Software, including all routing logic, models, calibration
+   data, methodology, and all intellectual property therein, is and remains the
+   exclusive property of ModelPilot. No rights are granted except as expressly
+   stated. All rights not granted are reserved.
+
+4. LICENSE KEYS / USAGE CONTROL. Certain features (including autopilot routing)
+   require a license token issued to a named Licensee and may be time-limited.
+   Licensee shall not share, transfer, or forge tokens. ModelPilot may issue,
+   decline to renew, or revoke tokens at its discretion.
+
+5. CONFIDENTIALITY. The Software and any non-public information about it are
+   confidential. Licensee shall protect them with no less than reasonable care
+   and shall not disclose them to third parties.
+
+6. DATA & FEEDBACK. The Software runs in Licensee's environment; Licensee's API
+   keys and prompt content are not transmitted to ModelPilot by the Software.
+   Feedback Licensee chooses to provide may be used to improve the product
+   without obligation or attribution.
+
+7. NO WARRANTY. THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT
+   WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS
+   FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. Routing decisions affect which
+   model serves Licensee's traffic; Licensee remains solely responsible for
+   validating outputs for its use case.
+
+8. LIMITATION OF LIABILITY. TO THE MAXIMUM EXTENT PERMITTED BY LAW, MODELPILOT
+   SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR
+   PUNITIVE DAMAGES, OR FOR LOST PROFITS, REVENUES, OR DATA, ARISING FROM OR
+   RELATED TO THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY. MODELPILOT'S
+   TOTAL AGGREGATE LIABILITY SHALL NOT EXCEED USD $100.
+
+9. TERM & TERMINATION. This license is effective until terminated. It terminates
+   automatically when the beta program ends, upon expiry or revocation of
+   Licensee's license token, or immediately upon any breach. On termination,
+   Licensee shall cease all use and delete all copies of the Software. Sections
+   2-3, 5, 7, 8, and 10 survive termination.
+
+10. GENERAL. A separate commercial license will be offered to continuing users.
+    These terms are the entire agreement regarding the Software and supersede
+    prior understandings. If any provision is unenforceable, the rest remains in
+    effect.
+
+Contact: krethikram@gmail.com for commercial terms or license keys.
+
+(This template is provided for the beta and is not legal advice; have counsel
+review before broad distribution.)

@@ -63,7 +63,7 @@ cp "$SRC"/goldenset_data/* "$WORK/goldenset_data/"
 mkdir -p "$WORK/internal"
 cp "$SRC"/PRODUCT_DESIGN.md "$SRC"/ROUTER_TUNING_PLAN.md "$SRC"/SAVINGS_DASHBOARD.md \
    "$SRC"/DEMO_SCRIPT.md "$SRC"/GTM_PLAN.md "$SRC"/COMPETITIVE.md \
-   "$SRC"/PILOT_OUTREACH.md "$SRC"/pilot_tracker.csv "$WORK/internal/"
+   "$SRC"/PILOT_OUTREACH.md "$SRC"/SPLIT_ARCHITECTURE.md "$SRC"/pilot_tracker.csv "$WORK/internal/"
 cp "$SRC"/README.md "$WORK/internal/PRODUCT_README.md"
 
 # --- customer-facing test matrix ---

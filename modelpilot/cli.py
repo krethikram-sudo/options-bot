@@ -32,6 +32,25 @@ def _gateway_env(args) -> dict:
 
 
 def cmd_gateway(args):
+    # Autopilot (capturing savings) requires a license; guidance/shadow are free
+    # so prospects can measure their potential savings before committing.
+    if {"guidance": "advise"}.get(args.mode, args.mode) == "autopilot":
+        import time as _time
+
+        from . import license as _lic
+        try:
+            claims = _lic.check()
+        except _lic.LicenseError as e:
+            sys.exit(f"Autopilot needs a valid ModelPilot license: {e}\n"
+                     "Set MODELPILOT_LICENSE=<token> (or @/path/to/token). "
+                     "Guidance mode runs free — request a license: krethikram@gmail.com")
+        if not claims:
+            sys.exit("Autopilot needs a ModelPilot license. Run --mode guidance free to see "
+                     "your potential savings, or set MODELPILOT_LICENSE=<token>.\n"
+                     "Request a license: krethikram@gmail.com")
+        exp = claims.get("exp")
+        print(f"Licensed to {claims.get('licensee') or 'beta'} "
+              f"(expires {_time.strftime('%Y-%m-%d', _time.gmtime(exp)) if exp else 'never'})")
     os.environ.update(_gateway_env(args))
     import uvicorn
 
