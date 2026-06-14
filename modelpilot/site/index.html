@@ -144,9 +144,11 @@ modelpilot gateway --mode guidance --port 8400
 # 4. Watch the dashboard — it shows what autopilot would save + the proof
 open http://localhost:8400/modelpilot/dashboard
 
-# 5. Convinced? Capture it.
+# 5. Convinced? Set the license key we sent you, and capture it.
+export MODELPILOT_LICENSE="&lt;your license token&gt;"
 modelpilot gateway --mode autopilot --port 8400</pre>
-  <p>Your API keys pass through and are never stored. The ledger holds token
+  <p>Guidance is free; autopilot needs a license key we issue with your invite.
+  Your API keys pass through and are never stored. The ledger holds token
   counts and routing metadata — no prompt text. Full details in the
   <a href="https://github.com/krethikram-sudo/modelpilot#privacy--security">README</a>.</p>
 </div></section>

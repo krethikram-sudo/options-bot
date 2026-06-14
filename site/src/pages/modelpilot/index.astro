@@ -334,7 +334,8 @@ routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
           <em>changes nothing</em> about your traffic (zero risk), then switch to
           autopilot once the dashboard convinces you. A Claude.ai / Claude Code
           <em>subscription</em> can't be optimized (it's flat-rate, not per-token).
-          Python 3.10+.</p>
+          Python 3.10+. <b>Guidance is free; autopilot needs a license key</b> we issue
+          with your repo invite.</p>
         <ol class="steps">
           <li><b>Get access.</b> Reply to your invite with your GitHub username; we
             add you to the private repo and you'll get an email from GitHub.</li>
@@ -366,10 +367,12 @@ Claude Code / any SDK:  export ANTHROPIC_BASE_URL=http://localhost:8400</pre>
             rendered right on the dashboard:
             <pre class="block">modelpilot compare --from-captures --judge --save-to-db</pre></li>
 
-          <li><b>Switch to autopilot</b> when the evidence convinces you. It routes
-            automatically, keeps a randomized holdout running to prove quality parity,
-            and continuously re-tunes to your traffic:
-            <pre class="block">modelpilot gateway --mode autopilot --port 8400</pre></li>
+          <li><b>Switch to autopilot</b> when the evidence convinces you — set the
+            license key we sent you, and it routes automatically, keeps a randomized
+            holdout running to prove quality parity, and continuously re-tunes to your
+            traffic:
+            <pre class="block">export MODELPILOT_LICENSE="&lt;your license token&gt;"
+modelpilot gateway --mode autopilot --port 8400</pre></li>
         </ol>
         <p class="note"><b>Kill switch any time:</b> revert the base URL, or run
         <code>--mode guidance</code> to stop all rerouting. <b>Privacy:</b> no prompt
