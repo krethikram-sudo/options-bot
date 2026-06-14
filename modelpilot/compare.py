@@ -27,7 +27,7 @@ from .pricing import Usage, request_cost
 from .router import recommend
 
 DEFAULT_BASELINE = "claude-fable-5"
-CONFIDENCE_GATE = 0.8
+CONFIDENCE_GATE = 0.7
 ANTHROPIC_API_URL = "https://api.anthropic.com"  # judge/run bypass any gateway base-url
 
 

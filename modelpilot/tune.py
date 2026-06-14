@@ -20,7 +20,7 @@ import time
 
 from .ledger import Ledger
 
-DEFAULT_GATE = 0.8       # global autopilot gate
+DEFAULT_GATE = 0.7       # global autopilot gate (golden-set false-downgrade 0% at >=0.6)
 AGGRESSIVE_GATE = 0.6    # proven-safe categories: capture more
 BLOCK_GATE = 0.99        # categories that hurt quality here: effectively off
 MIN_APPLIED = 20         # need this many clean routes before we trust loosening

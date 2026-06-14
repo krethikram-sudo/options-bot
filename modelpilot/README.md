@@ -102,7 +102,8 @@ python -m modelpilot.report --db modelpilot.db
 ```
 
 Modes: `MODELPILOT_MODE=shadow|advise|autopilot`; autopilot's confidence gate is
-`MODELPILOT_CONFIDENCE` (default 0.8). Advise mode returns
+`MODELPILOT_CONFIDENCE` (default 0.7; golden-set false-downgrade is 0% down to
+0.6). Advise mode returns
 `x-modelpilot-recommended-model` / `x-modelpilot-est-net-benefit-usd` headers on
 every response.
 

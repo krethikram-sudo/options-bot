@@ -28,8 +28,9 @@ def test_compile_validates_risk_and_min_model():
 
 
 def test_risk_tolerance_maps_to_gate():
-    assert compile_profile({"risk_tolerance": "conservative"}).confidence_gate() == 0.9
-    assert compile_profile({"risk_tolerance": "aggressive"}).confidence_gate() == 0.65
+    assert compile_profile({"risk_tolerance": "conservative"}).confidence_gate() == 0.8
+    assert compile_profile({"risk_tolerance": "balanced"}).confidence_gate() == 0.7
+    assert compile_profile({"risk_tolerance": "aggressive"}).confidence_gate() == 0.6
     assert compile_profile({"gate": 0.77}).confidence_gate() == 0.77  # explicit wins
 
 
@@ -83,5 +84,5 @@ def test_price_overrides_apply_to_global_table():
 
 def test_load_profile_from_policy_object():
     p = load_profile({"profile": {"min_model": "claude-haiku-4-5", "risk_tolerance": "aggressive"}})
-    assert p.min_model == "claude-haiku-4-5" and p.confidence_gate() == 0.65
+    assert p.min_model == "claude-haiku-4-5" and p.confidence_gate() == 0.6
     assert load_profile("").is_active() is False

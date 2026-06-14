@@ -138,7 +138,7 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--db", default=os.environ.get("MODELPILOT_DB", "modelpilot.db"))
     g.add_argument("--upstream", default=os.environ.get("MODELPILOT_UPSTREAM", "https://api.anthropic.com"))
     g.add_argument("--confidence", type=float,
-                   default=float(os.environ.get("MODELPILOT_CONFIDENCE", "0.8")), help="autopilot gate")
+                   default=float(os.environ.get("MODELPILOT_CONFIDENCE", "0.7")), help="autopilot gate")
     g.add_argument("--holdout", type=float,
                    default=float(os.environ.get("MODELPILOT_HOLDOUT_PCT", "0.10")), help="RCT control fraction")
     g.add_argument("--capture", type=float,

@@ -4,6 +4,21 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.13.0 — 2026-06-14
+
+- **Default autopilot gate lowered 0.8 → 0.7 (behavior change).** The golden set
+  shows false-downgrade is **0% at every gate ≥0.60**, so the 0.8 default was
+  over-conservative — it stranded schema-enforced extraction (which lands at
+  confidence 0.75, floored to Sonnet) just below the gate, so our best-fit
+  segment (document extraction) captured almost nothing at defaults. At 0.7 it
+  routes, with no golden-set quality cost. Measured on the ICP segment harness:
+  routed-down rose from 11→18 of 35 and est. savings 25%→33%, golden-set
+  false-downgrade still 0.0%. `MODELPILOT_CONFIDENCE` still overrides.
+  - Profile `risk_tolerance` realigned to the new default: conservative 0.8 /
+    balanced 0.7 / aggressive 0.6.
+  - Live auto-tune loosen floor lowered 0.7 → 0.6 so proven-safe categories can
+    still be loosened *below* the new default (golden-safe at 0.6).
+
 ## 0.12.0 — 2026-06-14
 
 - **Router recall pass (behavior change), driven by ICP segment testing.** A new

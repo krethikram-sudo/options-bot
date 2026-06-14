@@ -31,7 +31,7 @@ _FALLBACK_COLOR = "#999999"
 
 def collect_stats(ledger, days: float = 30.0, session: str = "") -> dict:
     since = time.time() - days * 86_400 if days else 0.0
-    gate = float(os.environ.get("MODELPILOT_CONFIDENCE", "0.8"))
+    gate = float(os.environ.get("MODELPILOT_CONFIDENCE", "0.7"))
     raw_mode = os.environ.get("MODELPILOT_MODE", "shadow")
     mode = {"guidance": "advise"}.get(raw_mode, raw_mode)
     display_mode = {"advise": "guidance"}.get(mode, mode)
@@ -53,7 +53,7 @@ def collect_stats(ledger, days: float = 30.0, session: str = "") -> dict:
     }
     from .tune import policy_from_quality
     stats["learned_gates"] = policy_from_quality(
-        ledger.category_quality(since), default_gate=gate, loosen_to=0.7)["category_gates"]
+        ledger.category_quality(since), default_gate=gate, loosen_to=0.6)["category_gates"]
     # Per-customer learned floors (Track A): categories whose own traffic proved
     # non-inferior at a cheaper tier. Loaded from the active policy file.
     from .gateway import _load_floors

@@ -33,7 +33,8 @@ from dataclasses import dataclass, field
 from .pricing import CAPABILITY_LADDER, ModelPrice, ladder_tier
 
 # risk_tolerance -> autopilot confidence gate. Higher gate = more cautious.
-RISK_GATES = {"conservative": 0.9, "balanced": 0.8, "aggressive": 0.65}
+# Aligned to the 0.7 default (golden-set false-downgrade is 0% down to gate 0.6).
+RISK_GATES = {"conservative": 0.8, "balanced": 0.7, "aggressive": 0.6}
 
 
 class ProfileError(ValueError):
@@ -60,7 +61,7 @@ class Profile:
         t = ladder_tier(self.min_model) if self.min_model else None
         return t or 0
 
-    def confidence_gate(self, default: float = 0.8) -> float:
+    def confidence_gate(self, default: float = 0.7) -> float:
         if self.gate is not None:
             return self.gate
         return RISK_GATES.get(self.risk_tolerance, default)

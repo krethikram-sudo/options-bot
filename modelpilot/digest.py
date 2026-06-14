@@ -29,7 +29,7 @@ def build_digest(db_path: str, days: float = 7.0) -> dict:
     # The confidence gate autopilot would use: shadow's headline must reflect
     # what autopilot will *actually* apply at that gate, not every recommendation
     # (otherwise shadow oversells and autopilot disappoints).
-    gate = float(os.environ.get("MODELPILOT_CONFIDENCE", "0.8"))
+    gate = float(os.environ.get("MODELPILOT_CONFIDENCE", "0.7"))
     ledger = Ledger(db_path)
     try:
         since = time.time() - days * 86_400 if days else 0.0

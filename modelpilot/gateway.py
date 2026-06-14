@@ -35,7 +35,7 @@ _MODE_ALIASES = {"guidance": "advise"}
 _RAW_MODE = os.environ.get("MODELPILOT_MODE", "shadow")
 MODE = _MODE_ALIASES.get(_RAW_MODE, _RAW_MODE)
 UPSTREAM = os.environ.get("MODELPILOT_UPSTREAM", "https://api.anthropic.com").rstrip("/")
-CONFIDENCE_GATE = float(os.environ.get("MODELPILOT_CONFIDENCE", "0.8"))
+CONFIDENCE_GATE = float(os.environ.get("MODELPILOT_CONFIDENCE", "0.7"))
 HOLDOUT_PCT = float(os.environ.get("MODELPILOT_HOLDOUT_PCT", "0.10"))
 
 
@@ -100,7 +100,7 @@ def _load_classifier():
 # Manual MODELPILOT_POLICY entries always win. Disable with MODELPILOT_AUTOTUNE=0.
 AUTOTUNE = os.environ.get("MODELPILOT_AUTOTUNE", "1") not in ("0", "false", "no", "")
 AUTOTUNE_EVERY = int(os.environ.get("MODELPILOT_AUTOTUNE_EVERY", "100"))
-AUTOTUNE_LOOSEN = float(os.environ.get("MODELPILOT_AUTOTUNE_LOOSEN", "0.7"))
+AUTOTUNE_LOOSEN = float(os.environ.get("MODELPILOT_AUTOTUNE_LOOSEN", "0.6"))
 # Opt-in prompt capture for golden-set building. 0 (default) = no prompt text
 # is ever stored. Set e.g. 0.25 to sample a quarter of requests into the
 # captures table; export with `python -m modelpilot.goldenset.export_corpus`.

@@ -24,7 +24,7 @@ from modelpilot.pricing import Usage, ladder_tier, request_cost
 from modelpilot.router import recommend
 
 BASELINE = "claude-opus-4-8"
-GATE = 0.8           # autopilot default
+GATE = 0.7           # autopilot default
 NOMINAL_OUT = 400    # illustrative output tokens per call
 
 # Each entry: (segment, company, prompt, structured_output?)
