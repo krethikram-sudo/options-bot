@@ -4,6 +4,22 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.12.0 — 2026-06-14
+
+- **Router recall pass (behavior change), driven by ICP segment testing.** A new
+  per-segment routing harness (`scripts/segment_eval.py`, internal) showed the
+  global classifier was dropping common real-world phrasings into the
+  conservative catch-alls — forfeiting savings — for our target workloads.
+  Added cheap-tier-safe markers: `classification` now catches fixed-answer cues
+  (`yes/no`, `pass/fail`, one-word answers); `extraction` catches data-shaping
+  cues (bare `parse`, "into rows/columns/a table/a spreadsheet"); `codegen_simple`
+  adds the `utility` noun. Measured on the golden set: **false-downgrade stays
+  0.0% at every gate ≥0.60 and coverage is unchanged (56.5%)** — pure recall, no
+  quality cost. On the ICP segment set, catch-alls dropped 15→11 and routed-down
+  rose 8→11 at the default gate. Domain-judgment phrasings (legal redlines,
+  compliance nuance, creative drafting) are intentionally left to per-customer
+  rules/floors, where they're validated on the customer's own traffic.
+
 ## 0.11.2 — 2026-06-14
 
 - **Fix: `compare` judge/run now bypass any `ANTHROPIC_BASE_URL`.** The judge is

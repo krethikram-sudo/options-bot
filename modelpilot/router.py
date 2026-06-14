@@ -27,8 +27,10 @@ _SONNET_TIER = CAPABILITY_LADDER.index("claude-sonnet-4-6")  # quality floor for
 # Phrases that mark a request as simple enough for the floor tier. Matched on
 # the final user message, lowercased.
 _SIMPLE_PATTERNS = {
-    "classification": r"\b(classif(y|ied)|categori[sz]e|label|sentiment|spam|which of the following|yes or no|true or false|intent)\b",
-    "extraction": r"\b(extract|pull out|parse out|list (all|the) (names|dates|emails|entities|fields)|into json|as json|csv of)\b",
+    # Fixed-answer markers (one label / binary / single word) are cheap-tier-safe.
+    "classification": r"\b(classif(y|ied)|categori[sz]e|label|sentiment|spam|which of the following|yes or no|yes/no|pass/fail|pass or fail|one[- ]word|true or false|intent)\b",
+    # Data-shaping markers: pull fields out, or reshape into a table/rows/columns.
+    "extraction": r"\b(extract|pull out|parse|list (all|the) (names|dates|emails|entities|fields)|into json|as json|into (rows|columns|a table|a spreadsheet)|csv of)\b",
     "translation": r"\b(translate|translation|in (french|spanish|german|japanese|chinese|korean|italian|portuguese|hindi))\b",
     # Code-WRITING intent (no actual code need be present): "write a SQL query",
     # "implement a function", "generate a regex". Narrow nouns keep complex work
@@ -38,7 +40,7 @@ _SIMPLE_PATTERNS = {
         r"\b(write|create|implement|generate|code|give me) (a |an |the )?"
         r"(simple |small |basic |quick )?"
         r"(python |sql |javascript |js |typescript |ts |bash |shell |java |go(lang)? |rust |regex )?"
-        r"(function|method|query|script|snippet|regex|one[- ]liner|command|helper|loop)\b"
+        r"(function|method|query|script|snippet|regex|one[- ]liner|command|helper|loop|utility)\b"
     ),
     "rewrite_format": (
         r"\b(rephrase|reword|rewrite this|fix (the )?grammar|proofread|reformat|"
