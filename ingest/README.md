@@ -25,6 +25,11 @@ Give a design partner the URL as their `MODELPILOT_TELEMETRY_URL`, e.g.
   catch-all rate, per-category volume + incident rate, and the top catch-all
   phrase signals summed across deployments. Uses the latest payload per
   deployment.
+- `GET /dashboard?since_days=30` — the same rollup as a server-rendered HTML
+  page (no JS/CDN): headline cards, a by-category volume/incident-rate table
+  (incident rate >2% flagged red = tighten; high volume + low incident = loosen),
+  and the top catch-all phrase signals. Open it in a browser to read the fleet at
+  a glance.
 - `GET /health`.
 
 ## How it drives the product

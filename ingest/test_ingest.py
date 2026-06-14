@@ -51,6 +51,20 @@ def test_sensitive_payload_is_rejected(tmp_path):
         assert r.status_code == 422, f"should reject {list(bad)}"
 
 
+def test_dashboard_renders(tmp_path):
+    c = _client(tmp_path)
+    c.post("/ingest", json=CLEAN)
+    r = c.get("/dashboard")
+    assert r.status_code == 200
+    body = r.text
+    assert "ModelPilot fleet telemetry" in body
+    assert "extraction" in body              # per-category row
+    assert "parse table" in body             # phrase signal row
+    # empty-state renders too
+    empty_dir = tmp_path / "empty"; empty_dir.mkdir()
+    assert _client(empty_dir).get("/dashboard").status_code == 200
+
+
 def test_latest_payload_per_deployment_wins(tmp_path):
     c = _client(tmp_path)
     c.post("/ingest", json={**CLEAN, "n_requests": 1})
