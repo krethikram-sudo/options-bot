@@ -46,6 +46,44 @@ const CONTACT = "krethikram@gmail.com";
       ol.steps > li { margin: 0 0 1.1rem; }
       ol.steps pre.block { margin: 8px 0 0; }
 
+      /* ---- self-playing animated product demo ---- */
+      .demo-wrap { max-width: 760px; margin: 1.4rem auto 0; }
+      .demo-win { border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+                  box-shadow: 0 10px 40px rgba(31,36,48,.10); background: #fff; }
+      .demo-top { display: flex; align-items: center; gap: 6px; padding: 9px 12px;
+                  background: #f3f4f6; border-bottom: 1px solid var(--line); }
+      .demo-top i { width: 11px; height: 11px; border-radius: 50%; background: #d7d9de; display: inline-block; }
+      .demo-top i.r { background: #ef6a5e; } .demo-top i.y { background: #f4be4f; } .demo-top i.g { background: #61c25a; }
+      .demo-top span { margin-left: 8px; color: var(--mut); font-size: .8rem; }
+      .demo-cap { text-align: center; font-size: .8rem; color: var(--mut); padding: 8px 0 0; }
+      .demo-screen { position: relative; min-height: 290px; padding: 18px 20px; }
+      .scene { display: none; }
+      .scene.on { display: block; animation: dfade .45s ease; }
+      @keyframes dfade { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: none; } }
+      .term2 { font: 13px/1.8 ui-monospace, Menlo, monospace; color: #1f2430; }
+      .term2 .cmd { color: #1f2430; } .term2 .dim { color: #9aa0ab; }
+      .scene.on .row { opacity: 0; animation: rowin .4s ease forwards; }
+      .scene.on .row:nth-child(1){animation-delay:.10s}.scene.on .row:nth-child(2){animation-delay:.45s}
+      .scene.on .row:nth-child(3){animation-delay:.80s}.scene.on .row:nth-child(4){animation-delay:1.15s}
+      .scene.on .row:nth-child(5){animation-delay:1.5s}.scene.on .row:nth-child(6){animation-delay:1.85s}
+      .scene.on .row:nth-child(7){animation-delay:2.2s}
+      @keyframes rowin { from { opacity: 0; transform: translateX(-6px);} to { opacity: 1; transform: none; } }
+      .pill { font-size: .72rem; padding: 1px 7px; border-radius: 10px; }
+      .pill.save { background: #eaf7ef; color: #1e7a44; } .pill.keep { background: #f6f7f9; color: #6b7080; }
+      .kpi { font-size: 2.2rem; font-weight: 800; color: var(--green); line-height: 1.1; }
+      .kpi small { font-size: .95rem; font-weight: 600; color: var(--mut); }
+      .sxs2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+      .sxs2 .col { border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; font-size: .82rem; }
+      .sxs2 .col.win { border-color: #cfead9; background: #f6fbf8; }
+      .sxs2 h5 { margin: 0 0 5px; font-size: .76rem; color: var(--mut); font-weight: 600; }
+      .bars { margin-top: 10px; } .barrow { display: flex; align-items: center; gap: 10px; margin: 9px 0; }
+      .barrow .lab { width: 70px; color: var(--mut); font-size: .8rem; }
+      .barrow .track { flex: 1; background: #f1f2f4; border-radius: 6px; height: 18px; overflow: hidden; }
+      .barrow .fill { height: 100%; background: linear-gradient(90deg,#9ad9b3,#2e9e5b); width: 0; border-radius: 6px; }
+      .scene.on .fill { animation: grow 1.1s cubic-bezier(.2,.7,.3,1) forwards; }
+      .barrow .pct { width: 42px; text-align: right; font-weight: 700; color: var(--green); font-size: .85rem; }
+      @keyframes grow { from { width: 0; } }
+
       /* Password gate */
       #content { display: none; }
       #gate { position: fixed; inset: 0; background: #fbfefc; display: flex;
@@ -144,6 +182,57 @@ $ modelpilot gateway --mode guidance --port 8400
   ...
 dashboard → autopilot would save <span class="g">48% of baseline</span> — switch when ready</pre>
       </div></header>
+
+      <section><div class="wrap">
+        <h2>See it in action</h2>
+        <div class="demo-wrap">
+          <div class="demo-win">
+            <div class="demo-top"><i class="r"></i><i class="y"></i><i class="g"></i>
+              <span>ModelPilot — live</span></div>
+            <div class="demo-screen" id="mp-demo">
+
+              <div class="scene on" data-scene="1">
+                <div class="term2">
+                  <div class="row"><span class="dim">$</span> <span class="cmd">modelpilot gateway --mode guidance --port 8400</span></div>
+                  <div class="row"><span class="dim"># your traffic flows through, unchanged — every request scored</span></div>
+                  <div class="row">classification &nbsp;→ claude-haiku-4-5 &nbsp;<span class="pill save">80% cheaper</span></div>
+                  <div class="row">extraction &nbsp;&nbsp;&nbsp;&nbsp;→ claude-haiku-4-5 &nbsp;<span class="pill save">80% cheaper</span></div>
+                  <div class="row">debugging &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ claude-opus-4-8 &nbsp;<span class="pill keep">keep · quality</span></div>
+                  <div class="row">summarize &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ claude-haiku-4-5 &nbsp;<span class="pill save">80% cheaper</span></div>
+                  <div class="row">architecture &nbsp;→ claude-opus-4-8 &nbsp;<span class="pill keep">keep · quality</span></div>
+                </div>
+              </div>
+
+              <div class="scene" data-scene="2">
+                <div class="row" style="font-size:.78rem;letter-spacing:.05em;color:#b8860b;font-weight:700">READY TO SWITCH TO AUTOPILOT?</div>
+                <div class="row kpi" style="margin-top:6px">$4,212/mo <small>— 38% of your Claude spend</small></div>
+                <div class="row" style="color:var(--mut);font-size:.85rem;margin-top:4px">Quality held: routed outputs statistically on par with the baseline (randomized holdout).</div>
+                <div class="row sxs2">
+                  <div class="col"><h5>Prompt</h5>"Classify this support ticket: 'charged twice this month'"</div>
+                  <div class="col win"><h5>ModelPilot → Haiku · $0.0003</h5>"billing · negative" &nbsp;<span class="pill save">✓ non-inferior</span></div>
+                </div>
+                <div class="row sxs2" style="margin-top:8px">
+                  <div class="col"><h5>Standard → Opus · $0.0021</h5>"billing · negative"</div>
+                  <div class="col win"><h5>saved on this chat</h5><b style="color:var(--green)">86%</b> · same answer</div>
+                </div>
+              </div>
+
+              <div class="scene" data-scene="3">
+                <div class="row" style="font-weight:700">It gets better the more you use it</div>
+                <div class="row" style="color:var(--mut);font-size:.85rem;margin:2px 0 6px">Auto-tuning learns your traffic — savings climb week over week.</div>
+                <div class="bars">
+                  <div class="barrow"><span class="lab">Week 1</span><span class="track"><span class="fill" style="width:31%"></span></span><span class="pct">31%</span></div>
+                  <div class="barrow"><span class="lab">Week 2</span><span class="track"><span class="fill" style="width:39%"></span></span><span class="pct">39%</span></div>
+                  <div class="barrow"><span class="lab">Week 3</span><span class="track"><span class="fill" style="width:47%"></span></span><span class="pct">47%</span></div>
+                </div>
+                <div class="row" style="color:var(--mut);font-size:.8rem;margin-top:8px">One line in your app. Quality proven by a randomized holdout. Kill switch any time.</div>
+              </div>
+
+            </div>
+          </div>
+          <p class="demo-cap">A stylized walkthrough of the real flow: route → prove → switch → improve.</p>
+        </div>
+      </div></section>
 
       <section><div class="wrap">
         <h2>Two modes. Start in guidance, switch when convinced.</h2>
@@ -261,5 +350,27 @@ Claude Code / any SDK:  export ANTHROPIC_BASE_URL=http://localhost:8400</pre>
         Sonnet 4.6 $3/$15 · Haiku 4.5 $1/$5 per MTok (June 2026 list).
       </div></footer>
     </div>
+    <script is:inline>
+      (function () {
+        function start() {
+          var demo = document.getElementById("mp-demo");
+          if (!demo) return;
+          var scenes = demo.querySelectorAll(".scene");
+          if (!scenes.length) return;
+          var i = 0;
+          // per-scene dwell times (ms): terminal lingers, dashboard reads, bars grow
+          var dwell = [5200, 5200, 4600];
+          function tick() {
+            scenes.forEach(function (s, k) { s.classList.toggle("on", k === i); });
+            var wait = dwell[i] || 4800;
+            i = (i + 1) % scenes.length;
+            setTimeout(tick, wait);
+          }
+          tick();
+        }
+        if (document.readyState !== "loading") start();
+        else document.addEventListener("DOMContentLoaded", start);
+      })();
+    </script>
   </body>
 </html>
