@@ -4,6 +4,15 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.4.1 — 2026-06-14
+
+- **Side-by-side proof embedded in the dashboard.** `modelpilot compare
+  --from-captures --save-to-db` stores the comparison; the dashboard then renders
+  it inline — your prompt, the recommended model's output and the standard
+  model's output in two columns, with per-chat and cumulative savings and the
+  non-inferiority verdict. The "see for yourself" conversion evidence now lives
+  on the dashboard, not just in a separate report.
+
 ## 0.4.0 — 2026-06-14
 
 - **Guidance mode + a conversion-focused dashboard.** `--mode guidance` is the

@@ -105,6 +105,32 @@ def test_dashboard_panel_sells_switch_in_guidance(tmp_path, monkeypatch):
     assert "compare --from-captures" in html
 
 
+def test_dashboard_embeds_side_by_side_proof(tmp_path, monkeypatch):
+    monkeypatch.setenv("MODELPILOT_MODE", "guidance")
+    db = str(tmp_path / "d.db")
+    ledger = Ledger(db)
+    ledger.record_proof({
+        "prompt": "Classify this ticket sentiment",
+        "category": "classification",
+        "routed_model": "claude-haiku-4-5",
+        "baseline_model": "claude-opus-4-8",
+        "routed_text": "ROUTED-OUTPUT-TEXT",
+        "baseline_text": "STANDARD-OUTPUT-TEXT",
+        "routed_cost": 0.001, "baseline_cost": 0.010, "non_inferior": True,
+    })
+    summ = ledger.proof_summary()
+    ledger.close()
+    assert summ["n"] == 1 and abs(summ["savings"] - 0.009) < 1e-9
+    assert summ["non_inferior_rate"] == 1.0
+
+    ledger = Ledger(db)
+    html_out = render_html(collect_stats(ledger, days=1))
+    ledger.close()
+    # both columns and both outputs render inside the dashboard
+    assert "ROUTED-OUTPUT-TEXT" in html_out and "STANDARD-OUTPUT-TEXT" in html_out
+    assert "claude-haiku-4-5" in html_out and "non-inferior" in html_out
+
+
 def test_dashboard_panel_reassures_in_autopilot(tmp_path, monkeypatch):
     monkeypatch.setenv("MODELPILOT_MODE", "autopilot")
     db = str(tmp_path / "d.db")

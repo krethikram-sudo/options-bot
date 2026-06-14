@@ -220,6 +220,8 @@ def main():
     parser.add_argument("--n", type=int, default=20)
     parser.add_argument("--judge", action="store_true", help="add non-inferiority verdicts (extra API calls)")
     parser.add_argument("--offline", action="store_true", help="no API, synthetic outputs — report shape only")
+    parser.add_argument("--save-to-db", action="store_true",
+                        help="store the comparison so it renders inside the dashboard's proof panel")
     parser.add_argument("--out", default="compare_report.html")
     args = parser.parse_args()
 
@@ -252,6 +254,15 @@ def main():
     result = run_comparison(prompts, args.baseline, run_fn, judge_fn)
     with open(args.out, "w") as f:
         f.write(render_report(result))
+
+    if args.save_to_db:
+        from .ledger import Ledger
+        ledger = Ledger(args.db)
+        ledger.clear_proof()
+        for row in result["rows"]:
+            ledger.record_proof(row)
+        ledger.close()
+        print(f"saved {len(result['rows'])} rows to the dashboard proof panel ({args.db})")
     print(f"\nrouted {result['n_switched']}/{result['n']} prompts · "
           f"saved {result['savings_pct']:.0%} (${result['savings']:.2f})"
           + (f" · non-inferior {result['non_inferior_rate']:.0%}"

@@ -64,6 +64,19 @@ CREATE TABLE IF NOT EXISTS replay_calibration (
     updated_at REAL NOT NULL,
     PRIMARY KEY (category, baseline_model)
 );
+CREATE TABLE IF NOT EXISTS proof (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts REAL NOT NULL,
+    prompt TEXT NOT NULL,
+    category TEXT NOT NULL,
+    routed_model TEXT NOT NULL,
+    baseline_model TEXT NOT NULL,
+    routed_text TEXT NOT NULL,
+    baseline_text TEXT NOT NULL,
+    routed_cost REAL NOT NULL,
+    baseline_cost REAL NOT NULL,
+    non_inferior INTEGER               -- 1 / 0 / NULL (unjudged)
+);
 """
 
 
@@ -299,6 +312,50 @@ class Ledger:
                 (since_ts,),
             ).fetchall()
         return [dict(r) for r in rows]
+
+    # --- side-by-side proof (recommended vs standard, rendered in the dashboard) ---
+
+    def clear_proof(self):
+        with self._lock:
+            self._conn.execute("DELETE FROM proof")
+            self._conn.commit()
+
+    def record_proof(self, row: dict):
+        ni = row.get("non_inferior")
+        with self._lock:
+            self._conn.execute(
+                """INSERT INTO proof (ts, prompt, category, routed_model, baseline_model,
+                       routed_text, baseline_text, routed_cost, baseline_cost, non_inferior)
+                   VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                (time.time(), row["prompt"], row.get("category", ""), row["routed_model"],
+                 row["baseline_model"], row["routed_text"], row["baseline_text"],
+                 row["routed_cost"], row["baseline_cost"],
+                 None if ni is None else int(ni)),
+            )
+            self._conn.commit()
+
+    def proof_rows(self, limit: int = 8) -> list[dict]:
+        with self._lock:
+            rows = self._conn.execute(
+                """SELECT prompt, category, routed_model, baseline_model, routed_text,
+                          baseline_text, routed_cost, baseline_cost, non_inferior
+                   FROM proof ORDER BY id LIMIT ?""", (limit,)).fetchall()
+        return [dict(r) for r in rows]
+
+    def proof_summary(self) -> dict:
+        with self._lock:
+            row = self._conn.execute(
+                """SELECT COUNT(*) n,
+                          COALESCE(SUM(baseline_cost), 0) b,
+                          COALESCE(SUM(routed_cost), 0) r,
+                          COALESCE(SUM(CASE WHEN routed_model != baseline_model THEN 1 ELSE 0 END), 0) n_switched,
+                          COALESCE(SUM(CASE WHEN non_inferior IS NOT NULL THEN 1 ELSE 0 END), 0) n_judged,
+                          COALESCE(SUM(CASE WHEN non_inferior = 1 THEN 1 ELSE 0 END), 0) n_ni
+                   FROM proof""").fetchone()
+        b, r = row["b"], row["r"]
+        return {"n": row["n"], "n_switched": row["n_switched"],
+                "savings": b - r, "savings_pct": (b - r) / b if b else 0.0,
+                "non_inferior_rate": (row["n_ni"] / row["n_judged"]) if row["n_judged"] else None}
 
     def category_quality(self, since_ts: float = 0.0) -> list[dict]:
         """Per-category outcomes that drive per-customer tuning: how many
