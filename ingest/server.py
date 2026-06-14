@@ -166,6 +166,70 @@ async def agg(since_days: float = 30.0):
     return _rollup(since_days)
 
 
+# Hard categories we never auto-suggest loosening (quality must stay strong).
+_HARD = {"debugging", "math_logic", "codegen_complex", "agentic",
+         "analysis_strategy", "creative_longform", "unknown", "conversation"}
+# phrase keyword -> (starter pack, suggested category)
+_PHRASE_TARGETS = [
+    (("invoice", "receipt", "extract", "parse", "table", "field", "ocr", "spreadsheet", "rows", "column"),
+     "doc-extraction", "extraction"),
+    (("ticket", "reply", "support", "compliance", "refund", "pass/fail", "triage"),
+     "support", "classification"),
+    (("contract", "clause", "redline", "nda", "agreement", "governing law", "lease"),
+     "legal", "extraction"),
+    (("chart", "icd", "clinical", "prior auth", "cpt", "patient", "ehr", "payer"),
+     "healthcare", "extraction"),
+    (("function", "script", "regex", "sql", "endpoint", "component", "docstring", "migration"),
+     "coding", "codegen_simple"),
+]
+
+
+def _target_for(phrase: str):
+    low = phrase.lower()
+    for keys, pack, cat in _PHRASE_TARGETS:
+        if any(k in low for k in keys):
+            return pack, cat
+    return None, None
+
+
+def _suggestions(agg: dict) -> list[dict]:
+    """Turn the rollup into prioritized, concrete tuning actions."""
+    if not agg.get("n_deployments"):
+        return []
+    out = []
+    car = agg["mean_catch_all_rate"]
+    if car >= 0.15:
+        out.append({"priority": "high" if car >= 0.30 else "medium",
+                    "action": "Run a router-recall pass / ship segment rule-packs",
+                    "why": f"fleet mean catch-all rate is {car:.0%} — that much traffic stays on the baseline"})
+    for c in agg["per_category"]:
+        cat, n, ir, ap = c["category"], c["total_n"], c["incident_rate"], c.get("applied", 0)
+        if ir > 0.02 and ap >= 20:
+            out.append({"priority": "high", "action": f"Tighten `{cat}` (raise its gate/floor)",
+                        "why": f"{ir:.1%} incident rate over {ap} applied routes (>2% target)"})
+        elif ir == 0 and n >= 50 and cat not in _HARD:
+            out.append({"priority": "medium", "action": f"Loosen `{cat}` (lower its floor/gate)",
+                        "why": f"{n:,} fleet requests, 0 incidents — proven safe; capture more savings"})
+    for p in agg["top_catchall_phrases"][:8]:
+        pack, cat = _target_for(p["phrase"])
+        if pack:
+            out.append({"priority": "medium",
+                        "action": f'Add "{p["phrase"]}" → {cat} (the {pack} pack / global recall)',
+                        "why": f"recurring catch-all phrase across {p['docs']} prompts"})
+        else:
+            out.append({"priority": "low",
+                        "action": f'Review "{p["phrase"]}" for a new rule / recall pattern',
+                        "why": f"recurring catch-all phrase across {p['docs']} prompts; no obvious segment match"})
+    rank = {"high": 0, "medium": 1, "low": 2}
+    out.sort(key=lambda a: rank[a["priority"]])
+    return out
+
+
+@app.get("/actions")
+async def actions(since_days: float = 30.0):
+    return {"actions": _suggestions(_rollup(since_days))}
+
+
 def _render(agg: dict) -> str:
     e = html.escape
     if not agg.get("n_deployments"):
@@ -189,6 +253,19 @@ def _render(agg: dict) -> str:
             f"<td><div class=bar><span style='width:{barw}%'></span></div>{c['total_n']:,}</td>"
             f"<td class={risk}>{c['incident_rate']:.1%}</td></tr>"
         )
+    # Suggested actions panel
+    _pri_color = {"high": "#b3372f", "medium": "#2f6fb6", "low": "#6b7080"}
+    sugg = _suggestions(agg)
+    if sugg:
+        items = "".join(
+            f'<li><b style="color:{_pri_color[s["priority"]]}">[{s["priority"]}]</b> '
+            f'{e(s["action"])}<br><span class=muted style="font-size:.82rem">{e(s["why"])}</span></li>'
+            for s in sugg)
+        actions_html = (f'<div class="actions"><h2 style="font-size:1.05rem;margin:.2rem 0 .6rem">'
+                        f'Suggested actions ({len(sugg)})</h2><ul>{items}</ul></div>')
+    else:
+        actions_html = ""
+
     maxd = max((p["docs"] for p in agg["top_catchall_phrases"]), default=1) or 1
     phraserows = "".join(
         f"<tr><td>{e(p['phrase'])}</td><td><div class=bar><span style='width:{int(100*p['docs']/maxd)}%'></span></div>"
@@ -208,11 +285,14 @@ def _render(agg: dict) -> str:
  .bar{{display:inline-block;width:120px;height:8px;background:#f0f0f3;border-radius:4px;margin-right:8px;vertical-align:middle}}
  .bar span{{display:block;height:8px;background:#2f6fb6;border-radius:4px}}
  .ok{{color:#2e9e5b}} .bad{{color:#b3372f;font-weight:600}}
+ .actions{{border:1px solid #d8e4f0;background:#f6f9fc;border-radius:10px;padding:10px 16px;margin:1rem 0}}
+ .actions ul{{margin:.2rem 0;padding-left:1.1rem}} .actions li{{margin:.4rem 0}}
 </style></head><body>
 <h1>ModelPilot fleet telemetry</h1>
 <p class="muted">Aggregate, opt-in metrics across customer deployments — no prompt text.
 Drives the next router-recall pass, floor/gate tuning, and starter-pack updates.</p>
 <div class="cards">{cards}</div>
+{actions_html}
 <h2 style="font-size:1.05rem">By category — volume &amp; incident rate</h2>
 <p class="muted" style="font-size:.82rem">High volume + low incident rate = loosen (more savings). Incident rate &gt;2% (red) = tighten.</p>
 <table><tr><th>category</th><th>requests (across fleet)</th><th>incident rate</th></tr>{catrows}</table>

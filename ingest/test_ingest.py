@@ -65,6 +65,28 @@ def test_dashboard_renders(tmp_path):
     assert _client(empty_dir).get("/dashboard").status_code == 200
 
 
+def test_actions_recommends_tighten_loosen_and_phrase(tmp_path):
+    c = _client(tmp_path)
+    # high catch-all; one safe high-volume category; one risky category; a doc phrase
+    c.post("/ingest", json={
+        "deployment_id": "d1", "n_requests": 1000, "catch_all_rate": 0.35,
+        "by_category": [
+            {"category": "extraction", "n": 400, "n_applied": 300, "incident_rate": 0.0},
+            {"category": "debugging", "n": 200, "n_applied": 100, "incident_rate": 0.05},
+        ],
+        "catchall_phrase_signals": [{"phrase": "parse this invoice", "docs": 30}],
+    })
+    acts = c.get("/actions").json()["actions"]
+    blob = " ".join(a["action"] for a in acts)
+    assert any(a["priority"] == "high" for a in acts)          # something urgent
+    assert "Run a router-recall pass" in blob                  # 35% catch-all
+    assert "Loosen `extraction`" in blob                       # safe high-volume
+    assert "Tighten `debugging`" in blob                       # 5% incident rate
+    assert "doc-extraction pack" in blob                       # phrase mapped to pack
+    # dashboard surfaces the panel
+    assert "Suggested actions" in c.get("/dashboard").text
+
+
 def test_latest_payload_per_deployment_wins(tmp_path):
     c = _client(tmp_path)
     c.post("/ingest", json={**CLEAN, "n_requests": 1})

@@ -25,6 +25,11 @@ Give a design partner the URL as their `MODELPILOT_TELEMETRY_URL`, e.g.
   catch-all rate, per-category volume + incident rate, and the top catch-all
   phrase signals summed across deployments. Uses the latest payload per
   deployment.
+- `GET /actions?since_days=30` — turns the rollup into prioritized, concrete
+  tuning actions: tighten a category (incident rate >2%), loosen a proven-safe
+  high-volume category, run a recall pass (high catch-all rate), and add specific
+  catch-all phrases to the matching starter pack / global recall. Also rendered
+  at the top of the dashboard.
 - `GET /dashboard?since_days=30` — the same rollup as a server-rendered HTML
   page (no JS/CDN): headline cards, a by-category volume/incident-rate table
   (incident rate >2% flagged red = tighten; high volume + low incident = loosen),
