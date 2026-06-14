@@ -4,6 +4,22 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.28.0 — 2026-06-14
+
+- **Privacy-safe request logs (P0 observability).** Opt-in per-request **metadata
+  only** — timestamps, requested/routed model, category, token counts, cost,
+  realized savings, status, routed/escalated flags. **Prompt text and outputs
+  never leave your box** (the `/api/logs` endpoint also rejects any payload with
+  prompt/output/secret keys, 422). The console stores them; the dashboard adds a
+  **Logs** page with a recent-requests table and **CSV export**.
+- **OTel export to your own collector.** `modelpilot/logs.py` ships new ledger rows
+  incrementally (rowid marker, restart-safe) to the console (`MODELPILOT_LOGS=1`)
+  and/or emits **OTLP/HTTP JSON trace spans** to `MODELPILOT_OTEL_ENDPOINT` — one
+  span per request, metadata attributes only. Runs as a background task on the
+  gateway or via `modelpilot logs --watch`. Off by default. `ledger.rows_since`
+  exposes the metadata cursor. (Full-gateway feature — it reads the local ledger;
+  in the customer-package allowlist.)
+
 ## 0.27.0 — 2026-06-14
 
 - **Docs site (P0).** A real, hosted docs experience at `/docs` (served from the

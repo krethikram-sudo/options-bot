@@ -533,6 +533,52 @@ def test_api_keys_managed_via_http_with_one_time_reveal(env, client):
     assert store.list_api_keys(acct["id"])[0]["revoked_at"] is not None
 
 
+# --- request logs (opt-in, metadata only) --------------------------------- #
+
+def test_api_logs_store_and_recent(env, client):
+    _, store = env
+    a = store.create_account("lg@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    batch = {"deployment_id": dep, "logs": [
+        {"ts": 1.0, "category": "classification", "original_model": "claude-opus-4-8",
+         "routed_model": "claude-haiku-4-5", "applied": True, "input_tokens": 100,
+         "output_tokens": 50, "baseline_cost": 0.01, "actual_cost": 0.004,
+         "realized_saved": 0.006, "status_code": 200},
+        {"ts": 2.0, "category": "debugging", "original_model": "claude-opus-4-8",
+         "routed_model": "claude-opus-4-8", "applied": False, "status_code": 200}]}
+    assert client.post("/api/logs", json=batch).status_code == 200
+    recent = store.recent_logs(a["id"])
+    assert store.logs_count(a["id"]) == 2
+    assert recent[0]["category"] == "debugging"  # newest first (ts desc)
+    assert recent[1]["routed_model"] == "claude-haiku-4-5" and recent[1]["applied"] == 1
+
+
+def test_api_logs_rejects_prompt_text(env, client):
+    _, store = env
+    a = store.create_account("lg2@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    r = client.post("/api/logs", json={"deployment_id": dep,
+                    "logs": [{"ts": 1.0, "prompt": "leaked!", "category": "x"}]})
+    assert r.status_code == 422 and store.logs_count(a["id"]) == 0
+
+
+def test_logs_page_and_csv(env, client):
+    _, store = env
+    _signup(client, email="lgp@b.com")
+    acct = store.get_account_by_email("lgp@b.com")
+    dep = store.deployments_for(acct["id"])[0]["deployment_id"]
+    # empty state mentions the opt-in env vars
+    assert "MODELPILOT_LOGS" in client.get("/app/logs").text
+    store.record_logs(dep, [{"ts": 5.0, "category": "extraction",
+                             "routed_model": "claude-haiku-4-5", "applied": True,
+                             "actual_cost": 0.002, "realized_saved": 0.003, "status_code": 200}])
+    page = client.get("/app/logs").text
+    assert "extraction" in page and "Export CSV" in page
+    csv = client.get("/app/logs.csv")
+    assert csv.status_code == 200 and "text/csv" in csv.headers["content-type"]
+    assert "extraction" in csv.text and "realized_saved" in csv.text
+
+
 # --- spend budget + alerts ------------------------------------------------ #
 
 def test_budget_status_and_alert_levels(env):

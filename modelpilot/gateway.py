@@ -214,11 +214,33 @@ async def _lifespan(app):
                     pass
 
         policy_task = asyncio.create_task(_policy_loop())
+
+    # Opt-in per-request metadata logs (console and/or your OTLP collector).
+    # Off unless MODELPILOT_LOGS=1 (console) or MODELPILOT_OTEL_ENDPOINT is set.
+    logs_task = None
+    logs_on = (os.environ.get("MODELPILOT_LOGS", "") in ("1", "true", "yes", "on")
+               and app.state.console_url and app.state.deployment_id)
+    if logs_on or os.environ.get("MODELPILOT_OTEL_ENDPOINT"):
+        import asyncio
+
+        from . import logs as _logs
+
+        async def _logs_loop():
+            interval = int(os.environ.get("MODELPILOT_LOGS_INTERVAL", "30"))
+            while True:
+                await asyncio.sleep(interval)
+                try:
+                    await asyncio.to_thread(_logs.ship_once, _db, app.state.console_url,
+                                            app.state.deployment_id,
+                                            os.environ.get("MODELPILOT_OTEL_ENDPOINT") or None)
+                except Exception:  # noqa: BLE001 — logging never breaks the gateway
+                    pass
+
+        logs_task = asyncio.create_task(_logs_loop())
     yield
-    if meter_task is not None:
-        meter_task.cancel()
-    if policy_task is not None:
-        policy_task.cancel()
+    for t in (meter_task, policy_task, logs_task):
+        if t is not None:
+            t.cancel()
     await app.state.http.aclose()
     app.state.ledger.close()
 

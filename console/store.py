@@ -147,6 +147,18 @@ CREATE TABLE IF NOT EXISTS budget_alerts (
     sent_at REAL NOT NULL,
     PRIMARY KEY (account_id, cycle_start, level)
 );
+CREATE TABLE IF NOT EXISTS request_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL REFERENCES accounts(id),
+    deployment_id TEXT NOT NULL,
+    ts REAL NOT NULL,
+    category TEXT, original_model TEXT, routed_model TEXT,
+    applied INTEGER DEFAULT 0, escalated INTEGER DEFAULT 0, action TEXT,
+    status_code INTEGER,
+    input_tokens INTEGER DEFAULT 0, output_tokens INTEGER DEFAULT 0,
+    baseline_cost REAL DEFAULT 0, actual_cost REAL DEFAULT 0, realized_saved REAL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_rlog_acct ON request_logs(account_id, ts);
 """
 
 # Columns added after the proposals table first shipped — applied to existing DBs.
@@ -943,6 +955,59 @@ def approved_policy_for_deployment(deployment_id: str, path: str | None = None) 
         return {"floors": {}, "rules": []}
     return {"floors": approved_floors(acct["id"], path),
             "rules": approved_rules(acct["id"], path)}
+
+
+# --------------------------------------------------------------------------- #
+# Request logs (opt-in, per-request METADATA only — never prompt text)
+# --------------------------------------------------------------------------- #
+
+_LOG_COLS = ("ts", "category", "original_model", "routed_model", "applied", "escalated",
+             "action", "status_code", "input_tokens", "output_tokens",
+             "baseline_cost", "actual_cost", "realized_saved")
+
+
+def record_logs(deployment_id: str, rows: list[dict], path: str | None = None) -> dict:
+    """Store a batch of per-request metadata rows for a deployment."""
+    acct = account_for_deployment(deployment_id, path)
+    if not acct:
+        raise StoreError("unknown deployment")
+    conn = connect(path)
+    try:
+        conn.executemany(
+            "INSERT INTO request_logs(account_id, deployment_id, ts, category, original_model,"
+            " routed_model, applied, escalated, action, status_code, input_tokens, output_tokens,"
+            " baseline_cost, actual_cost, realized_saved)"
+            " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            [(acct["id"], deployment_id, r.get("ts") or 0, r.get("category"),
+              r.get("original_model"), r.get("routed_model"), int(bool(r.get("applied"))),
+              int(bool(r.get("escalated"))), r.get("action"), r.get("status_code"),
+              int(r.get("input_tokens") or 0), int(r.get("output_tokens") or 0),
+              float(r.get("baseline_cost") or 0), float(r.get("actual_cost") or 0),
+              float(r.get("realized_saved") or 0)) for r in (rows or [])])
+        conn.commit()
+    finally:
+        conn.close()
+    return {"ok": True, "stored": len(rows or [])}
+
+
+def recent_logs(account_id: int, limit: int = 100, path: str | None = None) -> list[dict]:
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT * FROM request_logs WHERE account_id=? ORDER BY ts DESC, id DESC LIMIT ?",
+            (account_id, limit)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def logs_count(account_id: int, path: str | None = None) -> int:
+    conn = connect(path)
+    try:
+        return conn.execute("SELECT COUNT(*) c FROM request_logs WHERE account_id=?",
+                            (account_id,)).fetchone()["c"]
+    finally:
+        conn.close()
 
 
 def cycle_start(now: float | None = None) -> float:

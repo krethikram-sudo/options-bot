@@ -92,7 +92,7 @@ def _fmt_date(ts) -> str:
 def page(title: str, body: str, account: dict | None = None, active: str = "") -> str:
     nav = ""
     if account:
-        items = [("/app", "Dashboard"), ("/app/settings", "Settings"),
+        items = [("/app", "Dashboard"), ("/app/logs", "Logs"), ("/app/settings", "Settings"),
                  ("/app/connect", "Connect"), ("/app/billing", "Billing")]
         if account.get("role") == "admin":
             items.append(("/admin", "Admin"))
@@ -428,6 +428,47 @@ client = Anthropic(base_url="http://127.0.0.1:8400")  # your key stays local</pr
     </div>
     {_api_keys_section(keys or [], deployments, new_key)}"""
     return page("Connect", body, account, "/app/connect")
+
+
+def logs_page(account: dict, logs: list[dict], total: int) -> str:
+    if not logs:
+        body = """
+        <h1>Request logs</h1>
+        <p class=muted>Per-request <b>metadata only</b> — timestamps, models, category, token counts,
+          cost, and routed/escalated flags. Prompt text and outputs never leave your box.</p>
+        <div class=card><p class="muted">No logs yet. They're <b>opt-in</b>: run your gateway with
+          <code>MODELPILOT_LOGS=1</code> (ships metadata to the console) and/or
+          <code>MODELPILOT_OTEL_ENDPOINT=…</code> (exports OTLP traces to your own collector).
+          See the <a href="https://modelpilot.pages.dev/docs/configuration.html">docs</a>.</p></div>"""
+        return page("Logs", body, account, "/app/logs")
+    rows = ""
+    for r in logs:
+        when = _fmt_date(r.get("ts"))
+        route = (f'{_e(r.get("original_model"))} → <b>{_e(r.get("routed_model"))}</b>'
+                 if r.get("applied") else _e(r.get("original_model") or "—"))
+        flags = []
+        if r.get("applied"):
+            flags.append('<span class="badge paid">routed</span>')
+        if r.get("escalated"):
+            flags.append('<span class="badge suspended">escalated</span>')
+        rows += (f"<tr><td class='small muted'>{when}</td><td>{_e(r.get('category'))}</td>"
+                 f"<td class=small>{route}</td>"
+                 f"<td>{int((r.get('input_tokens') or 0)+(r.get('output_tokens') or 0)):,}</td>"
+                 f"<td>{money(r.get('actual_cost'))}</td><td>{money(r.get('realized_saved'))}</td>"
+                 f"<td>{r.get('status_code') or ''}</td><td>{' '.join(flags)}</td></tr>")
+    body = f"""
+    <div class=row><h1>Request logs</h1><div class=spacer></div>
+      <a class="btn sec sm" href="/app/logs.csv">Export CSV</a></div>
+    <p class=muted>Per-request <b>metadata only</b> — never prompt text or outputs. Showing the latest
+      {len(logs)} of {total:,}.</p>
+    <div class=card style="padding:0"><table>
+      <thead><tr><th>Time</th><th>Category</th><th>Model</th><th>Tokens</th><th>Cost</th>
+        <th>Saved</th><th>Status</th><th></th></tr></thead>
+      <tbody>{rows}</tbody></table></div>
+    <p class="small muted" style="margin-top:12px">Export to your own observability stack with OTLP:
+      set <code>MODELPILOT_OTEL_ENDPOINT</code> on your gateway
+      (<a href="https://modelpilot.pages.dev/docs/configuration.html">docs</a>).</p>"""
+    return page("Logs", body, account, "/app/logs")
 
 
 def forgot_form(sent: bool = False, email: str = "") -> str:

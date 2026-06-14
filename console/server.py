@@ -368,6 +368,36 @@ async def rename_deployment(request: Request):
     return _redirect("/app/connect")
 
 
+@app.get("/app/logs", response_class=HTMLResponse)
+def logs_get(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    return _html(web.logs_page(acct, store.recent_logs(acct["id"], 200),
+                               store.logs_count(acct["id"])))
+
+
+@app.get("/app/logs.csv")
+def logs_csv(request: Request):
+    acct = _current(request)
+    if not acct:
+        return _redirect("/login")
+    import csv
+    import io
+    rows = store.recent_logs(acct["id"], 5000)
+    buf = io.StringIO()
+    cols = ["ts", "category", "original_model", "routed_model", "applied", "escalated",
+            "action", "status_code", "input_tokens", "output_tokens",
+            "baseline_cost", "actual_cost", "realized_saved"]
+    w = csv.DictWriter(buf, fieldnames=cols, extrasaction="ignore")
+    w.writeheader()
+    for r in rows:
+        w.writerow(r)
+    from fastapi.responses import Response
+    return Response(buf.getvalue(), media_type="text/csv",
+                    headers={"content-disposition": "attachment; filename=modelpilot-logs.csv"})
+
+
 @app.get("/app/billing", response_class=HTMLResponse)
 def billing_get(request: Request):
     acct, redir = _require(request)
@@ -635,6 +665,34 @@ async def api_proposals(request: Request):
     except store.StoreError as e:
         code = 404 if "unknown deployment" in str(e) else 400
         return JSONResponse({"error": str(e)}, status_code=code)
+    return JSONResponse(res)
+
+
+@app.post("/api/logs")
+async def api_logs(request: Request):
+    """Accept a batch of opt-in per-request METADATA logs. Reject anything that
+    looks like it carries prompt/output/secret data (defense in depth)."""
+    key_dep, err = _key_deployment(request)
+    if err:
+        return JSONResponse({"error": "invalid api key"}, status_code=401)
+    body = await request.json()
+    if not isinstance(body, dict):
+        return JSONResponse({"error": "object required"}, status_code=400)
+    dep = key_dep or body.get("deployment_id")
+    logs = body.get("logs") or []
+    if not dep:
+        return JSONResponse({"error": "deployment_id required"}, status_code=400)
+    # forbidden keys at the batch level OR in any row
+    seen = {str(k).lower() for k in body}
+    for r in logs:
+        if isinstance(r, dict):
+            seen |= {str(k).lower() for k in r}
+    if seen & store.FORBIDDEN_METER_KEYS:
+        return JSONResponse({"error": "payload contains forbidden keys"}, status_code=422)
+    try:
+        res = store.record_logs(dep, logs)
+    except store.StoreError as e:
+        return JSONResponse({"error": str(e)}, status_code=404)
     return JSONResponse(res)
 
 

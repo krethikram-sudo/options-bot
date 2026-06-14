@@ -33,7 +33,7 @@ cp "$SRC"/__init__.py "$SRC"/cli.py "$SRC"/gateway.py "$SRC"/router.py \
    "$SRC"/compare.py "$SRC"/bedrock.py "$SRC"/replay.py "$SRC"/digest.py "$SRC"/tune.py \
    "$SRC"/rules.py "$SRC"/learn_rules.py "$SRC"/floorlearn.py "$SRC"/promptsavings.py \
    "$SRC"/profile.py "$SRC"/telemetry.py "$SRC"/metering.py "$SRC"/proposals.py \
-   "$SRC"/brain_client.py "$SRC"/sdk.py "$SRC"/license.py \
+   "$SRC"/logs.py "$SRC"/brain_client.py "$SRC"/sdk.py "$SRC"/license.py \
    "$SRC"/requirements.txt "$DEST/modelpilot/"
 # Public license key (safe to ship): present once `license keygen` has been run.
 [ -f "$SRC/license_pubkey.pem" ] && cp "$SRC/license_pubkey.pem" "$DEST/modelpilot/"

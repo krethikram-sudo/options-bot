@@ -319,6 +319,21 @@ class Ledger:
             ).fetchone()
         return dict(row)
 
+    def rows_since(self, after_rowid: int = 0, limit: int = 500) -> list[dict]:
+        """Per-request METADATA rows after a rowid (for opt-in request logs).
+        Returns counts/dollars/models/category only — never prompt text or the
+        rationale. `_rowid` is a monotonic cursor for incremental shipping."""
+        with self._lock:
+            rows = self._conn.execute(
+                """SELECT rowid AS _rowid, ts, mode, category, original_model, routed_model,
+                          applied, action, status_code,
+                          input_tokens, output_tokens, cache_read_tokens, cache_write_tokens,
+                          actual_cost, baseline_cost, realized_saved, arm,
+                          (retry_of IS NOT NULL) AS is_retry
+                   FROM requests WHERE rowid > ? ORDER BY rowid LIMIT ?""",
+                (after_rowid, limit)).fetchall()
+        return [dict(r) for r in rows]
+
     def by_category(self, since_ts: float = 0.0) -> list[dict]:
         with self._lock:
             rows = self._conn.execute(
