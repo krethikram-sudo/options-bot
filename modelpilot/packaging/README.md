@@ -23,8 +23,7 @@ and an app/service that calls the Claude API. **Use your real key from the start
 you begin in **guidance mode**, which uses your key but changes nothing about your
 traffic (zero risk), then switch to autopilot once the dashboard convinces you.
 A Claude.ai or Claude Code *subscription* can't be optimized — it's flat-rate, not
-per-token. Python 3.10+. *(No key handy? `modelpilot demo --offline` previews routing
-on synthetic data.)*
+per-token. Python 3.10+.
 
 ## Two-minute proof (no API key, no spend)
 

@@ -208,8 +208,7 @@ routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
           <em>changes nothing</em> about your traffic (zero risk), then switch to
           autopilot once the dashboard convinces you. A Claude.ai / Claude Code
           <em>subscription</em> can't be optimized (it's flat-rate, not per-token).
-          Python 3.10+. <span class="muted">(Want a no-key peek first?
-          <code>modelpilot demo --offline</code> shows routing on synthetic data.)</span></p>
+          Python 3.10+.</p>
         <ol class="steps">
           <li><b>Get access.</b> Reply to your invite with your GitHub username; we
             add you to the private repo and you'll get an email from GitHub.</li>
@@ -217,12 +216,9 @@ routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
           <li><b>Install</b> (Python 3.10+):
             <pre class="block">pip install "modelpilot @ git+https://github.com/krethikram-sudo/modelpilot.git"</pre></li>
 
-          <li><b>(Optional) Kick the tires with no key:</b>
-            <pre class="block">modelpilot demo --offline</pre></li>
-
           <li><b>Set your Anthropic API key</b>, then <b>start the gateway in guidance
             mode</b> — it measures and recommends but changes nothing. Turn on prompt
-            capture so you can generate the proof in step 7:
+            capture so you can generate the proof later:
             <pre class="block">export ANTHROPIC_API_KEY=sk-ant-...
 MODELPILOT_CAPTURE_PCT=1.0 modelpilot gateway --mode guidance --port 8400</pre>
             <span class="muted">Tip: the key lives in your app (step 5); the gateway just
