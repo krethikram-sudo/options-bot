@@ -4,6 +4,22 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.18.0 — 2026-06-14
+
+- **Split architecture v1 (foundation for publishing a safe client).** Adds the
+  client seam `modelpilot/brain_client.py`: it classifies locally and asks a
+  hosted "routing brain" for the decision, sending ONLY a category label +
+  numeric features — never prompt text, outputs, or keys (test-enforced) — and
+  fails open (returns None → local routing) if the brain is unreachable, so our
+  infra can never block customer traffic. The brain itself (`brain/`, vendor-side,
+  NOT shipped) holds the routing policy (floors/economics/gate) and
+  server-authoritative license + 7-day-trial enforcement keyed by deployment id
+  (unforgeable — fixes the local-clock weakness), and refuses any request
+  carrying sensitive keys. `brain_client` ships inert (active only if
+  `MODELPILOT_BRAIN_URL` is set). Next: wire the gateway to it (fail-open) and
+  carve a thin client package that omits the router — the artifact safe to
+  publish.
+
 ## 0.17.0 — 2026-06-14
 
 - **Free product: a built-in 7-day trial replaces the invite-only beta gate.**
