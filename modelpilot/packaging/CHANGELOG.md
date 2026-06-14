@@ -4,6 +4,15 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.15.0 — 2026-06-14
+
+- **Licensing change: the gateway now requires a valid license in EVERY mode**
+  (guidance and autopilot alike; shadow too) — guidance is no longer free. Only
+  `modelpilot demo --offline` (synthetic, no real traffic) runs without a key.
+  `cmd_gateway` checks `MODELPILOT_LICENSE` before starting in any mode. Landing
+  page, bundled site, and `validate_local.sh` updated accordingly (the validation
+  script now requires `MODELPILOT_LICENSE`).
+
 ## 0.14.0 — 2026-06-14
 
 - **Per-segment starter packs (`packs/`).** Drop-in policies that give a new

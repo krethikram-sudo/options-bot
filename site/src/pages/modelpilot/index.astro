@@ -440,11 +440,13 @@ routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
           <em>changes nothing</em> about your traffic (zero risk), then switch to
           autopilot once the dashboard convinces you. A Claude.ai / Claude Code
           <em>subscription</em> can't be optimized (it's flat-rate, not per-token).
-          Python 3.10+. <b>Guidance is free; autopilot needs a license key</b> we issue
-          with your repo invite.</p>
+          Python 3.10+. <b>A license key is required to run ModelPilot</b> — guidance
+          and autopilot alike; we issue it with your invite. The offline
+          <code>modelpilot demo</code> is free to try without one.</p>
         <ol class="steps">
           <li><b>Get access.</b> Reply to your invite with your GitHub username; we
-            add you to the private repo and you'll get an email from GitHub.</li>
+            add you to the private repo and send your <b>license key</b> (required
+            for guidance and autopilot).</li>
 
           <li><b>Install</b> (Python 3.10+):
             <pre class="block">pip install "modelpilot @ git+https://github.com/krethikram-sudo/modelpilot.git"</pre></li>
@@ -454,12 +456,14 @@ routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
             analysis command, and finishes with a real routed-vs-baseline proof.
             Nothing is rerouted; spend is a few cents. Prints PASS/FAIL:
             <pre class="block">export ANTHROPIC_API_KEY=sk-ant-...
+export MODELPILOT_LICENSE="&lt;your license token&gt;"
 bash scripts/validate_local.sh</pre></li>
 
-          <li><b>Set your Anthropic API key</b>, then <b>start the gateway in guidance
-            mode</b> — it measures and recommends but changes nothing. Turn on prompt
-            capture so you can generate the proof later:
+          <li><b>Set your keys</b> (Anthropic API key + your ModelPilot license), then
+            <b>start the gateway in guidance mode</b> — it measures and recommends but
+            changes nothing. Turn on prompt capture so you can generate the proof later:
             <pre class="block">export ANTHROPIC_API_KEY=sk-ant-...
+export MODELPILOT_LICENSE="&lt;your license token&gt;"
 MODELPILOT_CAPTURE_PCT=1.0 modelpilot gateway --mode guidance --port 8400</pre>
             <span class="muted">Tip: the key lives in your app (step 5); the gateway just
             forwards it. Setting it here is only needed for the chat playground / demo.</span></li>
@@ -480,12 +484,10 @@ Claude Code / any SDK:  export ANTHROPIC_BASE_URL=http://localhost:8400</pre>
             rendered right on the dashboard:
             <pre class="block">modelpilot compare --from-captures --judge --save-to-db</pre></li>
 
-          <li><b>Switch to autopilot</b> when the evidence convinces you — set the
-            license key we sent you, and it routes automatically, keeps a randomized
-            holdout running to prove quality parity, and continuously re-tunes to your
-            traffic:
-            <pre class="block">export MODELPILOT_LICENSE="&lt;your license token&gt;"
-modelpilot gateway --mode autopilot --port 8400</pre></li>
+          <li><b>Switch to autopilot</b> when the evidence convinces you — same license
+            key, one flag. It routes automatically, keeps a randomized holdout running
+            to prove quality parity, and continuously re-tunes to your traffic:
+            <pre class="block">modelpilot gateway --mode autopilot --port 8400</pre></li>
         </ol>
         <p class="note"><b>Kill switch any time:</b> revert the base URL, or run
         <code>--mode guidance</code> to stop all rerouting. <b>Privacy:</b> no prompt

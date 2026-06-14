@@ -2,7 +2,7 @@
 #
 # Local end-to-end validation for ModelPilot on a real Anthropic API key.
 #
-# Runs the gateway in GUIDANCE mode (no license needed, nothing rerouted),
+# Runs the gateway in GUIDANCE mode (needs MODELPILOT_LICENSE; nothing rerouted),
 # pushes a handful of real requests through it, then exercises every analysis
 # command — report, digest, prompt-audit, learn-rules, learn-floors, profile —
 # and finishes with a REAL routed-vs-baseline proof (modelpilot compare --judge).
@@ -12,6 +12,7 @@
 #
 # Usage:
 #   export ANTHROPIC_API_KEY=sk-ant-...
+#   export MODELPILOT_LICENSE="<your license token>"   # gateway needs it in every mode
 #   bash scripts/validate_local.sh
 #
 # Options (env): PORT (default 8455), MODELPILOT_CMD (default "modelpilot"),
@@ -33,6 +34,12 @@ bad()  { printf '  \033[31mFAIL\033[0m %s\n' "$*"; FAIL=$((FAIL+1)); }
 
 if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
   echo "ANTHROPIC_API_KEY is not set. Export a billable key and retry." >&2
+  exit 1
+fi
+if [ -z "${MODELPILOT_LICENSE:-}" ]; then
+  echo "MODELPILOT_LICENSE is not set. The gateway needs a license in every mode" >&2
+  echo "(guidance and autopilot). Export your license token and retry, or try the" >&2
+  echo "free offline demo: modelpilot demo --offline" >&2
   exit 1
 fi
 command -v "$MP" >/dev/null 2>&1 || MP="python -m modelpilot.cli"
