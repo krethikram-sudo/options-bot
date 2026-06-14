@@ -308,6 +308,36 @@ dashboard → autopilot would save <span class="g">48% of baseline</span> — sw
       </div></section>
 
       <section><div class="wrap">
+        <h2>It adapts to your traffic — and gets cheaper the more you use it</h2>
+        <p>A generic router leaves money on the table on <em>your</em> workload.
+          ModelPilot learns four things from your own traffic — every change
+          earned by evidence on your prompts, never a blunt global default:</p>
+        <div class="grid">
+          <div class="card"><h3>1 · Gates tune themselves</h3>
+            <p>Each category's confidence gate loosens where routing has proven
+              safe at volume and tightens the instant anything escalates — live,
+              no restart. <span class="muted">Automatic.</span></p></div>
+          <div class="card"><h3>2 · Floors drop when proven</h3>
+            <p>It samples your own prompts in a category, runs the next-cheaper
+              model against the baseline, and lowers the floor only when the
+              cheaper output is judged non-inferior on <em>your</em> data.
+              <code>modelpilot learn-floors</code></p></div>
+          <div class="card"><h3>3 · Rules learn your domain</h3>
+            <p>Domain phrasing ("redline this clause", "triage this ticket") that
+              a generic router dumps into a catch-all gets mapped to the right
+              category, so it's actually optimized. <code>modelpilot learn-rules</code></p></div>
+          <div class="card"><h3>4 · Savings beyond routing</h3>
+            <p>Finds uncached repeated context and oversized prompts in your
+              ledger and tells you the dollars caching or trimming would save —
+              it never rewrites your prompts. <code>modelpilot prompt-audit</code></p></div>
+        </div>
+        <p class="note">Every downgrade is gated by non-inferiority on your own
+          prompts and protected by the structured-output guard, so "cheaper"
+          never means "riskier". The longer it runs, the more of your traffic it
+          can safely route down — savings compound with use.</p>
+      </div></section>
+
+      <section><div class="wrap">
         <h2>Already on Bedrock?</h2>
         <p>AWS Bedrock has a cost router — Intelligent Prompt Routing. If you're
           on the first-party Anthropic API, it isn't available to you at all, and
