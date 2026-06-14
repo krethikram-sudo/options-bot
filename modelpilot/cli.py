@@ -75,6 +75,7 @@ _DELEGATED = {
     "learn-floors": "modelpilot.floorlearn",
     "prompt-audit": "modelpilot.promptsavings",
     "profile": "modelpilot.profile",
+    "telemetry": "modelpilot.telemetry",
 }
 
 
@@ -157,6 +158,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("learn-floors", help="lower per-category floors where your own traffic proves non-inferior")
     sub.add_parser("prompt-audit", help="prompt-level savings: caching + context-trimming opportunities")
     sub.add_parser("profile", help="validate/print the per-customer deployment profile")
+    sub.add_parser("telemetry", help="opt-in, aggregate-only performance telemetry (preview/send)")
 
     s = sub.add_parser("share", help="redacted diagnostics for feedback")
     s.add_argument("--db", default=os.environ.get("MODELPILOT_DB", "modelpilot.db"))

@@ -4,6 +4,21 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.16.0 — 2026-06-14
+
+- **Privacy-safe performance telemetry (`modelpilot telemetry`), opt-in.** Lets a
+  customer share AGGREGATE performance metrics so you can improve the product
+  without ever receiving sensitive data. Guarantees enforced in code: no prompt
+  text, outputs, or keys — only per-category counts/rates/avg-confidence/
+  incident-rate, routing + savings totals, catch-all rate, holdout quality rates,
+  version/env, and an anonymous per-deployment id; numbers are coarsened. Off by
+  default; `--preview` prints the exact JSON before anything sends; uploads only
+  to an explicit `--url` / `MODELPILOT_TELEMETRY_URL`. `--with-phrases` optionally
+  adds catch-all n-gram *signals* to guide router recall, but only phrases seen in
+  ≥`--min-docs` distinct prompts (k-anonymity), stopworded, with no example text,
+  and only if prompt capture was enabled. A test enforces the no-prompt-text
+  guarantee.
+
 ## 0.15.0 — 2026-06-14
 
 - **Licensing change: the gateway now requires a valid license in EVERY mode**
