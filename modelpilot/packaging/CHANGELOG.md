@@ -4,6 +4,17 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.31.0 — 2026-06-14
+
+- **Full-gateway request-path parity.** The full gateway (`gateway.py`, with the
+  local ledger/dashboard) now uses the same reliability + caching as the thin
+  client: retry transient failures (429/5xx/529, Retry-After, backoff), fall back
+  to the original model on a routed model's failure, and serve identical
+  non-streaming requests from an exact-match cache at $0 (`MODELPILOT_CACHE=1`).
+  Honest accounting: a fallback to the original model is recorded as not-applied
+  (zero savings) so the ledger stays accurate. Shared `retry.py`/`cache.py`; both
+  client types now behave identically.
+
 ## 0.30.0 — 2026-06-14
 
 - **Exact-match response cache (P1, more savings).** Opt-in (`MODELPILOT_CACHE=1`):

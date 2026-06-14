@@ -13,6 +13,7 @@ Env:  MODELPILOT_MODE=shadow|advise|autopilot   (default shadow)
       MODELPILOT_CONFIDENCE=0.8                 (autopilot gate)
 """
 
+import asyncio
 import hashlib
 import json
 import os
@@ -23,6 +24,8 @@ import httpx
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import StreamingResponse
 
+from . import cache as _cache
+from . import retry as _retry
 from . import router as mp_router
 from .continuation import ContinuationModel
 from .ledger import Ledger
@@ -37,6 +40,13 @@ MODE = _MODE_ALIASES.get(_RAW_MODE, _RAW_MODE)
 UPSTREAM = os.environ.get("MODELPILOT_UPSTREAM", "https://api.anthropic.com").rstrip("/")
 CONFIDENCE_GATE = float(os.environ.get("MODELPILOT_CONFIDENCE", "0.7"))
 HOLDOUT_PCT = float(os.environ.get("MODELPILOT_HOLDOUT_PCT", "0.10"))
+# Reliability + caching (parity with the thin client).
+MAX_RETRIES = int(os.environ.get("MODELPILOT_MAX_RETRIES", str(_retry.DEFAULT_MAX_RETRIES)))
+FALLBACK = os.environ.get("MODELPILOT_FALLBACK", "1") not in ("0", "false", "no", "")
+CACHE_ON = os.environ.get("MODELPILOT_CACHE", "") in ("1", "true", "yes", "on")
+CACHE = _cache.ResponseCache(
+    ttl=float(os.environ.get("MODELPILOT_CACHE_TTL", str(_cache.DEFAULT_TTL))),
+    maxsize=int(os.environ.get("MODELPILOT_CACHE_MAX", str(_cache.DEFAULT_MAX))))
 
 
 def _load_policy(path: str) -> dict:
@@ -501,6 +511,35 @@ async def preview(request: Request):
     }
 
 
+async def _send_with_retry(url: str, body: dict, headers: dict, routed_model: str,
+                           original_model: str, stream: bool):
+    """Send to upstream, retrying transient failures and falling back to the
+    original model when a routed (cheaper) one errors. Returns (response, ran_model,
+    notes). Mirrors the thin client's reliability layer."""
+    model = routed_model
+    attempt = 0
+    notes = []
+    while True:
+        payload = json.dumps({**body, "model": model}).encode()
+        h = {**headers, "content-length": str(len(payload))}
+        if stream:
+            resp = await app.state.http.send(
+                app.state.http.build_request("POST", url, content=payload, headers=h), stream=True)
+        else:
+            resp = await app.state.http.post(url, content=payload, headers=h)
+        nxt = _retry.plan(resp.status_code, attempt, MAX_RETRIES, routed_model, original_model, FALLBACK)
+        if nxt is None:
+            return resp, model, notes
+        if stream:
+            await resp.aclose()
+        else:
+            await resp.aread()
+        await asyncio.sleep(_retry.backoff_seconds(attempt, resp.headers.get("retry-after")))
+        notes.append(f"retry{nxt['attempt']}:{resp.status_code}:{nxt['reason']}")
+        model = nxt["model"]
+        attempt = nxt["attempt"]
+
+
 @app.post("/v1/messages")
 async def messages(request: Request):
     raw = await request.body()
@@ -508,6 +547,16 @@ async def messages(request: Request):
         body = json.loads(raw)
     except json.JSONDecodeError:
         return await _passthrough(request, raw)
+
+    # Exact-match cache (opt-in): identical, non-streaming requests serve at $0.
+    cache_key = _cache.request_key(body) if (CACHE_ON and body and not body.get("stream")) else None
+    if cache_key:
+        hit = CACHE.get(cache_key)
+        if hit:
+            content, ctype = hit
+            return Response(content=content, status_code=200,
+                            headers={"content-type": ctype, "x-modelpilot-cache": "HIT",
+                                     "x-modelpilot-mode": MODE})
 
     retry_of = request.headers.get("x-modelpilot-retry-of")
     session_key = _session_key(request, body)
@@ -551,11 +600,19 @@ async def messages(request: Request):
     extra = _advice_headers(decision) if MODE in ("advise", "autopilot") else {"x-modelpilot-mode": MODE}
     extra["x-modelpilot-request-id"] = request_id
 
-    if body.get("stream"):
-        upstream = await app.state.http.send(
-            app.state.http.build_request("POST", url, content=raw, headers=fwd_headers),
-            stream=True,
-        )
+    original_model = decision.recommendation.original_model
+    streaming = bool(body.get("stream"))
+    upstream, ran_model, notes = await _send_with_retry(
+        url, body, fwd_headers, decision.routed_model, original_model, streaming)
+    # If we fell back to the original model, the request effectively ran the
+    # baseline — record it as not-applied so savings stay honest.
+    rec_decision = decision
+    if ran_model != decision.routed_model:
+        rec_decision = replace(decision, routed_model=ran_model, applied=False)
+    if notes:
+        extra["x-modelpilot-retries"] = ";".join(notes)
+
+    if streaming:
         sse = _SSEUsage()
 
         async def relay():
@@ -565,19 +622,21 @@ async def messages(request: Request):
                     yield chunk
             finally:
                 await upstream.aclose()
-                _record(decision, upstream.status_code, sse.usage, request_id, retry_of, session_key)
+                _record(rec_decision, upstream.status_code, sse.usage, request_id, retry_of, session_key)
 
         resp_headers = {k: v for k, v in upstream.headers.items() if k.lower() in _RETURN_HEADERS}
         return StreamingResponse(relay(), status_code=upstream.status_code, headers={**resp_headers, **extra})
 
-    upstream = await app.state.http.post(url, content=raw, headers=fwd_headers)
     usage = Usage()
     if upstream.status_code == 200:
         try:
             usage = Usage.from_api(upstream.json().get("usage") or {})
         except (json.JSONDecodeError, AttributeError):
             pass
-    _record(decision, upstream.status_code, usage, request_id, retry_of, session_key)
+    _record(rec_decision, upstream.status_code, usage, request_id, retry_of, session_key)
+    if cache_key and upstream.status_code == 200:
+        CACHE.put(cache_key, upstream.content, upstream.headers.get("content-type", "application/json"))
+        extra["x-modelpilot-cache"] = "MISS"
     resp_headers = {k: v for k, v in upstream.headers.items() if k.lower() in _RETURN_HEADERS}
     return Response(content=upstream.content, status_code=upstream.status_code, headers={**resp_headers, **extra})
 
