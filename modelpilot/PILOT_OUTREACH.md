@@ -1,4 +1,4 @@
-# Maven — design-partner outreach kit
+# ModelPilot — design-partner outreach kit
 
 ## ICP (who to pursue, in order)
 
@@ -34,7 +34,7 @@ service. Nothing about their traffic changes; they get a savings report.
 
 ## Beta-access reply (send when someone requests access)
 
-> Subject: **Maven beta — your access**
+> Subject: **ModelPilot beta — your access**
 >
 > Great to have you in the beta! Two quick things to get you going:
 >
@@ -77,7 +77,7 @@ Subject: **Cut your Claude bill ~30-50% — measured, not estimated (2-week free
 
 > Hi {name},
 >
-> I'm building Maven — a drop-in proxy for the Claude API that routes
+> I'm building ModelPilot — a drop-in proxy for the Claude API that routes
 > each request to the cheapest model that's provably good enough for it
 > (Haiku is 80% cheaper than Opus; most traffic doesn't need Opus).
 >

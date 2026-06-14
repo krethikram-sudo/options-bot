@@ -1,4 +1,4 @@
-# Maven starter packs
+# ModelPilot starter packs
 
 Per-segment starter policies so a new customer gets a good fit on **day one** —
 before their own `learn-rules` / `learn-floors` have accumulated traffic.

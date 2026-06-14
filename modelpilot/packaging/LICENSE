@@ -1,12 +1,12 @@
-Maven Beta Evaluation License Agreement
-Copyright (c) 2026 Maven. All rights reserved.
+ModelPilot Beta Evaluation License Agreement
+Copyright (c) 2026 ModelPilot. All rights reserved.
 
 This is a proprietary software license. The software is licensed, not sold. By
-installing, accessing, or using Maven ("the Software"), the individual and
+installing, accessing, or using ModelPilot ("the Software"), the individual and
 the organization on whose behalf they act ("Licensee") agree to these terms. If
 Licensee does not agree, Licensee must not use the Software.
 
-1. GRANT. Subject to these terms, Maven grants Licensee a limited,
+1. GRANT. Subject to these terms, ModelPilot grants Licensee a limited,
    non-exclusive, non-transferable, non-sublicensable, revocable license to
    install and run the Software solely for Licensee's internal evaluation of the
    product during the beta program, on systems Licensee controls.
@@ -29,12 +29,12 @@ Licensee does not agree, Licensee must not use the Software.
 
 3. OWNERSHIP. The Software, including all routing logic, models, calibration
    data, methodology, and all intellectual property therein, is and remains the
-   exclusive property of Maven. No rights are granted except as expressly
+   exclusive property of ModelPilot. No rights are granted except as expressly
    stated. All rights not granted are reserved.
 
 4. LICENSE KEYS / USAGE CONTROL. Certain features (including autopilot routing)
    require a license token issued to a named Licensee and may be time-limited.
-   Licensee shall not share, transfer, or forge tokens. Maven may issue,
+   Licensee shall not share, transfer, or forge tokens. ModelPilot may issue,
    decline to renew, or revoke tokens at its discretion.
 
 5. CONFIDENTIALITY. The Software and any non-public information about it are
@@ -42,7 +42,7 @@ Licensee does not agree, Licensee must not use the Software.
    and shall not disclose them to third parties.
 
 6. DATA & FEEDBACK. The Software runs in Licensee's environment; Licensee's API
-   keys and prompt content are not transmitted to Maven by the Software.
+   keys and prompt content are not transmitted to ModelPilot by the Software.
    Feedback Licensee chooses to provide may be used to improve the product
    without obligation or attribution.
 

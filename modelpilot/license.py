@@ -124,7 +124,7 @@ def check(value: str | None = None) -> dict | None:
 def main():
     import argparse
 
-    p = argparse.ArgumentParser(description="Maven license issuer")
+    p = argparse.ArgumentParser(description="ModelPilot license issuer")
     p.add_argument("action", choices=["keygen", "issue", "verify"])
     p.add_argument("--licensee", default="")
     p.add_argument("--days", type=int, default=30, help="validity; 0 = never expires")

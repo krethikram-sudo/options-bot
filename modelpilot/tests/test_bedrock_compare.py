@@ -1,4 +1,4 @@
-"""Three-arm comparison: all-baseline vs Maven vs Bedrock IPR."""
+"""Three-arm comparison: all-baseline vs ModelPilot vs Bedrock IPR."""
 
 from modelpilot.bedrock import (
     BEDROCK_PRICES,

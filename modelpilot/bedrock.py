@@ -1,6 +1,6 @@
 """AWS Bedrock Intelligent Prompt Routing (IPR) arm for `modelpilot compare`.
 
-Lets you run a genuine head-to-head: the same prompts through Maven's
+Lets you run a genuine head-to-head: the same prompts through ModelPilot's
 router vs. an AWS Bedrock prompt router, with cost and non-inferiority side by
 side — so "isn't this just Bedrock?" gets a measured answer, not a slogan.
 
@@ -12,7 +12,7 @@ Two honesty points this module makes explicit rather than hiding:
      Haiku 4.5), so on a modern workload it isn't even applicable. The report
      flags that.
   2. Each arm is priced at what you'd *actually pay in that system*: the
-     Maven arm at Anthropic first-party list prices, the Bedrock arm at
+     ModelPilot arm at Anthropic first-party list prices, the Bedrock arm at
      Bedrock on-demand list prices for whatever model IPR selected. This is the
      buyer's-eye comparison ("what's my bill in each"), not a routing-only
      abstraction. Prices are data below — edit to match your region/contract.

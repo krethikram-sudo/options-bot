@@ -403,7 +403,7 @@ def _proof_section(stats: dict) -> str:
     <b class="save">{_usd(saved)}</b> · cumulative {_usd(run)}{verdict}</summary>
     <p class="prompt">{html.escape(r['prompt'][:600])}</p>
     <div class="sxs">
-      <div><h4>Maven → {html.escape(r['routed_model'])} · {_usd(r['routed_cost'])}</h4>
+      <div><h4>ModelPilot → {html.escape(r['routed_model'])} · {_usd(r['routed_cost'])}</h4>
         <pre>{html.escape(r['routed_text'][:2000])}</pre></div>
       <div><h4>Standard → {html.escape(r['baseline_model'])} · {_usd(r['baseline_cost'])}</h4>
         <pre>{html.escape(r['baseline_text'][:2000])}</pre></div>
@@ -450,7 +450,7 @@ def render_html(stats: dict) -> str:
     session_key = (stats["session"] or {}).get("session_key", "")
 
     return f"""<!doctype html>
-<html><head><meta charset="utf-8"><title>Maven</title>
+<html><head><meta charset="utf-8"><title>ModelPilot</title>
 <style>
   body {{ font: 14px/1.5 -apple-system, "Segoe UI", sans-serif; margin: 2rem auto; max-width: 800px;
          color: #1f2430; padding: 0 1rem; }}
@@ -485,7 +485,7 @@ def render_html(stats: dict) -> str:
   details.adv > summary {{ font-weight: 600; color: #6b7080; }}
   details.adv h3 {{ font-size: 0.95rem; margin: 1.3rem 0 0.4rem; }}
 </style></head><body>
-<h1>Maven <span class="muted" style="font-size:0.8rem;font-weight:400">— {stats['display_mode']} mode</span></h1>
+<h1>ModelPilot <span class="muted" style="font-size:0.8rem;font-weight:400">— {stats['display_mode']} mode</span></h1>
 {_conversion_panel(stats)}
 {_now_strip(stats)}
 

@@ -91,7 +91,7 @@ async def chat_page():
 
 
 _PAGE = """<!doctype html>
-<html><head><meta charset="utf-8"><title>Maven — chat playground</title>
+<html><head><meta charset="utf-8"><title>ModelPilot — chat playground</title>
 <style>
   body { font: 15px/1.5 -apple-system, "Segoe UI", sans-serif; margin: 0; color: #1f2430;
          display: flex; flex-direction: column; height: 100vh; }
@@ -127,7 +127,7 @@ _PAGE = """<!doctype html>
   .error { color: #b3372f; }
 </style></head><body>
 <header>
-  <h1>Maven chat</h1>
+  <h1>ModelPilot chat</h1>
   <span id="modebadge">__MODE__</span>
   <label>baseline:
     <select id="model">
@@ -173,7 +173,7 @@ function preMeta(chip, p) {
   chip.className = 'meta pre';
   let line;
   if (p.applied) {
-    line = '⚡ Maven selected <span class="model">' + p.will_run_on +
+    line = '⚡ ModelPilot selected <span class="model">' + p.will_run_on +
            '</span> for this prompt — <b class="save">est. saving ~' + usd(p.est_saved) +
            '</b> · generating…';
   } else if (p.action === 'switch') {

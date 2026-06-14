@@ -57,7 +57,7 @@ def test_dashboard_renders(tmp_path):
     r = c.get("/dashboard")
     assert r.status_code == 200
     body = r.text
-    assert "Maven fleet telemetry" in body
+    assert "ModelPilot fleet telemetry" in body
     assert "extraction" in body              # per-category row
     assert "parse table" in body             # phrase signal row
     # empty-state renders too

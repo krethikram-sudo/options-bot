@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install the Maven gateway as a launchd agent: shadow mode + 25% prompt
+# Install the ModelPilot gateway as a launchd agent: shadow mode + 25% prompt
 # capture, auto-starts at login, restarts if it dies. Also adds a `claude`
 # wrapper to ~/.zshrc that routes Claude Code through the gateway when it's
 # up and falls back to direct API access when it isn't.
@@ -52,7 +52,7 @@ MARKER="# modelpilot-claude-wrapper"
 if ! grep -qF "$MARKER" "$ZSHRC" 2>/dev/null; then
     cat >> "$ZSHRC" <<'SNIPPET'
 
-# modelpilot-claude-wrapper — route Claude Code through the local Maven
+# modelpilot-claude-wrapper — route Claude Code through the local ModelPilot
 # gateway (shadow mode) when it's running; fall back to direct API otherwise.
 # Remove this block to undo.
 claude() {

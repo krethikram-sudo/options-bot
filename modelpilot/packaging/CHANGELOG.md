@@ -4,17 +4,6 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
-## 0.17.0 — 2026-06-14
-
-- **Rebranded to Maven** (brand surfaces only). All user-visible references —
-  website, README/docs, CLI banners and messages, dashboard/digest/report
-  titles, the browser extension, and the LICENSE — now say "Maven". Technical
-  identifiers are intentionally unchanged to avoid breaking existing deployments:
-  the `modelpilot` pip package + CLI command, `MODELPILOT_*` env vars,
-  `/modelpilot/*` routes, the `modelpilot.db` ledger, and the GitHub repo / pip
-  URL all stay the same for now. (Renaming those — and the repo — is a separate,
-  breaking step to do deliberately, ideally with backward-compatible aliases.)
-
 ## 0.16.0 — 2026-06-14
 
 - **Privacy-safe performance telemetry (`modelpilot telemetry`), opt-in.** Lets a
@@ -172,7 +161,7 @@ own traffic instead of a global default.
 
 - **Head-to-head vs. AWS Bedrock Intelligent Prompt Routing.** `modelpilot
   compare --bedrock-router <ARN>` adds a third arm: the same prompts run through
-  a Bedrock prompt router alongside Maven and the all-baseline arm. The
+  a Bedrock prompt router alongside ModelPilot and the all-baseline arm. The
   report gains a "Head-to-head" table (savings %, routed cost, non-inferiority,
   routable model set, proof, lock-in) and a third output column per prompt, so
   "isn't this just Bedrock?" gets a measured answer. Each arm is priced at what

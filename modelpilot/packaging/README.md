@@ -1,14 +1,14 @@
-# Maven <sub>beta</sub>
+# ModelPilot <sub>beta</sub>
 
 **Cut your Claude API bill 30–50% without touching your code — and see the proof live.**
 
-Maven is a drop-in gateway for the Claude API. It reads each request (and
+ModelPilot is a drop-in gateway for the Claude API. It reads each request (and
 its conversation context), routes it to the cheapest model that's provably good
 enough, and shows you exactly what you saved — per prompt, per session, and
 verified with a built-in randomized holdout. Hard work is never downgraded.
 
 ```
-your app ──► Maven gateway ──► api.anthropic.com
+your app ──► ModelPilot gateway ──► api.anthropic.com
                   │
                   ├── classification prompt?  → claude-haiku-4-5   (~90% cheaper)
                   ├── complex refactor?       → stays on the big model
@@ -17,7 +17,7 @@ your app ──► Maven gateway ──► api.anthropic.com
 
 ## Prerequisites
 
-Maven optimizes **pay-as-you-go Anthropic API** traffic. You need an
+ModelPilot optimizes **pay-as-you-go Anthropic API** traffic. You need an
 **Anthropic API key with billing enabled** ([console.anthropic.com](https://console.anthropic.com))
 and an app/service that calls the Claude API. **Use your real key from the start** —
 you begin in **guidance mode**, which uses your key but changes nothing about your
@@ -84,7 +84,7 @@ escalation or negative feedback. The longer it runs, the more it saves. Disable 
 - **Session-aware** — `"why?"` after a hard debugging exchange stays on the
   big model; `"extract the fixes as JSON"` over the same transcript drops to
   Haiku. No prompt is routed as an independent decision.
-- **Cache-aware economics** — prompt caches are model-scoped; Maven
+- **Cache-aware economics** — prompt caches are model-scoped; ModelPilot
   prices the cache rewrite before any mid-conversation switch and vetoes
   switches that would cost more than they save.
 - **Honest accounting** — escalation re-runs and estimates vs. RCT-verified
@@ -108,7 +108,7 @@ modelpilot compare --prompts your_prompts.jsonl --judge
 # report: compare_report.html
 ```
 
-Runs every prompt twice — Maven's routing vs everything on the baseline
+Runs every prompt twice — ModelPilot's routing vs everything on the baseline
 model — and produces one page with **costs and outputs side by side** plus a
 position-debiased non-inferiority verdict per prompt. Savings you can audit
 with your own eyes, not just a number. (`--offline` previews the report shape

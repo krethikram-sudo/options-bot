@@ -4,7 +4,7 @@
   modelpilot compare --prompts mine.jsonl            # your prompts, real API
   modelpilot compare --judge                         # + non-inferiority verdicts
 
-Runs every prompt twice — once on the model Maven routes it to, once
+Runs every prompt twice — once on the model ModelPilot routes it to, once
 entirely on the baseline (default claude-fable-5) — then writes an HTML
 report showing, per prompt: both outputs side by side, actual token costs,
 and (with --judge) a position-debiased non-inferiority verdict. The summary
@@ -95,7 +95,7 @@ def run_comparison(prompts: list[dict], baseline: str, run_fn,
                    bedrock_fn=None, progress=print) -> dict:
     """Run the same prompts through each arm.
 
-    Arms: all-baseline, Maven-routed, and (optional) a Bedrock prompt
+    Arms: all-baseline, ModelPilot-routed, and (optional) a Bedrock prompt
     router via `bedrock_fn(prompt) -> (text, Usage, routed_model_id)`. The
     Bedrock arm is priced at Bedrock list rates (its own bill), every other arm
     at first-party list rates, so each column is what you'd actually pay there.
@@ -190,7 +190,7 @@ def run_comparison(prompts: list[dict], baseline: str, run_fn,
 # ---------------------------------------------------------------------------
 
 def _head_to_head(result: dict, usd, e) -> str:
-    """Two-router comparison table: Maven vs Bedrock IPR, same prompts."""
+    """Two-router comparison table: ModelPilot vs Bedrock IPR, same prompts."""
     if not result.get("has_bedrock"):
         return ""
     from .bedrock import IPR_SUPPORTED_MODELS
@@ -202,9 +202,9 @@ def _head_to_head(result: dict, usd, e) -> str:
     br_nir = result["bedrock_non_inferior_rate"]
     claude_ipr = ", ".join(IPR_SUPPORTED_MODELS["Anthropic Claude"])
     return f"""
-  <h2 style="margin-top:1.6rem">Head-to-head: Maven vs. Bedrock Intelligent Prompt Routing</h2>
+  <h2 style="margin-top:1.6rem">Head-to-head: ModelPilot vs. Bedrock Intelligent Prompt Routing</h2>
   <table class="h2h">
-    <tr><th></th><th>Maven</th><th>Bedrock IPR</th></tr>
+    <tr><th></th><th>ModelPilot</th><th>Bedrock IPR</th></tr>
     <tr><td>Savings vs all-{e(result['baseline'])}</td>
         <td class="save"><b>{usd(result['savings'])} ({result['savings_pct']:.0%})</b></td>
         <td>{usd(result['bedrock_savings'])} ({result['bedrock_savings_pct']:.0%})</td></tr>
@@ -224,7 +224,7 @@ def _head_to_head(result: dict, usd, e) -> str:
         <td>AWS Bedrock only</td></tr>
   </table>
   <p class="muted" style="font-size:.82rem">Each arm is priced at what you'd
-  actually pay in that system: the Maven arm at Anthropic first-party list
+  actually pay in that system: the ModelPilot arm at Anthropic first-party list
   prices, the Bedrock arm at Bedrock on-demand list prices for the model its
   router selected. Bedrock IPR cannot route the current first-party lineup, so
   if your baseline is a current model the relevant question is reach + proof,
@@ -269,7 +269,7 @@ def render_report(result: dict) -> str:
       saved <b class="save">{usd(saved)}</b>{verdict}</summary>
     <p class="prompt">{e(r['prompt'][:1200])}</p>
     <div class="sxs{' three' if bedrock_col else ''}">
-      <div><h4>Maven → {e(r['routed_model'])} · {usd(r['routed_cost'])}</h4>
+      <div><h4>ModelPilot → {e(r['routed_model'])} · {usd(r['routed_cost'])}</h4>
         <pre>{e(r['routed_text'][:4000])}</pre></div>
       <div><h4>Baseline → {e(r['baseline_model'])} · {usd(r['baseline_cost'])}</h4>
         <pre>{e(r['baseline_text'][:4000])}</pre></div>{bedrock_col}
@@ -277,7 +277,7 @@ def render_report(result: dict) -> str:
   </details>""")
 
     return f"""<!doctype html>
-<html><head><meta charset="utf-8"><title>Maven — side-by-side comparison</title>
+<html><head><meta charset="utf-8"><title>ModelPilot — side-by-side comparison</title>
 <style>
   body {{ font: 14px/1.5 -apple-system, "Segoe UI", sans-serif; margin: 2rem auto;
          max-width: 960px; color: #1f2430; padding: 0 1rem; }}
@@ -301,7 +301,7 @@ def render_report(result: dict) -> str:
   pre {{ white-space: pre-wrap; background: #fbfbfc; border: 1px solid #eee; border-radius: 6px;
         padding: 8px; font-size: 0.8rem; max-height: 360px; overflow-y: auto; }}
 </style></head><body>
-<h1>Maven side-by-side: routed vs all-{e(result['baseline'])}</h1>
+<h1>ModelPilot side-by-side: routed vs all-{e(result['baseline'])}</h1>
 <p class="muted">Same prompts, two arms. Generated {e(result['generated_at'])}.
 Costs are actual tokens at list prices. Verdicts are pairwise, position-debiased
 non-inferiority judgments of the routed output against the baseline output.</p>
@@ -381,7 +381,7 @@ def main():
         print(f"\n⚠ judging hit an error (verdicts shown as unjudged): "
               f"{result['judge_errors'][0]}\n  The cost comparison above is still valid; "
               f"only the non-inferiority verdicts were affected.", file=sys.stderr)
-    print(f"\nMaven: routed {result['n_switched']}/{result['n']} prompts · "
+    print(f"\nModelPilot: routed {result['n_switched']}/{result['n']} prompts · "
           f"saved {result['savings_pct']:.0%} (${result['savings']:.2f})"
           + (f" · non-inferior {result['non_inferior_rate']:.0%}"
              if result["non_inferior_rate"] is not None else ""))

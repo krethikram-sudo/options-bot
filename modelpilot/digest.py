@@ -1,4 +1,4 @@
-"""Maven savings digest — the proactive proof that lands where the buyer
+"""ModelPilot savings digest — the proactive proof that lands where the buyer
 lives (Slack / email), instead of a dashboard they have to remember to open.
 
 A cost optimizer is invisible infrastructure: the developer changes one base
@@ -131,7 +131,7 @@ def render_markdown(d: dict) -> str:
     """Human/email-friendly digest."""
     window = "all-time" if not d["days"] else f"{d['days']:g}-day"
     lines = [
-        f"# Maven — your Claude savings ({window} digest)",
+        f"# ModelPilot — your Claude savings ({window} digest)",
         "",
         f"**{_headline_line(d)}.**",
         "",
@@ -171,7 +171,7 @@ def render_slack(d: dict) -> dict:
     if d["top_categories"]:
         top = ", ".join(f"{c['category']} ({_usd(c['potential'])})" for c in d["top_categories"])
         bullets.append(f"• Top opportunities: {top}")
-    text = (f"*Maven — {_headline_line(d)}* :money_with_wings:\n"
+    text = (f"*ModelPilot — {_headline_line(d)}* :money_with_wings:\n"
             + "\n".join(b for b in bullets if b))
     return {"text": text}
 
@@ -186,7 +186,7 @@ def post_slack(webhook_url: str, payload: dict) -> int:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Maven savings digest")
+    parser = argparse.ArgumentParser(description="ModelPilot savings digest")
     parser.add_argument("--db", default="modelpilot.db")
     parser.add_argument("--days", type=float, default=7.0, help="reporting window (0 = all time)")
     parser.add_argument("--slack-webhook", default=os.environ.get("MODELPILOT_SLACK_WEBHOOK", ""),

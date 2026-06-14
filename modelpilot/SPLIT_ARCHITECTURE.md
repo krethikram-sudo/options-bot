@@ -22,7 +22,7 @@ Split the product into two pieces:
 ```
 customer app ─► local proxy ─────────────────► api.anthropic.com   (prompt + key, unchanged)
                      │  features only (no prompt text)
-                     └─► Maven routing brain (hosted)  ─► {model, confidence, gate}
+                     └─► ModelPilot routing brain (hosted)  ─► {model, confidence, gate}
 ```
 
 ## What crosses the wire to us — and what never does

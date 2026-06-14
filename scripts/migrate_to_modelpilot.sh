@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Promote the Maven source from the options-bot monorepo into the
+# Promote the ModelPilot source from the options-bot monorepo into the
 # standalone github.com/krethikram-sudo/modelpilot repo as the new SOURCE OF
 # TRUTH — full source, tests, tuning data, and internal docs (private).
 #
@@ -127,14 +127,14 @@ python3 -m venv "$VENV"
 
 # --- commit + push ---
 cd "$WORK"
-git config user.name  >/dev/null 2>&1 || git config user.name  "Maven"
+git config user.name  >/dev/null 2>&1 || git config user.name  "ModelPilot"
 git config user.email >/dev/null 2>&1 || git config user.email "dev@modelpilot.local"
 git add -A
 if git diff --cached --quiet; then
   echo "Nothing to migrate — modelpilot already matches the source."
   exit 0
 fi
-git commit -q -m "Migrate full Maven source of truth into the standalone repo
+git commit -q -m "Migrate full ModelPilot source of truth into the standalone repo
 
 Package at root (editable install works), tests, golden-set calibration
 data, product surfaces (site/extension/installer), and internal strategy

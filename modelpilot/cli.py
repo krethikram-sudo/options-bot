@@ -1,4 +1,4 @@
-"""Maven command-line interface.
+"""ModelPilot command-line interface.
 
   modelpilot gateway [--mode shadow|advise|autopilot] [--port 8400] ...
   modelpilot demo [--offline] [...]        # self-contained two-minute demo
@@ -42,10 +42,10 @@ def cmd_gateway(args):
     try:
         claims = _lic.check()
     except _lic.LicenseError as e:
-        sys.exit(f"Maven needs a valid license: {e}\n"
+        sys.exit(f"ModelPilot needs a valid license: {e}\n"
                  f"Set MODELPILOT_LICENSE=<token> (or @/path/to/token).\n{_request}")
     if not claims:
-        sys.exit("Maven needs a license key to run the gateway — guidance and "
+        sys.exit("ModelPilot needs a license key to run the gateway — guidance and "
                  "autopilot both require one.\n"
                  f"Set MODELPILOT_LICENSE=<token> (or @/path/to/token).\n{_request}")
     exp = claims.get("exp")
@@ -54,7 +54,7 @@ def cmd_gateway(args):
     os.environ.update(_gateway_env(args))
     import uvicorn
 
-    print(f"Maven {__version__} — {args.mode} mode on http://127.0.0.1:{args.port}")
+    print(f"ModelPilot {__version__} — {args.mode} mode on http://127.0.0.1:{args.port}")
     print(f"  dashboard: http://127.0.0.1:{args.port}/modelpilot/dashboard")
     print(f"  chat:      http://127.0.0.1:{args.port}/modelpilot/chat")
     uvicorn.run("modelpilot.gateway:app", host="127.0.0.1", port=args.port,
@@ -99,7 +99,7 @@ def share_report(db_path: str) -> str:
     s = ledger.summary()
     esc = ledger.escalation_costs()
     lines = [
-        "### Maven beta report (redacted — no prompt text included)",
+        "### ModelPilot beta report (redacted — no prompt text included)",
         f"- version: {__version__} · python {platform.python_version()} · {platform.system()}",
         f"- requests scored: {s['n']:,}  (switch recs: {s['n_switch_recs']:,}, applied: {s['n_applied']:,})",
         f"- actual spend ${s['actual']:.2f} vs baseline ${s['baseline']:.2f}",

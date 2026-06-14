@@ -1,8 +1,8 @@
-"""Per-segment routing performance test for Maven.
+"""Per-segment routing performance test for ModelPilot.
 
 Turns the SF-seed ICP research into a product test: representative prompts for
 how each customer SEGMENT heavily uses Claude, run through the real router, to
-see how Maven performs per segment — what it routes down, the estimated
+see how ModelPilot performs per segment — what it routes down, the estimated
 savings, and where prompts fall into catch-alls (blind spots to tune).
 
 Pure routing analysis — deterministic, no API spend.
@@ -121,7 +121,7 @@ CATCHALL = {"conversation", "unknown"}
 
 def render(rows):
     out = []
-    out.append(f"# Maven per-segment routing performance\n")
+    out.append(f"# ModelPilot per-segment routing performance\n")
     out.append(f"Baseline: `{BASELINE}` · autopilot gate {GATE} · {len(rows)} representative prompts · "
                f"savings %% illustrative at a nominal token profile (routing headroom, not a measured bill).\n")
 

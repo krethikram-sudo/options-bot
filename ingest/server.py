@@ -1,4 +1,4 @@
-"""Maven telemetry ingest — the vendor-side receiver for opt-in,
+"""ModelPilot telemetry ingest — the vendor-side receiver for opt-in,
 aggregate-only customer telemetry (see modelpilot/telemetry.py).
 
 INTERNAL: this runs on OUR infrastructure, not the customer's. It is not part of
@@ -76,7 +76,7 @@ def _forbidden_path(obj, path=""):
     return None
 
 
-app = FastAPI(title="Maven telemetry ingest")
+app = FastAPI(title="ModelPilot telemetry ingest")
 
 
 @app.get("/health")
@@ -233,9 +233,9 @@ async def actions(since_days: float = 30.0):
 def _render(agg: dict) -> str:
     e = html.escape
     if not agg.get("n_deployments"):
-        return ("<!doctype html><meta charset=utf-8><title>Maven fleet</title>"
+        return ("<!doctype html><meta charset=utf-8><title>ModelPilot fleet</title>"
                 "<body style='font:15px -apple-system,sans-serif;margin:3rem;color:#1f2430'>"
-                "<h1>Maven fleet telemetry</h1><p>No telemetry received yet.</p></body>")
+                "<h1>ModelPilot fleet telemetry</h1><p>No telemetry received yet.</p></body>")
     cards = (
         f"<div class=card><div class=num>{agg['n_deployments']}</div><div class=lbl>deployments reporting</div></div>"
         f"<div class=card><div class=num>{agg['total_requests']:,}</div><div class=lbl>requests scored</div></div>"
@@ -274,7 +274,7 @@ def _render(agg: dict) -> str:
     ) or "<tr><td colspan=2 class=muted>No phrase signals (customers haven't shared --with-phrases).</td></tr>"
 
     return f"""<!doctype html><html><head><meta charset="utf-8">
-<title>Maven fleet telemetry</title><style>
+<title>ModelPilot fleet telemetry</title><style>
  body{{font:15px/1.5 -apple-system,"Segoe UI",sans-serif;color:#1f2430;margin:2rem auto;max-width:900px;padding:0 1rem}}
  h1{{font-size:1.4rem}} .muted{{color:#6b7080}}
  .cards{{display:flex;gap:12px;flex-wrap:wrap;margin:1rem 0}}
@@ -288,7 +288,7 @@ def _render(agg: dict) -> str:
  .actions{{border:1px solid #d8e4f0;background:#f6f9fc;border-radius:10px;padding:10px 16px;margin:1rem 0}}
  .actions ul{{margin:.2rem 0;padding-left:1.1rem}} .actions li{{margin:.4rem 0}}
 </style></head><body>
-<h1>Maven fleet telemetry</h1>
+<h1>ModelPilot fleet telemetry</h1>
 <p class="muted">Aggregate, opt-in metrics across customer deployments — no prompt text.
 Drives the next router-recall pass, floor/gate tuning, and starter-pack updates.</p>
 <div class="cards">{cards}</div>

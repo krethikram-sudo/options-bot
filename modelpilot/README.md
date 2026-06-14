@@ -1,4 +1,4 @@
-# Maven (working name)
+# ModelPilot (working name)
 
 **One-liner:** A model-routing copilot for enterprise AI spend. It reads each prompt (and its
 conversation context), tells you the cheapest Claude model that will do the job well, optionally

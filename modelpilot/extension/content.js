@@ -1,4 +1,4 @@
-// Maven for Claude — advisory chip on claude.ai.
+// ModelPilot for Claude — advisory chip on claude.ai.
 //
 // Watches the composer; as you type, asks the local gateway which model this
 // prompt needs and shows the recommendation + estimated savings BEFORE you
@@ -120,7 +120,7 @@
       (resp) => {
         if (chrome.runtime.lastError || !resp || !resp.ok) {
           showChip(
-            "<b>Maven</b> · gateway offline — start it with " +
+            "<b>ModelPilot</b> · gateway offline — start it with " +
               "<code>./scripts/install_modelpilot_gateway.sh</code>",
             "err"
           );
@@ -138,14 +138,14 @@
       ` · est. value this chat: <b>${total}</b></span>`;
     if (p.action === "switch" && p.recommended_model !== baseline) {
       showChip(
-        `<b>Maven</b> · 💡 <b>${p.recommended_model}</b> is enough for this prompt — ` +
+        `<b>ModelPilot</b> · 💡 <b>${p.recommended_model}</b> is enough for this prompt — ` +
           `est. ${usd(p.est_potential)} of ${baseline.replace("claude-", "")} usage saved ` +
           `if you switch the picker${meta}`,
         "switch"
       );
     } else {
       showChip(
-        `<b>Maven</b> · 🛡 ${baseline.replace("claude-", "")} is the right call here${meta}`,
+        `<b>ModelPilot</b> · 🛡 ${baseline.replace("claude-", "")} is the right call here${meta}`,
         "stay"
       );
     }

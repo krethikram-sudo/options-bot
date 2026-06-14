@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Local end-to-end validation for Maven on a real Anthropic API key.
+# Local end-to-end validation for ModelPilot on a real Anthropic API key.
 #
 # Runs the gateway in GUIDANCE mode (needs MODELPILOT_LICENSE; nothing rerouted),
 # pushes a handful of real requests through it, then exercises every analysis
@@ -124,6 +124,6 @@ else
 fi
 
 say "Result: $PASS passed, $FAIL failed"
-[ "$FAIL" = 0 ] && echo "All checks passed — Maven is working end-to-end on your key." \
+[ "$FAIL" = 0 ] && echo "All checks passed — ModelPilot is working end-to-end on your key." \
                || echo "Some checks failed — see output above (gateway log: $GW_LOG)."
 exit "$FAIL"

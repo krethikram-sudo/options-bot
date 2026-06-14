@@ -1,4 +1,4 @@
-# Maven — 5-minute demo script
+# ModelPilot — 5-minute demo script
 
 Audience: an engineering leader or platform owner who pays an AI bill.
 Setup before the call: terminal in `~/options-bot` with the venv active.
