@@ -10,7 +10,7 @@ with cache-aware economics, counterfactual savings ledger, and shadow report.
 #   DECIMAL bump (0.1 -> 0.2): everything else that ships — features, router
 #     retunes, fixes. Optional third digit for trivial patches.
 # Every change to shipped code bumps this AND adds a CHANGELOG entry.
-__version__ = "0.28.0"
+__version__ = "0.29.0"
 
 # Thin SDK convenience (one-line client config; no routing IP).
 from .sdk import anthropic_client, async_anthropic_client, proxy_url  # noqa: E402,F401

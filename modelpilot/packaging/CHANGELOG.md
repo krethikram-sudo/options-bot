@@ -4,6 +4,18 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.29.0 — 2026-06-14
+
+- **Fallbacks & retries (P1 reliability).** The thin-client proxy now retries
+  transient upstream failures (429/5xx/529, honoring `Retry-After`, capped
+  exponential backoff) and — on a routed (cheaper) model's failure — **falls back
+  to the model the caller originally requested**, so routing never costs you
+  reliability. Configurable: `MODELPILOT_MAX_RETRIES` (default 2),
+  `MODELPILOT_FALLBACK` (default on). Works for streaming (retry before relaying)
+  and non-streaming; `x-modelpilot-decision` records each retry/fallback. New
+  `modelpilot/retry.py` (commodity, stdlib) holds the decision logic; added to the
+  publishable thin-client closure (leak audit clean) and the publish allowlist.
+
 ## 0.28.0 — 2026-06-14
 
 - **Privacy-safe request logs (P0 observability).** Opt-in per-request **metadata

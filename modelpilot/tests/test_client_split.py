@@ -17,7 +17,7 @@ from modelpilot.router import classify as tier_classify
 # passes in both the monorepo (modelpilot/tests/) and the published repo layout
 # (tests/ as a sibling of modelpilot/).
 PKG = pathlib.Path(modelpilot.__file__).resolve().parent
-PUBLISHABLE = ["router_classify.py", "brain_client.py", "client_proxy.py"]
+PUBLISHABLE = ["router_classify.py", "brain_client.py", "client_proxy.py", "sdk.py", "retry.py"]
 FORBIDDEN = {"pricing", "taxonomy", "router", "gateway", "ledger", "floorlearn",
              "profile", "rules", "promptsavings", "telemetry", "compare", "bedrock"}
 

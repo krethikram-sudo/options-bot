@@ -27,7 +27,7 @@ import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import Response, StreamingResponse
 
-from . import brain_client
+from . import brain_client, retry
 
 UPSTREAM = os.environ.get("MODELPILOT_UPSTREAM", "https://api.anthropic.com").rstrip("/")
 BRAIN_URL = os.environ.get("MODELPILOT_BRAIN_URL", "").rstrip("/")
@@ -36,6 +36,10 @@ LICENSE = os.environ.get("MODELPILOT_LICENSE") or None
 DB_PATH = os.environ.get("MODELPILOT_DB", "modelpilot.db")
 # autopilot rewrites the model; advise/shadow only annotate (do-no-harm default).
 MODE = os.environ.get("MODELPILOT_MODE", "autopilot")
+# Reliability: retry transient upstream errors, and on a routed (cheaper) model's
+# failure fall back to the model the caller asked for.
+MAX_RETRIES = int(os.environ.get("MODELPILOT_MAX_RETRIES", str(retry.DEFAULT_MAX_RETRIES)))
+FALLBACK = os.environ.get("MODELPILOT_FALLBACK", "1") not in ("0", "false", "no", "")
 
 # Headers we never echo back from upstream (hop-by-hop / length recomputed).
 _DROP_RESP_HEADERS = {"content-length", "content-encoding", "transfer-encoding", "connection"}
@@ -119,44 +123,74 @@ def _decide(body: dict):
     return (rec.recommended_model if apply else original), annotation
 
 
+def _rebody(raw: bytes, body: dict, model: str) -> bytes:
+    import json
+    if not body or model == body.get("model"):
+        return raw
+    body = {**body, "model": model}
+    return json.dumps(body).encode()
+
+
 @app.post("/v1/messages")
 async def messages(request: Request):
+    import asyncio
+    import json
+
     raw = await request.body()
     try:
-        import json
         body = json.loads(raw)
     except ValueError:
         body = {}
 
-    routed_model, annotation = (body.get("model", ""), "bad-body")
+    original = body.get("model", "")
+    routed_model, annotation = (original, "bad-body")
     if body:
         routed_model, annotation = _decide(body)
-        if routed_model and routed_model != body.get("model"):
-            body["model"] = routed_model
-            import json
-            raw = json.dumps(body).encode()
 
     url = f"{UPSTREAM}/v1/messages"
-    headers = _fwd_headers(request)
-    headers["content-length"] = str(len(raw))
-    extra = {"x-modelpilot-decision": annotation, "x-modelpilot-routed": routed_model or ""}
+    base_headers = _fwd_headers(request)
+    streaming = bool(body.get("stream"))
 
-    if body.get("stream"):
-        upstream = await _client().send(
-            _client().build_request("POST", url, content=raw, headers=headers),
-            stream=True)
+    # Retry transient failures; fall back to the original model if the routed
+    # (cheaper) one errors, so routing never costs reliability.
+    model = routed_model or original
+    notes = [annotation]
+    attempt = 0
+    while True:
+        payload = _rebody(raw, body, model)
+        headers = {**base_headers, "content-length": str(len(payload))}
+        if streaming:
+            upstream = await _client().send(
+                _client().build_request("POST", url, content=payload, headers=headers),
+                stream=True)
+        else:
+            upstream = await _client().post(url, content=payload, headers=headers)
 
+        nxt = retry.plan(upstream.status_code, attempt, MAX_RETRIES, routed_model,
+                         original, FALLBACK) if body else None
+        if nxt is None:
+            break
+        # retriable failure with attempts left -> close this response and retry
+        if streaming:
+            await upstream.aclose()
+        else:
+            await upstream.aread()
+        wait = retry.backoff_seconds(attempt, upstream.headers.get("retry-after"))
+        notes.append(f"retry{nxt['attempt']}:{upstream.status_code}:{nxt['reason']}")
+        model = nxt["model"]
+        attempt = nxt["attempt"]
+        await asyncio.sleep(wait)
+
+    extra = {"x-modelpilot-decision": ";".join(notes), "x-modelpilot-routed": model or ""}
+    if streaming:
         async def relay():
             try:
                 async for chunk in upstream.aiter_bytes():
                     yield chunk
             finally:
                 await upstream.aclose()
-
         return StreamingResponse(relay(), status_code=upstream.status_code,
                                  headers={**_resp_headers(upstream), **extra})
-
-    upstream = await _client().post(url, content=raw, headers=headers)
     return Response(content=upstream.content, status_code=upstream.status_code,
                     headers={**_resp_headers(upstream), **extra})
 
