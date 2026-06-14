@@ -194,7 +194,29 @@ def extract_features(body: dict) -> dict:
     }
 
 
-def classify(features: dict, floor_tier=None, floors: dict | None = None):
+def match_rule(prompt: str, rules: list | None):
+    """First customer rule whose lexical signals match the prompt, or None.
+
+    Commodity: a rule is `{name, any:[substrings], regex:[patterns], category}` —
+    pure signal→category mapping, no tiers/floors (those stay server-side). Lets
+    the published thin client apply admin-approved Track-C rules locally."""
+    if not rules:
+        return None
+    low = prompt.lower()
+    for r in rules:
+        if any(str(s).lower() in low for s in (r.get("any") or [])):
+            return r
+        for pat in (r.get("regex") or []):
+            try:
+                if re.search(pat, prompt, re.IGNORECASE):
+                    return r
+            except re.error:
+                continue
+    return None
+
+
+def classify(features: dict, floor_tier=None, floors: dict | None = None,
+             rules: list | None = None):
     """Session-context-aware classification.
 
     Each prompt is first classified on its own, then reconciled with the
@@ -203,12 +225,23 @@ def classify(features: dict, floor_tier=None, floors: dict | None = None):
     while mechanical tasks keep their own cheap tier even in hard sessions —
     that's where existing content gets leveraged for savings.
 
+    `rules` (optional) are admin-approved per-customer classification rules
+    (Track C): a matching rule sets the category, still passing through follow-up
+    reconciliation so a cheap rule can't strand a hard follow-up.
+
     `floor_tier` is an injected `floor_tier(category, floors)` callable owned by
     the caller (router.py). With it, returns `(category, tier, confidence,
     rationale)`. Without it (commodity / thin-client mode), `tier` is None and
     follow-up detection falls back to "any hard category in the session" — the
     thin client only needs the category + confidence to send to the brain.
     """
+    rule = match_rule(features.get("prompt", ""), rules)
+    if rule is not None:
+        cat = rule.get("category")
+        conf = float(rule.get("confidence", 0.85))
+        tier = floor_tier(cat, floors) if floor_tier is not None else None
+        return reconcile_followup(features, cat, tier, conf,
+                                  f"customer rule '{rule.get('name') or cat}' -> {cat}", floor_tier)
     category, tier, confidence, rationale = _classify_standalone(features, floor_tier, floors)
     return reconcile_followup(features, category, tier, confidence, rationale, floor_tier)
 

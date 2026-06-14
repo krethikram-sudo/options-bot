@@ -4,6 +4,20 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.24.0 — 2026-06-14
+
+- **Approved rules now apply in the published thin client too (Track C, commodity).**
+  `router_classify` gained a stdlib-only signal→category rule matcher (no
+  tiers/floors — those stay server-side), so the thin client applies a customer's
+  admin-approved rules locally before asking the brain. The client fetches its
+  approved rules from the console at startup (`brain_client.fetch_policy`); rule
+  hits still pass through follow-up reconciliation (a non-mechanical rule can't
+  strand a hard follow-up). No prompt text leaves the box. Leak audit still clean.
+- **Proposal audit trail.** Approving/rejecting a tuning proposal now records
+  **who** decided, **when**, and an optional **note**; the customer detail page
+  shows a "Tuning history" table. (`proposals.decided_by`/`note` columns, migrated
+  in place for existing DBs.)
+
 ## 0.23.0 — 2026-06-14
 
 - **Per-customer tuning, admin-reviewed (Tracks A + C in the console).** Gateways

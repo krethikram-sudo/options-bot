@@ -366,8 +366,9 @@ def admin_account(request: Request, account_id: int):
     reset_token = request.query_params.get("reset_token", "")
     reset_link = notify.reset_link(reset_token) if reset_token else ""
     proposals = store.list_proposals(account_id, status="pending")
+    history = store.proposal_history(account_id)
     return _html(web.admin_account_detail(acct, target, plan, trial, settings, bill, cats,
-                                          _suggestions(cats, settings), reset_link, proposals))
+                                          _suggestions(cats, settings), reset_link, proposals, history))
 
 
 @app.post("/admin/accounts/{account_id}/proposal")
@@ -383,7 +384,7 @@ async def admin_decide_proposal(request: Request, account_id: int):
         pid = 0
     if decision in ("approved", "rejected") and pid:
         try:
-            store.decide_proposal(pid, decision)
+            store.decide_proposal(pid, decision, decided_by=acct["id"], note=f.get("note"))
         except store.StoreError:
             pass
     return _redirect(f"/admin/accounts/{account_id}")

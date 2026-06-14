@@ -120,10 +120,18 @@ CREATE TABLE IF NOT EXISTS proposals (
     stats TEXT NOT NULL DEFAULT '{}',           -- JSON: samples, non-inferior rate, etc.
     status TEXT NOT NULL DEFAULT 'pending',      -- 'pending' | 'approved' | 'rejected'
     created_at REAL NOT NULL,
-    decided_at REAL
+    decided_at REAL,
+    decided_by INTEGER,                          -- admin account id (audit trail)
+    note TEXT                                     -- optional reviewer note
 );
 CREATE INDEX IF NOT EXISTS idx_prop_acct ON proposals(account_id, status);
 """
+
+# Columns added after the proposals table first shipped — applied to existing DBs.
+_MIGRATIONS = [
+    "ALTER TABLE proposals ADD COLUMN decided_by INTEGER",
+    "ALTER TABLE proposals ADD COLUMN note TEXT",
+]
 
 RESET_TTL = 3600  # password-reset token lifetime (seconds)
 
@@ -132,6 +140,11 @@ def init_db(path: str | None = None) -> None:
     conn = connect(path)
     try:
         conn.executescript(SCHEMA)
+        for stmt in _MIGRATIONS:
+            try:
+                conn.execute(stmt)
+            except sqlite3.OperationalError:
+                pass  # column already exists
         conn.commit()
     finally:
         conn.close()
@@ -702,17 +715,37 @@ def count_pending_proposals(path: str | None = None) -> int:
         conn.close()
 
 
-def decide_proposal(proposal_id: int, status: str, path: str | None = None,
+def decide_proposal(proposal_id: int, status: str, decided_by: int | None = None,
+                    note: str | None = None, path: str | None = None,
                     now: float | None = None) -> bool:
+    """Approve/reject a pending proposal, recording who decided and an optional
+    note (audit trail)."""
     if status not in ("approved", "rejected"):
         raise StoreError("status must be approved or rejected")
     now = now or time.time()
     conn = connect(path)
     try:
-        cur = conn.execute("UPDATE proposals SET status=?, decided_at=? WHERE id=? AND status='pending'",
-                           (status, now, proposal_id))
+        cur = conn.execute(
+            "UPDATE proposals SET status=?, decided_at=?, decided_by=?, note=?"
+            " WHERE id=? AND status='pending'",
+            (status, now, decided_by, (note or None), proposal_id))
         conn.commit()
         return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def proposal_history(account_id: int, limit: int = 25, path: str | None = None) -> list[dict]:
+    """Decided proposals for an account (audit trail), newest decision first,
+    with the deciding admin's email resolved."""
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT p.*, a.email AS decided_by_email FROM proposals p"
+            " LEFT JOIN accounts a ON a.id=p.decided_by"
+            " WHERE p.account_id=? AND p.status!='pending'"
+            " ORDER BY p.decided_at DESC LIMIT ?", (account_id, limit)).fetchall()
+        return [_row_proposal(dict(r)) for r in rows]
     finally:
         conn.close()
 

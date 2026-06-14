@@ -72,6 +72,42 @@ def test_tier_mode_matches_commodity_category():
     assert commodity_tier is None and tier_tier == 0  # floor applied only tier-side
 
 
+def test_commodity_rule_application_overrides_category():
+    # Track C: an approved rule maps domain phrasing to a category, applied in the
+    # thin client with no floors/pricing (the brain applies floors to the category).
+    rules = [{"name": "invoices", "any": ["invoice", "po number"], "category": "extraction"}]
+    feats = rc.extract_features({"model": "claude-opus-4-8", "max_tokens": 16,
+                                 "messages": [{"role": "user", "content": "Please reconcile this invoice 4821"}]})
+    # without rules the prompt is a catch-all; with the rule it's extraction
+    assert rc.classify(feats)[0] != "extraction"
+    cat, tier, conf, rat = rc.classify(feats, rules=rules)
+    assert cat == "extraction" and tier is None and "invoices" in rat
+
+
+def test_commodity_rule_does_not_strand_hard_followup():
+    # A non-mechanical rule must still go through follow-up reconciliation, so a
+    # hard follow-up isn't stranded on a cheap tier. (Mechanical categories like
+    # extraction are intentionally exempt — safe on cheap models over hard content.)
+    rules = [{"name": "chat", "any": ["it"], "category": "conversation"}]
+    sess = {"model": "claude-opus-4-8", "max_tokens": 16, "messages": [
+        {"role": "user", "content": "Debug why my job intermittently fails with a deadlock."},
+        {"role": "assistant", "content": "Lock-ordering deadlock."},
+        {"role": "user", "content": "now fix it"}]}
+    feats = rc.extract_features(sess)
+    cat, _t, _c, _r = rc.classify(feats, rules=rules)
+    assert cat == "followup_in_context"
+
+
+def test_brain_client_build_request_applies_rules():
+    import modelpilot.brain_client as bc
+    body = {"model": "claude-opus-4-8", "max_tokens": 16,
+            "messages": [{"role": "user", "content": "reconcile invoice 99"}]}
+    req = bc.build_request(body, "dep_x", rules=[{"name": "inv", "any": ["invoice"],
+                                                  "category": "extraction"}])
+    assert req["category"] == "extraction"
+    assert "prompt" not in req["features"] and "messages" not in req  # no prompt text leaves
+
+
 def test_commodity_followup_detected_without_floors():
     sess = {"model": "claude-opus-4-8", "max_tokens": 16, "messages": [
         {"role": "user", "content": "Debug why my job intermittently fails with a deadlock."},

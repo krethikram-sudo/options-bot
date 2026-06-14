@@ -370,3 +370,23 @@ def test_admin_reviews_and_approves_proposal_via_http(env, client):
     client.post(f"/admin/accounts/{cust['id']}/proposal",
                 data={"proposal_id": str(pid), "decision": "approved"})
     assert store.approved_floors(cust["id"]) == {"extraction": 0}
+
+
+def test_proposal_audit_trail(env, client):
+    _, store = env
+    admin = store.create_account("boss3@b.com", "password123", role="admin")
+    cust = store.create_account("cust3@b.com", "password123")
+    dep = store.deployments_for(cust["id"])[0]["deployment_id"]
+    store.submit_proposal(dep, "floor", "extraction", {"current_tier": 1, "proposed_tier": 0},
+                          {"samples": 15})
+    pid = store.list_proposals(cust["id"])[0]["id"]
+    client.post("/login", data={"email": "boss3@b.com", "password": "password123"})
+    client.post(f"/admin/accounts/{cust['id']}/proposal",
+                data={"proposal_id": str(pid), "decision": "approved", "note": "looks safe"})
+    hist = store.proposal_history(cust["id"])
+    assert len(hist) == 1
+    h = hist[0]
+    assert h["status"] == "approved" and h["note"] == "looks safe"
+    assert h["decided_by"] == admin["id"] and h["decided_by_email"] == "boss3@b.com"
+    # the audit trail renders on the detail page
+    assert "Tuning history" in client.get(f"/admin/accounts/{cust['id']}").text

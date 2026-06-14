@@ -542,16 +542,39 @@ def _proposals_section(target_id: int, proposals: list[dict]) -> str:
           <p class="small muted" style="margin:6px 0 10px">{meta}</p>
           <form method=post action="/admin/accounts/{target_id}/proposal" class=row style="gap:8px">
             <input type=hidden name=proposal_id value="{p['id']}">
+            <input name=note placeholder="note (optional)" style="padding:6px;max-width:240px">
             <button class="btn sm" name=decision value=approved>Approve</button>
             <button class="btn sec sm" name=decision value=rejected>Reject</button>
           </form></div>"""
     return f'<h2>Proposed tuning <span class="small muted">— {len(proposals)} pending</span></h2>{cards}'
 
 
+def _audit_section(history: list[dict]) -> str:
+    if not history:
+        return ""
+    rows = ""
+    for p in history:
+        payload = p.get("payload") or {}
+        if p["kind"] == "floor":
+            what = f"floor {_e(p['category'])} → {_e(_tier_name(payload.get('proposed_tier')))}"
+        else:
+            what = f"rule {_e(payload.get('name') or p['category'])} → {_e(p['category'])}"
+        badge = "paid" if p["status"] == "approved" else "suspended"
+        note = f' · <span class=muted>{_e(p["note"])}</span>' if p.get("note") else ""
+        rows += (f"<tr><td>{what}</td>"
+                 f"<td><span class='badge {badge}'>{_e(p['status'])}</span></td>"
+                 f"<td class='small muted'>{_e(p.get('decided_by_email') or '—')}</td>"
+                 f"<td class='small muted'>{_fmt_date(p.get('decided_at'))}{note}</td></tr>")
+    return (f'<h2>Tuning history <span class="small muted">— audit trail</span></h2>'
+            f'<div class=card style="padding:0"><table><thead><tr><th>Change</th><th>Decision</th>'
+            f'<th>By</th><th>When</th></tr></thead><tbody>{rows}</tbody></table></div>')
+
+
 def admin_account_detail(account: dict, target: dict, plan: dict, trial: dict,
                          settings: dict, bill: dict, cats: list[dict],
                          suggestions: list[str], reset_link: str = "",
-                         proposals: list[dict] | None = None) -> str:
+                         proposals: list[dict] | None = None,
+                         history: list[dict] | None = None) -> str:
     cat_rows = ""
     for c in cats:
         esc_rate = (100 * c["escalations"] / c["routed"]) if c["routed"] else 0
@@ -595,6 +618,7 @@ def admin_account_detail(account: dict, target: dict, plan: dict, trial: dict,
                   if reset_link else "")
     body += f"""
     {_proposals_section(target['id'], proposals or [])}
+    {_audit_section(history or [])}
 
     <h2>Manage access</h2>
     {reset_note}

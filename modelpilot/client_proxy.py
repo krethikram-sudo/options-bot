@@ -31,6 +31,7 @@ from . import brain_client
 
 UPSTREAM = os.environ.get("MODELPILOT_UPSTREAM", "https://api.anthropic.com").rstrip("/")
 BRAIN_URL = os.environ.get("MODELPILOT_BRAIN_URL", "").rstrip("/")
+CONSOLE_URL = os.environ.get("MODELPILOT_CONSOLE_URL", "").rstrip("/")
 LICENSE = os.environ.get("MODELPILOT_LICENSE") or None
 DB_PATH = os.environ.get("MODELPILOT_DB", "modelpilot.db")
 # autopilot rewrites the model; advise/shadow only annotate (do-no-harm default).
@@ -51,6 +52,10 @@ app = FastAPI(title="ModelPilot thin client")
 async def _startup():
     app.state.http = httpx.AsyncClient(timeout=httpx.Timeout(600.0, connect=10.0))
     app.state.deployment_id = brain_client.deployment_id(DB_PATH)
+    # Admin-approved per-customer classification rules (Track C), applied locally
+    # so the cheap-model routing reflects this customer's domain. Floors stay in
+    # the brain. Fetched at startup; restart to pick up newly-approved rules.
+    app.state.rules = brain_client.fetch_policy(CONSOLE_URL, app.state.deployment_id)["rules"]
 
 
 @app.on_event("shutdown")
@@ -83,7 +88,8 @@ def _decide(body: dict):
     if not BRAIN_URL:
         return original, "no-brain"
     result = brain_client.remote_decide(
-        body, BRAIN_URL, app.state.deployment_id, LICENSE)
+        body, BRAIN_URL, app.state.deployment_id, LICENSE,
+        rules=getattr(app.state, "rules", None))
     if result is None:
         return original, "brain-unreachable-fail-open"
     rec, ent = result
