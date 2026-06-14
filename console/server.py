@@ -308,7 +308,34 @@ def _connect_html(acct: dict, new_key: str = ""):
     brain = os.environ.get("MODELPILOT_BRAIN_URL", "https://brain.modelpilot.app")
     console = os.environ.get("CONSOLE_BASE_URL", "https://app.modelpilot.app")
     keys = store.list_api_keys(acct["id"])
-    return _html(web.connect_page(acct, deps, brain, console, keys, new_key))
+    hooks = store.list_webhooks(acct["id"])
+    return _html(web.connect_page(acct, deps, brain, console, keys, new_key, hooks))
+
+
+@app.post("/app/webhooks")
+async def create_webhook(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    try:
+        store.create_webhook(acct["id"], f.get("url", ""), f.get("events", "all"))
+    except store.StoreError:
+        pass
+    return _redirect("/app/connect")
+
+
+@app.post("/app/webhooks/delete")
+async def delete_webhook(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    try:
+        store.delete_webhook(int(f.get("webhook_id", "0")), acct["id"])
+    except ValueError:
+        pass
+    return _redirect("/app/connect")
 
 
 @app.get("/app/connect", response_class=HTMLResponse)
@@ -556,6 +583,7 @@ async def admin_action(request: Request, account_id: int):
         store.convert_to_paid(account_id)
     elif action == "suspend":
         store.set_status(account_id, "suspended")
+        store.deliver_event(account_id, "account.suspended", {"account_id": account_id})
     elif action == "reactivate":
         store.set_status(account_id, "active")
     elif action == "set_rate":
@@ -636,6 +664,8 @@ async def api_meter(request: Request):
                                              alert["spend"], alert["budget"])
                 except Exception:  # noqa: BLE001
                     pass
+                store.deliver_event(acct["id"], f"budget.{alert['level']}",
+                                    {"spend": alert["spend"], "budget": alert["budget"]})
     except Exception:  # noqa: BLE001
         pass
     return JSONResponse(res)
@@ -665,6 +695,9 @@ async def api_proposals(request: Request):
     except store.StoreError as e:
         code = 404 if "unknown deployment" in str(e) else 400
         return JSONResponse({"error": str(e)}, status_code=code)
+    if not res.get("auto_approved"):
+        store.deliver_event(res["account_id"], "proposal.pending",
+                            {"kind": kind, "category": category})
     return JSONResponse(res)
 
 

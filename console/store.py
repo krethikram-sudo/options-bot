@@ -159,7 +159,19 @@ CREATE TABLE IF NOT EXISTS request_logs (
     baseline_cost REAL DEFAULT 0, actual_cost REAL DEFAULT 0, realized_saved REAL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_rlog_acct ON request_logs(account_id, ts);
+CREATE TABLE IF NOT EXISTS webhooks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL REFERENCES accounts(id),
+    url TEXT NOT NULL,
+    secret TEXT NOT NULL,
+    events TEXT NOT NULL DEFAULT 'all',          -- 'all' or comma-separated event types
+    active INTEGER NOT NULL DEFAULT 1,
+    created_at REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_webhook_acct ON webhooks(account_id);
 """
+
+WEBHOOK_EVENTS = ("budget.warn", "budget.over", "proposal.pending", "account.suspended")
 
 # Columns added after the proposals table first shipped — applied to existing DBs.
 _MIGRATIONS = [
@@ -1008,6 +1020,96 @@ def logs_count(account_id: int, path: str | None = None) -> int:
                             (account_id,)).fetchone()["c"]
     finally:
         conn.close()
+
+
+# --------------------------------------------------------------------------- #
+# Webhooks (HMAC-signed event delivery to customer endpoints)
+# --------------------------------------------------------------------------- #
+
+def create_webhook(account_id: int, url: str, events: str = "all",
+                   path: str | None = None, now: float | None = None) -> dict:
+    if not (url or "").startswith(("http://", "https://")):
+        raise StoreError("webhook url must be http(s)")
+    now = now or time.time()
+    secret = "whsec_" + secrets.token_urlsafe(24)
+    conn = connect(path)
+    try:
+        cur = conn.execute("INSERT INTO webhooks(account_id, url, secret, events, active, created_at)"
+                           " VALUES(?,?,?,?,1,?)", (account_id, url.strip(), secret,
+                                                    (events or "all").strip(), now))
+        wid = cur.lastrowid
+        conn.commit()
+    finally:
+        conn.close()
+    return {"id": wid, "secret": secret, "url": url}
+
+
+def list_webhooks(account_id: int, path: str | None = None) -> list[dict]:
+    conn = connect(path)
+    try:
+        rows = conn.execute("SELECT * FROM webhooks WHERE account_id=? ORDER BY created_at DESC",
+                            (account_id,)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def delete_webhook(webhook_id: int, account_id: int, path: str | None = None) -> bool:
+    conn = connect(path)
+    try:
+        cur = conn.execute("DELETE FROM webhooks WHERE id=? AND account_id=?", (webhook_id, account_id))
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def _matching_webhooks(account_id: int, event_type: str, path: str | None = None) -> list[dict]:
+    out = []
+    for w in list_webhooks(account_id, path):
+        if not w["active"]:
+            continue
+        ev = w["events"]
+        if ev == "all" or event_type in {e.strip() for e in ev.split(",")}:
+            out.append(w)
+    return out
+
+
+def sign_payload(secret: str, body: bytes) -> str:
+    return "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+
+
+def deliver_event(account_id: int, event_type: str, data: dict, path: str | None = None,
+                  post_fn=None) -> int:
+    """Fire `event_type` to the account's subscribed webhooks (HMAC-signed,
+    best-effort, off-thread). Returns how many were dispatched. `post_fn` (tests)
+    receives (url, body_bytes, headers) synchronously instead of HTTP."""
+    hooks = _matching_webhooks(account_id, event_type, path)
+    if not hooks:
+        return 0
+    body = json.dumps({"event": event_type, "ts": time.time(), "data": data},
+                      separators=(",", ":")).encode()
+
+    def _send(url, secret):
+        headers = {"content-type": "application/json", "user-agent": "ModelPilot-Webhook",
+                   "x-modelpilot-event": event_type, "x-modelpilot-signature": sign_payload(secret, body)}
+        if post_fn is not None:
+            post_fn(url, body, headers)
+            return
+        import urllib.request
+        req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+        try:
+            urllib.request.urlopen(req, timeout=5).close()
+        except Exception:  # noqa: BLE001 — delivery is best-effort
+            pass
+
+    for w in hooks:
+        if post_fn is not None:
+            _send(w["url"], w["secret"])
+        else:
+            import threading
+            threading.Thread(target=_send, args=(w["url"], w["secret"]), daemon=True).start()
+    return len(hooks)
 
 
 def cycle_start(now: float | None = None) -> float:

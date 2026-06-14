@@ -585,6 +585,60 @@ def test_logs_page_and_csv(env, client):
     assert "extraction" in csv.text and "realized_saved" in csv.text
 
 
+# --- webhooks ------------------------------------------------------------- #
+
+def test_webhook_create_match_sign_deliver(env):
+    _, store = env
+    a = store.create_account("wh@b.com", "password123")
+    store.create_webhook(a["id"], "https://x.test/hook", "budget.over,proposal.pending")
+    store.create_webhook(a["id"], "https://y.test/all", "all")
+    sent = []
+    n = store.deliver_event(a["id"], "budget.over", {"spend": 12.0},
+                            post_fn=lambda url, body, headers: sent.append((url, body, headers)))
+    assert n == 2  # the specific one + the 'all' one
+    urls = {u for u, _, _ in sent}
+    assert urls == {"https://x.test/hook", "https://y.test/all"}
+    # signature verifies with the stored secret
+    url, body, headers = sent[0]
+    hooks = {w["url"]: w["secret"] for w in store.list_webhooks(a["id"])}
+    assert headers["x-modelpilot-signature"] == store.sign_payload(hooks[url], body)
+    assert b'"event":"budget.over"' in body and headers["x-modelpilot-event"] == "budget.over"
+
+
+def test_webhook_event_filtering(env):
+    _, store = env
+    a = store.create_account("wh2@b.com", "password123")
+    store.create_webhook(a["id"], "https://only.test/h", "proposal.pending")
+    sent = []
+    # not subscribed -> no delivery
+    assert store.deliver_event(a["id"], "budget.warn", {}, post_fn=lambda *x: sent.append(x)) == 0
+    assert store.deliver_event(a["id"], "proposal.pending", {}, post_fn=lambda *x: sent.append(x)) == 1
+
+
+def test_webhook_http_crud(env, client):
+    _, store = env
+    _signup(client, email="whc@b.com")
+    acct = store.get_account_by_email("whc@b.com")
+    client.post("/app/webhooks", data={"url": "https://e.test/h", "events": "all"})
+    hooks = store.list_webhooks(acct["id"])
+    assert len(hooks) == 1 and hooks[0]["secret"].startswith("whsec_")
+    assert "e.test" in client.get("/app/connect").text
+    client.post("/app/webhooks/delete", data={"webhook_id": str(hooks[0]["id"])})
+    assert store.list_webhooks(acct["id"]) == []
+
+
+def test_proposal_submit_fires_webhook(env, client):
+    _, store = env
+    a = store.create_account("whp@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    store.create_webhook(a["id"], "https://p.test/h", "proposal.pending")
+    # submit via the API; the pending proposal should match the webhook
+    r = client.post("/api/proposals", json={"deployment_id": dep, "kind": "rule",
+                    "category": "extraction", "payload": {"name": "x", "any": ["q"], "category": "extraction"}})
+    assert r.status_code == 200
+    assert len(store._matching_webhooks(a["id"], "proposal.pending")) == 1
+
+
 # --- spend budget + alerts ------------------------------------------------ #
 
 def test_budget_status_and_alert_levels(env):

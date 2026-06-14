@@ -407,8 +407,39 @@ def _api_keys_section(keys: list[dict], deployments: list[dict], new_key: str = 
     </div>"""
 
 
+def _webhooks_section(webhooks: list[dict]) -> str:
+    from .store import WEBHOOK_EVENTS
+    rows = ""
+    for w in webhooks or []:
+        rows += (f"<tr><td class=small>{_e(w['url'])}</td><td class='small muted'>{_e(w['events'])}</td>"
+                 f"<td><code>{_e(w['secret'])}</code></td>"
+                 f"<td><form method=post action='/app/webhooks/delete' style='margin:0'>"
+                 f"<input type=hidden name=webhook_id value='{w['id']}'>"
+                 f"<button class='btn sec sm'>Delete</button></form></td></tr>")
+    table = (f"<div class=card style='padding:0'><table><thead><tr><th>URL</th><th>Events</th>"
+             f"<th>Signing secret</th><th></th></tr></thead><tbody>{rows}</tbody></table></div>"
+             if rows else "<div class=card><p class='small muted'>No webhooks yet.</p></div>")
+    opts = "".join(f'<option value="{e}">{e}</option>' for e in WEBHOOK_EVENTS)
+    return f"""
+    <h2>Webhooks</h2>
+    <p class="small muted">Get notified of events (budget thresholds, tuning proposals, account
+    changes). We POST JSON signed with <code>X-ModelPilot-Signature: sha256=…</code> (HMAC of the body
+    with the webhook's signing secret).</p>
+    {table}
+    <div class=card style="margin-top:12px">
+      <form method=post action="/app/webhooks" class=row style="gap:8px">
+        <input name=url placeholder="https://your-app.com/hooks/modelpilot" style="min-width:280px">
+        <select name=events>
+          <option value="all">all events</option>{opts}
+        </select>
+        <button class=btn>Add webhook</button>
+      </form>
+    </div>"""
+
+
 def connect_page(account: dict, deployments: list[dict], brain_url: str, console_url: str,
-                 keys: list[dict] | None = None, new_key: str = "") -> str:
+                 keys: list[dict] | None = None, new_key: str = "",
+                 webhooks: list[dict] | None = None) -> str:
     dep = deployments[0]["deployment_id"] if deployments else "—"
     dep_rows = ""
     for d in deployments:
@@ -452,7 +483,8 @@ client = Anthropic(base_url="http://127.0.0.1:8400")  # your key stays local</pr
         <button class=btn>Add deployment</button>
       </form>
     </div>
-    {_api_keys_section(keys or [], deployments, new_key)}"""
+    {_api_keys_section(keys or [], deployments, new_key)}
+    {_webhooks_section(webhooks or [])}"""
     return page("Connect", body, account, "/app/connect")
 
 
