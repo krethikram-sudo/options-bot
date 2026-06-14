@@ -29,3 +29,7 @@ premium/*.py
 
 # ModelPilot gateway runtime state (savings ledger)
 modelpilot*.db
+
+# ModelPilot license signing key — never commit
+license_private_key.pem
+*license_private_key*.pem

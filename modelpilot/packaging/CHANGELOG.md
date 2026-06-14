@@ -4,6 +4,16 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.7.1 — 2026-06-14
+
+- **Unforgeable license keys (Ed25519).** The gate now supports asymmetric
+  signing: once a public key is bundled (`modelpilot/license_pubkey.pem`), the
+  shipped client can *verify* tokens but cannot *mint* them — only the holder of
+  the private key can issue, and HMAC tokens are then rejected (no downgrade).
+  Set up with `python -m modelpilot.license keygen` (run where `cryptography`
+  works); the HMAC fallback stays active until a public key is present, so
+  nothing breaks in the interim. Adds `cryptography` as a dependency.
+
 ## 0.7.0 — 2026-06-14
 
 - **License gate for autopilot.** Autopilot now requires a valid license token

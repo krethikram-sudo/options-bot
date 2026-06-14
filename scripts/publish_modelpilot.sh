@@ -31,6 +31,8 @@ cp "$SRC"/__init__.py "$SRC"/cli.py "$SRC"/gateway.py "$SRC"/router.py \
    "$SRC"/chat.py "$SRC"/continuation.py "$SRC"/demo.py "$SRC"/report.py \
    "$SRC"/compare.py "$SRC"/replay.py "$SRC"/digest.py "$SRC"/tune.py "$SRC"/license.py \
    "$SRC"/requirements.txt "$DEST/modelpilot/"
+# Public license key (safe to ship): present once `license keygen` has been run.
+[ -f "$SRC/license_pubkey.pem" ] && cp "$SRC/license_pubkey.pem" "$DEST/modelpilot/"
 
 # --- landing page (GitHub Pages deploys from site/ via pages.yml) ---
 cp "$SRC"/site/index.html "$DEST/site/"
@@ -72,6 +74,7 @@ dist/
 modelpilot*.db
 goldenset_data/
 .env
+license_private_key.pem
 EOF
 
 # --- sanity: build must be importable and green before it can ship ---

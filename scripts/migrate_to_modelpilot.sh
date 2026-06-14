@@ -46,6 +46,7 @@ mkdir -p "$WORK/modelpilot/goldenset"
 cp "$SRC"/*.py "$WORK/modelpilot/"
 cp "$SRC"/requirements.txt "$WORK/modelpilot/"
 cp "$SRC"/goldenset/*.py "$WORK/modelpilot/goldenset/"
+[ -f "$SRC/license_pubkey.pem" ] && cp "$SRC/license_pubkey.pem" "$WORK/modelpilot/"
 
 # --- tests ---
 mkdir -p "$WORK/tests"
@@ -114,6 +115,7 @@ build/
 dist/
 modelpilot*.db
 .env
+license_private_key.pem
 EOF
 
 # --- prove it installs + tests green before pushing ---
