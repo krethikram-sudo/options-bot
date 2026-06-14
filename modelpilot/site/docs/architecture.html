@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecture &amp; privacy — ModelPilot docs</title>
+<meta name="description" content="How ModelPilot is built so your prompts never leave your box: a local proxy classifies, a hosted brain decides, and only categories + token counts cross the wire.">
+<link rel="canonical" href="https://modelpilot.pages.dev/docs/architecture.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/docs/docs.css">
+</head><body>
+<div class="top"><div class="row">
+  <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
+  <span class="tag">Docs</span><span class="sp"></span>
+  <a class="lnk" href="/">Home</a>
+  <a class="lnk" href="https://app.modelpilot.app/login">Sign in</a>
+  <a class="cta" href="https://app.modelpilot.app/signup">Start free trial</a>
+</div></div>
+
+<div class="layout">
+  <aside class="side">
+    <div class="grp">Get started</div>
+    <a href="/docs/">Quickstart</a>
+    <a href="/docs/configuration.html">Configuration</a>
+    <a href="/docs/sdks.html">SDKs</a>
+    <div class="grp">Reference</div>
+    <a class="on" href="/docs/architecture.html">Architecture &amp; privacy</a>
+    <a href="https://app.modelpilot.app/app">Open dashboard ↗</a>
+  </aside>
+
+  <main>
+    <h1>Architecture &amp; privacy</h1>
+    <p class="lead">ModelPilot is split so the sensitive data physically can't reach us. A local proxy
+      classifies on your box; a hosted brain returns the routing decision from a category and numbers.</p>
+
+    <h2 id="flow">Request flow</h2>
+    <pre>your app ──▶ <b>local proxy</b> ──▶ Anthropic API ──▶ your app
+                 │  (classifies locally; forwards with YOUR key)
+                 ▼
+            <b>ModelPilot brain</b>   ◀── category + token counts only
+            (floors · economics · gate · entitlement · mode)</pre>
+    <ol>
+      <li>Your app calls the proxy instead of <code>api.anthropic.com</code> (one line: the base URL).</li>
+      <li>The proxy classifies the request <b>locally</b> into a task category and extracts numeric features
+        (token estimates, flags) — no prompt text leaves the process.</li>
+      <li>It asks the brain for a decision, sending only the category + features. The brain applies the
+        per-category floors, switch economics, the confidence gate, your entitlement, and your mode.</li>
+      <li>The proxy forwards the (possibly cheaper) request to Anthropic <b>with your key</b> and returns the
+        response — adding <code>x-modelpilot-decision</code> / <code>x-modelpilot-routed</code> headers.</li>
+      <li>If the brain is unreachable, the proxy <b>fails open</b>: the request goes straight to Anthropic, unrouted.</li>
+    </ol>
+
+    <h2 id="what-leaves">What leaves your box — and what never does</h2>
+    <table>
+      <thead><tr><th>Stays local</th><th>Sent to ModelPilot</th></tr></thead>
+      <tbody>
+        <tr><td>Prompt text &amp; system prompts</td><td>Task category (e.g. <code>classification</code>)</td></tr>
+        <tr><td>Model outputs / completions</td><td>Token-count estimates &amp; boolean flags (has-tools, etc.)</td></tr>
+        <tr><td>Your Anthropic API key</td><td>Requested model + your deployment id / API key</td></tr>
+        <tr><td>Any customer data</td><td>Aggregate savings dollars &amp; counts (for billing)</td></tr>
+      </tbody>
+    </table>
+    <div class="note">Defense in depth: the brain and metering/telemetry endpoints <b>reject any payload</b> that
+      contains prompt/output/secret-looking keys (HTTP 422) — even though the client already guarantees
+      aggregates only.</div>
+
+    <h2 id="metering">Metering &amp; billing</h2>
+    <p>Your local ledger records counts and dollars (never prompt text). The client periodically reports the
+      <em>delta</em> of realized savings to the console as aggregates; your bill each cycle is 20% of that.
+      You can audit every figure in the dashboard, recomputed from the actual tokens each request used.</p>
+
+    <h2 id="quality">How routing protects quality</h2>
+    <ul>
+      <li><b>Floors:</b> each task category has a cheapest tier we believe is non-inferior; routing only ever
+        moves <em>down</em> to that floor, never above the model you requested.</li>
+      <li><b>Guards:</b> structured-output and tool-using calls are never routed below a capable model.</li>
+      <li><b>Session awareness:</b> a short follow-up inherits the session's difficulty, so "why?" after a hard
+        debugging exchange isn't sent to a weak model.</li>
+      <li><b>Economics:</b> a switch is only applied when it actually pays after cache effects.</li>
+      <li><b>Proof:</b> a held-out control arm (RCT) runs the baseline, and side-by-side non-inferiority checks
+        validate the cheaper model on your own prompts.</li>
+    </ul>
+
+    <h2 id="client">The client is inspectable</h2>
+    <p>The proxy is a thin, publishable client: it contains the commodity classifier and the forwarding logic,
+      but none of the routing IP (floors, price table, economics) — those stay server-side. You can read
+      exactly what it sends.</p>
+
+    <div class="pager"><a href="/docs/sdks.html">← SDKs</a><a href="https://app.modelpilot.app/signup">Start free trial →</a></div>
+    <p class="foot">© 2026 ModelPilot · <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a></p>
+  </main>
+</div>
+</body></html>

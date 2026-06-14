@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quickstart — ModelPilot docs</title>
+<meta name="description" content="Get ModelPilot routing your Claude traffic in five minutes: install the proxy, configure it, point your SDK at it, and watch the savings.">
+<link rel="canonical" href="https://modelpilot.pages.dev/docs/">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/docs/docs.css">
+</head><body>
+<div class="top"><div class="row">
+  <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
+  <span class="tag">Docs</span><span class="sp"></span>
+  <a class="lnk" href="/">Home</a>
+  <a class="lnk" href="https://app.modelpilot.app/login">Sign in</a>
+  <a class="cta" href="https://app.modelpilot.app/signup">Start free trial</a>
+</div></div>
+
+<div class="layout">
+  <aside class="side">
+    <div class="grp">Get started</div>
+    <a class="on" href="/docs/">Quickstart</a>
+    <a href="/docs/configuration.html">Configuration</a>
+    <a href="/docs/sdks.html">SDKs</a>
+    <div class="grp">Reference</div>
+    <a href="/docs/architecture.html">Architecture &amp; privacy</a>
+    <a href="https://app.modelpilot.app/app">Open dashboard ↗</a>
+  </aside>
+
+  <main>
+    <h1>Quickstart</h1>
+    <p class="lead">Route your Claude traffic through ModelPilot in about five minutes. Your API key
+      and prompts never leave your machine.</p>
+
+    <div class="note">You'll need a ModelPilot account (free 7-day trial, no card) and your Anthropic
+      API key. <a href="https://app.modelpilot.app/signup">Create an account →</a></div>
+
+    <ol class="steps-n">
+      <li><h3 style="margin-top:0">Get your deployment id and an API key</h3>
+        After signing up, open <a href="https://app.modelpilot.app/app/connect">Connect</a> in the
+        console. Copy your <code>deployment id</code> and click <b>Create API key</b> (it's shown once).</li>
+
+      <li><h3 style="margin-top:0">Install the proxy</h3>
+        <pre><span class="c"># Python 3.10+</span>
+pip install modelpilot-client</pre></li>
+
+      <li><h3 style="margin-top:0">Configure &amp; run it</h3>
+        <pre><span class="b">export</span> ANTHROPIC_API_KEY=sk-ant-…        <span class="c"># stays on your machine</span>
+<span class="b">export</span> MODELPILOT_API_KEY=mp_live_…       <span class="c"># from the Connect page</span>
+<span class="b">export</span> MODELPILOT_BRAIN_URL=https://brain.modelpilot.app
+<span class="b">export</span> MODELPILOT_CONSOLE_URL=https://app.modelpilot.app
+<span class="b">export</span> MODELPILOT_DEPLOYMENT_ID=dep_…
+
+modelpilot-client            <span class="c"># listens on http://127.0.0.1:8400</span></pre>
+        <p class="small muted">See the full list on the <a href="/docs/configuration.html">Configuration</a> page.</p></li>
+
+      <li><h3 style="margin-top:0">Point your app at it</h3>
+        The proxy speaks the Claude Messages API — just change the base URL. Nothing else in your code changes.
+        <pre><span class="c"># Python</span>
+from anthropic import Anthropic
+client = Anthropic(base_url=<span class="y">"http://127.0.0.1:8400"</span>)   <span class="c"># your key, local</span></pre>
+        <p class="small muted">Or one line with our helper — see <a href="/docs/sdks.html">SDKs</a>.</p></li>
+
+      <li><h3 style="margin-top:0">Watch the savings</h3>
+        Send some traffic, then open your <a href="https://app.modelpilot.app/app">dashboard</a> — realized
+        savings by task type, baseline-vs-actual, and a non-inferiority proof rate, recomputed from real tokens.</li>
+    </ol>
+
+    <h2 id="modes">Choosing a routing mode</h2>
+    <p>Set your mode in the console (it takes effect server-side within seconds, no redeploy):</p>
+    <table>
+      <thead><tr><th>Mode</th><th>What it does</th><th>When to use</th></tr></thead>
+      <tbody>
+        <tr><td><b>shadow</b></td><td>Scores every request and measures savings — changes nothing.</td><td>First, to quantify the opportunity with zero risk.</td></tr>
+        <tr><td><b>guidance</b></td><td>Recommends a cheaper model per request; you decide.</td><td>To review routing before trusting it.</td></tr>
+        <tr><td><b>autopilot</b></td><td>Auto-routes to the cheapest good-enough model.</td><td>Once the numbers convince you. This is where you save.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note warn"><b>It always fails open.</b> If ModelPilot is ever unreachable, your request is
+      forwarded straight to the Claude API, unrouted. We can degrade your savings, never your uptime.</div>
+
+    <div class="pager"><span></span><a href="/docs/configuration.html">Configuration →</a></div>
+    <p class="foot">© 2026 ModelPilot · <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a></p>
+  </main>
+</div>
+</body></html>

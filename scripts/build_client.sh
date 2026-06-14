@@ -18,7 +18,7 @@ PKG="$OUT/modelpilot"
 # The publishable closure: commodity classifier + brain client + thin proxy.
 # (router_classify imports only stdlib; brain_client + client_proxy import only
 # router_classify + brain_client + fastapi/httpx/uvicorn.)
-PUBLISHABLE=(router_classify.py brain_client.py client_proxy.py)
+PUBLISHABLE=(router_classify.py brain_client.py client_proxy.py sdk.py)
 
 # Modules that must NEVER ship in the client (the IP) — used for the leak audit.
 FORBIDDEN_MODULES=(pricing taxonomy gateway floorlearn profile rules promptsavings \
@@ -38,6 +38,8 @@ cat > "$PKG/__init__.py" <<EOF
 ModelPilot brain. Carries no routing IP; the brain holds floors + economics."""
 
 __version__ = "$VERSION"
+
+from .sdk import anthropic_client, async_anthropic_client, proxy_url  # noqa: F401
 EOF
 
 for f in "${PUBLISHABLE[@]}"; do

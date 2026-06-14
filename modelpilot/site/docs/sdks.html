@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDKs — ModelPilot docs</title>
+<meta name="description" content="Use ModelPilot from Python and TypeScript — it's the Claude SDK with one changed line (the base URL).">
+<link rel="canonical" href="https://modelpilot.pages.dev/docs/sdks.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/docs/docs.css">
+</head><body>
+<div class="top"><div class="row">
+  <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
+  <span class="tag">Docs</span><span class="sp"></span>
+  <a class="lnk" href="/">Home</a>
+  <a class="lnk" href="https://app.modelpilot.app/login">Sign in</a>
+  <a class="cta" href="https://app.modelpilot.app/signup">Start free trial</a>
+</div></div>
+
+<div class="layout">
+  <aside class="side">
+    <div class="grp">Get started</div>
+    <a href="/docs/">Quickstart</a>
+    <a href="/docs/configuration.html">Configuration</a>
+    <a class="on" href="/docs/sdks.html">SDKs</a>
+    <div class="grp">Reference</div>
+    <a href="/docs/architecture.html">Architecture &amp; privacy</a>
+    <a href="https://app.modelpilot.app/app">Open dashboard ↗</a>
+  </aside>
+
+  <main>
+    <h1>SDKs</h1>
+    <p class="lead">ModelPilot is a drop-in proxy, so there's no new client library to learn — you use the
+      official Claude SDK and change one line: the base URL. We ship a tiny helper to make that a one-liner.</p>
+
+    <div class="note">The proxy must be running (<code>modelpilot-client</code> on <code>:8400</code>). Your
+      Anthropic key stays local; only a task category + token counts ever reach ModelPilot.</div>
+
+    <h2 id="python">Python</h2>
+    <p>Use the official <code>anthropic</code> SDK with the base URL pointed at the proxy:</p>
+    <pre><span class="c"># plain — official Anthropic SDK, one changed line</span>
+from anthropic import Anthropic
+client = Anthropic(base_url=<span class="y">"http://127.0.0.1:8400"</span>)
+
+msg = client.messages.create(
+    model=<span class="y">"claude-opus-4-8"</span>, max_tokens=512,
+    messages=[{<span class="y">"role"</span>: <span class="y">"user"</span>, <span class="y">"content"</span>: <span class="y">"Summarize this ticket…"</span>}],
+)</pre>
+    <p>Or with the bundled helper — it reads <code>MODELPILOT_PROXY_URL</code> (default <code>:8400</code>) and
+      <code>ANTHROPIC_API_KEY</code> for you:</p>
+    <pre><span class="c"># one-liner helper (ships with modelpilot-client)</span>
+from modelpilot import anthropic_client
+client = anthropic_client()                 <span class="c"># configured Anthropic()</span>
+
+<span class="c"># async, and overrides, work too:</span>
+from modelpilot import async_anthropic_client
+aclient = async_anthropic_client(proxy=<span class="y">"http://127.0.0.1:8400"</span>, timeout=30)</pre>
+    <p class="small muted">Everything else — streaming, tools, structured outputs — is unchanged; you're
+      talking to the real Claude Messages API through the proxy.</p>
+
+    <h2 id="typescript">TypeScript / JavaScript</h2>
+    <p>Same idea with <code>@anthropic-ai/sdk</code> — set <code>baseURL</code>:</p>
+    <pre><span class="c">// npm i @anthropic-ai/sdk</span>
+import Anthropic from <span class="y">"@anthropic-ai/sdk"</span>;
+
+const client = new Anthropic({
+  baseURL: process.env.MODELPILOT_PROXY_URL ?? <span class="y">"http://127.0.0.1:8400"</span>,
+  apiKey: process.env.ANTHROPIC_API_KEY,    <span class="c">// stays local</span>
+});
+
+const msg = await client.messages.create({
+  model: <span class="y">"claude-opus-4-8"</span>, max_tokens: 512,
+  messages: [{ role: <span class="y">"user"</span>, content: <span class="y">"Classify this review…"</span> }],
+});</pre>
+    <p>Prefer a one-liner? Drop this helper in your project:</p>
+    <pre><span class="c">// modelpilot.ts</span>
+import Anthropic from <span class="y">"@anthropic-ai/sdk"</span>;
+export const modelpilot = (opts: ConstructorParameters&lt;typeof Anthropic&gt;[0] = {}) =&gt;
+  new Anthropic({
+    baseURL: process.env.MODELPILOT_PROXY_URL ?? <span class="y">"http://127.0.0.1:8400"</span>,
+    apiKey: process.env.ANTHROPIC_API_KEY,
+    ...opts,
+  });</pre>
+
+    <h2 id="curl">curl / other languages</h2>
+    <p>Any language works — point requests at the proxy instead of <code>api.anthropic.com</code>:</p>
+    <pre>curl http://127.0.0.1:8400/v1/messages \
+  -H <span class="y">"x-api-key: $ANTHROPIC_API_KEY"</span> \
+  -H <span class="y">"anthropic-version: 2023-06-01"</span> \
+  -H <span class="y">"content-type: application/json"</span> \
+  -d <span class="y">'{"model":"claude-opus-4-8","max_tokens":512,
+       "messages":[{"role":"user","content":"hello"}]}'</span></pre>
+    <p class="small muted">The response includes <code>x-modelpilot-decision</code> and
+      <code>x-modelpilot-routed</code> headers so you can see what was routed.</p>
+
+    <div class="pager"><a href="/docs/configuration.html">← Configuration</a><a href="/docs/architecture.html">Architecture &amp; privacy →</a></div>
+    <p class="foot">© 2026 ModelPilot · <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a></p>
+  </main>
+</div>
+</body></html>

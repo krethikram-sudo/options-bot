@@ -4,6 +4,21 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.27.0 — 2026-06-14
+
+- **Docs site (P0).** A real, hosted docs experience at `/docs` (served from the
+  Cloudflare Pages site): Quickstart (5-minute install → configure → point your SDK
+  → modes), a full Configuration env-var reference, an SDKs page (Python + TS +
+  curl), and an Architecture & Privacy page (request flow, what-leaves-the-box
+  table, quality guards). Shared sidebar/design matching the landing. "Docs" linked
+  from both landings.
+- **Thin Python SDK.** `modelpilot/sdk.py` (commodity, ships in the client):
+  `from modelpilot import anthropic_client` returns an `anthropic.Anthropic`
+  pre-pointed at the local proxy (reads `ANTHROPIC_API_KEY` + `MODELPILOT_PROXY_URL`);
+  plus `async_anthropic_client` and `proxy_url`. One line instead of hand-setting the
+  base URL. TS usage documented (same one-line `baseURL` pattern). Added to the
+  publishable thin-client closure (leak audit clean) and the full-package allowlist.
+
 ## 0.26.0 — 2026-06-14
 
 - **API keys (P0 tablestakes).** Customers create named, per-deployment API keys in
