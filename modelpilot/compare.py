@@ -28,6 +28,7 @@ from .router import recommend
 
 DEFAULT_BASELINE = "claude-fable-5"
 CONFIDENCE_GATE = 0.8
+ANTHROPIC_API_URL = "https://api.anthropic.com"  # judge/run bypass any gateway base-url
 
 
 # ---------------------------------------------------------------------------
@@ -50,7 +51,7 @@ def api_run_fn(api_key: str, max_tokens: int = 1024):
 
     def run(model: str, prompt: str):
         resp = client.post(
-            "https://api.anthropic.com/v1/messages",
+            f"{ANTHROPIC_API_URL}/v1/messages",
             headers={"x-api-key": api_key, "anthropic-version": "2023-06-01"},
             json={"model": model, "max_tokens": max_tokens,
                   "messages": [{"role": "user", "content": prompt}]},
@@ -73,7 +74,11 @@ def api_judge_fn():
 
     from .goldenset.judge import judge_pair
 
-    client = anthropic.Anthropic()
+    # Pin to the real API: the judge is an internal grading call and must NOT be
+    # routed through the customer's gateway, even if ANTHROPIC_BASE_URL is set
+    # (e.g. left over from pointing an app at the proxy). Otherwise the judge
+    # would try to reach the proxy — wrong, and a connection error if it's down.
+    client = anthropic.Anthropic(base_url=ANTHROPIC_API_URL)
 
     def judge(prompt, baseline_text, routed_text):
         return judge_pair(client, prompt, baseline_text, routed_text)

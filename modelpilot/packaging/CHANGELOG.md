@@ -4,6 +4,15 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.11.2 — 2026-06-14
+
+- **Fix: `compare` judge/run now bypass any `ANTHROPIC_BASE_URL`.** The judge is
+  an internal grading call and must hit the real API directly — not be routed
+  through the customer's own gateway. If `ANTHROPIC_BASE_URL` was left pointing at
+  the proxy (e.g. from wiring an app), the judge previously tried to reach it and
+  failed with a connection error. Both `compare`'s run and judge clients now pin
+  `https://api.anthropic.com`.
+
 ## 0.11.1 — 2026-06-14
 
 - **Fix: a judge error no longer crashes `modelpilot compare --judge`.** The LLM
