@@ -135,6 +135,15 @@ async def _lifespan(app):
         apply_overrides(profile.price_overrides)
     app.state.profile = profile if profile.is_active() else None
     app.state.gate = profile.confidence_gate(CONFIDENCE_GATE)
+    # Split architecture (opt-in): defer the decision + entitlement to a hosted
+    # brain. Off by default -> fully local routing, unchanged.
+    app.state.brain_url = os.environ.get("MODELPILOT_BRAIN_URL", "") or None
+    app.state.license_token = os.environ.get("MODELPILOT_LICENSE") or None
+    if app.state.brain_url:
+        from . import brain_client
+        app.state.deployment_id = brain_client.deployment_id(os.environ.get("MODELPILOT_DB", "modelpilot.db"))
+    else:
+        app.state.deployment_id = ""
     app.state.autotune_n = 0
     yield
     await app.state.http.aclose()
@@ -150,6 +159,7 @@ class Decision:
     routed_model: str
     applied: bool
     arm: str = "observe"  # treatment | control | observe
+    entitled: bool = True  # False once a brain reports the trial/license lapsed
 
 
 def assign_arm(session_key: str, holdout_pct: float) -> str:
@@ -168,7 +178,9 @@ def decide(body: dict, mode: str, confidence_gate: float = CONFIDENCE_GATE,
            holdout_pct: float = 0.0, session_key: str = "",
            expected_remaining_turns: float | None = None,
            category_gates: dict | None = None,
-           classifier=None, profile=None) -> Decision:
+           classifier=None, profile=None,
+           brain_url: str | None = None, deployment_id: str = "",
+           license_token: str | None = None) -> Decision:
     """Pure routing decision — what runs, given the mode. Shadow and advise
     never alter the request; autopilot switches only above the confidence gate
     and only in the treatment arm (control requests run the baseline so the
@@ -177,7 +189,26 @@ def decide(body: dict, mode: str, confidence_gate: float = CONFIDENCE_GATE,
     `category_gates` is the per-customer learned policy: it overrides the global
     gate per category (lower where this traffic has proven safe, higher/blocked
     where it has caused escalations) — the loop that improves with usage.
+
+    If `brain_url` is set (split architecture), the decision comes from the hosted
+    routing brain — which also enforces license/trial entitlement server-side —
+    sending only non-sensitive features (no prompt text). Fail-open: any brain
+    error falls back to local routing so customer traffic is never blocked.
     """
+    if brain_url:
+        from . import brain_client
+        out = brain_client.remote_decide(body, brain_url, deployment_id,
+                                          license_token, expected_remaining_turns or 5.0)
+        if out is not None:
+            rec, ent = out
+            arm = assign_arm(session_key, holdout_pct) if mode == "autopilot" else "observe"
+            applied = (mode == "autopilot" and arm == "treatment"
+                       and bool(ent.get("entitled")) and bool(ent.get("apply"))
+                       and rec.action == "switch")
+            routed = rec.recommended_model if applied else rec.original_model
+            return Decision(rec, routed, applied, arm, entitled=bool(ent.get("entitled", True)))
+        # brain unreachable/errored -> fall through to local routing (fail-open)
+
     clf = classifier or mp_router.classify
     if expected_remaining_turns is None:
         rec = mp_router.recommend(body, classifier=clf, profile=profile)
@@ -348,7 +379,9 @@ async def preview(request: Request):
     decision = decide(body, MODE, confidence_gate=app.state.gate,
                       holdout_pct=HOLDOUT_PCT, session_key=session_key,
                       category_gates=app.state.policy_gates,
-                      classifier=app.state.classifier, profile=app.state.profile)
+                      classifier=app.state.classifier, profile=app.state.profile,
+                      brain_url=app.state.brain_url, deployment_id=app.state.deployment_id,
+                      license_token=app.state.license_token)
     rec = decision.recommendation
 
     # Pre-flight cost estimate: input from context size, nominal output.
@@ -390,6 +423,8 @@ async def messages(request: Request):
         expected_remaining_turns=app.state.continuation.expected_remaining(turns),
         category_gates=app.state.policy_gates,
         classifier=app.state.classifier, profile=app.state.profile,
+        brain_url=app.state.brain_url, deployment_id=app.state.deployment_id,
+        license_token=app.state.license_token,
     )
     # Advise-mode loop closure: a caller who followed our advice sends the
     # cheap model in the body — savings would be invisible without knowing

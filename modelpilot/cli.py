@@ -36,6 +36,17 @@ def cmd_gateway(args):
     # functionality during the trial). After the trial, a license is required.
     import time as _time
 
+    # Split architecture: if a hosted brain is configured, it enforces
+    # entitlement per-request (server-authoritative), so skip the local gate.
+    if os.environ.get("MODELPILOT_BRAIN_URL"):
+        print("Routing via hosted brain — entitlement enforced server-side.")
+        os.environ.update(_gateway_env(args))
+        import uvicorn
+        print(f"ModelPilot {__version__} — {args.mode} mode on http://127.0.0.1:{args.port}")
+        print(f"  dashboard: http://127.0.0.1:{args.port}/modelpilot/dashboard")
+        uvicorn.run("modelpilot.gateway:app", host="127.0.0.1", port=args.port, log_level="warning")
+        return
+
     from . import license as _lic
     try:
         claims = _lic.check()

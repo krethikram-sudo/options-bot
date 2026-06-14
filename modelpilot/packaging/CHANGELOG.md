@@ -4,6 +4,21 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.19.0 — 2026-06-14
+
+- **Gateway wired to the hosted brain (split architecture, opt-in + fail-open).**
+  Set `MODELPILOT_BRAIN_URL` and the gateway gets each routing decision from the
+  brain — which enforces license/7-day-trial entitlement **server-side** — sending
+  only category + numeric features (no prompt text). Any brain error falls back to
+  local routing so customer traffic is never blocked; entitlement lapse passes
+  traffic through unoptimized rather than breaking it. Off by default (fully local,
+  unchanged). When a brain is configured, `modelpilot gateway` defers the startup
+  entitlement check to the brain.
+- **Deployable backend:** `brain/` and `ingest/` now ship Dockerfiles +
+  requirements + `brain/DEPLOY.md` (Fly.io/Render/VM steps, volume at `/data`, and
+  the `MODELPILOT_BRAIN_URL` / `MODELPILOT_TELEMETRY_URL` client config). Both
+  services are vendor-side (not migrated/published to customers).
+
 ## 0.18.0 — 2026-06-14
 
 - **Split architecture v1 (foundation for publishing a safe client).** Adds the
