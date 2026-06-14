@@ -308,6 +308,32 @@ dashboard → autopilot would save <span class="g">48% of baseline</span> — sw
       </div></section>
 
       <section><div class="wrap">
+        <h2>Already on Bedrock?</h2>
+        <p>AWS Bedrock has a cost router — Intelligent Prompt Routing. If you're
+          on the first-party Anthropic API, it isn't available to you at all, and
+          ModelPilot is the only cost router for your traffic. If you <em>are</em>
+          on Bedrock, here's the honest comparison:</p>
+        <table>
+          <tr><th></th><th>Bedrock IPR</th><th>ModelPilot</th></tr>
+          <tr><td>Models it routes</td>
+              <td>Two <b>older</b> models per router (Claude 3.x era)</td>
+              <td>The current lineup — Opus 4.8, Sonnet 4.6, Haiku 4.5, Fable 5 —
+                  where the bill actually is</td></tr>
+          <tr><td>Quality evidence</td>
+              <td>Vendor <em>prediction</em>; no holdout, no output proof</td>
+              <td>RCT holdout + both outputs side by side on your own prompts</td></tr>
+          <tr><td>Whose interest</td>
+              <td>The vendor billing you also picks the model</td>
+              <td>Customer-side; our only job is your bill going down</td></tr>
+          <tr><td>Lock-in</td><td>AWS Bedrock only</td>
+              <td>Your infra, first-party key, portable</td></tr>
+        </table>
+        <p class="note">Don't take our word for it — run the head-to-head on your
+          own prompts: <code>modelpilot compare --bedrock-router &lt;your-router-arn&gt; --judge</code>
+          puts both routers' costs and outputs on one page.</p>
+      </div></section>
+
+      <section><div class="wrap">
         <h2>The proof — embedded in your dashboard, on your own traffic</h2>
         <p>This is what turns a guidance trial into an autopilot customer. Your own
         captured prompts, run through both arms — ModelPilot's routing vs everything
