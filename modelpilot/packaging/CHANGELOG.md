@@ -4,6 +4,21 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.8.0 — 2026-06-14
+
+- **Head-to-head vs. AWS Bedrock Intelligent Prompt Routing.** `modelpilot
+  compare --bedrock-router <ARN>` adds a third arm: the same prompts run through
+  a Bedrock prompt router alongside ModelPilot and the all-baseline arm. The
+  report gains a "Head-to-head" table (savings %, routed cost, non-inferiority,
+  routable model set, proof, lock-in) and a third output column per prompt, so
+  "isn't this just Bedrock?" gets a measured answer. Each arm is priced at what
+  you'd actually pay there — the Bedrock arm at Bedrock list prices for the model
+  IPR selected (editable in `bedrock.py`), every other arm at first-party rates.
+  The report states honestly that IPR routes only two *older* models per router
+  and cannot route the current lineup (Fable 5 / Opus 4.x / Sonnet 4.6 /
+  Haiku 4.5). Live runs need boto3 + AWS creds; `--offline --bedrock-router sim`
+  renders the shape with no AWS account.
+
 ## 0.7.2 — 2026-06-14
 
 - **Ed25519 license verification is now LIVE** — a public key is bundled at

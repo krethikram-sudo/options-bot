@@ -87,7 +87,16 @@ def api_judge_fn():
 
 def run_comparison(prompts: list[dict], baseline: str, run_fn,
                    judge_fn=None, gate: float = CONFIDENCE_GATE,
-                   progress=print) -> dict:
+                   bedrock_fn=None, progress=print) -> dict:
+    """Run the same prompts through each arm.
+
+    Arms: all-baseline, ModelPilot-routed, and (optional) a Bedrock prompt
+    router via `bedrock_fn(prompt) -> (text, Usage, routed_model_id)`. The
+    Bedrock arm is priced at Bedrock list rates (its own bill), every other arm
+    at first-party list rates, so each column is what you'd actually pay there.
+    """
+    from .bedrock import bedrock_cost
+
     rows = []
     for i, p in enumerate(prompts, 1):
         body = {"model": baseline, "max_tokens": 1024,
@@ -102,7 +111,8 @@ def run_comparison(prompts: list[dict], baseline: str, run_fn,
         verdict = None
         if judge_fn is not None and routed_model != baseline:
             verdict = judge_fn(p["prompt"], base_text, routed_text)
-        rows.append({
+
+        row = {
             "id": p.get("id", f"p{i}"),
             "prompt": p["prompt"],
             "category": rec.category,
@@ -115,12 +125,21 @@ def run_comparison(prompts: list[dict], baseline: str, run_fn,
             "baseline_cost": request_cost(baseline, base_usage) or 0.0,
             "routed_cost": request_cost(routed_model, routed_usage) or 0.0,
             "non_inferior": verdict,
-        })
+        }
+        if bedrock_fn is not None:
+            br_text, br_usage, br_model = bedrock_fn(p["prompt"])
+            row["bedrock_model"] = br_model
+            row["bedrock_text"] = br_text
+            row["bedrock_cost"] = bedrock_cost(br_model, br_usage) or 0.0
+            row["bedrock_non_inferior"] = (
+                judge_fn(p["prompt"], base_text, br_text)
+                if judge_fn is not None else None)
+        rows.append(row)
 
     total_base = sum(r["baseline_cost"] for r in rows)
     total_routed = sum(r["routed_cost"] for r in rows)
     judged = [r for r in rows if r["non_inferior"] is not None]
-    return {
+    result = {
         "baseline": baseline,
         "n": len(rows),
         "n_switched": sum(r["switched"] for r in rows),
@@ -135,10 +154,64 @@ def run_comparison(prompts: list[dict], baseline: str, run_fn,
         "generated_at": time.strftime("%Y-%m-%d %H:%M"),
     }
 
+    if bedrock_fn is not None:
+        total_br = sum(r["bedrock_cost"] for r in rows)
+        br_judged = [r for r in rows if r.get("bedrock_non_inferior") is not None]
+        result["has_bedrock"] = True
+        result["total_bedrock_cost"] = total_br
+        result["bedrock_savings"] = total_base - total_br
+        result["bedrock_savings_pct"] = (total_base - total_br) / total_base if total_base else 0.0
+        result["bedrock_non_inferior_rate"] = (
+            sum(r["bedrock_non_inferior"] for r in br_judged) / len(br_judged)
+            if br_judged else None)
+    return result
+
 
 # ---------------------------------------------------------------------------
 # HTML report
 # ---------------------------------------------------------------------------
+
+def _head_to_head(result: dict, usd, e) -> str:
+    """Two-router comparison table: ModelPilot vs Bedrock IPR, same prompts."""
+    if not result.get("has_bedrock"):
+        return ""
+    from .bedrock import IPR_SUPPORTED_MODELS
+
+    def pct(x):
+        return f"{x:.0%}" if x is not None else "—"
+
+    mp_nir = result["non_inferior_rate"]
+    br_nir = result["bedrock_non_inferior_rate"]
+    claude_ipr = ", ".join(IPR_SUPPORTED_MODELS["Anthropic Claude"])
+    return f"""
+  <h2 style="margin-top:1.6rem">Head-to-head: ModelPilot vs. Bedrock Intelligent Prompt Routing</h2>
+  <table class="h2h">
+    <tr><th></th><th>ModelPilot</th><th>Bedrock IPR</th></tr>
+    <tr><td>Savings vs all-{e(result['baseline'])}</td>
+        <td class="save"><b>{usd(result['savings'])} ({result['savings_pct']:.0%})</b></td>
+        <td>{usd(result['bedrock_savings'])} ({result['bedrock_savings_pct']:.0%})</td></tr>
+    <tr><td>Routed cost ({result['n']} prompts)</td>
+        <td>{usd(result['total_routed_cost'])}</td>
+        <td>{usd(result['total_bedrock_cost'])}</td></tr>
+    <tr><td>Outputs non-inferior to baseline</td>
+        <td>{pct(mp_nir)}</td><td>{pct(br_nir)}</td></tr>
+    <tr><td>Models it can route</td>
+        <td>Current lineup: Fable 5 · Opus 4.8 · Sonnet 4.6 · Haiku 4.5</td>
+        <td>Two older models per router: {e(claude_ipr)}</td></tr>
+    <tr><td>Proof you can audit</td>
+        <td>RCT holdout, both outputs on this page, escalations netted</td>
+        <td>Vendor prediction; no holdout or per-prompt output proof</td></tr>
+    <tr><td>Where it runs / who bills you</td>
+        <td>Your infra, first-party Anthropic key</td>
+        <td>AWS Bedrock only</td></tr>
+  </table>
+  <p class="muted" style="font-size:.82rem">Each arm is priced at what you'd
+  actually pay in that system: the ModelPilot arm at Anthropic first-party list
+  prices, the Bedrock arm at Bedrock on-demand list prices for the model its
+  router selected. Bedrock IPR cannot route the current first-party lineup, so
+  if your baseline is a current model the relevant question is reach + proof,
+  not just the headline %.</p>"""
+
 
 def render_report(result: dict) -> str:
     e = html.escape
@@ -164,16 +237,24 @@ def render_report(result: dict) -> str:
         saved = r["baseline_cost"] - r["routed_cost"]
         badge = (f'<span class="badge switch">{e(r["routed_model"])}</span>' if r["switched"]
                  else f'<span class="badge">{e(r["routed_model"])} (no switch)</span>')
+        bedrock_col = ""
+        if "bedrock_model" in r:
+            bv = ("" if r.get("bedrock_non_inferior") is None else
+                  ' <span class="ok">✓</span>' if r["bedrock_non_inferior"] else
+                  ' <span class="bad">✗</span>')
+            bedrock_col = (f"""
+      <div><h4>Bedrock IPR → {e(r['bedrock_model'])} · {usd(r['bedrock_cost'])}{bv}</h4>
+        <pre>{e(r['bedrock_text'][:4000])}</pre></div>""")
         blocks.append(f"""
   <details>
     <summary><b>{e(r['id'])}</b> · {e(r['category'])} · {badge} ·
       saved <b class="save">{usd(saved)}</b>{verdict}</summary>
     <p class="prompt">{e(r['prompt'][:1200])}</p>
-    <div class="sxs">
+    <div class="sxs{' three' if bedrock_col else ''}">
       <div><h4>ModelPilot → {e(r['routed_model'])} · {usd(r['routed_cost'])}</h4>
         <pre>{e(r['routed_text'][:4000])}</pre></div>
       <div><h4>Baseline → {e(r['baseline_model'])} · {usd(r['baseline_cost'])}</h4>
-        <pre>{e(r['baseline_text'][:4000])}</pre></div>
+        <pre>{e(r['baseline_text'][:4000])}</pre></div>{bedrock_col}
     </div>
   </details>""")
 
@@ -195,7 +276,10 @@ def render_report(result: dict) -> str:
   summary {{ cursor: pointer; }}
   .prompt {{ background: #f6f7f9; border-radius: 6px; padding: 8px 10px; font-size: 0.85rem; }}
   .sxs {{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }}
+  .sxs.three {{ grid-template-columns: 1fr 1fr 1fr; }}
   .sxs h4 {{ margin: 6px 0; font-size: 0.85rem; }}
+  table.h2h td, table.h2h th {{ vertical-align: top; }}
+  table.h2h td:first-child {{ color: #6b7080; }}
   pre {{ white-space: pre-wrap; background: #fbfbfc; border: 1px solid #eee; border-radius: 6px;
         padding: 8px; font-size: 0.8rem; max-height: 360px; overflow-y: auto; }}
 </style></head><body>
@@ -204,6 +288,7 @@ def render_report(result: dict) -> str:
 Costs are actual tokens at list prices. Verdicts are pairwise, position-debiased
 non-inferiority judgments of the routed output against the baseline output.</p>
 {cards}
+{_head_to_head(result, usd, e)}
 {''.join(blocks)}
 </body></html>"""
 
@@ -219,6 +304,10 @@ def main():
     parser.add_argument("--baseline", default=DEFAULT_BASELINE)
     parser.add_argument("--n", type=int, default=20)
     parser.add_argument("--judge", action="store_true", help="add non-inferiority verdicts (extra API calls)")
+    parser.add_argument("--bedrock-router", metavar="ARN",
+                        help="add a 3rd arm: an AWS Bedrock prompt-router ARN to compare against "
+                             "(needs boto3 + AWS creds; pass 'sim' with --offline for report shape)")
+    parser.add_argument("--bedrock-region", help="AWS region for the Bedrock prompt router")
     parser.add_argument("--offline", action="store_true", help="no API, synthetic outputs — report shape only")
     parser.add_argument("--save-to-db", action="store_true",
                         help="store the comparison so it renders inside the dashboard's proof panel")
@@ -242,16 +331,23 @@ def main():
         prompts = [{"id": f"seed-{i:03d}", **row} for i, row in enumerate(CORPUS)]
         prompts = random.Random(11).sample(prompts, min(args.n, len(prompts)))
 
+    bedrock_fn = None
     if args.offline:
         run_fn, judge_fn = offline_run_fn, (offline_judge_fn if args.judge else None)
+        if args.bedrock_router:
+            from .bedrock import offline_bedrock_run_fn
+            bedrock_fn = offline_bedrock_run_fn()
     else:
         api_key = os.environ.get("ANTHROPIC_API_KEY", "")
         if not api_key:
             sys.exit("ANTHROPIC_API_KEY is not set. Set it, or use --offline.")
         run_fn = api_run_fn(api_key)
         judge_fn = api_judge_fn() if args.judge else None
+        if args.bedrock_router:
+            from .bedrock import bedrock_router_run_fn
+            bedrock_fn = bedrock_router_run_fn(args.bedrock_router, args.bedrock_region)
 
-    result = run_comparison(prompts, args.baseline, run_fn, judge_fn)
+    result = run_comparison(prompts, args.baseline, run_fn, judge_fn, bedrock_fn=bedrock_fn)
     with open(args.out, "w") as f:
         f.write(render_report(result))
 
@@ -263,10 +359,15 @@ def main():
             ledger.record_proof(row)
         ledger.close()
         print(f"saved {len(result['rows'])} rows to the dashboard proof panel ({args.db})")
-    print(f"\nrouted {result['n_switched']}/{result['n']} prompts · "
+    print(f"\nModelPilot: routed {result['n_switched']}/{result['n']} prompts · "
           f"saved {result['savings_pct']:.0%} (${result['savings']:.2f})"
           + (f" · non-inferior {result['non_inferior_rate']:.0%}"
              if result["non_inferior_rate"] is not None else ""))
+    if result.get("has_bedrock"):
+        print(f"Bedrock IPR: saved {result['bedrock_savings_pct']:.0%} "
+              f"(${result['bedrock_savings']:.2f})"
+              + (f" · non-inferior {result['bedrock_non_inferior_rate']:.0%}"
+                 if result["bedrock_non_inferior_rate"] is not None else ""))
     print(f"report: {args.out}")
 
 
