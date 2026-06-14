@@ -58,7 +58,34 @@ jobs:
           echo "a modelpilot/packaging/CHANGELOG.md entry."
           exit 1
 
-  publish-dry-run:
+  router-metrics:
+    # Tracked metric (not just pass/fail): publishes the router's golden-set
+    # coverage / accuracy / false-downgrade to each run's summary, so routing
+    # improvement (or regression) is visible per commit. The calibration
+    # regression TEST (in the `test` job) is the hard gate; this is the dashboard.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r modelpilot/requirements.txt
+      - name: Router quality on the golden set
+        run: |
+          LABELS=modelpilot/goldenset_data/labels.jsonl
+          if [ ! -f "$LABELS" ]; then echo "no golden labels present — skipping"; exit 0; fi
+          {
+            echo "### Router quality on the golden set"
+            echo ""
+            echo "Coverage = share of traffic safely routed down (the savings lever)."
+            echo "False-downgrade must stay 0% at gate ≥0.60."
+            echo ""
+            echo '```'
+            python -m modelpilot.goldenset.evaluate --labels "$LABELS"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          PYTHONPATH=. python scripts/router_metric_notice.py
+
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
