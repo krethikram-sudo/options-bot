@@ -8,6 +8,7 @@ Views: headline cards, cumulative savings curve, model-mix migration,
 category drill-down, RCT arm comparison, quality guardrails.
 """
 
+import os
 import statistics
 import time
 
@@ -29,9 +30,16 @@ _FALLBACK_COLOR = "#999999"
 
 def collect_stats(ledger, days: float = 30.0, session: str = "") -> dict:
     since = time.time() - days * 86_400 if days else 0.0
+    gate = float(os.environ.get("MODELPILOT_CONFIDENCE", "0.8"))
+    raw_mode = os.environ.get("MODELPILOT_MODE", "shadow")
+    mode = {"guidance": "advise"}.get(raw_mode, raw_mode)
+    display_mode = {"advise": "guidance"}.get(mode, mode)
     stats = {
         "window_days": days,
-        "summary": ledger.summary(since),
+        "gate": gate,
+        "mode": mode,
+        "display_mode": display_mode,
+        "summary": ledger.summary(since, gate=gate),
         "by_category": ledger.by_category(since),
         "daily": ledger.daily_series(since),
         "daily_mix": ledger.daily_model_mix(since),
@@ -250,6 +258,60 @@ setInterval(mpTick, 5000);
 """
 
 
+def _quality_verdict(stats: dict) -> str:
+    rct = stats["rct"]
+    if not rct.get("ready"):
+        guards = {g["arm"]: g for g in stats["guardrails"]}
+        gt = guards.get("treatment", {})
+        if gt.get("n"):
+            rate = gt["n_negative"] / gt["n"]
+            return f"quality so far: {rate:.1%} negative feedback on routed requests"
+        return "quality monitoring is warming up (needs 30+ requests per arm to certify)"
+    return (f"quality verified: routing saves {rct['saving_pct']:.0%}/request with "
+            f"outputs statistically on par with the baseline (randomized holdout)")
+
+
+def _conversion_panel(stats: dict) -> str:
+    """The conversion artifact: in guidance/shadow, show what autopilot WOULD
+    save (gated potential = only the confident routes autopilot would apply) and
+    push the switch. In autopilot, reassure with realized savings + quality."""
+    s = stats["summary"]
+    mode = stats["mode"]
+    days = stats["window_days"]
+    gated = s.get("gated_potential", s["potential"])
+    pct = (gated / s["baseline"]) if s["baseline"] else 0.0
+    annual = (gated / days * 365.0) if days else 0.0
+    verdict = _quality_verdict(stats)
+
+    if mode == "autopilot":
+        net = s["realized"] - stats["escalations"]["cost"]
+        rpct = (net / s["baseline"]) if s["baseline"] else 0.0
+        return f"""<div class="now" style="border-color:#bfe5cc">
+  <div class="nowhead">AUTOPILOT — CAPTURING SAVINGS</div>
+  <div style="font-size:1.5rem;font-weight:700;color:#2e9e5b">{_usd(net)} saved
+    <span style="font-size:0.9rem;font-weight:500;color:#6b7080">({rpct:.0%} of spend, this {("day" if days==1 else f"{days:g}d")})</span></div>
+  <p class="muted" style="margin:6px 0 0">{verdict}.</p>
+</div>"""
+
+    # guidance / shadow: sell the switch
+    cta = ("You're in guidance mode — nothing has been rerouted yet. "
+           "Switch to autopilot to start capturing this:") if mode == "advise" else (
+           "You're in shadow mode (measuring only). Move to guidance, then autopilot, to capture this:")
+    annual_line = (f" · about <b>{_usd(annual)}/yr</b> at this rate" if annual else "")
+    return f"""<div class="now" style="border-color:#f0d9a8;background:#fffdf5">
+  <div class="nowhead" style="color:#b8860b">READY TO SWITCH TO AUTOPILOT?</div>
+  <div style="font-size:1.5rem;font-weight:700;color:#2e9e5b">{_usd(gated)} you could save
+    <span style="font-size:0.9rem;font-weight:500;color:#6b7080">({pct:.0%} of spend){annual_line}</span></div>
+  <p class="muted" style="margin:6px 0 4px">This is the savings autopilot would have captured at the
+    current confidence gate — only the routes it's sure about. {verdict.capitalize()}.</p>
+  <p style="margin:4px 0 0"><b>{cta}</b>
+    <code>modelpilot gateway --mode autopilot</code></p>
+  <p class="muted" style="margin:4px 0 0;font-size:0.8rem">See the proof on your own traffic:
+    <code>modelpilot compare --from-captures --judge</code> — same prompts, recommended vs standard
+    model, side by side.</p>
+</div>"""
+
+
 def render_html(stats: dict) -> str:
     s = stats["summary"]
     esc = stats["escalations"]
@@ -313,7 +375,8 @@ def render_html(stats: dict) -> str:
   .muted {{ color: #6b7080; }} a {{ color: #2f6fb6; }}
   .note {{ background: #f6f7f9; border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; }}
 </style></head><body>
-<h1>ModelPilot</h1>
+<h1>ModelPilot <span class="muted" style="font-size:0.8rem;font-weight:400">— {stats['display_mode']} mode</span></h1>
+{_conversion_panel(stats)}
 {_now_strip(stats)}
 
 <h2>History — {window} <span class="muted" style="font-weight:400">

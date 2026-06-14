@@ -29,10 +29,30 @@ from .ledger import Ledger
 from .pricing import Usage, request_cost, resolve_price
 from .router import Recommendation
 
-MODE = os.environ.get("MODELPILOT_MODE", "shadow")
+# "guidance" is the customer-facing name for advise mode (measure + recommend,
+# nothing rerouted). Normalize it to the internal value.
+_MODE_ALIASES = {"guidance": "advise"}
+_RAW_MODE = os.environ.get("MODELPILOT_MODE", "shadow")
+MODE = _MODE_ALIASES.get(_RAW_MODE, _RAW_MODE)
 UPSTREAM = os.environ.get("MODELPILOT_UPSTREAM", "https://api.anthropic.com").rstrip("/")
 CONFIDENCE_GATE = float(os.environ.get("MODELPILOT_CONFIDENCE", "0.8"))
 HOLDOUT_PCT = float(os.environ.get("MODELPILOT_HOLDOUT_PCT", "0.10"))
+
+
+def _load_policy(path: str) -> dict:
+    """Per-customer learned policy: category -> confidence gate override,
+    produced by `modelpilot tune` from this deployment's own traffic. Absent or
+    unreadable -> no overrides (global gate applies)."""
+    if not path:
+        return {}
+    try:
+        with open(path) as f:
+            return (json.load(f) or {}).get("category_gates", {}) or {}
+    except (OSError, ValueError):
+        return {}
+
+
+POLICY_GATES = _load_policy(os.environ.get("MODELPILOT_POLICY", ""))
 # Opt-in prompt capture for golden-set building. 0 (default) = no prompt text
 # is ever stored. Set e.g. 0.25 to sample a quarter of requests into the
 # captures table; export with `python -m modelpilot.goldenset.export_corpus`.
@@ -83,22 +103,28 @@ def assign_arm(session_key: str, holdout_pct: float) -> str:
 
 def decide(body: dict, mode: str, confidence_gate: float = CONFIDENCE_GATE,
            holdout_pct: float = 0.0, session_key: str = "",
-           expected_remaining_turns: float | None = None) -> Decision:
+           expected_remaining_turns: float | None = None,
+           category_gates: dict | None = None) -> Decision:
     """Pure routing decision — what runs, given the mode. Shadow and advise
     never alter the request; autopilot switches only above the confidence gate
     and only in the treatment arm (control requests run the baseline so the
     two arms can be compared).
+
+    `category_gates` is the per-customer learned policy: it overrides the global
+    gate per category (lower where this traffic has proven safe, higher/blocked
+    where it has caused escalations) — the loop that improves with usage.
     """
     if expected_remaining_turns is None:
         rec = mp_router.recommend(body)
     else:
         rec = mp_router.recommend(body, expected_remaining_turns=expected_remaining_turns)
+    gate = (category_gates or {}).get(rec.category, confidence_gate)
     arm = assign_arm(session_key, holdout_pct) if mode == "autopilot" else "observe"
     applied = (
         mode == "autopilot"
         and arm == "treatment"
         and rec.action == "switch"
-        and rec.confidence >= confidence_gate
+        and rec.confidence >= gate
     )
     routed = rec.recommended_model if applied else rec.original_model
     return Decision(recommendation=rec, routed_model=routed, applied=applied, arm=arm)
@@ -233,7 +259,8 @@ async def preview(request: Request):
     """
     body = await request.json()
     session_key = body.get("session_id") or _session_key(request, body)
-    decision = decide(body, MODE, holdout_pct=HOLDOUT_PCT, session_key=session_key)
+    decision = decide(body, MODE, holdout_pct=HOLDOUT_PCT, session_key=session_key,
+                      category_gates=POLICY_GATES)
     rec = decision.recommendation
 
     # Pre-flight cost estimate: input from context size, nominal output.
@@ -272,6 +299,7 @@ async def messages(request: Request):
     decision = decide(
         body, MODE, holdout_pct=HOLDOUT_PCT, session_key=session_key,
         expected_remaining_turns=app.state.continuation.expected_remaining(turns),
+        category_gates=POLICY_GATES,
     )
     # Advise-mode loop closure: a caller who followed our advice sends the
     # cheap model in the body — savings would be invisible without knowing

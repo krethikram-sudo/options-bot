@@ -29,13 +29,28 @@ _SIMPLE_PATTERNS = {
     "classification": r"\b(classif(y|ied)|categori[sz]e|label|sentiment|spam|which of the following|yes or no|true or false|intent)\b",
     "extraction": r"\b(extract|pull out|parse out|list (all|the) (names|dates|emails|entities|fields)|into json|as json|csv of)\b",
     "translation": r"\b(translate|translation|in (french|spanish|german|japanese|chinese|korean|italian|portuguese|hindi))\b",
+    # Code-WRITING intent (no actual code need be present): "write a SQL query",
+    # "implement a function", "generate a regex". Narrow nouns keep complex work
+    # (rate limiters, caches, algorithms) out — those fall through to the
+    # has_code/complex paths and stay on the top model.
+    "codegen_simple": (
+        r"\b(write|create|implement|generate|code|give me) (a |an |the )?"
+        r"(simple |small |basic |quick )?"
+        r"(python |sql |javascript |js |typescript |ts |bash |shell |java |go(lang)? |rust |regex )?"
+        r"(function|method|query|script|snippet|regex|one[- ]liner|command|helper|loop)\b"
+    ),
     "rewrite_format": (
         r"\b(rephrase|reword|rewrite this|fix (the )?grammar|proofread|reformat|"
         r"convert (this|to)|bullet points?|bulleted list|numbered list|"
         r"(turn|format) (this|these|it) (in)?to|(as|into) an? .{0,12}list|title case|"
         r"make (this|it)\b.{0,30}\b(concise|professional|formal|polished|clearer|shorter|simpler)|"
         r"more concise|tighten (this|it|up)|past tense|present tense|plural of|"
-        r"conjugat\w*|opposite of|synonyms?|antonyms?)\b"
+        r"conjugat\w*|opposite of|synonyms?|antonyms?|"
+        # Short transactional drafting (reply/email/status update). Audience
+        # constraints ("customer-facing") then floor it to sonnet via the
+        # _CONTENT_SENSITIVE block; operational drafting ("runbook") has no
+        # matching noun here and stays on the top model.
+        r"(draft|compose|write)\b.{0,40}?\b(status[- ]?page|reply|response|email|update|memo|message|note))\b"
     ),
     "summarization_short": r"\b(summari[sz]e|tl;?dr|key points|main takeaways)\b",
     "short_qa": r"^(what|who|when|where|which|how (many|much|long|old))\b",

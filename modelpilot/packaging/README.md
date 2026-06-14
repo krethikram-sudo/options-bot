@@ -29,8 +29,8 @@ selected for each prompt *before generation*, then the realized saving.
 ## Production-shaped setup (5 minutes)
 
 ```bash
-# 1. Run the gateway (start in shadow mode: zero risk, full measurement)
-modelpilot gateway --mode shadow --port 8400
+# 1. Start in GUIDANCE mode: zero behavior change, full measurement
+modelpilot gateway --mode guidance --port 8400
 
 # 2. Point your app at it — one line. Your API key stays in YOUR app;
 #    the gateway forwards it and never stores it.
@@ -38,18 +38,29 @@ modelpilot gateway --mode shadow --port 8400
 #    TypeScript:  new Anthropic({ baseURL: "http://localhost:8400" })
 #    Claude Code / any SDK:  ANTHROPIC_BASE_URL=http://localhost:8400
 
-# 3. After traffic flows, see what routing would have saved:
+# 3. After traffic flows, the dashboard shows what autopilot WOULD save,
+#    plus a side-by-side proof on your own prompts:
 open http://localhost:8400/modelpilot/dashboard
-modelpilot report --days 7
+modelpilot compare --from-captures --judge   # needs MODELPILOT_CAPTURE_PCT>0
+
+# 4. Convinced? Capture it.
+modelpilot gateway --mode autopilot --port 8400
 ```
 
-**Modes** (progressive trust):
+**The recommended journey:** guidance → read the dashboard → autopilot.
 
 | Mode | What it does | When |
 |---|---|---|
-| `shadow` | Nothing changes; every request is scored and a would-have-saved ledger accumulates | Start here |
-| `advise` | Adds `x-modelpilot-recommended-model` / savings headers to responses | When the shadow report looks right |
-| `autopilot` | Rewrites the model when confidence clears the gate; includes a randomized holdout so savings are *measured*, and an escalation valve (`x-modelpilot-retry-of`) whose re-run costs are charged against the savings number | When you're ready |
+| `guidance` | Nothing changes; every request is scored and the dashboard shows what autopilot would save | **Start here** |
+| `autopilot` | Rewrites the model when confidence clears the gate; randomized holdout so savings are *measured*, and an escalation valve (`x-modelpilot-retry-of`) whose re-run costs are charged against the savings number | When the dashboard convinces you |
+| `shadow` | Like guidance but emits no recommendation headers — pure measurement | Locked-down measurement only |
+
+`guidance` is the customer-facing name for advise mode (both work).
+
+**It improves with use.** As traffic accumulates, `modelpilot tune --db modelpilot.db --out policy.json`
+learns a per-category policy from *your* outcomes — loosening routing where it has
+proven safe on your workload, backing off any category that caused an escalation —
+then run with `MODELPILOT_POLICY=policy.json`. The more you use it, the more it saves.
 
 ## What makes the routing trustworthy
 

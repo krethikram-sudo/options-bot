@@ -51,6 +51,7 @@ _DELEGATED = {
     "compare": "modelpilot.compare",
     "replay": "modelpilot.replay",
     "digest": "modelpilot.digest",
+    "tune": "modelpilot.tune",
 }
 
 
@@ -108,7 +109,8 @@ def build_parser() -> argparse.ArgumentParser:
     # overrides env, env overrides the built-in default, and a flag we then
     # re-export in _gateway_env never clobbers an env var the user already set.
     g.add_argument("--mode", default=os.environ.get("MODELPILOT_MODE", "shadow"),
-                   choices=["shadow", "advise", "autopilot"])
+                   choices=["shadow", "guidance", "advise", "autopilot"],
+                   help="guidance (recommend, change nothing) -> autopilot (auto-route)")
     g.add_argument("--port", type=int, default=int(os.environ.get("MODELPILOT_PORT", "8400")))
     g.add_argument("--db", default=os.environ.get("MODELPILOT_DB", "modelpilot.db"))
     g.add_argument("--upstream", default=os.environ.get("MODELPILOT_UPSTREAM", "https://api.anthropic.com"))
@@ -127,6 +129,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("compare", help="side-by-side proof: routed vs all-baseline")
     sub.add_parser("replay", help="Layer-2 calibration: replay samples on the baseline")
     sub.add_parser("digest", help="buyer-facing savings digest (print or post to Slack)")
+    sub.add_parser("tune", help="learn a per-customer routing policy from your own traffic")
 
     s = sub.add_parser("share", help="redacted diagnostics for feedback")
     s.add_argument("--db", default=os.environ.get("MODELPILOT_DB", "modelpilot.db"))

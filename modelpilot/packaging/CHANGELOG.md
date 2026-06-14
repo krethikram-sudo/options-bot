@@ -4,6 +4,24 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.4.0 — 2026-06-14
+
+- **Guidance mode + a conversion-focused dashboard.** `--mode guidance` is the
+  recommended starting point (advise mode, renamed for customers): zero behavior
+  change, full measurement. The dashboard now opens with a "Ready to switch to
+  autopilot?" panel showing the *gated* potential (what autopilot would actually
+  capture at the confidence gate), the annualized run-rate, and the quality
+  verdict — then, in autopilot, flips to a realized-savings + quality-held
+  reassurance. This is the guidance→autopilot conversion path.
+- **Side-by-side proof on your own traffic:** `modelpilot compare --from-captures`
+  runs your captured prompts through the routed model vs the standard model and
+  renders both outputs, costs, and non-inferiority verdicts on one page.
+- **Continuous per-customer tuning:** `modelpilot tune` learns a per-category
+  policy from this deployment's own outcomes — loosening the gate where routing
+  has proven safe at volume, raising it on any category that caused escalations
+  or negative feedback. The gateway applies it via `MODELPILOT_POLICY`. Savings
+  improve the more the product is used.
+
 ## 0.3.3 — 2026-06-13
 
 - **Failed requests no longer pollute the numbers.** `summary()` and

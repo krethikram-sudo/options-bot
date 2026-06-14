@@ -300,6 +300,30 @@ class Ledger:
             ).fetchall()
         return [dict(r) for r in rows]
 
+    def category_quality(self, since_ts: float = 0.0) -> list[dict]:
+        """Per-category outcomes that drive per-customer tuning: how many
+        switches were applied, how many escalated (a retry_of pointing back at a
+        request of that category = a quality miss), and how many drew negative
+        feedback. The learning signal — all from this deployment's own traffic."""
+        with self._lock:
+            applied = {r["category"]: r["n"] for r in self._conn.execute(
+                "SELECT category, COUNT(*) n FROM requests "
+                "WHERE ts >= ? AND applied = 1 AND status_code = 200 GROUP BY category",
+                (since_ts,))}
+            esc = {r["category"]: r["n"] for r in self._conn.execute(
+                "SELECT orig.category category, COUNT(*) n FROM requests retry "
+                "JOIN requests orig ON retry.retry_of = orig.id "
+                "WHERE retry.ts >= ? GROUP BY orig.category", (since_ts,))}
+            neg = {r["category"]: r["n"] for r in self._conn.execute(
+                "SELECT r.category category, COUNT(*) n FROM feedback f "
+                "JOIN requests r ON f.request_id = r.id "
+                "WHERE f.signal = 'negative' AND r.ts >= ? GROUP BY r.category",
+                (since_ts,))}
+        cats = set(applied) | set(esc) | set(neg)
+        return [{"category": c, "n_applied": applied.get(c, 0),
+                 "n_escalation": esc.get(c, 0), "n_negative": neg.get(c, 0)}
+                for c in sorted(cats)]
+
     def model_mix(self, since_ts: float = 0.0) -> list[dict]:
         with self._lock:
             rows = self._conn.execute(

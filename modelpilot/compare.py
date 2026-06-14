@@ -212,6 +212,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--prompts", help="jsonl with {'id','prompt'} rows; default: 20 from the seed corpus")
+    parser.add_argument("--from-captures", action="store_true",
+                        help="prove it on YOUR traffic: use prompts captured by the gateway "
+                             "(needs MODELPILOT_CAPTURE_PCT>0 during a run)")
+    parser.add_argument("--db", default="modelpilot.db", help="ledger db for --from-captures")
     parser.add_argument("--baseline", default=DEFAULT_BASELINE)
     parser.add_argument("--n", type=int, default=20)
     parser.add_argument("--judge", action="store_true", help="add non-inferiority verdicts (extra API calls)")
@@ -219,7 +223,16 @@ def main():
     parser.add_argument("--out", default="compare_report.html")
     args = parser.parse_args()
 
-    if args.prompts:
+    if args.from_captures:
+        from .ledger import Ledger
+        ledger = Ledger(args.db)
+        caps = ledger.captures()
+        ledger.close()
+        if not caps:
+            sys.exit("No captured prompts found. Run the gateway with "
+                     "MODELPILOT_CAPTURE_PCT>0 for a while, then retry.")
+        prompts = [{"id": c["request_id"][:8], "prompt": c["prompt"]} for c in caps[-args.n:]]
+    elif args.prompts:
         with open(args.prompts) as f:
             prompts = [json.loads(line) for line in f if line.strip()]
     else:

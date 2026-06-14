@@ -18,7 +18,7 @@ CATEGORIES = {
     "summarization_short": (0, "summarize a short document or thread"),
     "summarization_long": (1, "summarize long/complex material"),
     "rewrite_format": (0, "rephrase, fix grammar, reformat, convert"),
-    "codegen_simple": (1, "small function, snippet, regex, one-file edit"),
+    "codegen_simple": (0, "small function, snippet, regex, single SQL query — golden set: haiku-safe"),
     "codegen_complex": (2, "multi-file feature, refactor, architecture"),
     "debugging": (2, "root-cause a failure, fix a non-obvious bug"),
     "math_logic": (2, "proofs, multi-step quantitative reasoning"),
