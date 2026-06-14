@@ -338,6 +338,27 @@ dashboard → autopilot would save <span class="g">48% of baseline</span> — sw
       </div></section>
 
       <section><div class="wrap">
+        <h2>Day-one fit: starter packs for your segment</h2>
+        <p>Don't wait for the learning loop to warm up. Drop in a starter pack for
+          your space and routing fits your workload from the first request — then
+          your own traffic refines it:</p>
+        <pre class="block">MODELPILOT_POLICY=packs/doc-extraction.json modelpilot gateway --mode guidance</pre>
+        <div class="grid">
+          <div class="card"><h3>Aggressive packs</h3>
+            <p><code>doc-extraction</code>, <code>support</code>, <code>coding</code> —
+              route bulk extraction, classification, triage and simple codegen to
+              the cheapest model that holds up (where the savings are largest).</p></div>
+          <div class="card"><h3>Regulated packs</h3>
+            <p><code>legal</code>, <code>healthcare</code> — conservative by design:
+              never below Sonnet, with a built-in compliance profile (model floor +
+              cautious gate) for legal and clinical work.</p></div>
+        </div>
+        <p class="note">Packs are a strong starting prior, not a black box: every
+          guardrail still applies, and <code>learn-floors</code> confirms or pulls
+          back each category on your own traffic over time.</p>
+      </div></section>
+
+      <section><div class="wrap">
         <h2>Fits how your company actually buys</h2>
         <p>A deployment profile makes routing obey your constraints, so cost
           optimization never fights compliance or your contract:</p>
