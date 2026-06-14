@@ -169,6 +169,22 @@ class Ledger:
             ).fetchall()
         return [dict(r) for r in rows]
 
+    def request_token_rows(self, since_ts: float = 0.0) -> list[dict]:
+        """Per-request token/cache rows for the prompt-savings audit (status 200).
+
+        No prompt text — just the token accounting needed to spot uncached
+        repeated context and oversized inputs."""
+        with self._lock:
+            rows = self._conn.execute(
+                """SELECT id, ts, session_key, original_model,
+                          input_tokens, output_tokens, cache_read_tokens, cache_write_tokens
+                   FROM requests
+                   WHERE ts >= ? AND status_code = 200
+                   ORDER BY session_key, ts""",
+                (since_ts,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
     # --- Layer-2 replay calibration (see SAVINGS_DASHBOARD.md §1) ----------
 
     def replayable_sample(self, since_ts: float = 0.0, limit: int = 50) -> list[dict]:

@@ -10,4 +10,4 @@ with cache-aware economics, counterfactual savings ledger, and shadow report.
 #   DECIMAL bump (0.1 -> 0.2): everything else that ships — features, router
 #     retunes, fixes. Optional third digit for trivial patches.
 # Every change to shipped code bumps this AND adds a CHANGELOG entry.
-__version__ = "0.8.0"
+__version__ = "0.9.0"

@@ -54,6 +54,20 @@ def _load_policy(path: str) -> dict:
 
 POLICY_FILE_GATES = _load_policy(os.environ.get("MODELPILOT_POLICY", ""))
 
+
+def _load_classifier():
+    """Per-customer classification rules adapt routing to a customer's domain so
+    their traffic stops landing in conservative catch-alls. Rules come from
+    MODELPILOT_RULES (a path) or a `category_rules` list inside MODELPILOT_POLICY.
+    Absent/invalid -> the global heuristic classifier, unchanged."""
+    from .rules import load_rules, rule_classifier
+    rules = load_rules(os.environ.get("MODELPILOT_RULES", ""))
+    if not rules:
+        rules = load_rules(os.environ.get("MODELPILOT_POLICY", ""))
+    if rules:
+        return rule_classifier(rules), len(rules)
+    return mp_router.classify, 0
+
 # Continuous auto-tuning: every AUTOTUNE_EVERY requests the gateway re-derives the
 # per-category policy from its OWN accumulating traffic and applies it live, no
 # restart. The product gets better the more it's used. Loosening is conservative
@@ -84,6 +98,7 @@ async def _lifespan(app):
     app.state.ledger = Ledger(os.environ.get("MODELPILOT_DB", "modelpilot.db"))
     app.state.continuation = ContinuationModel(app.state.ledger)
     app.state.policy_gates = dict(POLICY_FILE_GATES)  # live, refreshed by auto-tune
+    app.state.classifier, app.state.n_rules = _load_classifier()
     app.state.autotune_n = 0
     yield
     await app.state.http.aclose()
@@ -116,7 +131,8 @@ def assign_arm(session_key: str, holdout_pct: float) -> str:
 def decide(body: dict, mode: str, confidence_gate: float = CONFIDENCE_GATE,
            holdout_pct: float = 0.0, session_key: str = "",
            expected_remaining_turns: float | None = None,
-           category_gates: dict | None = None) -> Decision:
+           category_gates: dict | None = None,
+           classifier=None) -> Decision:
     """Pure routing decision — what runs, given the mode. Shadow and advise
     never alter the request; autopilot switches only above the confidence gate
     and only in the treatment arm (control requests run the baseline so the
@@ -126,10 +142,12 @@ def decide(body: dict, mode: str, confidence_gate: float = CONFIDENCE_GATE,
     gate per category (lower where this traffic has proven safe, higher/blocked
     where it has caused escalations) — the loop that improves with usage.
     """
+    clf = classifier or mp_router.classify
     if expected_remaining_turns is None:
-        rec = mp_router.recommend(body)
+        rec = mp_router.recommend(body, classifier=clf)
     else:
-        rec = mp_router.recommend(body, expected_remaining_turns=expected_remaining_turns)
+        rec = mp_router.recommend(body, expected_remaining_turns=expected_remaining_turns,
+                                  classifier=clf)
     gate = (category_gates or {}).get(rec.category, confidence_gate)
     arm = assign_arm(session_key, holdout_pct) if mode == "autopilot" else "observe"
     applied = (
@@ -292,7 +310,8 @@ async def preview(request: Request):
     body = await request.json()
     session_key = body.get("session_id") or _session_key(request, body)
     decision = decide(body, MODE, holdout_pct=HOLDOUT_PCT, session_key=session_key,
-                      category_gates=app.state.policy_gates)
+                      category_gates=app.state.policy_gates,
+                      classifier=app.state.classifier)
     rec = decision.recommendation
 
     # Pre-flight cost estimate: input from context size, nominal output.
@@ -332,6 +351,7 @@ async def messages(request: Request):
         body, MODE, holdout_pct=HOLDOUT_PCT, session_key=session_key,
         expected_remaining_turns=app.state.continuation.expected_remaining(turns),
         category_gates=app.state.policy_gates,
+        classifier=app.state.classifier,
     )
     # Advise-mode loop closure: a caller who followed our advice sends the
     # cheap model in the body — savings would be invisible without knowing

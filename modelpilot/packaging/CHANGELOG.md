@@ -4,6 +4,30 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.9.0 — 2026-06-14
+
+Two tracks of per-customer adaptability — making routing fit each customer's
+own traffic instead of a global default.
+
+- **Per-customer classification rules (feature C).** A new rule layer maps a
+  customer's domain phrasing to a category (and optional tier floor), so their
+  traffic stops landing in the conservative `conversation`/`unknown` catch-alls
+  where savings leak. Rules are hand-authored (`MODELPILOT_RULES=rules.json`, or
+  a `category_rules` list in `MODELPILOT_POLICY`) or proposed by the new
+  `modelpilot learn-rules`, which mines catch-all captures for recurring topics
+  and writes a scaffold to fill in. Safety preserved: a rule can make routing
+  more precise but cannot bypass the quality guards — the economics veto, the
+  follow-up/session-difficulty reconciliation, and a now-universal
+  structured-output/tool floor (Sonnet) in `router.recommend` all still apply.
+- **Prompt-level savings audit (feature D).** `modelpilot prompt-audit` finds
+  savings *beyond* model choice from the ledger's token accounting: (1) uncached
+  repeated context — multi-turn sessions re-sending a stable prefix with caching
+  off, and the dollars `cache_control` would save; (2) context bloat — oversized
+  input for tiny output, and the dollars from trimming. Estimates are
+  deliberately conservative and the two buckets never double-count the same
+  tokens. It only *recommends* — it never rewrites prompts. The headline also
+  surfaces in `modelpilot digest` (Slack/email/print).
+
 ## 0.8.0 — 2026-06-14
 
 - **Head-to-head vs. AWS Bedrock Intelligent Prompt Routing.** `modelpilot

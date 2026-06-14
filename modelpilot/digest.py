@@ -39,8 +39,14 @@ def build_digest(db_path: str, days: float = 7.0) -> dict:
         cats = ledger.by_category(since)
         arms = ledger.arm_costs(since)
         guards = {g["arm"]: g for g in ledger.quality_guardrails(since)}
+        token_rows = ledger.request_token_rows(since)
     finally:
         ledger.close()
+
+    # Savings beyond model choice (prompt caching + context trimming).
+    from .promptsavings import audit as _prompt_audit
+    from .promptsavings import headline as _prompt_headline
+    prompt_savings = _prompt_audit(token_rows, window_days=days)
 
     # Routing is "live" once anything has actually been auto-routed; before that
     # (shadow mode) the honest headline is the GATED potential — only switches
@@ -90,6 +96,8 @@ def build_digest(db_path: str, days: float = 7.0) -> dict:
         "annualized": annualized,
         "top_categories": cats[:3],
         "quality": quality,
+        "prompt_savings_line": _prompt_headline(prompt_savings),
+        "prompt_savings_total": prompt_savings["total_saved"],
     }
 
 
@@ -137,6 +145,7 @@ def render_markdown(d: dict) -> str:
         else (f"- {d['switch_recs']:,} switch recommendations; headline counts only those "
               f"above the {d['gate']:.2f} confidence gate (what autopilot would actually apply)"),
         f"- {_quality_line(d)}",
+        f"- {d['prompt_savings_line']}" if d.get("prompt_savings_line") else "",
         "",
         "**Where the savings are:**",
     ]
@@ -157,6 +166,7 @@ def render_slack(d: dict) -> dict:
         f"• On track for ~{_usd(d['annualized'])}/year" if d["annualized"] else "",
         f"• {_usd(d['actual'])} spent vs {_usd(d['baseline'])} baseline · {d['requests']:,} requests",
         f"• {_quality_line(d)}",
+        f"• {d['prompt_savings_line']}" if d.get("prompt_savings_line") else "",
     ]
     if d["top_categories"]:
         top = ", ".join(f"{c['category']} ({_usd(c['potential'])})" for c in d["top_categories"])

@@ -22,6 +22,7 @@ from .pricing import CAPABILITY_LADDER, ladder_tier, net_switch_benefit
 from .taxonomy import CATEGORIES, floor_tier
 
 CHARS_PER_TOKEN = 4  # coarse pre-flight estimate; exact counts come from the response
+_SONNET_TIER = CAPABILITY_LADDER.index("claude-sonnet-4-6")  # quality floor for brittle calls
 
 # Phrases that mark a request as simple enough for the floor tier. Matched on
 # the final user message, lowercased.
@@ -198,6 +199,18 @@ def classify(features: dict) -> tuple[str, int, float, str]:
     sessions — that's where existing content gets leveraged for savings.
     """
     category, tier, confidence, rationale = _classify_standalone(features)
+    return reconcile_followup(features, category, tier, confidence, rationale)
+
+
+def reconcile_followup(features: dict, category: str, tier: int,
+                       confidence: float, rationale: str) -> tuple[str, int, float, str]:
+    """Reconcile a standalone classification with the session.
+
+    A short follow-up referencing earlier hard work inherits the session's
+    difficulty (a cheap model can't reason over Opus-grade context); mechanical
+    tasks keep their own cheap tier even in hard sessions. Shared by the global
+    classifier and the per-customer rule layer so rules get the same protection.
+    """
     session_tier = features.get("session_max_tier", 0)
     if (features.get("is_followup")
             and session_tier > tier
@@ -279,6 +292,15 @@ def recommend(
     original_tier = ladder_tier(original_model)
     features = extract_features(body)
     category, target_tier, confidence, rationale = classifier(features)
+    # Universal quality guard (applies whatever the classifier was — global
+    # heuristic OR a per-customer rule): a machine-enforced output contract or
+    # tool definitions are never routed below Sonnet, so a custom rule can make
+    # routing more precise but can't downgrade a structurally brittle call.
+    if features.get("has_structured_output") or features.get("has_tools"):
+        guarded = max(target_tier, _SONNET_TIER)
+        if guarded != target_tier:
+            target_tier = guarded
+            rationale += "; tool/structured-output contract (floor sonnet)"
     log_features = {k: v for k, v in features.items() if k != "prompt"}
 
     def stay(reason: str, conf: float = confidence) -> Recommendation:
