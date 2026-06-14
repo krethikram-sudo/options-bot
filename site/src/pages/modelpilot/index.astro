@@ -131,7 +131,7 @@ const CONTACT = "krethikram@gmail.com";
           <a class="btn ghost" href="#quickstart">2-minute quickstart</a>
         </div>
         <pre class="term"><span class="c"># no API key, no spend — see it route in two minutes</span>
-$ pip install "modelpilot @ git+https://github.com/&lt;org&gt;/modelpilot.git"
+$ pip install "modelpilot @ git+https://github.com/krethikram-sudo/modelpilot.git"
 $ modelpilot demo --offline
 
   1 classification    <span class="g">SWITCH → claude-haiku-4-5</span>   conf 0.85
@@ -142,18 +142,21 @@ REALIZED savings: <span class="g">$0.07</span>   POTENTIAL: $0.12  <span class="
       </div></header>
 
       <section><div class="wrap">
-        <h2>One line to install. Three levels of trust.</h2>
+        <h2>Two modes. Start in guidance, switch when convinced.</h2>
         <div class="grid">
-          <div class="card"><h3>1 · Shadow</h3><p>Your traffic is untouched. ModelPilot
-            scores every request and builds a "what you would have saved" report.
-            Zero risk — this is how every deployment starts.</p></div>
-          <div class="card"><h3>2 · Advise</h3><p>Responses carry recommendation headers;
-            your team takes the action. Follow the advice and declare your baseline —
-            savings are tracked from the actual tokens consumed.</p></div>
-          <div class="card"><h3>3 · Autopilot</h3><p>Confidence-gated routing with a
-            built-in randomized holdout, so the savings number is <em>measured</em>,
-            not estimated — and an escalation valve whose costs count against us.</p></div>
+          <div class="card"><h3>Guidance <span style="color:var(--green)">· start here</span></h3>
+            <p>Nothing about your traffic changes. ModelPilot scores every request and
+            shows you, on the dashboard, exactly what autopilot <em>would</em> save —
+            so you decide with evidence, at zero risk.</p></div>
+          <div class="card"><h3>Autopilot <span style="color:var(--mut)">· when ready</span></h3>
+            <p>Confidence-gated routing with a built-in randomized holdout, so the
+            savings are <em>measured</em>, not estimated — and an escalation valve whose
+            costs count against us. Flip one flag when the dashboard convinces you.</p></div>
         </div>
+        <p class="note" style="margin-top:1rem">The recommended rollout:
+        <b>run in guidance → read the dashboard → switch to autopilot.</b>
+        The dashboard is built to earn that switch — it shows the would-have-saved
+        number and the side-by-side proof that the cheaper model's output holds up.</p>
       </div></section>
 
       <section><div class="wrap">
@@ -171,38 +174,45 @@ REALIZED savings: <span class="g">$0.07</span>   POTENTIAL: $0.12  <span class="
                   switch and veto switches that don't pay</td></tr>
           <tr><td>Vendors grade their own homework</td>
               <td>Randomized holdout + escalation costs deducted + side-by-side output
-                  comparisons you can run yourself: <code>modelpilot compare --judge</code></td></tr>
+                  comparisons on your own traffic: <code>modelpilot compare --from-captures --judge</code></td></tr>
         </table>
       </div></section>
 
       <section><div class="wrap">
-        <h2>The proof artifact</h2>
-        <p>Run your own prompts through both arms — ModelPilot's routing vs everything
-        on the biggest model — and get one page with <b>costs and outputs side by side</b>,
-        plus independent non-inferiority verdicts per prompt:</p>
-        <pre class="block">$ modelpilot compare --prompts your_prompts.jsonl --judge
+        <h2>The proof — embedded in your dashboard, on your own traffic</h2>
+        <p>This is what turns a guidance trial into an autopilot customer. Your own
+        captured prompts, run through both arms — ModelPilot's routing vs everything
+        on the biggest model — rendered <b>side by side right on the dashboard</b>:
+        each prompt, both outputs, per-chat and cumulative savings, and an independent
+        non-inferiority verdict.</p>
+        <pre class="block">$ modelpilot compare --from-captures --judge --save-to-db
 routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
-report: compare_report.html</pre>
-        <p class="note">Savings claims you can audit: actual token counts at list prices,
-        the same prompts in both arms, and every output on the page for your own eyes —
-        not just a judge's verdict.</p>
+# → now rendered in the dashboard's side-by-side proof panel</pre>
+        <p class="note">Savings you can audit: actual token counts at list prices, the
+        same prompts in both arms, every output on the page for your own eyes.
+        <b>And it improves with use</b> — <code>modelpilot tune</code> learns from your
+        traffic, loosening routing where it proves safe for your workload and backing
+        off anywhere it doesn't, so savings climb the longer you run it.</p>
       </div></section>
 
       <section id="quickstart"><div class="wrap">
         <h2>Quickstart (with your beta repo invite)</h2>
         <pre class="block"># 1. Install from the private beta repo
-pip install "modelpilot @ git+https://github.com/&lt;org&gt;/modelpilot.git"
+pip install "modelpilot @ git+https://github.com/krethikram-sudo/modelpilot.git"
 
 # 2. Prove it to yourself (no key, no spend)
 modelpilot demo --offline
 
-# 3. Production-shaped: shadow mode, then point your app at it
-modelpilot gateway --mode shadow --port 8400
+# 3. Guidance mode: point your app at it — behavior is unchanged
+modelpilot gateway --mode guidance --port 8400
 #    Python:  anthropic.Anthropic(base_url="http://localhost:8400")
 #    any SDK: ANTHROPIC_BASE_URL=http://localhost:8400
 
-# 4. Watch the dashboard fill up
-open http://localhost:8400/modelpilot/dashboard</pre>
+# 4. Read the dashboard — what autopilot would save + the side-by-side proof
+open http://localhost:8400/modelpilot/dashboard
+
+# 5. Convinced? Capture it.
+modelpilot gateway --mode autopilot --port 8400</pre>
         <p>Your API keys pass through and are never stored. The ledger holds token
         counts and routing metadata — no prompt text.</p>
       </div></section>
