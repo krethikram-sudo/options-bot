@@ -113,17 +113,21 @@ def match(prompt: str, rules: list[Rule]) -> Rule | None:
     return None
 
 
-def rule_classifier(rules: list[Rule], base=_global_classify):
+def rule_classifier(rules: list[Rule], base=_global_classify, floors: dict | None = None):
     """A classifier(features) that applies customer rules first, then falls back
     to the global classifier. Rule hits still go through follow-up/session
     reconciliation so a cheap rule can't strand a hard follow-up on a weak model.
+
+    `floors` is the per-customer learned floor policy: a rule without an explicit
+    `max_tier` inherits the (possibly lowered) learned floor for its category;
+    the base classifier is also given the floors.
     """
     def classify_with_rules(features: dict):
         prompt = features.get("prompt", "")
         rule = match(prompt, rules) if prompt else None
         if rule is None:
-            return base(features)
-        tier = rule.max_tier if rule.max_tier is not None else floor_tier(rule.category)
+            return base(features, floors) if base is _global_classify else base(features)
+        tier = rule.max_tier if rule.max_tier is not None else floor_tier(rule.category, floors)
         return reconcile_followup(
             features, rule.category, tier, rule.confidence,
             f"customer rule '{rule.name}' -> {rule.category}")

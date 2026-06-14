@@ -54,6 +54,11 @@ def collect_stats(ledger, days: float = 30.0, session: str = "") -> dict:
     from .tune import policy_from_quality
     stats["learned_gates"] = policy_from_quality(
         ledger.category_quality(since), default_gate=gate, loosen_to=0.7)["category_gates"]
+    # Per-customer learned floors (Track A): categories whose own traffic proved
+    # non-inferior at a cheaper tier. Loaded from the active policy file.
+    from .gateway import _load_floors
+    stats["learned_floors"] = _load_floors(os.environ.get("MODELPILOT_FLOORS", "")) \
+        or _load_floors(os.environ.get("MODELPILOT_POLICY", ""))
 
     arms = ledger.arm_costs(since)
     rct = {"treatment_n": len(arms["treatment"]), "control_n": len(arms["control"]), "ready": False}
@@ -303,6 +308,14 @@ def _conversion_panel(stats: dict) -> str:
             bits.append(f"{held} held back for quality")
         learned_note = ('<p class="muted" style="margin:6px 0 0;font-size:0.8rem">'
                         f'Auto-tuned to your traffic: {", ".join(bits)} — improves as you use it.</p>')
+
+    floors = stats.get("learned_floors") or {}
+    if floors:
+        learned_note += (
+            '<p class="muted" style="margin:6px 0 0;font-size:0.8rem">'
+            f'Learned floors: {len(floors)} categor{"y" if len(floors) == 1 else "ies"} '
+            'proven non-inferior at a cheaper model on your own traffic — '
+            'routing them deeper for extra savings.</p>')
 
     if mode == "autopilot":
         net = s["realized"] - stats["escalations"]["cost"]

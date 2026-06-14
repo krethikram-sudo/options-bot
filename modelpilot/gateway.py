@@ -55,18 +55,42 @@ def _load_policy(path: str) -> dict:
 POLICY_FILE_GATES = _load_policy(os.environ.get("MODELPILOT_POLICY", ""))
 
 
+def _load_floors(path: str) -> dict:
+    """Per-customer learned floor policy: category -> lowered floor tier, produced
+    by `modelpilot learn-floors` once a category's own traffic proved non-inferior
+    at a cheaper tier. Absent/unreadable -> {} (global floors apply)."""
+    if not path:
+        return {}
+    try:
+        with open(path) as f:
+            return (json.load(f) or {}).get("category_floors", {}) or {}
+    except (OSError, ValueError):
+        return {}
+
+
 def _load_classifier():
-    """Per-customer classification rules adapt routing to a customer's domain so
-    their traffic stops landing in conservative catch-alls. Rules come from
-    MODELPILOT_RULES (a path) or a `category_rules` list inside MODELPILOT_POLICY.
-    Absent/invalid -> the global heuristic classifier, unchanged."""
+    """Build the request classifier, applying two layers of per-customer
+    adaptation:
+      - learned FLOORS (MODELPILOT_FLOORS path, or `category_floors` in
+        MODELPILOT_POLICY): how cheap a category may go, earned by non-inferiority
+        on this deployment's own traffic;
+      - classification RULES (MODELPILOT_RULES, or `category_rules` in
+        MODELPILOT_POLICY): map domain phrasing to a category.
+    Both absent -> the global heuristic classifier, unchanged."""
     from .rules import load_rules, rule_classifier
+
+    floors = _load_floors(os.environ.get("MODELPILOT_FLOORS", ""))
+    if not floors:
+        floors = _load_floors(os.environ.get("MODELPILOT_POLICY", ""))
     rules = load_rules(os.environ.get("MODELPILOT_RULES", ""))
     if not rules:
         rules = load_rules(os.environ.get("MODELPILOT_POLICY", ""))
-    if rules:
-        return rule_classifier(rules), len(rules)
-    return mp_router.classify, 0
+
+    def base(features):
+        return mp_router.classify(features, floors)
+
+    classifier = rule_classifier(rules, floors=floors) if rules else base
+    return classifier, {"n_rules": len(rules), "n_floors": len(floors), "floors": floors}
 
 # Continuous auto-tuning: every AUTOTUNE_EVERY requests the gateway re-derives the
 # per-category policy from its OWN accumulating traffic and applies it live, no
@@ -98,7 +122,8 @@ async def _lifespan(app):
     app.state.ledger = Ledger(os.environ.get("MODELPILOT_DB", "modelpilot.db"))
     app.state.continuation = ContinuationModel(app.state.ledger)
     app.state.policy_gates = dict(POLICY_FILE_GATES)  # live, refreshed by auto-tune
-    app.state.classifier, app.state.n_rules = _load_classifier()
+    app.state.classifier, app.state.adaptation = _load_classifier()
+    app.state.policy_floors = app.state.adaptation["floors"]
     app.state.autotune_n = 0
     yield
     await app.state.http.aclose()

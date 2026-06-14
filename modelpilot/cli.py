@@ -72,6 +72,7 @@ _DELEGATED = {
     "digest": "modelpilot.digest",
     "tune": "modelpilot.tune",
     "learn-rules": "modelpilot.learn_rules",
+    "learn-floors": "modelpilot.floorlearn",
     "prompt-audit": "modelpilot.promptsavings",
 }
 
@@ -152,6 +153,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("digest", help="buyer-facing savings digest (print or post to Slack)")
     sub.add_parser("tune", help="learn a per-customer routing policy from your own traffic")
     sub.add_parser("learn-rules", help="propose per-customer classification rules from your traffic")
+    sub.add_parser("learn-floors", help="lower per-category floors where your own traffic proves non-inferior")
     sub.add_parser("prompt-audit", help="prompt-level savings: caching + context-trimming opportunities")
 
     s = sub.add_parser("share", help="redacted diagnostics for feedback")

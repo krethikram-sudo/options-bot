@@ -4,6 +4,28 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.10.0 — 2026-06-14
+
+- **Closed-loop per-customer floor learning (Track A) — the deepest savings
+  lever.** Auto-tuning adjusts the per-category *gate* and rules fix
+  *classification*, but both worked within each category's globally fixed
+  *floor* (the cheapest tier it can route to). `modelpilot learn-floors` now
+  closes the loop between our proof and our control: for each category it samples
+  this deployment's OWN captured prompts, runs them on the next-cheaper tier vs.
+  the baseline, judges non-inferiority, and lowers the floor only where the
+  cheaper model holds up on the customer's data (default ≥95% non-inferior over
+  ≥8 judged prompts). Re-run as captures accumulate and a floor walks down one
+  safe step at a time; any category that fails the bar keeps its floor.
+  - Floors flow into routing via a new `category_floors` policy
+    (`MODELPILOT_FLOORS=policy.json`, or a `category_floors` key in
+    `MODELPILOT_POLICY`); `taxonomy.floor_tier` and the router/rule classifiers
+    honor them. A learned floor only ever *lowers* the global default, and the
+    universal structured-output/tool guard still floors brittle calls to Sonnet
+    on top — so a lowered floor can't break a structured call.
+  - Active testing costs API calls, so this is a periodic command, never the hot
+    path; `--offline` renders the shape with no spend. The dashboard's conversion
+    panel notes how many categories have a learned floor.
+
 ## 0.9.0 — 2026-06-14
 
 Two tracks of per-customer adaptability — making routing fit each customer's

@@ -31,5 +31,16 @@ CATEGORIES = {
 }
 
 
-def floor_tier(category: str) -> int:
-    return CATEGORIES.get(category, CATEGORIES["unknown"])[0]
+def floor_tier(category: str, floors: dict | None = None) -> int:
+    """Cheapest tier believed non-inferior for this category.
+
+    `floors` is a per-customer learned override (produced by
+    `modelpilot learn-floors`): a category whose own traffic proved non-inferior
+    at a cheaper tier gets a lower floor *for this deployment only*. A learned
+    floor only ever lowers the global default — never raises it — and the
+    universal structured-output/tool guard in router.recommend still applies on
+    top, so a lowered floor can't break a brittle call."""
+    base = CATEGORIES.get(category, CATEGORIES["unknown"])[0]
+    if floors and category in floors:
+        return max(0, min(base, int(floors[category])))
+    return base

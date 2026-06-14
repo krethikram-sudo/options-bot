@@ -189,7 +189,7 @@ def extract_features(body: dict) -> dict:
     }
 
 
-def classify(features: dict) -> tuple[str, int, float, str]:
+def classify(features: dict, floors: dict | None = None) -> tuple[str, int, float, str]:
     """Session-context-aware classification.
 
     Each prompt is first classified on its own, then reconciled with the
@@ -197,8 +197,10 @@ def classify(features: dict) -> tuple[str, int, float, str]:
     the session's difficulty (a cheap model can't reason over Opus-grade
     context), while mechanical tasks keep their own cheap tier even in hard
     sessions — that's where existing content gets leveraged for savings.
+
+    `floors` is the per-customer learned floor policy (see taxonomy.floor_tier).
     """
-    category, tier, confidence, rationale = _classify_standalone(features)
+    category, tier, confidence, rationale = _classify_standalone(features, floors)
     return reconcile_followup(features, category, tier, confidence, rationale)
 
 
@@ -222,22 +224,23 @@ def reconcile_followup(features: dict, category: str, tier: int,
     return category, tier, confidence, rationale
 
 
-def _classify_standalone(features: dict) -> tuple[str, int, float, str]:
+def _classify_standalone(features: dict, floors: dict | None = None) -> tuple[str, int, float, str]:
     """Per-prompt heuristic -> (category, target_tier, confidence, rationale).
 
     Confidence reflects how unambiguous the signals are, not model quality.
     The golden-set-trained router replaces this in Phase 1; the interface stays.
+    `floors` applies per-customer learned floors (taxonomy.floor_tier).
     """
     prompt = features["prompt"].lower()
 
     for category, pattern in _COMPLEX_PATTERNS.items():
         if re.search(pattern, prompt):
-            return category, floor_tier(category), 0.8, f"complex-work signal ({category})"
+            return category, floor_tier(category, floors), 0.8, f"complex-work signal ({category})"
 
     simple_hits = [c for c, p in _SIMPLE_PATTERNS.items() if re.search(p, prompt)]
     if simple_hits:
         category = simple_hits[0]
-        tier = floor_tier(category)
+        tier = floor_tier(category, floors)
         confidence = 0.85
         rationale = f"simple-task signal ({category})"
         # Size and shape penalties: big context, tools, or heavy code lower
@@ -273,13 +276,13 @@ def _classify_standalone(features: dict) -> tuple[str, int, float, str]:
         return category, min(tier, len(CAPABILITY_LADDER) - 1), round(max(confidence, 0.0), 2), rationale
 
     if features["has_tools"] or features["n_turns"] > 12:
-        return "agentic", floor_tier("agentic"), 0.6, "tool use / long multi-turn — treating as agentic"
+        return "agentic", floor_tier("agentic", floors), 0.6, "tool use / long multi-turn — treating as agentic"
     if features["has_code"]:
         category = "codegen_complex" if features["prompt_chars"] > 2_000 else "codegen_simple"
-        return category, floor_tier(category), 0.55, f"code present, sized as {category}"
+        return category, floor_tier(category, floors), 0.55, f"code present, sized as {category}"
     if features["prompt_chars"] < 400 and features["approx_context_tokens"] < 4_000:
-        return "conversation", floor_tier("conversation"), 0.5, "short generic prompt"
-    return "unknown", floor_tier("unknown"), 0.3, "no clear signal — staying conservative"
+        return "conversation", floor_tier("conversation", floors), 0.5, "short generic prompt"
+    return "unknown", floor_tier("unknown", floors), 0.3, "no clear signal — staying conservative"
 
 
 def recommend(
