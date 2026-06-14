@@ -93,13 +93,40 @@ def _current(request: Request) -> dict | None:
     acct = store.get_account(sess["account_id"])
     if not acct or acct["status"] != "active":
         return None
+    acct = dict(acct)
+    if sess.get("member_id"):
+        m = store.get_member(sess["member_id"])
+        if not m or m["status"] == "removed" or m["account_id"] != acct["id"]:
+            return None
+        acct["role"] = "customer"          # team members never inherit vendor-admin
+        acct["team_role"] = sess["team_role"]
+        acct["member_id"] = m["id"]
+        acct["display_email"] = m["email"]
+    else:
+        acct["team_role"] = "owner"
+        acct["member_id"] = 0
+        acct["display_email"] = acct["email"]
     return acct
 
 
-def _set_session(resp, account: dict) -> None:
+def _set_session(resp, account: dict, team_role: str = "owner", member_id: int = 0,
+                 platform_role: str | None = None) -> None:
     secure = os.environ.get("CONSOLE_SECURE_COOKIES") == "1"
-    resp.set_cookie(COOKIE, store.make_session(account["id"], account["role"]),
+    role = platform_role or account["role"]
+    resp.set_cookie(COOKIE, store.make_session(account["id"], role, team_role, member_id),
                     httponly=True, samesite="lax", secure=secure, max_age=store.SESSION_TTL)
+
+
+def _require_team_admin(request: Request):
+    """Owner or team-admin only (manage team, billing, settings)."""
+    acct = _current(request)
+    if not acct:
+        return None, _redirect("/login")
+    if acct.get("team_role") not in ("owner", "admin"):
+        return None, _html(web.page("Forbidden",
+                                    "<h1>403</h1><p class=muted>Your role can't do that. Ask an "
+                                    "owner or admin on your team.</p>", acct), 403)
+    return acct, None
 
 
 def _redirect(url: str):
@@ -178,12 +205,18 @@ def login_form(request: Request):
 async def login(request: Request):
     f = await _form(request)
     acct = store.authenticate(f.get("email", ""), f.get("password", ""))
-    if not acct:
-        return _html(web.auth_form("login", "Wrong email or password (or account suspended).",
-                                   f.get("email", "")), 401)
-    resp = _redirect("/admin" if acct["role"] == "admin" else "/app")
-    _set_session(resp, acct)
-    return resp
+    if acct:  # account owner
+        resp = _redirect("/admin" if acct["role"] == "admin" else "/app")
+        _set_session(resp, acct, "owner", 0)
+        return resp
+    member = store.authenticate_member(f.get("email", ""), f.get("password", ""))
+    if member:  # invited teammate
+        org = store.get_account(member["account_id"])
+        resp = _redirect("/app")
+        _set_session(resp, org, member["role"], member["id"], platform_role="customer")
+        return resp
+    return _html(web.auth_form("login", "Wrong email or password (or account suspended).",
+                               f.get("email", "")), 401)
 
 
 @app.post("/logout")
@@ -425,6 +458,64 @@ def logs_csv(request: Request):
                     headers={"content-disposition": "attachment; filename=modelpilot-logs.csv"})
 
 
+@app.get("/app/team", response_class=HTMLResponse)
+def team_get(request: Request):
+    acct, redir = _require_team_admin(request)
+    if redir:
+        return redir
+    tok = request.query_params.get("invite_token", "")
+    invite_link = notify.reset_link(tok) if tok else ""
+    return _html(web.team_page(acct, store.list_members(acct["id"]), invite_link))
+
+
+@app.post("/app/team/invite")
+async def team_invite(request: Request):
+    acct, redir = _require_team_admin(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    try:
+        m = store.create_member(acct["id"], f.get("email", ""), f.get("role", "member"))
+    except store.StoreError:
+        return _redirect("/app/team")
+    out = store.create_reset(m["email"])
+    token = out[1] if out else ""
+    if token:
+        try:
+            notify.send_email(m["email"], "You're invited to ModelPilot",
+                              f"You've been added to a ModelPilot team. Set your password:\n\n"
+                              f"{notify.reset_link(token)}")
+        except Exception:  # noqa: BLE001
+            pass
+    return _redirect(f"/app/team?invite_token={token}")
+
+
+@app.post("/app/team/role")
+async def team_role(request: Request):
+    acct, redir = _require_team_admin(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    try:
+        store.set_member_role(int(f.get("member_id", "0")), acct["id"], f.get("role", "member"))
+    except (ValueError, store.StoreError):
+        pass
+    return _redirect("/app/team")
+
+
+@app.post("/app/team/remove")
+async def team_remove(request: Request):
+    acct, redir = _require_team_admin(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    try:
+        store.remove_member(int(f.get("member_id", "0")), acct["id"])
+    except ValueError:
+        pass
+    return _redirect("/app/team")
+
+
 @app.get("/app/billing", response_class=HTMLResponse)
 def billing_get(request: Request):
     acct, redir = _require(request)
@@ -454,6 +545,9 @@ async def billing_convert(request: Request):
     acct, redir = _require(request)
     if redir:
         return redir
+    if acct.get("team_role") not in ("owner", "admin", "billing"):
+        return _html(web.page("Forbidden", "<h1>403</h1><p class=muted>Billing changes need an "
+                              "owner, admin, or billing role.</p>", acct), 403)
     if stripe_billing.enabled():
         try:
             url = stripe_billing.create_checkout_session(acct)

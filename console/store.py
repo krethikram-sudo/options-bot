@@ -64,6 +64,16 @@ CREATE TABLE IF NOT EXISTS deployments (
     label TEXT,
     created_at REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL REFERENCES accounts(id),  -- the org they belong to
+    email TEXT UNIQUE NOT NULL,
+    pw_hash TEXT NOT NULL, pw_salt TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'member',                   -- admin | member | billing
+    status TEXT NOT NULL DEFAULT 'active',                 -- invited | active | removed
+    created_at REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_member_acct ON members(account_id);
 CREATE TABLE IF NOT EXISTS settings (
     account_id INTEGER PRIMARY KEY REFERENCES accounts(id),
     mode TEXT NOT NULL DEFAULT 'guidance',
@@ -179,7 +189,10 @@ _MIGRATIONS = [
     "ALTER TABLE proposals ADD COLUMN note TEXT",
     "ALTER TABLE settings ADD COLUMN monthly_budget REAL NOT NULL DEFAULT 0",
     "ALTER TABLE settings ADD COLUMN budget_alert_pct REAL NOT NULL DEFAULT 0.8",
+    "ALTER TABLE resets ADD COLUMN member_id INTEGER",
 ]
+
+TEAM_ROLES = ("admin", "member", "billing")
 
 RESET_TTL = 3600  # password-reset token lifetime (seconds)
 
@@ -233,24 +246,26 @@ def verify_password(password: str, pw_hash: str, salt: str) -> bool:
     return hmac.compare_digest(cand, pw_hash)
 
 
-def make_session(account_id: int, role: str, path: str | None = None) -> str:
-    payload = f"{account_id}:{role}:{int(time.time())}"
+def make_session(account_id: int, role: str, team_role: str = "owner",
+                 member_id: int = 0, path: str | None = None) -> str:
+    payload = f"{account_id}:{role}:{team_role}:{member_id}:{int(time.time())}"
     sig = hmac.new(_secret(path), payload.encode(), hashlib.sha256).hexdigest()
     return f"{payload}:{sig}"
 
 
 def read_session(token: str, path: str | None = None) -> dict | None:
     try:
-        account_id, role, issued, sig = token.rsplit(":", 3)
+        account_id, role, team_role, member_id, issued, sig = token.rsplit(":", 5)
     except (ValueError, AttributeError):
         return None
-    payload = f"{account_id}:{role}:{issued}"
+    payload = f"{account_id}:{role}:{team_role}:{member_id}:{issued}"
     expected = hmac.new(_secret(path), payload.encode(), hashlib.sha256).hexdigest()
     if not hmac.compare_digest(expected, sig):
         return None
     if time.time() - float(issued) > SESSION_TTL:
         return None
-    return {"account_id": int(account_id), "role": role, "issued": float(issued)}
+    return {"account_id": int(account_id), "role": role, "team_role": team_role,
+            "member_id": int(member_id), "issued": float(issued)}
 
 
 # --------------------------------------------------------------------------- #
@@ -346,6 +361,116 @@ def set_role(account_id: int, role: str, path: str | None = None) -> None:
         conn.commit()
     finally:
         conn.close()
+
+
+# --------------------------------------------------------------------------- #
+# Team members (additive: the account owner stays on `accounts`; invited
+# teammates live here with a per-account role). Members never get vendor-admin.
+# --------------------------------------------------------------------------- #
+
+def create_member(account_id: int, email: str, role: str = "member",
+                  path: str | None = None, now: float | None = None) -> dict:
+    """Invite a teammate. Created with a random unusable password ('invited');
+    they set their own via the reset/invite link. Returns the member row."""
+    email = (email or "").strip().lower()
+    if "@" not in email:
+        raise StoreError("Enter a valid email address.")
+    if role not in TEAM_ROLES:
+        raise StoreError(f"role must be one of {TEAM_ROLES}")
+    if get_account_by_email(email, path):
+        raise StoreError("That email already owns an account.")
+    now = now or time.time()
+    pw_hash, salt = hash_password(secrets.token_urlsafe(16))  # placeholder until they set one
+    conn = connect(path)
+    try:
+        try:
+            cur = conn.execute(
+                "INSERT INTO members(account_id, email, pw_hash, pw_salt, role, status, created_at)"
+                " VALUES(?,?,?,?,?, 'invited', ?)", (account_id, email, pw_hash, salt, role, now))
+        except sqlite3.IntegrityError:
+            raise StoreError("That email is already a member.")
+        mid = cur.lastrowid
+        conn.commit()
+    finally:
+        conn.close()
+    return get_member(mid, path)
+
+
+def get_member(member_id: int, path: str | None = None) -> dict | None:
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT * FROM members WHERE id=?", (member_id,)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def get_member_by_email(email: str, path: str | None = None) -> dict | None:
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT * FROM members WHERE email=?",
+                           ((email or "").strip().lower(),)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def list_members(account_id: int, path: str | None = None) -> list[dict]:
+    conn = connect(path)
+    try:
+        rows = conn.execute("SELECT id, account_id, email, role, status, created_at FROM members"
+                            " WHERE account_id=? AND status!='removed' ORDER BY created_at",
+                            (account_id,)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def set_member_role(member_id: int, account_id: int, role: str, path: str | None = None) -> None:
+    if role not in TEAM_ROLES:
+        raise StoreError(f"role must be one of {TEAM_ROLES}")
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE members SET role=? WHERE id=? AND account_id=?",
+                     (role, member_id, account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def remove_member(member_id: int, account_id: int, path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE members SET status='removed' WHERE id=? AND account_id=?",
+                     (member_id, account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def set_member_password(member_id: int, new_password: str, path: str | None = None) -> None:
+    if len(new_password or "") < 8:
+        raise StoreError("Password must be at least 8 characters.")
+    pw_hash, salt = hash_password(new_password)
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE members SET pw_hash=?, pw_salt=?, status='active' WHERE id=?",
+                     (pw_hash, salt, member_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def authenticate_member(email: str, password: str, path: str | None = None) -> dict | None:
+    m = get_member_by_email(email, path)
+    if not m or m["status"] == "removed":
+        return None
+    if not verify_password(password, m["pw_hash"], m["pw_salt"]):
+        return None
+    acct = get_account(m["account_id"], path)
+    if not acct or acct["status"] != "active":
+        return None
+    return m
 
 
 # --------------------------------------------------------------------------- #
@@ -786,38 +911,47 @@ def set_password(account_id: int, new_password: str, path: str | None = None) ->
 
 
 def create_reset(email: str, path: str | None = None, now: float | None = None) -> tuple[dict, str] | None:
-    """Create a single-use reset token for an account. Returns (account, token)
-    or None if no such (active) account — callers must not reveal which."""
-    acct = get_account_by_email(email, path)
-    if not acct or acct["status"] != "active":
-        return None
+    """Single-use reset/invite token for an account owner OR a team member.
+    Returns (principal, token) or None — callers must not reveal which."""
     now = now or time.time()
+    acct = get_account_by_email(email, path)
+    member = None
+    if acct and acct["status"] == "active":
+        principal, account_id, member_id = acct, acct["id"], None
+    else:
+        member = get_member_by_email(email, path)
+        if not member or member["status"] == "removed":
+            return None
+        principal, account_id, member_id = member, member["account_id"], member["id"]
     token = secrets.token_urlsafe(32)
     conn = connect(path)
     try:
-        conn.execute("INSERT INTO resets(token, account_id, created_at, used) VALUES(?,?,?,0)",
-                     (token, acct["id"], now))
+        conn.execute("INSERT INTO resets(token, account_id, created_at, used, member_id)"
+                     " VALUES(?,?,?,0,?)", (token, account_id, now, member_id))
         conn.commit()
     finally:
         conn.close()
-    return acct, token
+    return principal, token
 
 
 def consume_reset(token: str, new_password: str, path: str | None = None,
                   now: float | None = None) -> bool:
-    """Validate an unused, unexpired token and set the new password (single-use)."""
+    """Validate an unused, unexpired token and set the password (account or member)."""
     now = now or time.time()
     conn = connect(path)
     try:
         row = conn.execute("SELECT * FROM resets WHERE token=?", (token,)).fetchone()
         if not row or row["used"] or (now - row["created_at"]) > RESET_TTL:
             return False
-        account_id = row["account_id"]
+        row = dict(row)
         conn.execute("UPDATE resets SET used=1 WHERE token=?", (token,))
         conn.commit()
     finally:
         conn.close()
-    set_password(account_id, new_password, path)
+    if row.get("member_id"):
+        set_member_password(row["member_id"], new_password, path)
+    else:
+        set_password(row["account_id"], new_password, path)
     return True
 
 

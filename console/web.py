@@ -94,6 +94,8 @@ def page(title: str, body: str, account: dict | None = None, active: str = "") -
     if account:
         items = [("/app", "Dashboard"), ("/app/logs", "Logs"), ("/app/settings", "Settings"),
                  ("/app/connect", "Connect"), ("/app/billing", "Billing")]
+        if account.get("team_role") in ("owner", "admin"):
+            items.append(("/app/team", "Team"))
         if account.get("role") == "admin":
             items.append(("/admin", "Admin"))
             items.append(("/admin/proposals", "Review"))
@@ -101,7 +103,7 @@ def page(title: str, body: str, account: dict | None = None, active: str = "") -
             f'<a class="{"on" if active==href else ""}" href="{href}">{_e(label)}</a>'
             for href, label in items)
         nav = (f'<div class="nav">{links}</div><div class="spacer"></div>'
-               f'<span class="muted small">{_e(account["email"])}</span>'
+               f'<span class="muted small">{_e(account.get("display_email") or account["email"])}</span>'
                f'<form method="post" action="/logout" style="margin:0">'
                f'<button class="btn sec sm">Sign out</button></form>')
     else:
@@ -486,6 +488,44 @@ client = Anthropic(base_url="http://127.0.0.1:8400")  # your key stays local</pr
     {_api_keys_section(keys or [], deployments, new_key)}
     {_webhooks_section(webhooks or [])}"""
     return page("Connect", body, account, "/app/connect")
+
+
+def team_page(account: dict, members: list[dict], invite_link: str = "") -> str:
+    from .store import TEAM_ROLES
+    invite_note = (f'<div class="note">Invite sent. Share this set-password link (valid 1h): '
+                   f'<a href="{_e(invite_link)}">{_e(invite_link)}</a></div>' if invite_link else "")
+    rows = (f'<tr><td>{_e(account["email"])}</td><td><span class="badge paid">owner</span></td>'
+            f'<td class="small muted">account owner</td><td></td></tr>')
+    for m in members:
+        opts = "".join(f'<option value="{r}"{" selected" if m["role"]==r else ""}>{r}</option>'
+                       for r in TEAM_ROLES)
+        status = "" if m["status"] == "active" else f' <span class="badge trial">{_e(m["status"])}</span>'
+        rows += f"""<tr><td>{_e(m['email'])}{status}</td>
+          <td><form method=post action="/app/team/role" class=row style="gap:6px">
+            <input type=hidden name=member_id value="{m['id']}">
+            <select name=role>{opts}</select><button class="btn sec sm">Save</button></form></td>
+          <td class="small muted">{_fmt_date(m.get('created_at'))}</td>
+          <td><form method=post action="/app/team/remove" style="margin:0">
+            <input type=hidden name=member_id value="{m['id']}">
+            <button class="btn sec sm">Remove</button></form></td></tr>"""
+    role_opts = "".join(f'<option value="{r}">{r}</option>' for r in TEAM_ROLES)
+    body = f"""
+    <h1>Team</h1>
+    <p class=muted>Invite teammates and set their access. Roles: <b>admin</b> (everything),
+    <b>billing</b> (dashboard + billing), <b>member</b> (dashboard, logs, connect — read-only).</p>
+    {invite_note}
+    <div class=card style="padding:0"><table>
+      <thead><tr><th>Member</th><th>Role</th><th>Joined</th><th></th></tr></thead>
+      <tbody>{rows}</tbody></table></div>
+    <div class=card style="margin-top:12px">
+      <form method=post action="/app/team/invite" class=row style="gap:8px">
+        <input name=email type=email placeholder="teammate@company.com" required style="min-width:240px">
+        <select name=role>{role_opts}</select>
+        <button class=btn>Invite</button>
+      </form>
+      <p class="small muted" style="margin-top:8px">They'll get a link to set a password and sign in.</p>
+    </div>"""
+    return page("Team", body, account, "/app/team")
 
 
 def logs_page(account: dict, logs: list[dict], total: int) -> str:

@@ -585,6 +585,69 @@ def test_logs_page_and_csv(env, client):
     assert "extraction" in csv.text and "realized_saved" in csv.text
 
 
+# --- teams / RBAC --------------------------------------------------------- #
+
+def test_member_invite_set_password_login(env):
+    _, store = env
+    owner = store.create_account("owner@b.com", "password123")
+    m = store.create_member(owner["id"], "mate@b.com", "member")
+    assert m["status"] == "invited"
+    # invited member can't log in until they set a password via the invite/reset token
+    out = store.create_reset("mate@b.com")
+    assert out is not None and out[1]
+    assert store.consume_reset(out[1], "matepassword1")
+    auth = store.authenticate_member("mate@b.com", "matepassword1")
+    assert auth and auth["account_id"] == owner["id"] and auth["role"] == "member"
+
+
+def test_owner_login_unchanged(env, client):
+    # the owner auth path (accounts table) is untouched by teams
+    _signup(client, email="o2@b.com")
+    client.cookies.clear()
+    r = client.post("/login", data={"email": "o2@b.com", "password": "password123"})
+    assert r.status_code == 303 and r.headers["location"] == "/app"
+
+
+def test_member_login_and_team_nav(env, client):
+    _, store = env
+    owner = store.create_account("o3@b.com", "password123")
+    store.create_member(owner["id"], "mem@b.com", "member")
+    out = store.create_reset("mem@b.com")
+    store.consume_reset(out[1], "mempassword1")
+    r = client.post("/login", data={"email": "mem@b.com", "password": "mempassword1"})
+    assert r.status_code == 303 and r.headers["location"] == "/app"
+    dash = client.get("/app").text
+    assert "mem@b.com" in dash            # signed in as the member
+    assert "/app/team" not in dash        # plain member: no Team nav
+    # a member cannot manage the team
+    assert client.get("/app/team").status_code == 403
+
+
+def test_owner_sees_team_and_can_invite(env, client):
+    _, store = env
+    _signup(client, email="boss@team.com")
+    acct = store.get_account_by_email("boss@team.com")
+    assert "/app/team" in client.get("/app").text   # owner has Team nav
+    r = client.post("/app/team/invite", data={"email": "new@team.com", "role": "admin"})
+    assert r.status_code == 303 and "invite_token=" in r.headers["location"]
+    members = store.list_members(acct["id"])
+    assert len(members) == 1 and members[0]["role"] == "admin"
+    # change role + remove
+    client.post("/app/team/role", data={"member_id": str(members[0]["id"]), "role": "billing"})
+    assert store.get_member(members[0]["id"])["role"] == "billing"
+    client.post("/app/team/remove", data={"member_id": str(members[0]["id"])})
+    assert store.list_members(acct["id"]) == []
+
+
+def test_member_cannot_convert_billing(env, client):
+    _, store = env
+    owner = store.create_account("o4@b.com", "password123")
+    store.create_member(owner["id"], "billless@b.com", "member")
+    out = store.create_reset("billless@b.com"); store.consume_reset(out[1], "mempassword1")
+    client.post("/login", data={"email": "billless@b.com", "password": "mempassword1"})
+    assert client.post("/app/billing/convert").status_code == 403
+
+
 # --- webhooks ------------------------------------------------------------- #
 
 def test_webhook_create_match_sign_deliver(env):
