@@ -415,6 +415,72 @@ def test_admin_bulk_reject_only_selected(env, client):
     assert remaining == [keep]
 
 
+def test_autoapprove_floor_meeting_threshold(env):
+    _, store = env
+    a = store.create_account("auto@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    cfg = {"min_samples": 30, "min_ni": 0.95}
+    # meets threshold -> auto-approved on arrival
+    res = store.submit_proposal(dep, "floor", "summarization_long",
+                                {"current_tier": 1, "proposed_tier": 0},
+                                {"samples": 40, "non_inferior_rate": 0.97}, autoapprove=cfg)
+    assert res["auto_approved"] is True
+    assert store.approved_floors(a["id"]) == {"summarization_long": 0}
+    assert store.count_pending_proposals() == 0
+    hist = store.proposal_history(a["id"])[0]
+    assert hist["decided_by"] is None and "auto-approved" in hist["note"]
+
+
+def test_autoapprove_skips_low_evidence_and_rules(env):
+    _, store = env
+    a = store.create_account("auto2@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    cfg = {"min_samples": 30, "min_ni": 0.95}
+    # too few samples -> stays pending
+    r1 = store.submit_proposal(dep, "floor", "extraction", {"current_tier": 1, "proposed_tier": 0},
+                               {"samples": 10, "non_inferior_rate": 0.99}, autoapprove=cfg)
+    # rate too low -> stays pending
+    r2 = store.submit_proposal(dep, "floor", "translation", {"current_tier": 1, "proposed_tier": 0},
+                               {"samples": 50, "non_inferior_rate": 0.80}, autoapprove=cfg)
+    # rules never auto-approve (qualitative)
+    r3 = store.submit_proposal(dep, "rule", "extraction",
+                               {"name": "inv", "any": ["invoice"], "category": "extraction"},
+                               {"samples": 99}, autoapprove=cfg)
+    assert not (r1["auto_approved"] or r2["auto_approved"] or r3["auto_approved"])
+    assert store.count_pending_proposals() == 3
+
+
+def test_autoapprove_disabled_by_default_via_api(env, client, monkeypatch):
+    _, store = env
+    a = store.create_account("auto3@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    # no CONSOLE_AUTOAPPROVE env -> everything waits for a human
+    client.post("/api/proposals", json={"deployment_id": dep, "kind": "floor",
+                "category": "classification", "payload": {"current_tier": 1, "proposed_tier": 0},
+                "stats": {"samples": 99, "non_inferior_rate": 1.0}})
+    assert store.count_pending_proposals() == 1
+
+
+def test_digest_summarizes_pending(env):
+    _, store = env
+    a1 = store.create_account("d1@b.com", "password123")
+    a2 = store.create_account("d2@b.com", "password123")
+    store.submit_proposal(store.deployments_for(a1["id"])[0]["deployment_id"],
+                          "floor", "extraction", {"current_tier": 1, "proposed_tier": 0},
+                          {"samples": 12, "non_inferior_rate": 0.9})
+    store.submit_proposal(store.deployments_for(a2["id"])[0]["deployment_id"],
+                          "rule", "translation", {"name": "t", "any": ["x"], "category": "translation"})
+    from console import digest
+    d = digest.build_digest()
+    assert d["n_pending"] == 2 and d["n_customers"] == 2
+    assert "d1@b.com" in d["text"] and "extraction" in d["text"] and "/admin/proposals" in d["text"]
+
+
+def test_digest_send_skips_when_empty(env):
+    from console import digest
+    assert digest.send_digest()["sent"] == 0
+
+
 def test_proposal_audit_trail(env, client):
     _, store = env
     admin = store.create_account("boss3@b.com", "password123", role="admin")

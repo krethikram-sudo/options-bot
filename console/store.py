@@ -658,32 +658,55 @@ def consume_reset(token: str, new_password: str, path: str | None = None,
 PROPOSAL_KINDS = ("floor", "rule")
 
 
+def should_autoapprove(kind: str, stats: dict | None, min_samples: int, min_ni: float) -> bool:
+    """Auto-approval is only for judge-validated *floor* drops with enough samples
+    and a high non-inferiority rate. Rules (qualitative) always need a human."""
+    if kind != "floor":
+        return False
+    stats = stats or {}
+    samples = stats.get("samples") or 0
+    rate = stats.get("non_inferior_rate")
+    return samples >= min_samples and rate is not None and rate >= min_ni
+
+
 def submit_proposal(deployment_id: str, kind: str, category: str, payload: dict,
                     stats: dict | None = None, path: str | None = None,
-                    now: float | None = None) -> dict:
+                    now: float | None = None, autoapprove: dict | None = None) -> dict:
     """A gateway proposes a per-customer tuning change (auto-derived from the
     customer's own traffic, validated by their judge — only the *proposal*
     reaches us: category + tiers/rule-spec + stats, never prompt text). Supersedes
-    any earlier still-pending proposal of the same (account, kind, category)."""
+    any earlier still-pending proposal of the same (account, kind, category).
+
+    `autoapprove` (optional `{min_samples, min_ni}`) approves qualifying floor
+    proposals on arrival, recording an auto note in the audit trail."""
     if kind not in PROPOSAL_KINDS:
         raise StoreError(f"kind must be one of {PROPOSAL_KINDS}")
     acct = account_for_deployment(deployment_id, path)
     if not acct:
         raise StoreError("unknown deployment")
     now = now or time.time()
+    auto = bool(autoapprove and should_autoapprove(
+        kind, stats, autoapprove.get("min_samples", 30), autoapprove.get("min_ni", 0.95)))
+    status, decided_at, note = "pending", None, None
+    if auto:
+        s = stats or {}
+        status, decided_at = "approved", now
+        note = (f"auto-approved ({int(s.get('samples', 0))} samples, "
+                f"{(100*(s.get('non_inferior_rate') or 0)):.0f}% non-inferior)")
     conn = connect(path)
     try:
         conn.execute("DELETE FROM proposals WHERE account_id=? AND kind=? AND category=?"
                      " AND status='pending'", (acct["id"], kind, category))
-        conn.execute(
+        cur = conn.execute(
             "INSERT INTO proposals(account_id, deployment_id, kind, category, payload, stats,"
-            " status, created_at) VALUES(?,?,?,?,?,?, 'pending', ?)",
-            (acct["id"], deployment_id, kind, category,
-             json.dumps(payload), json.dumps(stats or {}), now))
+            " status, created_at, decided_at, decided_by, note) VALUES(?,?,?,?,?,?,?,?,?,NULL,?)",
+            (acct["id"], deployment_id, kind, category, json.dumps(payload),
+             json.dumps(stats or {}), status, now, decided_at, note))
+        pid = cur.lastrowid
         conn.commit()
     finally:
         conn.close()
-    return {"ok": True, "account_id": acct["id"]}
+    return {"ok": True, "account_id": acct["id"], "proposal_id": pid, "auto_approved": auto}
 
 
 def _row_proposal(r: dict) -> dict:

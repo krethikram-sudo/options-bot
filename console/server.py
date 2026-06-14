@@ -25,8 +25,31 @@ app = FastAPI(title="ModelPilot console")
 
 
 @app.on_event("startup")
-def _startup():
+async def _startup():
     store.init_db()
+    app.state.digest_task = None
+    hours = float(os.environ.get("CONSOLE_DIGEST_HOURS", "0") or 0)
+    if hours > 0:
+        import asyncio
+
+        from . import digest
+
+        async def _digest_loop():
+            while True:
+                await asyncio.sleep(hours * 3600)
+                try:
+                    await asyncio.to_thread(digest.send_digest)
+                except Exception:  # noqa: BLE001 — digest must never crash the server
+                    pass
+
+        app.state.digest_task = asyncio.create_task(_digest_loop())
+
+
+@app.on_event("shutdown")
+async def _shutdown():
+    task = getattr(app.state, "digest_task", None)
+    if task is not None:
+        task.cancel()
 
 
 # --------------------------------------------------------------------------- #
@@ -70,6 +93,15 @@ def _redirect(url: str):
 
 def _html(s: str, status: int = 200):
     return HTMLResponse(s, status_code=status)
+
+
+def _autoapprove_cfg() -> dict | None:
+    """Auto-approval thresholds for floor proposals, from env. Off by default —
+    every proposal waits for a human until you opt in."""
+    if os.environ.get("CONSOLE_AUTOAPPROVE", "") not in ("1", "true", "yes", "on"):
+        return None
+    return {"min_samples": int(os.environ.get("CONSOLE_AUTOAPPROVE_MIN_SAMPLES", "30")),
+            "min_ni": float(os.environ.get("CONSOLE_AUTOAPPROVE_MIN_NI", "0.95"))}
 
 
 def _suggestions(cats: list[dict], settings: dict) -> list[str]:
@@ -524,7 +556,7 @@ async def api_proposals(request: Request):
         return JSONResponse({"error": "deployment_id, kind, category required"}, status_code=400)
     try:
         res = store.submit_proposal(dep, kind, category, body.get("payload") or {},
-                                    body.get("stats") or {})
+                                    body.get("stats") or {}, autoapprove=_autoapprove_cfg())
     except store.StoreError as e:
         code = 404 if "unknown deployment" in str(e) else 400
         return JSONResponse({"error": str(e)}, status_code=code)

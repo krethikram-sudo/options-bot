@@ -603,9 +603,10 @@ def _audit_section(history: list[dict]) -> str:
             what = f"rule {_e(payload.get('name') or p['category'])} → {_e(p['category'])}"
         badge = "paid" if p["status"] == "approved" else "suspended"
         note = f' · <span class=muted>{_e(p["note"])}</span>' if p.get("note") else ""
+        by = p.get("decided_by_email") or ("auto" if p.get("decided_at") else "—")
         rows += (f"<tr><td>{what}</td>"
                  f"<td><span class='badge {badge}'>{_e(p['status'])}</span></td>"
-                 f"<td class='small muted'>{_e(p.get('decided_by_email') or '—')}</td>"
+                 f"<td class='small muted'>{_e(by)}</td>"
                  f"<td class='small muted'>{_fmt_date(p.get('decided_at'))}{note}</td></tr>")
     return (f'<h2>Tuning history <span class="small muted">— audit trail</span></h2>'
             f'<div class=card style="padding:0"><table><thead><tr><th>Change</th><th>Decision</th>'
