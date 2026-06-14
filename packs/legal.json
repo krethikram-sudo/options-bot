@@ -1,0 +1,10 @@
+{
+  "_pack": "legal",
+  "_about": "Starter pack for legal-AI startups. CONSERVATIVE by design: clause extraction, redlines, and contract summaries route Opus->Sonnet (never Haiku), and a profile floor of Sonnet prevents anything cheaper. Long-form drafting (briefs/petitions) is left to the global router (stays on the strong model). Load with MODELPILOT_POLICY=packs/legal.json.",
+  "category_rules": [
+    {"name": "clause-extraction", "any": ["governing law", "termination for convenience", "limitation of liability", "indemnification", "extract from this contract", "extract from this agreement", "extract the clauses", "key terms from this contract"], "category": "extraction", "max_tier": 1},
+    {"name": "redline", "any": ["redline", "mark up this clause", "revise this clause", "make this mutual", "suggest edits to this clause"], "category": "rewrite_format", "max_tier": 1},
+    {"name": "contract-summary", "any": ["summarize this contract", "summarize this agreement", "summarize this lease", "summarize this msa", "key terms of this"], "category": "summarization_long", "max_tier": 1}
+  ],
+  "profile": {"min_model": "claude-sonnet-4-6", "risk_tolerance": "balanced"}
+}

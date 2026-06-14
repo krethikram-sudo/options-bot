@@ -1,0 +1,11 @@
+{
+  "_pack": "doc-extraction",
+  "_about": "Starter pack for document/data extraction & classification startups. High-volume, schema-constrained calls — the cheapest-tier sweet spot. Load with MODELPILOT_POLICY=packs/doc-extraction.json (rules + gate apply automatically). Validated further by your own `learn-floors` over time; the structured-output guard still floors schema-enforced calls to Sonnet.",
+  "category_rules": [
+    {"name": "invoices-receipts", "any": ["invoice", "receipt", "purchase order", "po number", "bill of lading", "remittance"], "category": "extraction", "max_tier": 0},
+    {"name": "extract-to-table", "any": ["into a spreadsheet", "into rows", "into columns", "to a table", "fill this column", "for each row", "tabular"], "category": "extraction", "max_tier": 0},
+    {"name": "doc-classification", "any": ["classify these", "classify each", "tag each", "route this document", "which category", "label each"], "category": "classification", "max_tier": 0},
+    {"name": "parse-document", "any": ["parse this", "parse the", "ocr", "scanned document", "pull the fields"], "category": "extraction", "max_tier": 0}
+  ],
+  "category_gates": {"extraction": 0.6, "classification": 0.6}
+}

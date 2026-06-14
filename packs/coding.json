@@ -1,0 +1,8 @@
+{
+  "_pack": "coding",
+  "_about": "Starter pack for coding-agent / dev-tools startups. Routes simple codegen and mechanical edits to Haiku; refactors/debugging/architecture stay on the strong model (handled by the global router, not overridden here). Load with MODELPILOT_POLICY=packs/coding.json.",
+  "category_rules": [
+    {"name": "simple-codegen", "any": ["write a utility", "write a component", "write an endpoint", "write a migration", "write a cron", "add a test", "unit test for", "write a regex", "write a sql", "boilerplate for"], "category": "codegen_simple", "max_tier": 0},
+    {"name": "format-snippet", "any": ["add a docstring", "add type hints", "rename these variables", "format this code", "add comments to"], "category": "rewrite_format", "max_tier": 0}
+  ]
+}

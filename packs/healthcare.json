@@ -1,0 +1,9 @@
+{
+  "_pack": "healthcare",
+  "_about": "Starter pack for healthcare / clinical / insurance startups. REGULATED & conservative: clinical extraction and transcript summaries route Opus->Sonnet (never Haiku), a Sonnet min-model floor + conservative risk tolerance (gate 0.8) guard quality, and the structured-output guard preserves field shapes. Review against your own compliance obligations before enabling autopilot. Load with MODELPILOT_POLICY=packs/healthcare.json.",
+  "category_rules": [
+    {"name": "clinical-extraction", "any": ["from this chart", "clinical note", "icd-10", "hcc code", "cpt code", "prior auth", "medication list", "from this ehr"], "category": "extraction", "max_tier": 1},
+    {"name": "transcript-summary", "any": ["summarize this call", "summarize this transcript", "summarize the visit", "summarize the payer call"], "category": "summarization_short", "max_tier": 1}
+  ],
+  "profile": {"min_model": "claude-sonnet-4-6", "risk_tolerance": "conservative"}
+}

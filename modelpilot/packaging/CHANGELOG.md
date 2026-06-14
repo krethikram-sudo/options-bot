@@ -4,6 +4,20 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.14.0 — 2026-06-14
+
+- **Per-segment starter packs (`packs/`).** Drop-in policies that give a new
+  customer a good fit on day one, before their own `learn-rules`/`learn-floors`
+  accumulate: `doc-extraction`, `support`, `coding` (aggressive cheap-tier on
+  bulk classify/extract/codegen) and `legal`, `healthcare` (conservative —
+  Opus→Sonnet only, never Haiku, with an embedded compliance `profile`). Load
+  with `MODELPILOT_POLICY=packs/<segment>.json` (rules + gates + floors + profile
+  apply together). These encode the domain-judgment phrasings deliberately kept
+  out of the global router, so they only apply when a customer opts into their
+  segment; all guardrails (structured-output floor, economics veto, holdout,
+  learn-floors validation) still apply. A test (`test_packs.py`) guarantees every
+  shipped pack is valid and routes as intended. Packs ship via migrate/publish.
+
 ## 0.13.0 — 2026-06-14
 
 - **Default autopilot gate lowered 0.8 → 0.7 (behavior change).** The golden set

@@ -1,0 +1,11 @@
+{
+  "_pack": "support",
+  "_about": "Starter pack for customer-support / CX automation startups. Ticket triage, compliance QA, and reply drafting are cheap-tier-safe; KB/RAG answers floored to Sonnet. Load with MODELPILOT_POLICY=packs/support.json.",
+  "category_rules": [
+    {"name": "ticket-triage", "any": ["classify this ticket", "ticket intent", "route this ticket", "categorize this ticket", "what is this ticket about"], "category": "classification", "max_tier": 0},
+    {"name": "compliance-qa", "any": ["score this call", "compliance check", "pass/fail", "qa this interaction", "did the agent", "review this transcript for"], "category": "classification", "max_tier": 0},
+    {"name": "reply-drafting", "any": ["draft a reply", "draft a response", "reply to this customer", "respond to this ticket", "write a response to"], "category": "rewrite_format", "max_tier": 0},
+    {"name": "kb-answer", "any": ["according to our policy", "from our help center", "per our docs", "knowledge base", "based on the policy below"], "category": "short_qa", "max_tier": 1}
+  ],
+  "category_gates": {"classification": 0.6}
+}
