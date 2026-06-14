@@ -164,6 +164,12 @@ def test_convert_without_stripe_marks_paid(env, client):
 
 # --- admin ---------------------------------------------------------------- #
 
+def test_status_page_public(client):
+    r = client.get("/status")
+    assert r.status_code == 200
+    assert "System status" in r.text and "Operational" in r.text
+
+
 def test_customer_cannot_access_admin(client):
     _signup(client, email="cust@b.com")
     assert client.get("/admin").status_code == 403

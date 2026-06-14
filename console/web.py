@@ -119,6 +119,32 @@ def page(title: str, body: str, account: dict | None = None, active: str = "") -
 # Auth / public
 # --------------------------------------------------------------------------- #
 
+def status_page(components: list[dict]) -> str:
+    all_ok = all(c["ok"] for c in components)
+    banner = ('<div class="note">All systems operational.</div>' if all_ok else
+              '<div class="note bad">Some systems are degraded — see below.</div>')
+    rows = ""
+    for c in components:
+        dot = ("●" )
+        color = "#16803d" if c["ok"] else "var(--bad)"
+        color = "#111" if c["ok"] else "var(--bad)"
+        state = "Operational" if c["ok"] else "Unreachable"
+        rows += (f'<tr><td><span style="color:{color};font-weight:700">{dot}</span> {_e(c["name"])}</td>'
+                 f'<td>{_e(state)}</td><td class="small muted">{_e(c.get("detail",""))}</td></tr>')
+    body = f"""
+    <h1>System status</h1>
+    <p class=muted>Live health of ModelPilot services. Your gateway always
+    <b>fails open</b> — if a service is unreachable, traffic passes straight through to the
+    Claude API, unrouted.</p>
+    {banner}
+    <div class=card style="padding:0"><table>
+      <thead><tr><th>Component</th><th>Status</th><th></th></tr></thead>
+      <tbody>{rows}</tbody></table></div>
+    <p class="small muted" style="margin-top:14px">Checked just now. For incident history or an
+    SLA, contact <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a>.</p>"""
+    return page("Status", body)
+
+
 def landing() -> str:
     body = f"""
     <div class=hero>

@@ -726,6 +726,31 @@ async def stripe_webhook(request: Request):
     return JSONResponse({"ok": True, "type": etype})
 
 
+def _check_components() -> list[dict]:
+    """Live health of ModelPilot services (stdlib pings, short timeout)."""
+    import urllib.request
+    comps = [{"name": "Console & dashboard", "ok": True, "detail": "operational"}]
+    targets = [("Routing brain", os.environ.get("MODELPILOT_BRAIN_URL", "")),
+               ("Telemetry ingest", os.environ.get("MODELPILOT_INGEST_URL", ""))]
+    for name, base in targets:
+        base = (base or "").rstrip("/")
+        if not base:
+            continue
+        ok = False
+        try:
+            with urllib.request.urlopen(base + "/health", timeout=2) as r:
+                ok = r.status == 200
+        except Exception:  # noqa: BLE001
+            ok = False
+        comps.append({"name": name, "ok": ok, "detail": "operational" if ok else "unreachable"})
+    return comps
+
+
+@app.get("/status", response_class=HTMLResponse)
+def status_page(request: Request):
+    return _html(web.status_page(_check_components()))
+
+
 @app.get("/api/health")
 @app.get("/healthz")
 def health():
