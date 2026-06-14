@@ -33,6 +33,10 @@ GATE_DEFAULT = float(os.environ.get("BRAIN_GATE", "0.7"))
 TRIAL_DAYS = 7
 _SONNET_TIER = CAPABILITY_LADDER.index("claude-sonnet-4-6")
 _DB = os.environ.get("BRAIN_DB", "brain.db")
+# If a console is configured, it is the authority for entitlement + routing mode
+# (accounts, trial/paid state, guidance vs autopilot). The brain's own license/
+# trial path below is the fallback when no console is wired.
+_CONSOLE_URL = os.environ.get("CONSOLE_URL", "").rstrip("/")
 
 # Sensitive keys that must never appear in a decision request.
 _FORBIDDEN = {"messages", "prompt", "prompts", "content", "text", "output",
@@ -69,10 +73,31 @@ def _forbidden_key(obj, path=""):
     return None
 
 
+def _console_entitlement(deployment_id: str) -> dict | None:
+    """Ask the console for entitlement + routing mode. Returns None on any failure
+    (caller falls back to the brain's own license/trial path)."""
+    if not _CONSOLE_URL or not deployment_id:
+        return None
+    try:
+        import httpx
+        r = httpx.get(f"{_CONSOLE_URL}/api/entitlement",
+                      params={"deployment_id": deployment_id}, timeout=3.0)
+        r.raise_for_status()
+        d = r.json()
+    except Exception:  # noqa: BLE001
+        return None
+    return {"entitled": bool(d.get("entitled")), "via": "console",
+            "mode": d.get("mode"), "apply_mode": bool(d.get("apply")),
+            "reason": d.get("reason"), "plan": d.get("plan")}
+
+
 def entitlement(deployment_id: str, license_token: str | None, now: float | None = None) -> dict:
-    """Server-authoritative: a valid license, else a server-tracked 7-day trial
-    keyed by deployment id (first-seen recorded here, not on the client)."""
+    """Server-authoritative: console (accounts) if configured, else a valid
+    license, else a server-tracked 7-day trial keyed by deployment id."""
     now = now if now is not None else time.time()
+    console = _console_entitlement(deployment_id)
+    if console is not None:
+        return console
     if license_token:
         try:
             claims = verify_token(license_token.strip())
@@ -163,6 +188,11 @@ async def route(request: Request):
         return {"entitled": False, "apply": False, "recommended_model": body.get("original_model"),
                 "action": "stay", "entitlement": ent}
     d = _decision(body)
+    # Console owns the routing mode: only apply (auto-route) in autopilot. In
+    # guidance/shadow the brain still returns the recommendation, but apply=False.
+    if ent.get("via") == "console":
+        d["apply"] = bool(d.get("apply")) and bool(ent.get("apply_mode"))
+        d["mode"] = ent.get("mode")
     return {"entitled": True, **d, "entitlement": ent}
 
 

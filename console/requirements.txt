@@ -1,0 +1,6 @@
+fastapi>=0.110
+uvicorn[standard]>=0.27
+# Optional: enables live billing. The console runs without it (convert-to-paid
+# records the plan; metering still accrues) and turns Stripe on once it's present
+# and STRIPE_SECRET_KEY is set.
+stripe>=8.0

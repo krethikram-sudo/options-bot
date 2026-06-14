@@ -1,0 +1,455 @@
+"""ModelPilot console — HTML rendering (server-side, dependency-free).
+
+One small design system (shared CSS) + a function per page. Server-rendered so
+the whole console deploys as a single FastAPI service with no build step,
+consistent with the existing dashboard/ingest pages.
+"""
+
+import html
+import time
+from datetime import datetime, timezone
+
+ACCENT = "#16a34a"
+BRAND = "ModelPilot"
+
+_CSS = """
+:root{--accent:#16a34a;--accent-d:#15803d;--ink:#0f172a;--muted:#64748b;
+  --line:#e2e8f0;--bg:#f8fafc;--card:#fff;--warn:#b45309;--bad:#dc2626;}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  color:var(--ink);background:var(--bg)}
+a{color:var(--accent-d);text-decoration:none}a:hover{text-decoration:underline}
+.top{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.top .wrap{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:18px}
+.brand{font-weight:700;font-size:18px;color:var(--ink)}
+.brand .dot{color:var(--accent)}
+.nav{display:flex;gap:16px;margin-left:8px;flex-wrap:wrap}
+.nav a{color:var(--muted);font-weight:500}.nav a.on{color:var(--ink)}
+.spacer{flex:1}
+.wrap{max-width:1080px;margin:0 auto;padding:24px 20px}
+.muted{color:var(--muted)}.small{font-size:13px}
+h1{font-size:24px;margin:0 0 4px}h2{font-size:17px;margin:24px 0 12px}
+.grid{display:grid;gap:16px}
+.cols-3{grid-template-columns:repeat(3,1fr)}.cols-2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:760px){.cols-3,.cols-2{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+.stat{font-size:30px;font-weight:700;letter-spacing:-.5px}
+.stat.green{color:var(--accent-d)}
+.label{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.btn{display:inline-block;background:var(--accent);color:#fff;border:0;border-radius:8px;
+  padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer}
+.btn:hover{background:var(--accent-d);text-decoration:none}
+.btn.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.sec:hover{background:#f1f5f9}
+.btn.bad{background:var(--bad)}.btn.sm{padding:6px 10px;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+tr:hover td{background:#fafcff}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600}
+.badge.trial{background:#fef9c3;color:#854d0e}.badge.paid{background:#dcfce7;color:#166534}
+.badge.suspended{background:#fee2e2;color:#991b1b}.badge.admin{background:#e0e7ff;color:#3730a3}
+.badge.off{background:#f1f5f9;color:#475569}
+.bar{height:10px;background:#eef2f7;border-radius:6px;overflow:hidden}
+.bar>span{display:block;height:100%;background:var(--accent)}
+.field{margin:14px 0}.field label{display:block;font-weight:600;margin-bottom:6px}
+.field input,.field select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+.note{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:10px 14px;border-radius:8px;margin:12px 0}
+.note.warn{background:#fffbeb;border-color:#fde68a;color:#92400e}
+.note.bad{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+.modes{display:flex;gap:8px;flex-wrap:wrap}
+.modes button{flex:1;min-width:150px;text-align:left;padding:14px;border:2px solid var(--line);
+  border-radius:10px;background:#fff;cursor:pointer}
+.modes button.on{border-color:var(--accent);background:#f0fdf4}
+.modes b{display:block;font-size:15px}.modes .small{color:var(--muted)}
+code{background:#0f172a;color:#e2e8f0;padding:2px 6px;border-radius:5px;font-size:13px}
+pre{background:#0f172a;color:#e2e8f0;padding:16px;border-radius:10px;overflow:auto;font-size:13px;line-height:1.6}
+.auth{max-width:400px;margin:48px auto}
+.center{text-align:center}
+.hero{max-width:640px;margin:40px auto;text-align:center}
+.hero h1{font-size:34px;letter-spacing:-1px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+"""
+
+
+def _e(s) -> str:
+    return html.escape(str(s if s is not None else ""))
+
+
+def money(x) -> str:
+    try:
+        return "${:,.2f}".format(float(x or 0))
+    except (TypeError, ValueError):
+        return "$0.00"
+
+
+def _fmt_date(ts) -> str:
+    if not ts:
+        return "—"
+    return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%b %-d, %Y")
+
+
+def page(title: str, body: str, account: dict | None = None, active: str = "") -> str:
+    nav = ""
+    if account:
+        items = [("/app", "Dashboard"), ("/app/settings", "Settings"),
+                 ("/app/connect", "Connect"), ("/app/billing", "Billing")]
+        if account.get("role") == "admin":
+            items.append(("/admin", "Admin"))
+        links = "".join(
+            f'<a class="{"on" if active==href else ""}" href="{href}">{_e(label)}</a>'
+            for href, label in items)
+        nav = (f'<div class="nav">{links}</div><div class="spacer"></div>'
+               f'<span class="muted small">{_e(account["email"])}</span>'
+               f'<form method="post" action="/logout" style="margin:0">'
+               f'<button class="btn sec sm">Sign out</button></form>')
+    else:
+        nav = ('<div class="spacer"></div><div class="nav">'
+               '<a href="/login">Sign in</a><a class="btn sm" href="/signup">Start free trial</a></div>')
+    return f"""<!doctype html><html lang=en><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>{_e(title)} · {BRAND}</title><style>{_CSS}</style></head><body>
+<div class=top><div class=wrap style="padding-top:12px;padding-bottom:12px">
+<a class=brand href="{'/app' if account else '/'}">Model<span class=dot>Pilot</span></a>{nav}
+</div></div><div class=wrap>{body}</div></body></html>"""
+
+
+# --------------------------------------------------------------------------- #
+# Auth / public
+# --------------------------------------------------------------------------- #
+
+def landing() -> str:
+    body = f"""
+    <div class=hero>
+      <h1>Cut your Claude bill — typically 20–40%, proven on your own traffic.</h1>
+      <p class=muted>ModelPilot routes each request to the cheapest model that's provably
+      good enough. Drop-in proxy, no prompt data leaves your box. Start free for 7 days;
+      after that you only pay <b>20% of the savings we actually deliver</b>.</p>
+      <div class="row center" style="justify-content:center;margin-top:18px">
+        <a class=btn href="/signup">Start your 7-day free trial</a>
+        <a class="btn sec" href="/login">Sign in</a>
+      </div>
+      <p class="small muted" style="margin-top:24px">No savings, no bill. Cancel anytime.</p>
+    </div>"""
+    return page("Cut your Claude bill", body)
+
+
+def auth_form(kind: str, error: str = "", email: str = "") -> str:
+    is_signup = kind == "signup"
+    title = "Start your free trial" if is_signup else "Sign in"
+    err = f'<div class="note bad">{_e(error)}</div>' if error else ""
+    company = ('<div class=field><label>Company <span class=muted>(optional)</span></label>'
+               '<input name=company placeholder="Acme Inc."></div>') if is_signup else ""
+    sub = "Create account" if is_signup else "Sign in"
+    alt = ('Already have an account? <a href="/login">Sign in</a>' if is_signup
+           else 'New here? <a href="/signup">Start a free trial</a>')
+    body = f"""
+    <div class=auth><div class=card>
+      <h1>{_e(title)}</h1>
+      <p class=muted small>{'7 days free · full features · no card required to start.' if is_signup else 'Welcome back.'}</p>
+      {err}
+      <form method=post action="/{kind}">
+        <div class=field><label>Work email</label>
+          <input name=email type=email required value="{_e(email)}" placeholder="you@company.com"></div>
+        {company}
+        <div class=field><label>Password</label>
+          <input name=password type=password required minlength=8 placeholder="At least 8 characters"></div>
+        <button class="btn" style="width:100%">{_e(sub)}</button>
+      </form>
+      <p class="small center muted" style="margin-top:14px">{alt}</p>
+    </div></div>"""
+    return page(title, body)
+
+
+# --------------------------------------------------------------------------- #
+# Customer dashboard
+# --------------------------------------------------------------------------- #
+
+def _trial_banner(plan: dict, trial: dict) -> str:
+    if plan.get("plan") == "paid":
+        return ""
+    if trial["active"]:
+        return (f'<div class="note">You\'re on the free trial — <b>{trial["days_left"]} day(s) left</b>. '
+                f'<a href="/app/billing">Add billing</a> to keep optimizing after that '
+                f'(you only pay 20% of what we save you).</div>')
+    return ('<div class="note bad">Your free trial has ended — routing is paused (traffic still flows, '
+            'just unoptimized). <a href="/app/billing">Activate billing</a> to resume savings.</div>')
+
+
+def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
+              cycle: dict, lifetime: dict, bill: dict, deployment: dict) -> str:
+    mode = settings["mode"]
+    mode_badge = {"autopilot": "paid", "guidance": "trial", "shadow": "off"}.get(mode, "off")
+    routed_pct = (100 * cycle["routed"] / cycle["requests"]) if cycle["requests"] else 0
+    body = f"""
+    {_trial_banner(plan, trial)}
+    <div class=row><h1>Dashboard</h1><div class=spacer></div>
+      <span class="badge {mode_badge}">{_e(mode)} mode</span></div>
+    <p class=muted>Savings delivered this billing cycle (since {_fmt_date(bill['cycle_start'])}).</p>
+    <div class="grid cols-3">
+      <div class=card><div class=label>Savings this cycle</div>
+        <div class="stat green">{money(cycle['savings'])}</div>
+        <div class="small muted">{int(cycle['requests']):,} requests · {int(cycle['routed']):,} routed ({routed_pct:.0f}%)</div></div>
+      <div class=card><div class=label>{'Your bill this cycle' if bill['is_paid'] else 'Projected bill (free during trial)'}</div>
+        <div class=stat>{money(bill['would_bill'])}</div>
+        <div class="small muted">{int(bill['rate']*100)}% of savings · you keep {money(bill['cycle_savings']-bill['would_bill'])}</div></div>
+      <div class=card><div class=label>Lifetime savings</div>
+        <div class=stat>{money(lifetime['savings'])}</div>
+        <div class="small muted">across {int(lifetime['requests']):,} requests</div></div>
+    </div>
+
+    <h2>Routing mode</h2>
+    <div class=card>{mode_toggle(mode)}
+      <p class="small muted" style="margin-top:10px">Guidance recommends switches without changing traffic;
+      autopilot applies them automatically. Change takes effect on your gateway within seconds.</p>
+    </div>
+
+    <div class="grid cols-2" style="margin-top:16px">
+      <div class=card><div class=label>Baseline vs. actual (this cycle)</div>
+        {_compare_bars(cycle['baseline'], cycle['actual'])}</div>
+      <div class=card><div class=label>Your connection</div>
+        <p class="small muted">Point your gateway at ModelPilot with this deployment id:</p>
+        <p><code>{_e(deployment['deployment_id'])}</code></p>
+        <a class="btn sec sm" href="/app/connect">Setup instructions</a></div>
+    </div>"""
+    return page("Dashboard", body, account, "/app")
+
+
+def _compare_bars(baseline: float, actual: float) -> str:
+    base = max(baseline, actual, 0.0001)
+    bw = 100 * baseline / base
+    aw = 100 * actual / base
+    return f"""
+    <div style="margin-top:10px"><div class="row small"><span>Baseline (all top-model)</span>
+      <div class=spacer></div><span class=muted>{money(baseline)}</span></div>
+      <div class=bar><span style="width:{bw:.0f}%;background:#94a3b8"></span></div></div>
+    <div style="margin-top:10px"><div class="row small"><span>Actual (with ModelPilot)</span>
+      <div class=spacer></div><span class=muted>{money(actual)}</span></div>
+      <div class=bar><span style="width:{aw:.0f}%"></span></div></div>"""
+
+
+def mode_toggle(current: str) -> str:
+    opts = [
+        ("shadow", "Shadow", "Score only — measure savings, change nothing."),
+        ("guidance", "Guidance", "Recommend cheaper models; you stay in control."),
+        ("autopilot", "Autopilot", "Auto-route to the cheapest good-enough model."),
+    ]
+    btns = "".join(
+        f'<button name=mode value="{v}" class="{"on" if v==current else ""}">'
+        f'<b>{_e(lbl)}</b><span class=small>{_e(desc)}</span></button>'
+        for v, lbl, desc in opts)
+    return f'<form method=post action="/app/mode"><div class=modes>{btns}</div></form>'
+
+
+# --------------------------------------------------------------------------- #
+# Settings / connect
+# --------------------------------------------------------------------------- #
+
+def settings_page(account: dict, settings: dict, saved: bool = False) -> str:
+    from .store import RISK_LEVELS
+    risk_opts = "".join(
+        f'<option value="{r}"{" selected" if settings["risk"]==r else ""}>{r.title()}</option>'
+        for r in RISK_LEVELS)
+    models = ["", "claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-8", "claude-fable-5"]
+    model_opts = "".join(
+        f'<option value="{m}"{" selected" if settings["min_model"]==m else ""}>'
+        f'{m or "No floor (cheapest acceptable)"}</option>' for m in models)
+    saved_note = '<div class="note">Settings saved.</div>' if saved else ""
+    body = f"""
+    <h1>Settings</h1>{saved_note}
+    <div class=card>
+      <h2 style="margin-top:0">Routing mode</h2>
+      {mode_toggle(settings['mode'])}
+    </div>
+    <div class=card style="margin-top:16px">
+      <form method=post action="/app/settings">
+        <h2 style="margin-top:0">Routing policy</h2>
+        <div class=field><label>Risk tolerance</label>
+          <select name=risk>{risk_opts}</select>
+          <p class="small muted">Conservative keeps a higher confidence gate; aggressive routes more.</p></div>
+        <div class=field><label>Minimum model (quality floor)</label>
+          <select name=min_model>{model_opts}</select>
+          <p class="small muted">ModelPilot will never route below this model, whatever the classifier says.</p></div>
+        <div class=field><label class=row>
+          <input type=checkbox name=telemetry_opt_in value=1 {"checked" if settings["telemetry_opt_in"] else ""}
+            style="width:auto;margin-right:8px"> Share anonymous, aggregate performance telemetry</label>
+          <p class="small muted">Counts and dollars only — never prompt text. Helps us tune routing for your traffic.</p></div>
+        <button class=btn>Save settings</button>
+      </form>
+    </div>"""
+    return page("Settings", body, account, "/app/settings")
+
+
+def connect_page(account: dict, deployment: dict, brain_url: str, console_url: str) -> str:
+    dep = deployment["deployment_id"]
+    body = f"""
+    <h1>Connect your app</h1>
+    <p class=muted>ModelPilot is a drop-in proxy for the Claude Messages API. Point your SDK at it —
+    only a task category + numeric features ever leave your box, never prompt text or your API key.</p>
+    <div class=card>
+      <h2 style="margin-top:0">1. Install the client</h2>
+      <pre>pip install modelpilot-client</pre>
+      <h2>2. Configure</h2>
+      <pre>export MODELPILOT_BRAIN_URL={_e(brain_url)}
+export MODELPILOT_CONSOLE_URL={_e(console_url)}
+export MODELPILOT_DEPLOYMENT_ID={_e(dep)}
+modelpilot-client            # listens on :8400, proxies to api.anthropic.com</pre>
+      <h2>3. Point your SDK at it</h2>
+      <pre>from anthropic import Anthropic
+client = Anthropic(base_url="http://127.0.0.1:8400")  # your key stays local</pre>
+      <p class="small muted">Your mode (currently set in <a href="/app/settings">Settings</a>) and
+      entitlement are enforced server-side; savings are metered automatically so your bill always
+      reflects real, delivered savings.</p>
+    </div>"""
+    return page("Connect", body, account, "/app/connect")
+
+
+# --------------------------------------------------------------------------- #
+# Billing
+# --------------------------------------------------------------------------- #
+
+def billing_page(account: dict, plan: dict, trial: dict, bill: dict,
+                 stripe_on: bool, flash: str = "") -> str:
+    is_paid = plan.get("plan") == "paid"
+    status_badge = ('<span class="badge paid">Paid plan</span>' if is_paid else
+                    (f'<span class="badge trial">Trial · {trial["days_left"]}d left</span>'
+                     if trial["active"] else '<span class="badge suspended">Trial ended</span>'))
+    flash_html = ""
+    if flash == "success":
+        flash_html = '<div class="note">Billing is active — thanks! Your savings are now being metered.</div>'
+    elif flash == "cancel":
+        flash_html = '<div class="note warn">Checkout canceled — no changes made.</div>'
+    elif flash == "converted":
+        flash_html = '<div class="note">Plan activated.</div>'
+
+    if is_paid:
+        action = f"""
+        <p>You're on the usage-based plan: <b>{int(bill['rate']*100)}% of realized savings</b>.</p>
+        <div class="grid cols-2">
+          <div><div class=label>Savings this cycle</div><div class="stat green">{money(bill['cycle_savings'])}</div></div>
+          <div><div class=label>Your bill this cycle</div><div class=stat>{money(bill['bill'])}</div></div>
+        </div>
+        <p class="small muted" style="margin-top:10px">Invoiced automatically each cycle via Stripe.
+        Net value to you this cycle: <b>{money(bill['net_customer_value'])}</b>.</p>"""
+    else:
+        stripe_note = ("" if stripe_on else
+                       '<p class="small muted">Card collection via Stripe isn\'t configured on this '
+                       'instance yet — activating records your plan so metering continues; we\'ll '
+                       'reconcile billing when Stripe is connected.</p>')
+        action = f"""
+        <p>After your trial you pay only <b>{int(bill['rate']*100)}% of the savings we deliver</b> —
+        if we don't save you money, you don't pay. Based on this cycle so far, that would be
+        <b>{money(bill['would_bill'])}</b> on {money(bill['cycle_savings'])} of savings.</p>
+        <form method=post action="/app/billing/convert">
+          <button class=btn>{'Add billing & activate paid plan' if stripe_on else 'Activate paid plan'}</button>
+        </form>{stripe_note}"""
+    body = f"""
+    <div class=row><h1>Billing</h1><div class=spacer></div>{status_badge}</div>
+    {flash_html}
+    <div class=card>{action}</div>
+    <div class=card style="margin-top:16px">
+      <div class=label>How billing works</div>
+      <p class="small muted">We meter the realized savings on every routed request (baseline cost minus
+      actual cost — dollars only, never prompt content). Your bill each cycle is {int(bill['rate']*100)}%
+      of that. Lifetime savings delivered: <b>{money(bill['lifetime_savings'])}</b>.</p>
+    </div>"""
+    return page("Billing", body, account, "/app/billing")
+
+
+# --------------------------------------------------------------------------- #
+# Admin
+# --------------------------------------------------------------------------- #
+
+def admin_overview(account: dict, rev: dict, rows: list[dict]) -> str:
+    trs = ""
+    for r in rows:
+        badge = (f'<span class="badge {r["plan_badge"]}">{_e(r["plan_label"])}</span>')
+        admin_tag = ' <span class="badge admin">admin</span>' if r["role"] == "admin" else ""
+        trs += f"""<tr>
+          <td><a href="/admin/accounts/{r['id']}">{_e(r['email'])}</a>{admin_tag}<br>
+            <span class="small muted">{_e(r['company'] or '')}</span></td>
+          <td>{badge}</td>
+          <td>{money(r['lifetime_savings'])}</td>
+          <td>{money(r['cycle_savings'])}</td>
+          <td>{money(r['cycle_revenue'])}</td>
+          <td class="small muted">{_fmt_date(r['created_at'])}</td></tr>"""
+    body = f"""
+    <h1>Admin · overview</h1>
+    <p class=muted>Revenue and savings across all customers. Use this to spot where the product is
+    (and isn't) delivering value.</p>
+    <div class="grid cols-3">
+      <div class=card><div class=label>Revenue this cycle</div>
+        <div class="stat green">{money(rev['cycle_revenue'])}</div>
+        <div class="small muted">lifetime {money(rev['total_revenue'])}</div></div>
+      <div class=card><div class=label>Savings delivered this cycle</div>
+        <div class=stat>{money(rev['cycle_savings'])}</div>
+        <div class="small muted">lifetime {money(rev['total_savings_delivered'])}</div></div>
+      <div class=card><div class=label>Accounts</div>
+        <div class=stat>{rev['n_accounts']}</div>
+        <div class="small muted">{rev['n_paid']} paid · {rev['n_trial']} trial · {rev['n_suspended']} suspended</div></div>
+    </div>
+    <h2>Customers</h2>
+    <div class=card style="padding:0">
+      <table><thead><tr><th>Account</th><th>Plan</th><th>Lifetime savings</th>
+        <th>Savings (cycle)</th><th>Revenue (cycle)</th><th>Joined</th></tr></thead>
+        <tbody>{trs or '<tr><td colspan=6 class="muted">No accounts yet.</td></tr>'}</tbody></table>
+    </div>"""
+    return page("Admin", body, account, "/admin")
+
+
+def admin_account_detail(account: dict, target: dict, plan: dict, trial: dict,
+                         settings: dict, bill: dict, cats: list[dict],
+                         suggestions: list[str]) -> str:
+    cat_rows = ""
+    for c in cats:
+        esc_rate = (100 * c["escalations"] / c["routed"]) if c["routed"] else 0
+        flag = ' <span class="badge suspended">high escalation</span>' if esc_rate > 5 else ""
+        cat_rows += f"""<tr><td>{_e(c['category'])}{flag}</td>
+          <td>{int(c['requests'] or 0):,}</td><td>{int(c['routed'] or 0):,}</td>
+          <td>{int(c['escalations'] or 0):,} ({esc_rate:.0f}%)</td>
+          <td>{money(c['savings'])}</td></tr>"""
+    sugg = "".join(f"<li>{_e(s)}</li>" for s in suggestions) or "<li class=muted>No suggestions yet.</li>"
+    plan_label = plan.get("plan", "trial")
+    rate_pct = int(plan.get("rate", 0.2) * 100)
+    suspend_btn = (f'<button class="btn bad sm" name=action value=suspend>Suspend</button>'
+                   if target["status"] == "active" else
+                   f'<button class="btn sm" name=action value=reactivate>Reactivate</button>')
+    convert_btn = ('' if plan_label == 'paid' else
+                   '<button class="btn sm" name=action value=convert>Mark paid</button>')
+    body = f"""
+    <div class=row><a href="/admin" class="small">← all customers</a></div>
+    <div class=row><h1>{_e(target['email'])}</h1><div class=spacer></div>
+      <span class="badge {'paid' if plan_label=='paid' else 'trial'}">{_e(plan_label)}</span>
+      {'<span class="badge suspended">suspended</span>' if target['status']!='active' else ''}</div>
+    <p class=muted>{_e(target['company'] or '')} · joined {_fmt_date(target['created_at'])} ·
+      mode <b>{_e(settings['mode'])}</b> · trial {'active' if trial['active'] else 'ended'}
+      ({trial['days_left']}d)</p>
+
+    <div class="grid cols-3">
+      <div class=card><div class=label>Lifetime savings</div><div class="stat green">{money(bill['lifetime_savings'])}</div></div>
+      <div class=card><div class=label>Savings this cycle</div><div class=stat>{money(bill['cycle_savings'])}</div></div>
+      <div class=card><div class=label>Revenue this cycle ({rate_pct}%)</div>
+        <div class=stat>{money(bill['would_bill'])}</div></div>
+    </div>
+
+    <h2>Per-category performance <span class="small muted">— where routing is (and isn't) working</span></h2>
+    <div class=card style="padding:0"><table>
+      <thead><tr><th>Category</th><th>Requests</th><th>Routed</th><th>Escalations</th><th>Savings</th></tr></thead>
+      <tbody>{cat_rows or '<tr><td colspan=5 class=muted>No metering yet.</td></tr>'}</tbody></table></div>
+
+    <h2>Suggested actions</h2>
+    <div class=card><ul style="margin:0;padding-left:20px">{sugg}</ul></div>
+
+    <h2>Manage access</h2>
+    <div class=card><form method=post action="/admin/accounts/{target['id']}/action">
+      <div class=row>
+        <button class="btn sm" name=action value=extend_trial>+7 trial days</button>
+        {convert_btn}
+        {suspend_btn}
+        <span class=spacer></span>
+        <label class="small row" style="gap:6px">Rate %
+          <input name=rate type=number step=1 min=0 max=100 value="{rate_pct}" style="width:80px">
+          <button class="btn sec sm" name=action value=set_rate>Set</button></label>
+      </div>
+    </form></div>"""
+    return page(f"Admin · {target['email']}", body, account, "/admin")

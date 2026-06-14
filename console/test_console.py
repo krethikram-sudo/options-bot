@@ -1,0 +1,211 @@
+"""Console tests: auth, trial/entitlement, mode toggle, metering→savings→billing,
+admin access control, and the machine API. Runs with Stripe disabled."""
+
+import importlib
+import time
+
+import pytest
+from fastapi.testclient import TestClient
+
+
+@pytest.fixture()
+def env(tmp_path, monkeypatch):
+    monkeypatch.setenv("CONSOLE_DB", str(tmp_path / "console.db"))
+    monkeypatch.setenv("CONSOLE_SECRET", "test-secret")
+    monkeypatch.delenv("STRIPE_SECRET_KEY", raising=False)
+    import console.store as store
+    import console.stripe_billing as sb
+    import console.server as server
+    importlib.reload(store)
+    importlib.reload(sb)
+    importlib.reload(server)
+    store.init_db()
+    return server, store
+
+
+@pytest.fixture()
+def client(env):
+    server, _ = env
+    return TestClient(server.app, follow_redirects=False)
+
+
+def _signup(client, email="a@b.com", pw="password123", company="Acme"):
+    return client.post("/signup", data={"email": email, "password": pw, "company": company})
+
+
+# --- store-level ---------------------------------------------------------- #
+
+def test_password_hash_roundtrip(env):
+    _, store = env
+    h, s = store.hash_password("hunter2longenough")
+    assert store.verify_password("hunter2longenough", h, s)
+    assert not store.verify_password("wrong", h, s)
+
+
+def test_session_signing_rejects_tampering(env):
+    _, store = env
+    tok = store.make_session(5, "customer")
+    assert store.read_session(tok)["account_id"] == 5
+    assert store.read_session(tok + "x") is None
+    assert store.read_session("garbage") is None
+
+
+def test_create_account_sets_trial_and_deployment(env):
+    _, store = env
+    a = store.create_account("x@y.com", "password123", company="Y")
+    assert a["role"] == "customer" and a["status"] == "active"
+    deps = store.deployments_for(a["id"])
+    assert len(deps) == 1 and deps[0]["deployment_id"].startswith("dep_")
+    assert store.trial_status(a["id"])["active"]
+
+
+def test_duplicate_email_rejected(env):
+    _, store = env
+    store.create_account("dup@y.com", "password123")
+    with pytest.raises(store.StoreError):
+        store.create_account("dup@y.com", "password123")
+
+
+def test_entitlement_trial_paid_suspended(env):
+    _, store = env
+    a = store.create_account("e@y.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    # trial + default guidance mode -> entitled, not applied
+    ent = store.entitlement(dep)
+    assert ent["entitled"] and not ent["apply"] and ent["mode"] == "guidance"
+    # autopilot -> applied
+    store.update_settings(a["id"], mode="autopilot")
+    assert store.entitlement(dep)["apply"]
+    # expired trial -> not entitled
+    store.extend_trial(a["id"], -1)
+    assert not store.entitlement(dep)["entitled"]
+    # paid -> entitled again
+    store.convert_to_paid(a["id"])
+    assert store.entitlement(dep)["entitled"] and store.entitlement(dep)["apply"]
+    # suspended -> off
+    store.set_status(a["id"], "suspended")
+    assert not store.entitlement(dep)["entitled"]
+    assert store.entitlement("dep_unknown")["reason"] == "unknown deployment"
+
+
+def test_metering_and_billing(env):
+    _, store = env
+    a = store.create_account("m@y.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    store.record_meter(dep, requests=100, routed=60, baseline_cost=10.0, actual_cost=6.0,
+                       category="classification")
+    bill = store.bill_estimate(a["id"])
+    assert bill["cycle_savings"] == pytest.approx(4.0)
+    assert bill["would_bill"] == pytest.approx(0.8)   # 20% of $4
+    assert bill["bill"] == 0.0                          # free during trial
+    store.convert_to_paid(a["id"])
+    assert store.bill_estimate(a["id"])["bill"] == pytest.approx(0.8)
+
+
+def test_revenue_overview(env):
+    _, store = env
+    a = store.create_account("r1@y.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    store.record_meter(dep, baseline_cost=100.0, actual_cost=60.0)
+    store.convert_to_paid(a["id"])
+    rev = store.revenue_overview()
+    assert rev["n_paid"] == 1
+    assert rev["total_savings_delivered"] == pytest.approx(40.0)
+    assert rev["total_revenue"] == pytest.approx(8.0)  # 20% of 40
+
+
+# --- HTTP / auth flows ---------------------------------------------------- #
+
+def test_signup_login_logout_flow(client):
+    r = _signup(client)
+    assert r.status_code == 303 and r.headers["location"] == "/app"
+    assert client.cookies.get("mp_session")
+    # dashboard reachable
+    assert client.get("/app").status_code == 200
+    # logout clears session
+    client.post("/logout")
+    client.cookies.clear()
+    assert client.get("/app").status_code in (303, 307)  # redirect to login
+
+
+def test_login_wrong_password(client):
+    _signup(client, email="w@b.com")
+    client.cookies.clear()
+    r = client.post("/login", data={"email": "w@b.com", "password": "nope"})
+    assert r.status_code == 401
+
+
+def test_mode_toggle_persists(env, client):
+    server, store = env
+    _signup(client, email="mode@b.com")
+    client.post("/app/mode", data={"mode": "autopilot"})
+    acct = store.get_account_by_email("mode@b.com")
+    assert store.get_settings(acct["id"])["mode"] == "autopilot"
+
+
+def test_settings_update(env, client):
+    server, store = env
+    _signup(client, email="set@b.com")
+    client.post("/app/settings", data={"risk": "aggressive", "min_model": "claude-sonnet-4-6"})
+    acct = store.get_account_by_email("set@b.com")
+    s = store.get_settings(acct["id"])
+    assert s["risk"] == "aggressive" and s["min_model"] == "claude-sonnet-4-6"
+    assert s["telemetry_opt_in"] == 0  # checkbox absent -> off
+
+
+def test_convert_without_stripe_marks_paid(env, client):
+    server, store = env
+    _signup(client, email="pay@b.com")
+    r = client.post("/app/billing/convert")
+    assert r.status_code == 303
+    acct = store.get_account_by_email("pay@b.com")
+    assert store.get_plan(acct["id"])["plan"] == "paid"
+
+
+# --- admin ---------------------------------------------------------------- #
+
+def test_customer_cannot_access_admin(client):
+    _signup(client, email="cust@b.com")
+    assert client.get("/admin").status_code == 403
+
+
+def test_admin_can_view_and_manage(env, client):
+    server, store = env
+    # make an admin directly, then log in via the client
+    store.create_account("boss@b.com", "password123", role="admin")
+    cust = store.create_account("c@b.com", "password123")
+    client.post("/login", data={"email": "boss@b.com", "password": "password123"})
+    assert client.get("/admin").status_code == 200
+    assert client.get(f"/admin/accounts/{cust['id']}").status_code == 200
+    # suspend the customer
+    client.post(f"/admin/accounts/{cust['id']}/action", data={"action": "suspend"})
+    assert store.get_account(cust["id"])["status"] == "suspended"
+    # set rate to 30%
+    client.post(f"/admin/accounts/{cust['id']}/action", data={"action": "set_rate", "rate": "30"})
+    assert store.get_plan(cust["id"])["rate"] == pytest.approx(0.30)
+
+
+# --- machine API ---------------------------------------------------------- #
+
+def test_api_entitlement_and_meter(env, client):
+    server, store = env
+    a = store.create_account("api@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    ent = client.get("/api/entitlement", params={"deployment_id": dep}).json()
+    assert ent["entitled"] is True
+    r = client.post("/api/meter", json={"deployment_id": dep, "requests": 10, "routed": 5,
+                                        "baseline_cost": 1.0, "actual_cost": 0.6})
+    assert r.status_code == 200 and r.json()["realized_savings"] == pytest.approx(0.4)
+
+
+def test_api_meter_rejects_sensitive_keys(env, client):
+    server, store = env
+    a = store.create_account("api2@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    r = client.post("/api/meter", json={"deployment_id": dep, "messages": [{"role": "user"}]})
+    assert r.status_code == 422
+
+
+def test_api_meter_unknown_deployment(client):
+    r = client.post("/api/meter", json={"deployment_id": "dep_nope", "baseline_cost": 1})
+    assert r.status_code == 404

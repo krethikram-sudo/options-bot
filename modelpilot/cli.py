@@ -93,6 +93,7 @@ _DELEGATED = {
     "prompt-audit": "modelpilot.promptsavings",
     "profile": "modelpilot.profile",
     "telemetry": "modelpilot.telemetry",
+    "meter": "modelpilot.metering",
 }
 
 
@@ -176,6 +177,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("prompt-audit", help="prompt-level savings: caching + context-trimming opportunities")
     sub.add_parser("profile", help="validate/print the per-customer deployment profile")
     sub.add_parser("telemetry", help="opt-in, aggregate-only performance telemetry (preview/send)")
+    sub.add_parser("meter", help="report realized savings to the hosted console (billing)")
 
     s = sub.add_parser("share", help="redacted diagnostics for feedback")
     s.add_argument("--db", default=os.environ.get("MODELPILOT_DB", "modelpilot.db"))

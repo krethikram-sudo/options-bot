@@ -36,3 +36,10 @@ license_private_key.pem
 
 # Built thin-client distribution (regenerate with scripts/build_client.sh)
 dist/
+
+# Console / brain / ingest runtime state (vendor services) — never commit
+console*.db
+brain*.db
+ingest*.db
+*.db.secret
+*.meter_marker

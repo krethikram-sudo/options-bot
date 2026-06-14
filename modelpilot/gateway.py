@@ -139,13 +139,36 @@ async def _lifespan(app):
     # brain. Off by default -> fully local routing, unchanged.
     app.state.brain_url = os.environ.get("MODELPILOT_BRAIN_URL", "") or None
     app.state.license_token = os.environ.get("MODELPILOT_LICENSE") or None
-    if app.state.brain_url:
-        from . import brain_client
-        app.state.deployment_id = brain_client.deployment_id(os.environ.get("MODELPILOT_DB", "modelpilot.db"))
-    else:
-        app.state.deployment_id = ""
+    _db = os.environ.get("MODELPILOT_DB", "modelpilot.db")
+    from . import brain_client
+    app.state.deployment_id = (brain_client.deployment_id(_db)
+                               if (app.state.brain_url or os.environ.get("MODELPILOT_CONSOLE_URL"))
+                               else "")
     app.state.autotune_n = 0
+    # Usage metering (opt-in): if a console is configured, periodically report the
+    # realized-savings delta from the ledger so billing reflects delivered savings.
+    # Aggregate dollars/counts only; runs off the request path (background task).
+    app.state.console_url = os.environ.get("MODELPILOT_CONSOLE_URL", "") or None
+    meter_task = None
+    if app.state.console_url and app.state.deployment_id:
+        import asyncio
+
+        from . import metering
+
+        async def _meter_loop():
+            interval = int(os.environ.get("MODELPILOT_METER_INTERVAL", "60"))
+            while True:
+                await asyncio.sleep(interval)
+                try:
+                    await asyncio.to_thread(metering.report_once, _db,
+                                            app.state.console_url, app.state.deployment_id)
+                except Exception:  # noqa: BLE001 — metering never breaks the gateway
+                    pass
+
+        meter_task = asyncio.create_task(_meter_loop())
     yield
+    if meter_task is not None:
+        meter_task.cancel()
     await app.state.http.aclose()
     app.state.ledger.close()
 

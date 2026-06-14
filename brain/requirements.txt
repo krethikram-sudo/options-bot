@@ -1,3 +1,4 @@
 fastapi>=0.110
 uvicorn[standard]>=0.29
 cryptography>=42
+httpx>=0.26   # consult the console for entitlement + routing mode (CONSOLE_URL)

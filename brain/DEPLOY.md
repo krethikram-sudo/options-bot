@@ -46,6 +46,13 @@ brain and the brain enforces entitlement (license, else server-tracked 7-day
 trial). If the brain is unreachable, the gateway **fails open** to local routing —
 customer traffic is never blocked.
 
+## Wire to the console (accounts + mode)
+Set `CONSOLE_URL=https://app.modelpilot.app` on the brain and it reads entitlement
++ routing mode from the console (the customer's account + dashboard toggle):
+entitled while on trial/paid, and auto-applies decisions only in **autopilot**
+mode. Without `CONSOLE_URL` the brain uses its own license/7-day-trial path. See
+`console/DEPLOY.md`.
+
 ## Security / privacy notes
 - The brain verifies licenses with the **bundled public key**; the **private key
   never goes in the image** (issue tokens with `python -m modelpilot.license issue`

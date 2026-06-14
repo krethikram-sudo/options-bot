@@ -68,7 +68,12 @@ def remote_decide(body: dict, brain_url: str, deployment_id: str,
 
 
 def deployment_id(db_path: str = "modelpilot.db") -> str:
-    """Stable anonymous id for this deployment (reuses the telemetry sidecar)."""
+    """Stable id for this deployment. Prefers the console-issued id
+    (MODELPILOT_DEPLOYMENT_ID, shown on the Connect page) so entitlement, mode,
+    and billing all key off the same account; otherwise a stable local anon id."""
+    issued = os.environ.get("MODELPILOT_DEPLOYMENT_ID")
+    if issued:
+        return issued.strip()
     import uuid
     side = (db_path or "modelpilot.db") + ".deployment"
     try:

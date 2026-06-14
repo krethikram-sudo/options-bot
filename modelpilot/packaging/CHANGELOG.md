@@ -4,6 +4,35 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.21.0 — 2026-06-14
+
+- **Full product through the web — new `console/` service (vendor-internal).** A
+  server-rendered SaaS control plane: customers land → sign up → 7-day free trial
+  → convert to a paid plan billed **20% of realized savings** (Stripe usage-based,
+  graceful without keys). Signed-in customers get a dashboard (realized savings,
+  baseline vs actual, current/projected bill), a **mode toggle**
+  (shadow/guidance/autopilot), routing-policy settings (risk, quality floor,
+  telemetry opt-in), connection instructions, and billing. **Admin** console:
+  cross-customer revenue + savings (cycle + lifetime), per-customer drill-down
+  (per-category routed/escalation/savings + auto-suggested tuning actions) to
+  improve the product, and access management (extend trial, mark paid, suspend,
+  set rate). Auth is stdlib PBKDF2 + HMAC-signed cookies. Tested end-to-end
+  (`console/test_console.py`).
+- **Mode is now server-authoritative.** The dashboard toggle writes the account
+  mode; the brain reads it via the console's `/api/entitlement` and only
+  auto-routes (`apply`) in autopilot — guidance/shadow recommend only. Brain falls
+  back to its own license/trial when no `CONSOLE_URL` is set.
+- **Usage metering for billing (`modelpilot/metering.py` + `modelpilot meter`).**
+  The gateway reports the realized-savings delta from its ledger to the console
+  (`/api/meter`) — aggregate dollars + counts only, restart-safe via a marker,
+  rejected if it carries any prompt/output/secret keys. Runs as a background task
+  when `MODELPILOT_CONSOLE_URL` + `MODELPILOT_DEPLOYMENT_ID` are set (or via the
+  `modelpilot meter --watch` sidecar). Deployment id now prefers the
+  console-issued `MODELPILOT_DEPLOYMENT_ID` so entitlement, mode, and billing all
+  key off the same account.
+- Landing pages link to the hosted signup/sign-in and state the 20%-of-savings
+  pricing. `console/` ships Dockerfile + DEPLOY.md; brain gains `CONSOLE_URL`.
+
 ## 0.20.1 — 2026-06-14
 
 - **Packaging fix for the router split.** `scripts/publish_modelpilot.sh` now
