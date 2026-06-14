@@ -427,6 +427,13 @@ routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
           <li><b>Install</b> (Python 3.10+):
             <pre class="block">pip install "modelpilot @ git+https://github.com/krethikram-sudo/modelpilot.git"</pre></li>
 
+          <li><b>(Optional) Validate it on your own key</b> — one command runs the
+            gateway in guidance, sends a few real requests, exercises every
+            analysis command, and finishes with a real routed-vs-baseline proof.
+            Nothing is rerouted; spend is a few cents. Prints PASS/FAIL:
+            <pre class="block">export ANTHROPIC_API_KEY=sk-ant-...
+bash scripts/validate_local.sh</pre></li>
+
           <li><b>Set your Anthropic API key</b>, then <b>start the gateway in guidance
             mode</b> — it measures and recommends but changes nothing. Turn on prompt
             capture so you can generate the proof later:
