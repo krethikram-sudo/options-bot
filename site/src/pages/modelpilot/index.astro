@@ -83,6 +83,18 @@ const CONTACT = "krethikram@gmail.com";
       .scene.on .fill { animation: grow 1.1s cubic-bezier(.2,.7,.3,1) forwards; }
       .barrow .pct { width: 42px; text-align: right; font-weight: 700; color: var(--green); font-size: .85rem; }
       @keyframes grow { from { width: 0; } }
+      /* live-demo product-screen look */
+      .reqlog { font: 12.5px/2 ui-monospace, Menlo, monospace; }
+      .reqlog .m { color: #9aa0ab; } .reqlog b { color: #1f2430; }
+      .reqlog .ok { color: #1e7a44; } .reqlog .keep2 { color: #6b7080; }
+      .dashhead { display: flex; gap: 8px; align-items: baseline; margin-bottom: 12px; flex-wrap: wrap; }
+      .dashhead b { font-size: 1rem; } .dashhead .mode { color: var(--mut); font-size: .78rem; }
+      .convbox { border: 1px solid #f0d9a8; background: #fffdf5; border-radius: 10px; padding: 12px 14px; }
+      .convbox .h { font-size: .72rem; letter-spacing: .05em; font-weight: 700; color: #b8860b; }
+      .convbox .big { font-size: 1.6rem; font-weight: 800; color: var(--green); line-height: 1.2; margin-top: 4px; }
+      .convbox .big small { font-size: .85rem; font-weight: 600; color: var(--mut); }
+      .stripline { display: flex; gap: 20px; margin-top: 12px; font-size: .82rem; color: var(--mut); flex-wrap: wrap; }
+      .stripline b { color: var(--ink); }
 
       /* Password gate */
       #content { display: none; }
@@ -192,45 +204,57 @@ dashboard → autopilot would save <span class="g">48% of baseline</span> — sw
             <div class="demo-screen" id="mp-demo">
 
               <div class="scene on" data-scene="1">
-                <div class="term2">
-                  <div class="row"><span class="dim">$</span> <span class="cmd">modelpilot gateway --mode guidance --port 8400</span></div>
-                  <div class="row"><span class="dim"># your traffic flows through, unchanged — every request scored</span></div>
-                  <div class="row">classification &nbsp;→ claude-haiku-4-5 &nbsp;<span class="pill save">80% cheaper</span></div>
-                  <div class="row">extraction &nbsp;&nbsp;&nbsp;&nbsp;→ claude-haiku-4-5 &nbsp;<span class="pill save">80% cheaper</span></div>
-                  <div class="row">debugging &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ claude-opus-4-8 &nbsp;<span class="pill keep">keep · quality</span></div>
-                  <div class="row">summarize &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ claude-haiku-4-5 &nbsp;<span class="pill save">80% cheaper</span></div>
-                  <div class="row">architecture &nbsp;→ claude-opus-4-8 &nbsp;<span class="pill keep">keep · quality</span></div>
+                <div class="reqlog">
+                  <div class="row"><span class="m">$</span> export ANTHROPIC_BASE_URL=http://localhost:8400 &nbsp;<span class="m"># the only change to your app</span></div>
+                  <div class="row"><span class="m">$</span> modelpilot gateway --mode guidance --port 8400</div>
+                  <div class="row"><span class="m"># measuring — nothing rerouted; your traffic is untouched</span></div>
+                  <div class="row"><span class="m">POST /v1/messages</span> "Classify ticket: 'charged twice'" &nbsp;opus→<b>haiku</b> <span class="ok">0.86 ✓</span></div>
+                  <div class="row"><span class="m">POST /v1/messages</span> "Write SQL: top accounts by MRR" &nbsp;opus→<b>haiku</b> <span class="ok">0.85 ✓</span></div>
+                  <div class="row"><span class="m">POST /v1/messages</span> "Debug: workers double-process" &nbsp;opus→opus <span class="keep2">keep · hard</span></div>
+                  <div class="row"><span class="m">POST /v1/messages</span> "Summarize this PR diff" &nbsp;opus→<b>haiku</b> <span class="ok">0.85 ✓</span></div>
                 </div>
               </div>
 
               <div class="scene" data-scene="2">
-                <div class="row" style="font-size:.78rem;letter-spacing:.05em;color:#b8860b;font-weight:700">READY TO SWITCH TO AUTOPILOT?</div>
-                <div class="row kpi" style="margin-top:6px">$4,212/mo <small>— 38% of your Claude spend</small></div>
-                <div class="row" style="color:var(--mut);font-size:.85rem;margin-top:4px">Quality held: routed outputs statistically on par with the baseline (randomized holdout).</div>
-                <div class="row sxs2">
-                  <div class="col"><h5>Prompt</h5>"Classify this support ticket: 'charged twice this month'"</div>
-                  <div class="col win"><h5>ModelPilot → Haiku · $0.0003</h5>"billing · negative" &nbsp;<span class="pill save">✓ non-inferior</span></div>
+                <div class="dashhead"><b>ModelPilot</b><span class="mode">guidance mode · localhost:8400/modelpilot/dashboard</span></div>
+                <div class="convbox">
+                  <div class="row h">READY TO SWITCH TO AUTOPILOT?</div>
+                  <div class="row big">$312 you could save <small>— 41% of your Claude spend this week · ~$16k/yr</small></div>
+                  <div class="row" style="color:var(--mut);font-size:.82rem;margin-top:6px">Only the routes we're confident in. Nothing rerouted yet — you're in guidance.</div>
                 </div>
-                <div class="row sxs2" style="margin-top:8px">
-                  <div class="col"><h5>Standard → Opus · $0.0021</h5>"billing · negative"</div>
-                  <div class="col win"><h5>saved on this chat</h5><b style="color:var(--green)">86%</b> · same answer</div>
+                <div class="stripline">
+                  <div>requests <b>1,284</b></div><div>baseline <b>$760</b></div>
+                  <div>would route <b>71%</b></div><div>top win <b>support-triage</b></div>
                 </div>
               </div>
 
               <div class="scene" data-scene="3">
-                <div class="row" style="font-weight:700">It gets better the more you use it</div>
-                <div class="row" style="color:var(--mut);font-size:.85rem;margin:2px 0 6px">Auto-tuning learns your traffic — savings climb week over week.</div>
-                <div class="bars">
-                  <div class="barrow"><span class="lab">Week 1</span><span class="track"><span class="fill" style="width:31%"></span></span><span class="pct">31%</span></div>
-                  <div class="barrow"><span class="lab">Week 2</span><span class="track"><span class="fill" style="width:39%"></span></span><span class="pct">39%</span></div>
-                  <div class="barrow"><span class="lab">Week 3</span><span class="track"><span class="fill" style="width:47%"></span></span><span class="pct">47%</span></div>
+                <div class="dashhead"><b>Proof</b><span class="mode">recommended vs standard — your own prompts</span></div>
+                <div class="row" style="font-size:.82rem;color:var(--mut);margin-bottom:8px">Across 50 of your prompts, routing saved <b style="color:var(--green)">$41 (54%)</b> · 96% of outputs judged non-inferior to the standard model.</div>
+                <div class="sxs2">
+                  <div class="col"><h5>Prompt</h5>"Classify: 'I was charged twice this month' — billing / technical / sales?"</div>
+                  <div class="col win"><h5>ModelPilot → Haiku · $0.0004</h5>billing &nbsp;<span class="pill save">✓ non-inferior</span></div>
                 </div>
-                <div class="row" style="color:var(--mut);font-size:.8rem;margin-top:8px">One line in your app. Quality proven by a randomized holdout. Kill switch any time.</div>
+                <div class="sxs2" style="margin-top:8px">
+                  <div class="col"><h5>Standard → Opus · $0.0028</h5>billing</div>
+                  <div class="col win"><h5>identical answer · saved 86%</h5>same result, 7× cheaper</div>
+                </div>
+              </div>
+
+              <div class="scene" data-scene="4">
+                <div class="reqlog">
+                  <div class="row"><span class="m">$</span> modelpilot gateway --mode autopilot --port 8400</div>
+                  <div class="row"><b>autopilot ON</b> <span class="m">— routing live, quality-gated</span></div>
+                  <div class="row">saved this week &nbsp;<span class="ok">$298 realized (40%)</span></div>
+                  <div class="row">quality parity &nbsp;<span class="ok">holding</span> <span class="m">— regen/escalation flat vs holdout control</span></div>
+                  <div class="row">auto-tuning &nbsp;<span class="ok">on</span> <span class="m">— savings climb as it learns your traffic</span></div>
+                  <div class="row"><span class="m"># kill switch: one line back to the direct API, anytime</span></div>
+                </div>
               </div>
 
             </div>
           </div>
-          <p class="demo-cap">A stylized walkthrough of the real flow: route → prove → switch → improve.</p>
+          <p class="demo-cap">A recreation of an actual ModelPilot session — the request log, dashboard, and proof you'd see on your own traffic.</p>
         </div>
       </div></section>
 
@@ -358,8 +382,8 @@ Claude Code / any SDK:  export ANTHROPIC_BASE_URL=http://localhost:8400</pre>
           var scenes = demo.querySelectorAll(".scene");
           if (!scenes.length) return;
           var i = 0;
-          // per-scene dwell times (ms): terminal lingers, dashboard reads, bars grow
-          var dwell = [5200, 5200, 4600];
+          // per-scene dwell (ms): request log, dashboard, proof (longest to read), autopilot
+          var dwell = [5600, 5200, 6000, 5400];
           function tick() {
             scenes.forEach(function (s, k) { s.classList.toggle("on", k === i); });
             var wait = dwell[i] || 4800;
