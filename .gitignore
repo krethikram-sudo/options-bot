@@ -33,3 +33,6 @@ modelpilot*.db
 # ModelPilot license signing key — never commit
 license_private_key.pem
 *license_private_key*.pem
+
+# Built thin-client distribution (regenerate with scripts/build_client.sh)
+dist/

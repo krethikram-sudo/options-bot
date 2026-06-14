@@ -4,6 +4,25 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.20.0 — 2026-06-14
+
+- **Router split → a genuinely publishable thin client (IP stays server-side).**
+  The classifier is now two modules: `modelpilot/router_classify.py` — commodity
+  lexical classification only (category, confidence, features), stdlib-only, with
+  **no** price table, capability floors, or switch economics — and
+  `modelpilot/router.py`, which binds the floor/economics IP (taxonomy + pricing)
+  on top and re-exports the classifier surface unchanged (gateway/rules/compare/
+  tests need no edits). The floor policy is *injected* into the commodity
+  classifier, so the thin client can classify (and detect session follow-ups)
+  without ever seeing the floors. Behavior is identical: full test suite + golden
+  set unchanged (false-downgrade still 0% at the shipped gate).
+- **Thin-client proxy + build:** `modelpilot/client_proxy.py` is a minimal
+  drop-in Claude API proxy that asks the hosted brain for each decision and fails
+  open — it depends only on the publishable closure (router_classify +
+  brain_client). `scripts/build_client.sh` carves the `modelpilot-client` package
+  and **hard-fails on any IP leak** (forbidden modules/symbols + import-isolation
+  check). New `test_client_split.py` locks the boundary in CI.
+
 ## 0.19.0 — 2026-06-14
 
 - **Gateway wired to the hosted brain (split architecture, opt-in + fail-open).**

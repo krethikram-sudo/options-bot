@@ -11,7 +11,10 @@ not here.
 
 import os
 
-from .router import Recommendation, classify, extract_features
+# Import from the commodity classifier, NOT router.py: the published thin client
+# ships router_classify (lexical only) and never the floor/economics IP in
+# router.py / pricing.py / taxonomy.py.
+from .router_classify import Recommendation, classify, extract_features
 
 # The only features sent upstream — all numeric/boolean, none reversible to text.
 _SEND_FEATURES = (
