@@ -124,6 +124,17 @@ async def _lifespan(app):
     app.state.policy_gates = dict(POLICY_FILE_GATES)  # live, refreshed by auto-tune
     app.state.classifier, app.state.adaptation = _load_classifier()
     app.state.policy_floors = app.state.adaptation["floors"]
+    # Per-customer deployment profile (Track B): model allow/block + quality floor
+    # + negotiated prices + risk tolerance. Price overrides go into the global
+    # price table once here, so every cost path reflects the customer's real bill.
+    from .profile import load_profile
+    profile = load_profile(os.environ.get("MODELPILOT_PROFILE", "")
+                           or os.environ.get("MODELPILOT_POLICY", ""))
+    if profile.price_overrides:
+        from .pricing import apply_overrides
+        apply_overrides(profile.price_overrides)
+    app.state.profile = profile if profile.is_active() else None
+    app.state.gate = profile.confidence_gate(CONFIDENCE_GATE)
     app.state.autotune_n = 0
     yield
     await app.state.http.aclose()
@@ -157,7 +168,7 @@ def decide(body: dict, mode: str, confidence_gate: float = CONFIDENCE_GATE,
            holdout_pct: float = 0.0, session_key: str = "",
            expected_remaining_turns: float | None = None,
            category_gates: dict | None = None,
-           classifier=None) -> Decision:
+           classifier=None, profile=None) -> Decision:
     """Pure routing decision — what runs, given the mode. Shadow and advise
     never alter the request; autopilot switches only above the confidence gate
     and only in the treatment arm (control requests run the baseline so the
@@ -169,10 +180,10 @@ def decide(body: dict, mode: str, confidence_gate: float = CONFIDENCE_GATE,
     """
     clf = classifier or mp_router.classify
     if expected_remaining_turns is None:
-        rec = mp_router.recommend(body, classifier=clf)
+        rec = mp_router.recommend(body, classifier=clf, profile=profile)
     else:
         rec = mp_router.recommend(body, expected_remaining_turns=expected_remaining_turns,
-                                  classifier=clf)
+                                  classifier=clf, profile=profile)
     gate = (category_gates or {}).get(rec.category, confidence_gate)
     arm = assign_arm(session_key, holdout_pct) if mode == "autopilot" else "observe"
     applied = (
@@ -334,9 +345,10 @@ async def preview(request: Request):
     """
     body = await request.json()
     session_key = body.get("session_id") or _session_key(request, body)
-    decision = decide(body, MODE, holdout_pct=HOLDOUT_PCT, session_key=session_key,
+    decision = decide(body, MODE, confidence_gate=app.state.gate,
+                      holdout_pct=HOLDOUT_PCT, session_key=session_key,
                       category_gates=app.state.policy_gates,
-                      classifier=app.state.classifier)
+                      classifier=app.state.classifier, profile=app.state.profile)
     rec = decision.recommendation
 
     # Pre-flight cost estimate: input from context size, nominal output.
@@ -374,9 +386,10 @@ async def messages(request: Request):
     turns = app.state.ledger.turns_so_far(session_key) + 1
     decision = decide(
         body, MODE, holdout_pct=HOLDOUT_PCT, session_key=session_key,
+        confidence_gate=app.state.gate,
         expected_remaining_turns=app.state.continuation.expected_remaining(turns),
         category_gates=app.state.policy_gates,
-        classifier=app.state.classifier,
+        classifier=app.state.classifier, profile=app.state.profile,
     )
     # Advise-mode loop closure: a caller who followed our advice sends the
     # cheap model in the body — savings would be invisible without knowing

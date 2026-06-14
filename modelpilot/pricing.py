@@ -38,6 +38,20 @@ CAPABILITY_LADDER = [
 ]
 
 
+def apply_overrides(overrides: dict) -> None:
+    """Merge a customer's negotiated rates into the price table in place.
+
+    Single-tenant by design (one local gateway = one customer), so updating the
+    process-global table is correct and means every cost path — router economics,
+    ledger, dashboard, digest, compare — reflects the customer's ACTUAL bill with
+    no plumbing. Values may be ModelPrice or (input, output) tuples. Called once
+    at gateway startup from the deployment profile."""
+    for model, price in (overrides or {}).items():
+        if not isinstance(price, ModelPrice):
+            price = ModelPrice(float(price[0]), float(price[1]))
+        PRICES[model] = price
+
+
 def resolve_price(model: str) -> ModelPrice | None:
     """Look up a price, tolerating date-suffixed IDs like claude-haiku-4-5-20251001."""
     if model in PRICES:

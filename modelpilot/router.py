@@ -289,8 +289,14 @@ def recommend(
     body: dict,
     expected_remaining_turns: float = 5.0,
     classifier=classify,
+    profile=None,
 ) -> Recommendation:
-    """Full routing decision for one request body."""
+    """Full routing decision for one request body.
+
+    `profile` is the per-customer deployment profile (Track B): it enforces a
+    `min_model` quality floor and allowed/blocked-model compliance on the
+    candidate, and its price overrides (applied to the global price table at
+    startup) flow through the economics automatically."""
     original_model = body.get("model", "")
     original_tier = ladder_tier(original_model)
     features = extract_features(body)
@@ -322,7 +328,19 @@ def recommend(
     if target_tier >= original_tier:
         return stay(f"{rationale}; requested model already at or below floor")
 
-    candidate = CAPABILITY_LADDER[target_tier]
+    # Profile constraints (Track B): a customer-set quality floor (min_model) and
+    # allowed/blocked-model compliance. choose_allowed walks up from the cheapest
+    # acceptable tier to the nearest permitted model below the requested one.
+    if profile is not None:
+        from .profile import choose_allowed
+        candidate, cand_tier = choose_allowed(target_tier, original_tier, profile)
+        if candidate is None:
+            return stay(f"{rationale}; no profile-permitted model below "
+                        f"{original_model} (min_model/allow-list constraints)")
+        if cand_tier != target_tier:
+            rationale += f"; profile raised floor to {candidate}"
+    else:
+        candidate = CAPABILITY_LADDER[target_tier]
 
     # Economics layer: does the switch pay, given cache state and the expected
     # remainder of the conversation? Pre-flight we approximate the cached

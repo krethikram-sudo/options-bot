@@ -4,6 +4,25 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.11.0 — 2026-06-14
+
+- **Per-customer deployment profile (Track B) — route to the customer's utility,
+  not a generic one.** A profile (`MODELPILOT_PROFILE=profile.json`, or a
+  `profile` object in `MODELPILOT_POLICY`) makes routing fit enterprise reality:
+  - `allowed_models` / `blocked_models` — compliance: never route to a model the
+    customer hasn't approved; a blocked cheap model falls back to the
+    next-cheapest *permitted* tier rather than forfeiting the switch.
+  - `min_model` — a customer-set quality floor: never route below this tier,
+    whatever the heuristics or learned floors say.
+  - `price_overrides` — negotiated / committed-use rates, merged into the price
+    table at startup so the economics AND every savings number (ledger,
+    dashboard, digest, compare) reflect the customer's actual bill. Single-tenant
+    by design (one local gateway = one customer), so this needs no plumbing.
+  - `risk_tolerance` (conservative / balanced / aggressive) → the autopilot
+    confidence gate, or an explicit `gate`.
+  Validate/print it with `modelpilot profile`. Routing constraints are enforced
+  in `router.recommend`; the structured-output/tool guard still applies on top.
+
 ## 0.10.0 — 2026-06-14
 
 - **Closed-loop per-customer floor learning (Track A) — the deepest savings
