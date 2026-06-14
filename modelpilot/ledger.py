@@ -374,6 +374,7 @@ class Ledger:
                    FROM proof""").fetchone()
         b, r = row["b"], row["r"]
         return {"n": row["n"], "n_switched": row["n_switched"],
+                "n_judged": row["n_judged"], "n_ni": row["n_ni"],
                 "savings": b - r, "savings_pct": (b - r) / b if b else 0.0,
                 "non_inferior_rate": (row["n_ni"] / row["n_judged"]) if row["n_judged"] else None}
 

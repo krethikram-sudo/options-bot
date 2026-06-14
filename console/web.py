@@ -142,7 +142,8 @@ def auth_form(kind: str, error: str = "", email: str = "") -> str:
                '<input name=company placeholder="Acme Inc."></div>') if is_signup else ""
     sub = "Create account" if is_signup else "Sign in"
     alt = ('Already have an account? <a href="/login">Sign in</a>' if is_signup
-           else 'New here? <a href="/signup">Start a free trial</a>')
+           else 'New here? <a href="/signup">Start a free trial</a> · '
+                '<a href="/forgot">Forgot password?</a>')
     body = f"""
     <div class=auth><div class=card>
       <h1>{_e(title)}</h1>
@@ -177,7 +178,8 @@ def _trial_banner(plan: dict, trial: dict) -> str:
 
 
 def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
-              cycle: dict, lifetime: dict, bill: dict, deployment: dict) -> str:
+              cycle: dict, lifetime: dict, bill: dict, deployment: dict,
+              cats: list[dict], proof: dict) -> str:
     mode = settings["mode"]
     mode_badge = {"autopilot": "paid", "guidance": "trial", "shadow": "off"}.get(mode, "off")
     routed_pct = (100 * cycle["routed"] / cycle["requests"]) if cycle["requests"] else 0
@@ -207,12 +209,48 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
     <div class="grid cols-2" style="margin-top:16px">
       <div class=card><div class=label>Baseline vs. actual (this cycle)</div>
         {_compare_bars(cycle['baseline'], cycle['actual'])}</div>
-      <div class=card><div class=label>Your connection</div>
-        <p class="small muted">Point your gateway at ModelPilot with this deployment id:</p>
-        <p><code>{_e(deployment['deployment_id'])}</code></p>
-        <a class="btn sec sm" href="/app/connect">Setup instructions</a></div>
-    </div>"""
+      {_proof_card(proof)}
+    </div>
+
+    <h2>Savings by task type <span class="small muted">— where the money comes from</span></h2>
+    {_category_savings(cats)}
+
+    <div class=card style="margin-top:16px"><div class=label>Your connection</div>
+      <p class="small muted">Point your gateway at ModelPilot with this deployment id:</p>
+      <p><code>{_e(deployment['deployment_id'])}</code></p>
+      <a class="btn sec sm" href="/app/connect">Setup &amp; deployments</a></div>"""
     return page("Dashboard", body, account, "/app")
+
+
+def _proof_card(proof: dict) -> str:
+    comp = proof.get("comparisons") or 0
+    rate = proof.get("rate")
+    if not comp:
+        return ("""<div class=card><div class=label>Quality proof</div>
+        <p class="small muted">Run side-by-side checks (<code>modelpilot compare</code>) to populate
+        a non-inferiority rate here — proof the cheaper model held up on your own prompts.</p></div>""")
+    pct = 100 * rate if rate is not None else 0
+    return f"""<div class=card><div class=label>Quality proof (non-inferiority)</div>
+      <div class="stat green">{pct:.0f}%</div>
+      <div class="small muted">of {int(comp):,} side-by-side comparisons judged non-inferior at the
+      cheaper model. Full per-prompt side-by-sides stay on your local gateway dashboard.</div></div>"""
+
+
+def _category_savings(cats: list[dict]) -> str:
+    rows = ""
+    for c in cats:
+        routed = int(c.get("routed") or 0)
+        esc = int(c.get("escalations") or 0)
+        esc_rate = (100 * esc / routed) if routed else 0
+        rows += (f"<tr><td>{_e(c['category'])}</td><td>{int(c.get('requests') or 0):,}</td>"
+                 f"<td>{routed:,}</td><td>{esc_rate:.0f}%</td>"
+                 f"<td>{money(c.get('savings'))}</td></tr>")
+    if not rows:
+        return ('<div class=card class=muted><p class="muted small">No routed traffic yet — '
+                'connect your gateway to start seeing savings by task type.</p></div>')
+    return (f'<div class=card style="padding:0"><table><thead><tr><th>Task type</th><th>Requests</th>'
+            f'<th>Routed</th><th>Escalations</th><th>Savings</th></tr></thead>'
+            f'<tbody>{rows}</tbody></table></div>')
 
 
 def _compare_bars(baseline: float, actual: float) -> str:
@@ -280,8 +318,17 @@ def settings_page(account: dict, settings: dict, saved: bool = False) -> str:
     return page("Settings", body, account, "/app/settings")
 
 
-def connect_page(account: dict, deployment: dict, brain_url: str, console_url: str) -> str:
-    dep = deployment["deployment_id"]
+def connect_page(account: dict, deployments: list[dict], brain_url: str, console_url: str) -> str:
+    dep = deployments[0]["deployment_id"] if deployments else "—"
+    dep_rows = ""
+    for d in deployments:
+        dep_rows += f"""<tr>
+          <td><code>{_e(d['deployment_id'])}</code></td>
+          <td><form method=post action="/app/deployments/rename" class=row style="gap:6px">
+            <input type=hidden name=deployment_id value="{_e(d['deployment_id'])}">
+            <input name=label value="{_e(d.get('label') or '')}" style="padding:6px;max-width:200px">
+            <button class="btn sec sm">Rename</button></form></td>
+          <td class="small muted">{_fmt_date(d.get('created_at'))}</td></tr>"""
     body = f"""
     <h1>Connect your app</h1>
     <p class=muted>ModelPilot is a drop-in proxy for the Claude Messages API. Point your SDK at it —
@@ -297,11 +344,60 @@ modelpilot-client            # listens on :8400, proxies to api.anthropic.com</p
       <h2>3. Point your SDK at it</h2>
       <pre>from anthropic import Anthropic
 client = Anthropic(base_url="http://127.0.0.1:8400")  # your key stays local</pre>
-      <p class="small muted">Your mode (currently set in <a href="/app/settings">Settings</a>) and
-      entitlement are enforced server-side; savings are metered automatically so your bill always
-      reflects real, delivered savings.</p>
+      <p class="small muted">Your mode (set in <a href="/app/settings">Settings</a>) and entitlement are
+      enforced server-side; savings are metered automatically so your bill always reflects real,
+      delivered savings.</p>
+    </div>
+
+    <h2>Deployments</h2>
+    <p class="small muted">Run ModelPilot in more than one app or environment (staging, prod, a second
+    service). Each gets its own id; savings across all of them roll up to one bill.</p>
+    <div class=card style="padding:0"><table>
+      <thead><tr><th>Deployment id</th><th>Label</th><th>Created</th></tr></thead>
+      <tbody>{dep_rows}</tbody></table></div>
+    <div class=card style="margin-top:12px">
+      <form method=post action="/app/deployments" class=row style="gap:8px">
+        <input name=label placeholder="e.g. production-api" style="max-width:240px">
+        <button class=btn>Add deployment</button>
+      </form>
     </div>"""
     return page("Connect", body, account, "/app/connect")
+
+
+def forgot_form(sent: bool = False, email: str = "") -> str:
+    if sent:
+        body = """<div class=auth><div class=card>
+          <h1>Check your email</h1>
+          <p class=muted>If an account exists for that address, we've sent a password-reset link
+          (valid for 1 hour). <a href="/login">Back to sign in</a>.</p></div></div>"""
+        return page("Reset password", body)
+    body = f"""
+    <div class=auth><div class=card>
+      <h1>Reset your password</h1>
+      <p class=muted small>Enter your email and we'll send a reset link.</p>
+      <form method=post action="/forgot">
+        <div class=field><label>Email</label>
+          <input name=email type=email required value="{_e(email)}" placeholder="you@company.com"></div>
+        <button class="btn" style="width:100%">Send reset link</button>
+      </form>
+      <p class="small center muted" style="margin-top:14px"><a href="/login">Back to sign in</a></p>
+    </div></div>"""
+    return page("Reset password", body)
+
+
+def reset_form(token: str, error: str = "") -> str:
+    err = f'<div class="note bad">{_e(error)}</div>' if error else ""
+    body = f"""
+    <div class=auth><div class=card>
+      <h1>Set a new password</h1>{err}
+      <form method=post action="/reset">
+        <input type=hidden name=token value="{_e(token)}">
+        <div class=field><label>New password</label>
+          <input name=password type=password required minlength=8 placeholder="At least 8 characters"></div>
+        <button class="btn" style="width:100%">Update password</button>
+      </form>
+    </div></div>"""
+    return page("Set a new password", body)
 
 
 # --------------------------------------------------------------------------- #
@@ -399,7 +495,7 @@ def admin_overview(account: dict, rev: dict, rows: list[dict]) -> str:
 
 def admin_account_detail(account: dict, target: dict, plan: dict, trial: dict,
                          settings: dict, bill: dict, cats: list[dict],
-                         suggestions: list[str]) -> str:
+                         suggestions: list[str], reset_link: str = "") -> str:
     cat_rows = ""
     for c in cats:
         esc_rate = (100 * c["escalations"] / c["routed"]) if c["routed"] else 0
@@ -438,14 +534,18 @@ def admin_account_detail(account: dict, target: dict, plan: dict, trial: dict,
       <tbody>{cat_rows or '<tr><td colspan=5 class=muted>No metering yet.</td></tr>'}</tbody></table></div>
 
     <h2>Suggested actions</h2>
-    <div class=card><ul style="margin:0;padding-left:20px">{sugg}</ul></div>
-
+    <div class=card><ul style="margin:0;padding-left:20px">{sugg}</ul></div>"""
+    reset_note = (f'<div class="note">Reset link (valid 1h): <a href="{_e(reset_link)}">{_e(reset_link)}</a></div>'
+                  if reset_link else "")
+    body += f"""
     <h2>Manage access</h2>
+    {reset_note}
     <div class=card><form method=post action="/admin/accounts/{target['id']}/action">
       <div class=row>
         <button class="btn sm" name=action value=extend_trial>+7 trial days</button>
         {convert_btn}
         {suspend_btn}
+        <button class="btn sec sm" name=action value=send_reset>Send reset link</button>
         <span class=spacer></span>
         <label class="small row" style="gap:6px">Rate %
           <input name=rate type=number step=1 min=0 max=100 value="{rate_pct}" style="width:80px">

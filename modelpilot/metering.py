@@ -14,7 +14,8 @@ Configuration (set on the customer's gateway):
 import json
 import os
 
-_FIELDS = ("requests", "routed", "baseline_cost", "actual_cost", "realized_savings")
+_FIELDS = ("requests", "routed", "baseline_cost", "actual_cost", "realized_savings",
+           "comparisons", "non_inferior")
 
 
 def _marker_path(db_path: str) -> str:
@@ -37,13 +38,17 @@ def _write_marker(db_path: str, cumulative: dict) -> None:
         pass
 
 
-def _cumulative_from_summary(summary: dict) -> dict:
+def _cumulative_from_summary(summary: dict, proof: dict | None = None) -> dict:
+    proof = proof or {}
     return {
         "requests": float(summary.get("n", 0)),
         "routed": float(summary.get("n_applied", 0)),
         "baseline_cost": float(summary.get("baseline", 0.0)),
         "actual_cost": float(summary.get("actual", 0.0)),
         "realized_savings": float(summary.get("realized", 0.0)),
+        # Aggregate side-by-side proof counts (no compared text leaves the box).
+        "comparisons": float(proof.get("n_judged", 0)),
+        "non_inferior": float(proof.get("n_ni", 0)),
     }
 
 
@@ -65,19 +70,21 @@ def report_once(db_path: str | None = None, console_url: str | None = None,
     from .ledger import Ledger
     ledger = Ledger(db_path)
     try:
-        cumulative = _cumulative_from_summary(ledger.summary())
+        cumulative = _cumulative_from_summary(ledger.summary(), ledger.proof_summary())
     finally:
         ledger.close()
     marker = _read_marker(db_path)
     delta = compute_delta(cumulative, marker)
-    if delta["requests"] <= 0 and delta["realized_savings"] <= 0:
+    if delta["requests"] <= 0 and delta["realized_savings"] <= 0 and delta["comparisons"] <= 0:
         return {"posted": False, "reason": "nothing new", "cumulative": cumulative}
 
     payload = {"deployment_id": deployment_id,
                "requests": int(delta["requests"]), "routed": int(delta["routed"]),
                "baseline_cost": round(delta["baseline_cost"], 6),
                "actual_cost": round(delta["actual_cost"], 6),
-               "realized_savings": round(delta["realized_savings"], 6)}
+               "realized_savings": round(delta["realized_savings"], 6),
+               "comparisons": int(delta["comparisons"]),
+               "non_inferior": int(delta["non_inferior"])}
     try:
         if post_fn is not None:
             post_fn(payload)

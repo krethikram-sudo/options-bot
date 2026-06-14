@@ -95,7 +95,23 @@ CREATE TABLE IF NOT EXISTS meter (
 );
 CREATE INDEX IF NOT EXISTS idx_meter_dep ON meter(deployment_id);
 CREATE INDEX IF NOT EXISTS idx_meter_ts ON meter(ts);
+CREATE TABLE IF NOT EXISTS proofs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    deployment_id TEXT NOT NULL,
+    ts REAL NOT NULL,
+    comparisons INTEGER NOT NULL DEFAULT 0,   -- judged side-by-side comparisons
+    non_inferior INTEGER NOT NULL DEFAULT 0    -- of those, how many were non-inferior
+);
+CREATE INDEX IF NOT EXISTS idx_proofs_dep ON proofs(deployment_id);
+CREATE TABLE IF NOT EXISTS resets (
+    token TEXT PRIMARY KEY,
+    account_id INTEGER NOT NULL REFERENCES accounts(id),
+    created_at REAL NOT NULL,
+    used INTEGER NOT NULL DEFAULT 0
+);
 """
+
+RESET_TTL = 3600  # password-reset token lifetime (seconds)
 
 
 def init_db(path: str | None = None) -> None:
@@ -267,6 +283,34 @@ def deployments_for(account_id: int, path: str | None = None) -> list[dict]:
         rows = conn.execute("SELECT * FROM deployments WHERE account_id=? ORDER BY created_at",
                             (account_id,)).fetchall()
         return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def create_deployment(account_id: int, label: str = "", path: str | None = None,
+                      now: float | None = None) -> dict:
+    """Add another deployment (e.g. a second app / environment) to an account.
+    Savings across all of an account's deployments roll up to one bill."""
+    now = now or time.time()
+    dep = "dep_" + secrets.token_hex(12)
+    conn = connect(path)
+    try:
+        conn.execute("INSERT INTO deployments(deployment_id, account_id, label, created_at)"
+                     " VALUES(?,?,?,?)", (dep, account_id, (label or "deployment").strip(), now))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"deployment_id": dep, "account_id": account_id, "label": label, "created_at": now}
+
+
+def rename_deployment(deployment_id: str, account_id: int, label: str,
+                      path: str | None = None) -> None:
+    """Relabel a deployment (scoped to the owning account)."""
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE deployments SET label=? WHERE deployment_id=? AND account_id=?",
+                     ((label or "").strip(), deployment_id, account_id))
+        conn.commit()
     finally:
         conn.close()
 
@@ -489,6 +533,95 @@ def savings_by_category(account_id: int, since: float | None = None, path: str |
         return [dict(r) for r in rows]
     finally:
         conn.close()
+
+
+def record_proof(deployment_id: str, comparisons: int, non_inferior: int,
+                 ts: float | None = None, path: str | None = None) -> dict:
+    """Record an aggregate side-by-side proof report (counts only — never the
+    compared text). `comparisons` = judged pairs, `non_inferior` = how many the
+    judge rated non-inferior at the cheaper model."""
+    if not account_for_deployment(deployment_id, path):
+        raise StoreError("unknown deployment")
+    ts = ts or time.time()
+    conn = connect(path)
+    try:
+        conn.execute("INSERT INTO proofs(deployment_id, ts, comparisons, non_inferior)"
+                     " VALUES(?,?,?,?)", (deployment_id, ts, int(comparisons), int(non_inferior)))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"ok": True}
+
+
+def proof_summary(account_id: int, since: float | None = None, path: str | None = None) -> dict:
+    clause, params = "d.account_id=?", [account_id]
+    if since is not None:
+        clause += " AND p.ts>=?"; params.append(since)
+    conn = connect(path)
+    try:
+        row = conn.execute(
+            f"SELECT COALESCE(SUM(p.comparisons),0) comparisons,"
+            f" COALESCE(SUM(p.non_inferior),0) non_inferior"
+            f" FROM proofs p JOIN deployments d ON d.deployment_id=p.deployment_id"
+            f" WHERE {clause}", params).fetchone()
+    finally:
+        conn.close()
+    comp, ni = row["comparisons"], row["non_inferior"]
+    return {"comparisons": comp, "non_inferior": ni,
+            "rate": (ni / comp) if comp else None}
+
+
+# --------------------------------------------------------------------------- #
+# Password management + reset tokens
+# --------------------------------------------------------------------------- #
+
+def set_password(account_id: int, new_password: str, path: str | None = None) -> None:
+    if len(new_password or "") < 8:
+        raise StoreError("Password must be at least 8 characters.")
+    pw_hash, salt = hash_password(new_password)
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE accounts SET pw_hash=?, pw_salt=? WHERE id=?",
+                     (pw_hash, salt, account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def create_reset(email: str, path: str | None = None, now: float | None = None) -> tuple[dict, str] | None:
+    """Create a single-use reset token for an account. Returns (account, token)
+    or None if no such (active) account — callers must not reveal which."""
+    acct = get_account_by_email(email, path)
+    if not acct or acct["status"] != "active":
+        return None
+    now = now or time.time()
+    token = secrets.token_urlsafe(32)
+    conn = connect(path)
+    try:
+        conn.execute("INSERT INTO resets(token, account_id, created_at, used) VALUES(?,?,?,0)",
+                     (token, acct["id"], now))
+        conn.commit()
+    finally:
+        conn.close()
+    return acct, token
+
+
+def consume_reset(token: str, new_password: str, path: str | None = None,
+                  now: float | None = None) -> bool:
+    """Validate an unused, unexpired token and set the new password (single-use)."""
+    now = now or time.time()
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT * FROM resets WHERE token=?", (token,)).fetchone()
+        if not row or row["used"] or (now - row["created_at"]) > RESET_TTL:
+            return False
+        account_id = row["account_id"]
+        conn.execute("UPDATE resets SET used=1 WHERE token=?", (token,))
+        conn.commit()
+    finally:
+        conn.close()
+    set_password(account_id, new_password, path)
+    return True
 
 
 def cycle_start(now: float | None = None) -> float:

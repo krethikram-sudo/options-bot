@@ -18,7 +18,7 @@ from urllib.parse import parse_qs
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
-from . import store, stripe_billing, web
+from . import notify, store, stripe_billing, web
 
 COOKIE = "mp_session"
 app = FastAPI(title="ModelPilot console")
@@ -140,6 +140,40 @@ def logout():
     return resp
 
 
+@app.get("/forgot", response_class=HTMLResponse)
+def forgot_get():
+    return _html(web.forgot_form())
+
+
+@app.post("/forgot")
+async def forgot_post(request: Request):
+    f = await _form(request)
+    out = store.create_reset(f.get("email", ""))
+    if out:  # account exists -> send link (logged in dev). Response is identical either way.
+        acct, token = out
+        try:
+            notify.send_reset(acct["email"], token)
+        except Exception:  # noqa: BLE001 — never reveal send status / never 500
+            pass
+    return _html(web.forgot_form(sent=True))
+
+
+@app.get("/reset", response_class=HTMLResponse)
+def reset_get(request: Request):
+    token = request.query_params.get("token", "")
+    return _html(web.reset_form(token))
+
+
+@app.post("/reset")
+async def reset_post(request: Request):
+    f = await _form(request)
+    token = f.get("token", "")
+    if not store.consume_reset(token, f.get("password", "")):
+        return _html(web.reset_form(token, "That reset link is invalid or expired, or the "
+                                           "password is too short."), 400)
+    return _redirect("/login")
+
+
 # --------------------------------------------------------------------------- #
 # Customer app
 # --------------------------------------------------------------------------- #
@@ -162,9 +196,11 @@ def app_dashboard(request: Request):
     bill = store.bill_estimate(acct["id"])
     cycle = store.savings_summary(acct["id"], since=bill["cycle_start"])
     lifetime = store.savings_summary(acct["id"])
+    cats = store.savings_by_category(acct["id"], since=bill["cycle_start"])
+    proof = store.proof_summary(acct["id"])
     deps = store.deployments_for(acct["id"])
     return _html(web.dashboard(acct, plan, trial, settings, cycle, lifetime, bill,
-                               deps[0] if deps else {"deployment_id": "—"}))
+                               deps[0] if deps else {"deployment_id": "—"}, cats, proof))
 
 
 @app.post("/app/mode")
@@ -213,7 +249,27 @@ def connect(request: Request):
     deps = store.deployments_for(acct["id"])
     brain = os.environ.get("MODELPILOT_BRAIN_URL", "https://brain.modelpilot.app")
     console = os.environ.get("CONSOLE_BASE_URL", "https://app.modelpilot.app")
-    return _html(web.connect_page(acct, deps[0] if deps else {"deployment_id": "—"}, brain, console))
+    return _html(web.connect_page(acct, deps, brain, console))
+
+
+@app.post("/app/deployments")
+async def create_deployment(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    store.create_deployment(acct["id"], label=f.get("label", ""))
+    return _redirect("/app/connect")
+
+
+@app.post("/app/deployments/rename")
+async def rename_deployment(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    store.rename_deployment(f.get("deployment_id", ""), acct["id"], f.get("label", ""))
+    return _redirect("/app/connect")
 
 
 @app.get("/app/billing", response_class=HTMLResponse)
@@ -306,8 +362,10 @@ def admin_account(request: Request, account_id: int):
     settings = store.get_settings(account_id)
     bill = store.bill_estimate(account_id)
     cats = store.savings_by_category(account_id)
+    reset_token = request.query_params.get("reset_token", "")
+    reset_link = notify.reset_link(reset_token) if reset_token else ""
     return _html(web.admin_account_detail(acct, target, plan, trial, settings, bill, cats,
-                                          _suggestions(cats, settings)))
+                                          _suggestions(cats, settings), reset_link))
 
 
 @app.post("/admin/accounts/{account_id}/action")
@@ -330,6 +388,17 @@ async def admin_action(request: Request, account_id: int):
             store.set_rate(account_id, float(f.get("rate", "20")) / 100.0)
         except ValueError:
             pass
+    elif action == "send_reset":
+        target = store.get_account(account_id)
+        if target:
+            out = store.create_reset(target["email"])
+            if out:
+                _, token = out
+                try:
+                    notify.send_reset(target["email"], token)
+                except Exception:  # noqa: BLE001
+                    pass
+                return _redirect(f"/admin/accounts/{account_id}?reset_token={token}")
     return _redirect(f"/admin/accounts/{account_id}")
 
 
@@ -366,6 +435,13 @@ async def api_meter(request: Request):
             category=body.get("category"))
     except store.StoreError as e:
         return JSONResponse({"error": str(e)}, status_code=404)
+    # Optional aggregate proof counts (side-by-side non-inferiority — counts only).
+    if body.get("comparisons") or body.get("non_inferior"):
+        try:
+            store.record_proof(dep, int(body.get("comparisons", 0)),
+                               int(body.get("non_inferior", 0)))
+        except store.StoreError:
+            pass
     # Best-effort: push usage to Stripe for paid accounts.
     try:
         acct = store.account_for_deployment(dep)

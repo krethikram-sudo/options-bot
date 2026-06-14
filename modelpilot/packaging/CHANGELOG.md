@@ -4,6 +4,23 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.22.0 — 2026-06-14
+
+- **Customer dashboard: savings by task type + a quality-proof stat.** The web
+  dashboard now shows per-category routed/escalation/savings (where the money
+  comes from) and a non-inferiority rate — the share of side-by-side comparisons
+  the judge rated non-inferior at the cheaper model. The gateway reports proof as
+  aggregate counts only (`comparisons`, `non_inferior` on `/api/meter`; per-prompt
+  side-by-side text stays on the local gateway dashboard). `ledger.proof_summary`
+  now exposes `n_judged`/`n_ni`; `metering.py` reports the proof delta.
+- **Multiple deployments per account.** Run ModelPilot across several apps/
+  environments; each gets its own id and they roll up to one bill. Create/rename
+  deployments on the Connect page.
+- **Password reset (self-serve + admin).** Forgot-password → single-use,
+  1-hour token → reset page. Pluggable email (`console/notify.py`: SMTP when
+  configured, otherwise logged); no account enumeration. Admins can issue a reset
+  link from the customer detail page.
+
 ## 0.21.0 — 2026-06-14
 
 - **Full product through the web — new `console/` service (vendor-internal).** A

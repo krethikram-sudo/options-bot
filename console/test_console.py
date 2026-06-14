@@ -209,3 +209,88 @@ def test_api_meter_rejects_sensitive_keys(env, client):
 def test_api_meter_unknown_deployment(client):
     r = client.post("/api/meter", json={"deployment_id": "dep_nope", "baseline_cost": 1})
     assert r.status_code == 404
+
+
+# --- multiple deployments ------------------------------------------------- #
+
+def test_multiple_deployments_roll_up_to_one_account(env):
+    _, store = env
+    a = store.create_account("multi@b.com", "password123")
+    d1 = store.deployments_for(a["id"])[0]["deployment_id"]
+    d2 = store.create_deployment(a["id"], label="staging")["deployment_id"]
+    assert len(store.deployments_for(a["id"])) == 2
+    store.record_meter(d1, baseline_cost=10.0, actual_cost=6.0)
+    store.record_meter(d2, baseline_cost=5.0, actual_cost=4.0)
+    # savings across both deployments sum to the one account
+    assert store.savings_summary(a["id"])["savings"] == pytest.approx(5.0)
+
+
+def test_create_and_rename_deployment_via_http(env, client):
+    _, store = env
+    _signup(client, email="dep@b.com")
+    client.post("/app/deployments", data={"label": "prod"})
+    acct = store.get_account_by_email("dep@b.com")
+    deps = store.deployments_for(acct["id"])
+    assert len(deps) == 2
+    new = [d for d in deps if d["label"] == "prod"][0]
+    client.post("/app/deployments/rename",
+                data={"deployment_id": new["deployment_id"], "label": "prod-eu"})
+    assert store.deployments_for(acct["id"])  # relabeled
+    assert any(d["label"] == "prod-eu" for d in store.deployments_for(acct["id"]))
+
+
+# --- password reset ------------------------------------------------------- #
+
+def test_password_reset_flow(env):
+    _, store = env
+    store.create_account("reset@b.com", "oldpassword1")
+    out = store.create_reset("reset@b.com")
+    assert out is not None
+    _, token = out
+    assert store.consume_reset(token, "newpassword2") is True
+    assert store.authenticate("reset@b.com", "newpassword2")
+    assert not store.authenticate("reset@b.com", "oldpassword1")
+    # single-use: token can't be reused
+    assert store.consume_reset(token, "another3pw") is False
+
+
+def test_reset_unknown_email_returns_none(env):
+    _, store = env
+    assert store.create_reset("nobody@b.com") is None
+
+
+def test_expired_reset_rejected(env):
+    _, store = env
+    a = store.create_account("exp@b.com", "oldpassword1")
+    out = store.create_reset("exp@b.com")
+    _, token = out
+    # simulate expiry by pushing the token's created_at into the past
+    conn = store.connect()
+    conn.execute("UPDATE resets SET created_at=created_at-99999 WHERE token=?", (token,))
+    conn.commit(); conn.close()
+    assert store.consume_reset(token, "newpassword2") is False
+
+
+def test_forgot_and_reset_http(env, client):
+    _, store = env
+    store.create_account("httpreset@b.com", "oldpassword1")
+    # forgot always returns the same "sent" page (no account enumeration)
+    assert client.post("/forgot", data={"email": "httpreset@b.com"}).status_code == 200
+    assert client.post("/forgot", data={"email": "nobody@b.com"}).status_code == 200
+    out = store.create_reset("httpreset@b.com")
+    _, token = out
+    r = client.post("/reset", data={"token": token, "password": "brandnewpw9"})
+    assert r.status_code == 303
+    assert store.authenticate("httpreset@b.com", "brandnewpw9")
+
+
+# --- aggregate proof ------------------------------------------------------ #
+
+def test_proof_summary_and_meter(env, client):
+    _, store = env
+    a = store.create_account("proof@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    client.post("/api/meter", json={"deployment_id": dep, "baseline_cost": 1.0,
+                                    "actual_cost": 0.7, "comparisons": 10, "non_inferior": 9})
+    p = store.proof_summary(a["id"])
+    assert p["comparisons"] == 10 and p["non_inferior"] == 9 and p["rate"] == pytest.approx(0.9)
