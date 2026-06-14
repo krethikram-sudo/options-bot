@@ -68,6 +68,25 @@ def _load_floors(path: str) -> dict:
         return {}
 
 
+def _console_policy() -> dict:
+    """Fetch this deployment's admin-approved policy (floors + rules) from the
+    console, if configured. Best-effort: returns empty policy on any failure."""
+    console = os.environ.get("MODELPILOT_CONSOLE_URL", "").rstrip("/")
+    if not console:
+        return {"floors": {}, "rules": []}
+    from . import brain_client
+    dep = brain_client.deployment_id(os.environ.get("MODELPILOT_DB", "modelpilot.db"))
+    if not dep:
+        return {"floors": {}, "rules": []}
+    try:
+        import httpx
+        r = httpx.get(f"{console}/api/policy", params={"deployment_id": dep}, timeout=3.0)
+        r.raise_for_status()
+        return r.json()
+    except Exception:  # noqa: BLE001
+        return {"floors": {}, "rules": []}
+
+
 def _load_classifier():
     """Build the request classifier, applying two layers of per-customer
     adaptation:
@@ -85,6 +104,15 @@ def _load_classifier():
     rules = load_rules(os.environ.get("MODELPILOT_RULES", ""))
     if not rules:
         rules = load_rules(os.environ.get("MODELPILOT_POLICY", ""))
+
+    # Admin-approved per-customer tuning from the console (Tracks A/C): approved
+    # floors and rules override/extend the local policy. Best-effort; the brain
+    # also applies approved floors when routing through it.
+    approved = _console_policy()
+    if approved.get("floors"):
+        floors = {**floors, **{k: int(v) for k, v in approved["floors"].items()}}
+    if approved.get("rules"):
+        rules = rules + load_rules({"category_rules": approved["rules"]})
 
     def base(features):
         return mp_router.classify(features, floors)

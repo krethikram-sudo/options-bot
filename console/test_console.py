@@ -294,3 +294,79 @@ def test_proof_summary_and_meter(env, client):
                                     "actual_cost": 0.7, "comparisons": 10, "non_inferior": 9})
     p = store.proof_summary(a["id"])
     assert p["comparisons"] == 10 and p["non_inferior"] == 9 and p["rate"] == pytest.approx(0.9)
+
+
+# --- Tracks A/C: tuning proposals (submit -> admin review/approve -> apply) ---
+
+def test_proposal_submit_supersede_and_approve(env):
+    _, store = env
+    a = store.create_account("prop@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    store.submit_proposal(dep, "floor", "summarization_long",
+                          {"current_tier": 1, "proposed_tier": 0},
+                          {"samples": 12, "non_inferior_rate": 0.95})
+    # resubmitting supersedes the pending one (no pile-up)
+    store.submit_proposal(dep, "floor", "summarization_long",
+                          {"current_tier": 1, "proposed_tier": 0}, {"samples": 20})
+    pend = store.list_proposals(a["id"], status="pending")
+    assert len(pend) == 1 and pend[0]["stats"]["samples"] == 20
+    # approve -> shows up in approved floors (taxonomy.floor_tier format)
+    assert store.decide_proposal(pend[0]["id"], "approved")
+    assert store.approved_floors(a["id"]) == {"summarization_long": 0}
+    # deciding an already-decided proposal is a no-op
+    assert store.decide_proposal(pend[0]["id"], "rejected") is False
+
+
+def test_approved_rules_and_policy_for_deployment(env):
+    _, store = env
+    a = store.create_account("prop2@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    store.submit_proposal(dep, "rule", "extraction",
+                          {"name": "invoices", "any": ["invoice"], "category": "extraction"},
+                          {"samples": 30})
+    pid = store.list_proposals(a["id"])[0]["id"]
+    store.decide_proposal(pid, "approved")
+    pol = store.approved_policy_for_deployment(dep)
+    assert pol["rules"][0]["name"] == "invoices" and pol["floors"] == {}
+
+
+def test_api_proposals_and_policy_http(env, client):
+    _, store = env
+    a = store.create_account("prop3@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    r = client.post("/api/proposals", json={
+        "deployment_id": dep, "kind": "floor", "category": "classification",
+        "payload": {"current_tier": 1, "proposed_tier": 0}, "stats": {"samples": 9}})
+    assert r.status_code == 200
+    # policy empty until approved
+    assert client.get("/api/policy", params={"deployment_id": dep}).json()["floors"] == {}
+    pid = store.list_proposals(a["id"])[0]["id"]
+    store.decide_proposal(pid, "approved")
+    assert client.get("/api/policy", params={"deployment_id": dep}).json()["floors"] == {"classification": 0}
+
+
+def test_api_proposals_rejects_sensitive_keys(env, client):
+    _, store = env
+    a = store.create_account("prop4@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    r = client.post("/api/proposals", json={"deployment_id": dep, "kind": "rule",
+                                            "category": "x", "messages": ["secret"]})
+    assert r.status_code == 422
+
+
+def test_admin_reviews_and_approves_proposal_via_http(env, client):
+    _, store = env
+    store.create_account("boss2@b.com", "password123", role="admin")
+    cust = store.create_account("cust2@b.com", "password123")
+    dep = store.deployments_for(cust["id"])[0]["deployment_id"]
+    store.submit_proposal(dep, "floor", "extraction",
+                          {"current_tier": 1, "proposed_tier": 0}, {"samples": 15})
+    pid = store.list_proposals(cust["id"])[0]["id"]
+    client.post("/login", data={"email": "boss2@b.com", "password": "password123"})
+    # the proposal is visible on the customer detail page
+    detail = client.get(f"/admin/accounts/{cust['id']}")
+    assert "Proposed tuning" in detail.text and "extraction" in detail.text
+    # approve it
+    client.post(f"/admin/accounts/{cust['id']}/proposal",
+                data={"proposal_id": str(pid), "decision": "approved"})
+    assert store.approved_floors(cust["id"]) == {"extraction": 0}

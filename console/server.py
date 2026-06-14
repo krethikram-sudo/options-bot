@@ -345,8 +345,9 @@ def admin_overview(request: Request):
             "cycle_revenue": (plan.get("rate", 0.2) * cyc_s) if paid else 0.0,
             "plan_label": "paid" if paid else ("suspended" if a["status"] != "active" else "trial"),
             "plan_badge": "paid" if paid else ("suspended" if a["status"] != "active" else "trial"),
+            "pending_proposals": len(store.list_proposals(a["id"], status="pending")),
         })
-    return _html(web.admin_overview(acct, rev, rows))
+    return _html(web.admin_overview(acct, rev, rows, store.count_pending_proposals()))
 
 
 @app.get("/admin/accounts/{account_id}", response_class=HTMLResponse)
@@ -364,8 +365,28 @@ def admin_account(request: Request, account_id: int):
     cats = store.savings_by_category(account_id)
     reset_token = request.query_params.get("reset_token", "")
     reset_link = notify.reset_link(reset_token) if reset_token else ""
+    proposals = store.list_proposals(account_id, status="pending")
     return _html(web.admin_account_detail(acct, target, plan, trial, settings, bill, cats,
-                                          _suggestions(cats, settings), reset_link))
+                                          _suggestions(cats, settings), reset_link, proposals))
+
+
+@app.post("/admin/accounts/{account_id}/proposal")
+async def admin_decide_proposal(request: Request, account_id: int):
+    acct, redir = _require_admin(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    decision = f.get("decision")
+    try:
+        pid = int(f.get("proposal_id", "0"))
+    except ValueError:
+        pid = 0
+    if decision in ("approved", "rejected") and pid:
+        try:
+            store.decide_proposal(pid, decision)
+        except store.StoreError:
+            pass
+    return _redirect(f"/admin/accounts/{account_id}")
 
 
 @app.post("/admin/accounts/{account_id}/action")
@@ -450,6 +471,37 @@ async def api_meter(request: Request):
     except Exception:  # noqa: BLE001
         pass
     return JSONResponse(res)
+
+
+@app.post("/api/proposals")
+async def api_proposals(request: Request):
+    """A gateway submits an auto-derived tuning proposal (Track A floor / Track C
+    rule). Aggregate spec + stats only — reject anything carrying prompt/output
+    text or secrets (defense in depth)."""
+    body = await request.json()
+    if not isinstance(body, dict):
+        return JSONResponse({"error": "object required"}, status_code=400)
+    if {str(k).lower() for k in body} & store.FORBIDDEN_METER_KEYS:
+        return JSONResponse({"error": "payload contains forbidden keys"}, status_code=422)
+    dep = body.get("deployment_id")
+    kind = body.get("kind")
+    category = body.get("category")
+    if not (dep and kind and category):
+        return JSONResponse({"error": "deployment_id, kind, category required"}, status_code=400)
+    try:
+        res = store.submit_proposal(dep, kind, category, body.get("payload") or {},
+                                    body.get("stats") or {})
+    except store.StoreError as e:
+        code = 404 if "unknown deployment" in str(e) else 400
+        return JSONResponse({"error": str(e)}, status_code=code)
+    return JSONResponse(res)
+
+
+@app.get("/api/policy")
+def api_policy(deployment_id: str):
+    """Approved per-customer policy for a deployment: floors (applied by the brain)
+    and rules (loaded by the gateway). Only admin-approved entries are returned."""
+    return JSONResponse(store.approved_policy_for_deployment(deployment_id))
 
 
 @app.post("/api/stripe/webhook")

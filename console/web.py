@@ -456,33 +456,42 @@ def billing_page(account: dict, plan: dict, trial: dict, bill: dict,
 # Admin
 # --------------------------------------------------------------------------- #
 
-def admin_overview(account: dict, rev: dict, rows: list[dict]) -> str:
+def admin_overview(account: dict, rev: dict, rows: list[dict], pending: int = 0) -> str:
     trs = ""
     for r in rows:
         badge = (f'<span class="badge {r["plan_badge"]}">{_e(r["plan_label"])}</span>')
         admin_tag = ' <span class="badge admin">admin</span>' if r["role"] == "admin" else ""
+        pend = (f' <span class="badge trial">{r["pending_proposals"]} to review</span>'
+                if r.get("pending_proposals") else "")
         trs += f"""<tr>
-          <td><a href="/admin/accounts/{r['id']}">{_e(r['email'])}</a>{admin_tag}<br>
+          <td><a href="/admin/accounts/{r['id']}">{_e(r['email'])}</a>{admin_tag}{pend}<br>
             <span class="small muted">{_e(r['company'] or '')}</span></td>
           <td>{badge}</td>
           <td>{money(r['lifetime_savings'])}</td>
           <td>{money(r['cycle_savings'])}</td>
           <td>{money(r['cycle_revenue'])}</td>
           <td class="small muted">{_fmt_date(r['created_at'])}</td></tr>"""
+    pending_card = (f'<div class=card><div class=label>Tuning to review</div>'
+                    f'<div class=stat>{pending}</div>'
+                    f'<div class="small muted">auto-proposed floor/rule changes pending approval</div></div>'
+                    if True else "")
     body = f"""
     <h1>Admin · overview</h1>
     <p class=muted>Revenue and savings across all customers. Use this to spot where the product is
     (and isn't) delivering value.</p>
-    <div class="grid cols-3">
+    <div class="grid cols-2">
       <div class=card><div class=label>Revenue this cycle</div>
         <div class="stat green">{money(rev['cycle_revenue'])}</div>
         <div class="small muted">lifetime {money(rev['total_revenue'])}</div></div>
       <div class=card><div class=label>Savings delivered this cycle</div>
         <div class=stat>{money(rev['cycle_savings'])}</div>
         <div class="small muted">lifetime {money(rev['total_savings_delivered'])}</div></div>
+    </div>
+    <div class="grid cols-2" style="margin-top:16px">
       <div class=card><div class=label>Accounts</div>
         <div class=stat>{rev['n_accounts']}</div>
         <div class="small muted">{rev['n_paid']} paid · {rev['n_trial']} trial · {rev['n_suspended']} suspended</div></div>
+      {pending_card}
     </div>
     <h2>Customers</h2>
     <div class=card style="padding:0">
@@ -493,9 +502,56 @@ def admin_overview(account: dict, rev: dict, rows: list[dict]) -> str:
     return page("Admin", body, account, "/admin")
 
 
+_LADDER_NAMES = ["haiku", "sonnet", "opus", "fable"]
+
+
+def _tier_name(t) -> str:
+    try:
+        return _LADDER_NAMES[int(t)]
+    except (TypeError, ValueError, IndexError):
+        return str(t)
+
+
+def _proposals_section(target_id: int, proposals: list[dict]) -> str:
+    if not proposals:
+        return ('<h2>Proposed tuning</h2><div class=card><p class="small muted">No pending '
+                'proposals. Customers\' gateways submit auto-derived floor/rule changes here '
+                '(validated on their own traffic) for your approval.</p></div>')
+    cards = ""
+    for p in proposals:
+        stats = p.get("stats") or {}
+        payload = p.get("payload") or {}
+        if p["kind"] == "floor":
+            cur, prop = payload.get("current_tier"), payload.get("proposed_tier")
+            desc = (f"Lower <b>{_e(p['category'])}</b> floor "
+                    f"{_e(_tier_name(cur))} → <b>{_e(_tier_name(prop))}</b>")
+            meta = (f"{int(stats.get('samples', 0))} samples · "
+                    f"{(100*stats['non_inferior_rate']):.0f}% non-inferior"
+                    if stats.get("non_inferior_rate") is not None
+                    else f"{int(stats.get('samples', 0))} samples")
+        else:  # rule
+            sigs = (payload.get("any") or []) + payload.get("regex", [])
+            sig_txt = ", ".join(_e(s) for s in sigs[:6]) or "—"
+            desc = (f"Rule <b>{_e(payload.get('name') or p['category'])}</b>: "
+                    f"classify as <b>{_e(p['category'])}</b> when prompt matches "
+                    f"<span class=muted>{sig_txt}</span>")
+            meta = f"{int(stats.get('samples', 0))} matching samples"
+        cards += f"""<div class=card style="margin-bottom:10px">
+          <div class=row><div><b>{'Floor' if p['kind']=='floor' else 'Rule'}</b> · {desc}</div>
+            <div class=spacer></div></div>
+          <p class="small muted" style="margin:6px 0 10px">{meta}</p>
+          <form method=post action="/admin/accounts/{target_id}/proposal" class=row style="gap:8px">
+            <input type=hidden name=proposal_id value="{p['id']}">
+            <button class="btn sm" name=decision value=approved>Approve</button>
+            <button class="btn sec sm" name=decision value=rejected>Reject</button>
+          </form></div>"""
+    return f'<h2>Proposed tuning <span class="small muted">— {len(proposals)} pending</span></h2>{cards}'
+
+
 def admin_account_detail(account: dict, target: dict, plan: dict, trial: dict,
                          settings: dict, bill: dict, cats: list[dict],
-                         suggestions: list[str], reset_link: str = "") -> str:
+                         suggestions: list[str], reset_link: str = "",
+                         proposals: list[dict] | None = None) -> str:
     cat_rows = ""
     for c in cats:
         esc_rate = (100 * c["escalations"] / c["routed"]) if c["routed"] else 0
@@ -538,6 +594,8 @@ def admin_account_detail(account: dict, target: dict, plan: dict, trial: dict,
     reset_note = (f'<div class="note">Reset link (valid 1h): <a href="{_e(reset_link)}">{_e(reset_link)}</a></div>'
                   if reset_link else "")
     body += f"""
+    {_proposals_section(target['id'], proposals or [])}
+
     <h2>Manage access</h2>
     {reset_note}
     <div class=card><form method=post action="/admin/accounts/{target['id']}/action">

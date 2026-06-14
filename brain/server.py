@@ -91,6 +91,31 @@ def _console_entitlement(deployment_id: str) -> dict | None:
             "reason": d.get("reason"), "plan": d.get("plan")}
 
 
+_POLICY_CACHE: dict = {}
+_POLICY_TTL = 30  # seconds — approved-policy lookups are cached to stay off the hot path
+
+
+def _console_policy(deployment_id: str) -> dict:
+    """Approved per-customer policy (floors + rules) from the console. Cached;
+    returns empty policy on any failure. Floors are applied here (Track A); rules
+    are surfaced to the gateway via the console (Track C)."""
+    if not _CONSOLE_URL or not deployment_id:
+        return {"floors": {}, "rules": []}
+    hit = _POLICY_CACHE.get(deployment_id)
+    if hit and (time.time() - hit[0]) < _POLICY_TTL:
+        return hit[1]
+    try:
+        import httpx
+        r = httpx.get(f"{_CONSOLE_URL}/api/policy",
+                      params={"deployment_id": deployment_id}, timeout=3.0)
+        r.raise_for_status()
+        pol = r.json()
+    except Exception:  # noqa: BLE001
+        return hit[1] if hit else {"floors": {}, "rules": []}
+    _POLICY_CACHE[deployment_id] = (time.time(), pol)
+    return pol
+
+
 def entitlement(deployment_id: str, license_token: str | None, now: float | None = None) -> dict:
     """Server-authoritative: console (accounts) if configured, else a valid
     license, else a server-tracked 7-day trial keyed by deployment id."""
@@ -129,14 +154,16 @@ def entitlement(deployment_id: str, license_token: str | None, now: float | None
             "license_error": lic_err}
 
 
-def _decision(req: dict) -> dict:
-    """The routing policy (IP): floors, structured-output guard, economics, gate."""
+def _decision(req: dict, floors: dict | None = None) -> dict:
+    """The routing policy (IP): floors, structured-output guard, economics, gate.
+
+    `floors` is this deployment's admin-approved per-category floor overrides
+    (Track A); when present they lower the floor for proven-safe categories."""
     category = req.get("category", "unknown")
     confidence = float(req.get("confidence", 0.0))
     original = req.get("original_model", "")
     f = req.get("features", {}) or {}
-    # per-deployment learned floors could be looked up here; v1 uses global.
-    target = floor_tier(category)
+    target = floor_tier(category, floors)
     if f.get("has_structured_output") or f.get("has_tools"):
         target = max(target, _SONNET_TIER)
     if f.get("approx_context_tokens", 0) > 50_000:
@@ -187,7 +214,8 @@ async def route(request: Request):
         # unoptimized). This is the monetization gate, enforced server-side.
         return {"entitled": False, "apply": False, "recommended_model": body.get("original_model"),
                 "action": "stay", "entitlement": ent}
-    d = _decision(body)
+    floors = _console_policy(str(body.get("deployment_id") or "")).get("floors") if _CONSOLE_URL else None
+    d = _decision(body, floors)
     # Console owns the routing mode: only apply (auto-route) in autopilot. In
     # guidance/shadow the brain still returns the recommendation, but apply=False.
     if ent.get("via") == "console":

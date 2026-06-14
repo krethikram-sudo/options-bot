@@ -50,6 +50,7 @@ def learn_floors(captures_by_category: dict[str, list[str]], run_fn, judge_fn,
     rng = rng or random.Random(7)
     learned = dict(current_floors or {})
     notes = []
+    details = {}  # per-category evidence, for admin review of the proposal
     for category, prompts in sorted(captures_by_category.items()):
         cur = floor_tier(category, learned)
         if cur <= 0:
@@ -68,14 +69,17 @@ def learn_floors(captures_by_category: dict[str, list[str]], run_fn, judge_fn,
             n += 1
             ni += int(bool(judge_fn(p, base_text, routed_text)))
         rate = ni / n if n else 0.0
-        if n >= min_samples and rate >= non_inferior_target:
+        lowered = n >= min_samples and rate >= non_inferior_target
+        if lowered:
             learned[category] = candidate
             notes.append(f"{category}: {ni}/{n} non-inferior at {cand_model} "
                          f"-> floor lowered to {cand_model}")
         else:
             notes.append(f"{category}: {ni}/{n} non-inferior at {cand_model} "
                          f"(< {non_inferior_target:.0%}) -> floor held at {CAPABILITY_LADDER[cur]}")
-    return {"category_floors": learned, "notes": notes}
+        details[category] = {"current_tier": cur, "proposed_tier": candidate,
+                             "samples": n, "non_inferior_rate": rate, "lowered": lowered}
+    return {"category_floors": learned, "notes": notes, "details": details}
 
 
 def captures_by_category(captures: list[dict]) -> dict[str, list[str]]:
@@ -114,6 +118,8 @@ def main():
     parser.add_argument("--target", type=float, default=NON_INFERIOR_TARGET)
     parser.add_argument("--out", default="policy.json",
                         help="policy file to update with category_floors (gates/rules preserved)")
+    parser.add_argument("--submit", action="store_true",
+                        help="submit the learned floors to the hosted console for admin review")
     args = parser.parse_args()
 
     from .ledger import Ledger
@@ -157,6 +163,16 @@ def main():
     else:
         print("\nNo category cleared the bar to lower its floor yet — keep capturing "
               "and re-run.")
+
+    if args.submit:
+        from . import proposals
+        try:
+            n = proposals.submit_floor_details(result.get("details", {}))
+        except Exception as e:  # noqa: BLE001
+            raise SystemExit(f"Submit failed: {e}\nSet MODELPILOT_CONSOLE_URL and "
+                             "MODELPILOT_DEPLOYMENT_ID.")
+        print(f"\nSubmitted {n} floor proposal(s) to the console for review "
+              "(applied to your routing once approved).")
 
 
 def _load_existing_floors(path: str) -> dict:

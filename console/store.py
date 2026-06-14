@@ -14,6 +14,7 @@ Stdlib only (sqlite3, hmac, hashlib, secrets) — no auth/crypto dependencies.
 
 import hashlib
 import hmac
+import json
 import os
 import secrets
 import sqlite3
@@ -109,6 +110,19 @@ CREATE TABLE IF NOT EXISTS resets (
     created_at REAL NOT NULL,
     used INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS proposals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL REFERENCES accounts(id),
+    deployment_id TEXT NOT NULL,
+    kind TEXT NOT NULL,                         -- 'floor' (Track A) | 'rule' (Track C)
+    category TEXT NOT NULL,
+    payload TEXT NOT NULL,                       -- JSON: proposed floor tier / rule spec
+    stats TEXT NOT NULL DEFAULT '{}',           -- JSON: samples, non-inferior rate, etc.
+    status TEXT NOT NULL DEFAULT 'pending',      -- 'pending' | 'approved' | 'rejected'
+    created_at REAL NOT NULL,
+    decided_at REAL
+);
+CREATE INDEX IF NOT EXISTS idx_prop_acct ON proposals(account_id, status);
 """
 
 RESET_TTL = 3600  # password-reset token lifetime (seconds)
@@ -622,6 +636,111 @@ def consume_reset(token: str, new_password: str, path: str | None = None,
         conn.close()
     set_password(account_id, new_password, path)
     return True
+
+
+# --------------------------------------------------------------------------- #
+# Per-customer tuning proposals (Track A floors / Track C rules) — admin review
+# --------------------------------------------------------------------------- #
+
+PROPOSAL_KINDS = ("floor", "rule")
+
+
+def submit_proposal(deployment_id: str, kind: str, category: str, payload: dict,
+                    stats: dict | None = None, path: str | None = None,
+                    now: float | None = None) -> dict:
+    """A gateway proposes a per-customer tuning change (auto-derived from the
+    customer's own traffic, validated by their judge — only the *proposal*
+    reaches us: category + tiers/rule-spec + stats, never prompt text). Supersedes
+    any earlier still-pending proposal of the same (account, kind, category)."""
+    if kind not in PROPOSAL_KINDS:
+        raise StoreError(f"kind must be one of {PROPOSAL_KINDS}")
+    acct = account_for_deployment(deployment_id, path)
+    if not acct:
+        raise StoreError("unknown deployment")
+    now = now or time.time()
+    conn = connect(path)
+    try:
+        conn.execute("DELETE FROM proposals WHERE account_id=? AND kind=? AND category=?"
+                     " AND status='pending'", (acct["id"], kind, category))
+        conn.execute(
+            "INSERT INTO proposals(account_id, deployment_id, kind, category, payload, stats,"
+            " status, created_at) VALUES(?,?,?,?,?,?, 'pending', ?)",
+            (acct["id"], deployment_id, kind, category,
+             json.dumps(payload), json.dumps(stats or {}), now))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"ok": True, "account_id": acct["id"]}
+
+
+def _row_proposal(r: dict) -> dict:
+    return {**r, "payload": json.loads(r["payload"]), "stats": json.loads(r["stats"] or "{}")}
+
+
+def list_proposals(account_id: int | None = None, status: str | None = "pending",
+                   path: str | None = None) -> list[dict]:
+    clause, params = [], []
+    if account_id is not None:
+        clause.append("account_id=?"); params.append(account_id)
+    if status is not None:
+        clause.append("status=?"); params.append(status)
+    where = (" WHERE " + " AND ".join(clause)) if clause else ""
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            f"SELECT * FROM proposals{where} ORDER BY created_at DESC", params).fetchall()
+        return [_row_proposal(dict(r)) for r in rows]
+    finally:
+        conn.close()
+
+
+def count_pending_proposals(path: str | None = None) -> int:
+    conn = connect(path)
+    try:
+        return conn.execute("SELECT COUNT(*) c FROM proposals WHERE status='pending'").fetchone()["c"]
+    finally:
+        conn.close()
+
+
+def decide_proposal(proposal_id: int, status: str, path: str | None = None,
+                    now: float | None = None) -> bool:
+    if status not in ("approved", "rejected"):
+        raise StoreError("status must be approved or rejected")
+    now = now or time.time()
+    conn = connect(path)
+    try:
+        cur = conn.execute("UPDATE proposals SET status=?, decided_at=? WHERE id=? AND status='pending'",
+                           (status, now, proposal_id))
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def approved_floors(account_id: int, path: str | None = None) -> dict:
+    """Approved per-category floor overrides for this account (Track A). Format
+    matches taxonomy.floor_tier's `floors` arg: {category: tier}."""
+    floors = {}
+    for p in list_proposals(account_id, status="approved", path=path):
+        if p["kind"] == "floor":
+            tier = p["payload"].get("proposed_tier")
+            if tier is not None:
+                floors[p["category"]] = int(tier)
+    return floors
+
+
+def approved_rules(account_id: int, path: str | None = None) -> list[dict]:
+    """Approved per-customer classification rules (Track C), newest first."""
+    return [p["payload"] for p in list_proposals(account_id, status="approved", path=path)
+            if p["kind"] == "rule"]
+
+
+def approved_policy_for_deployment(deployment_id: str, path: str | None = None) -> dict:
+    acct = account_for_deployment(deployment_id, path)
+    if not acct:
+        return {"floors": {}, "rules": []}
+    return {"floors": approved_floors(acct["id"], path),
+            "rules": approved_rules(acct["id"], path)}
 
 
 def cycle_start(now: float | None = None) -> float:

@@ -97,7 +97,29 @@ def main():
     parser.add_argument("--days", type=float, default=30.0, help="capture window (0 = all)")
     parser.add_argument("--out", default="rules.json")
     parser.add_argument("--min-docs", type=int, default=3)
+    parser.add_argument("--submit", action="store_true",
+                        help="submit rules from --out (with a category filled in) to the console "
+                             "for admin review, instead of (re)mining")
     args = parser.parse_args()
+
+    if args.submit:
+        from . import proposals
+        try:
+            with open(args.out) as f:
+                rules = (json.load(f) or {}).get("category_rules", [])
+        except (OSError, ValueError):
+            raise SystemExit(f"No rules file at {args.out}. Run without --submit first, "
+                             "fill in each rule's `category`, then re-run with --submit.")
+        ready = [r for r in rules if r.get("category")]
+        if not ready:
+            raise SystemExit(f"No rules in {args.out} have a `category` set. Fill them in first.")
+        try:
+            n = proposals.submit_rules(ready)
+        except Exception as e:  # noqa: BLE001
+            raise SystemExit(f"Submit failed: {e}\nSet MODELPILOT_CONSOLE_URL and "
+                             "MODELPILOT_DEPLOYMENT_ID.")
+        print(f"Submitted {n} rule proposal(s) to the console for review.")
+        return
 
     ledger = Ledger(args.db)
     since = time.time() - args.days * 86_400 if args.days else 0.0

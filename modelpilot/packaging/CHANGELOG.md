@@ -4,6 +4,25 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.23.0 — 2026-06-14
+
+- **Per-customer tuning, admin-reviewed (Tracks A + C in the console).** Gateways
+  submit auto-derived tuning *proposals* — learned floors (Track A, judge-validated
+  non-inferiority on the customer's own traffic) and classification rules (Track C)
+  — to the console for approval. Only the proposal travels: a category + proposed
+  tiers / rule spec + aggregate stats (samples, non-inferiority rate), never prompt
+  text (`/api/proposals` rejects sensitive keys). Admins review each on the customer
+  detail page (with the evidence) and **approve/reject**; the overview shows a
+  pending-review count.
+- **Approved policy flows back automatically.** `GET /api/policy` exposes a
+  deployment's approved floors + rules. The **brain applies approved floors**
+  per-account when routing (cached), and the **gateway loads approved floors + rules**
+  at startup from the console — so an approval lowers that customer's floors/adds
+  rules with no redeploy. Submit from the gateway with
+  `modelpilot learn-floors --submit` / `modelpilot learn-rules --submit`
+  (`modelpilot/proposals.py`; `learn_floors` now returns per-category review
+  `details`).
+
 ## 0.22.0 — 2026-06-14
 
 - **Customer dashboard: savings by task type + a quality-proof stat.** The web
