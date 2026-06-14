@@ -50,16 +50,35 @@ app = FastAPI(title="ModelPilot thin client")
 
 @app.on_event("startup")
 async def _startup():
+    import asyncio
+
     app.state.http = httpx.AsyncClient(timeout=httpx.Timeout(600.0, connect=10.0))
     app.state.deployment_id = brain_client.deployment_id(DB_PATH)
     # Admin-approved per-customer classification rules (Track C), applied locally
     # so the cheap-model routing reflects this customer's domain. Floors stay in
-    # the brain. Fetched at startup; restart to pick up newly-approved rules.
+    # the brain. Refreshed in the background so newly-approved rules take effect
+    # without a restart.
     app.state.rules = brain_client.fetch_policy(CONSOLE_URL, app.state.deployment_id)["rules"]
+    app.state.policy_task = None
+    if CONSOLE_URL and app.state.deployment_id:
+        async def _refresh():
+            interval = int(os.environ.get("MODELPILOT_POLICY_REFRESH", "300"))
+            while True:
+                await asyncio.sleep(interval)
+                try:
+                    pol = await asyncio.to_thread(
+                        brain_client.fetch_policy, CONSOLE_URL, app.state.deployment_id)
+                    app.state.rules = pol["rules"]
+                except Exception:  # noqa: BLE001 — refresh must never break the proxy
+                    pass
+        app.state.policy_task = asyncio.create_task(_refresh())
 
 
 @app.on_event("shutdown")
 async def _shutdown():
+    task = getattr(app.state, "policy_task", None)
+    if task is not None:
+        task.cancel()
     await app.state.http.aclose()
 
 

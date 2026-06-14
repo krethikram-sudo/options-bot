@@ -4,6 +4,20 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.25.0 — 2026-06-14
+
+- **Live policy refresh (no restart).** Both the thin client and the full gateway
+  now re-fetch admin-approved floors + rules from the console in the background
+  (`MODELPILOT_POLICY_REFRESH`, default 300s) and apply them on the fly — the thin
+  client updates its rule set; the gateway rebuilds its classifier (floors + rules).
+  Approving a customer's tuning takes effect within minutes, no redeploy. Tasks are
+  off the request path and cancelled cleanly on shutdown.
+- **Bulk review queue (admin).** A new cross-customer `/admin/proposals` queue lists
+  every pending tuning proposal with its evidence; tick any subset (select-all
+  included) and **approve or reject in bulk** with one optional note attributed to
+  each (audit trail). The overview's "Tuning to review" card links straight to it,
+  and "Review" is in the admin nav.
+
 ## 0.24.0 — 2026-06-14
 
 - **Approved rules now apply in the published thin client too (Track C, commodity).**

@@ -194,9 +194,31 @@ async def _lifespan(app):
                     pass
 
         meter_task = asyncio.create_task(_meter_loop())
+
+    # Live policy refresh: re-fetch admin-approved floors + rules from the console
+    # and rebuild the classifier, so an approval takes effect without a restart.
+    policy_task = None
+    if app.state.console_url:
+        import asyncio
+
+        async def _policy_loop():
+            interval = int(os.environ.get("MODELPILOT_POLICY_REFRESH", "300"))
+            while True:
+                await asyncio.sleep(interval)
+                try:
+                    clf, adaptation = await asyncio.to_thread(_load_classifier)
+                    app.state.classifier = clf
+                    app.state.adaptation = adaptation
+                    app.state.policy_floors = adaptation["floors"]
+                except Exception:  # noqa: BLE001 — refresh must never break the gateway
+                    pass
+
+        policy_task = asyncio.create_task(_policy_loop())
     yield
     if meter_task is not None:
         meter_task.cancel()
+    if policy_task is not None:
+        policy_task.cancel()
     await app.state.http.aclose()
     app.state.ledger.close()
 

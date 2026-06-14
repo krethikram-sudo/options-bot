@@ -39,6 +39,12 @@ async def _form(request: Request) -> dict:
     return {k: v[-1] for k, v in parse_qs(raw, keep_blank_values=True).items()}
 
 
+async def _form_multi(request: Request) -> dict:
+    """Like _form but keeps all values per key (for checkbox groups)."""
+    raw = (await request.body()).decode("utf-8", "replace")
+    return parse_qs(raw, keep_blank_values=True)
+
+
 def _current(request: Request) -> dict | None:
     tok = request.cookies.get(COOKIE)
     if not tok:
@@ -348,6 +354,33 @@ def admin_overview(request: Request):
             "pending_proposals": len(store.list_proposals(a["id"], status="pending")),
         })
     return _html(web.admin_overview(acct, rev, rows, store.count_pending_proposals()))
+
+
+@app.get("/admin/proposals", response_class=HTMLResponse)
+def admin_proposals(request: Request):
+    acct, redir = _require_admin(request)
+    if redir:
+        return redir
+    pending = store.list_proposals(status="pending")
+    emails = {a["id"]: a["email"] for a in store.list_accounts()}
+    return _html(web.admin_proposals_queue(acct, pending, emails))
+
+
+@app.post("/admin/proposals/bulk")
+async def admin_proposals_bulk(request: Request):
+    acct, redir = _require_admin(request)
+    if redir:
+        return redir
+    data = await _form_multi(request)
+    decision = (data.get("decision") or [""])[-1]
+    note = (data.get("note") or [""])[-1] or None
+    if decision in ("approved", "rejected"):
+        for sid in data.get("ids", []):
+            try:
+                store.decide_proposal(int(sid), decision, decided_by=acct["id"], note=note)
+            except (ValueError, store.StoreError):
+                pass
+    return _redirect("/admin/proposals")
 
 
 @app.get("/admin/accounts/{account_id}", response_class=HTMLResponse)

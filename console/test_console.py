@@ -372,6 +372,49 @@ def test_admin_reviews_and_approves_proposal_via_http(env, client):
     assert store.approved_floors(cust["id"]) == {"extraction": 0}
 
 
+def test_admin_bulk_approve_across_customers(env, client):
+    _, store = env
+    store.create_account("boss4@b.com", "password123", role="admin")
+    c1 = store.create_account("c1@b.com", "password123")
+    c2 = store.create_account("c2@b.com", "password123")
+    d1 = store.deployments_for(c1["id"])[0]["deployment_id"]
+    d2 = store.deployments_for(c2["id"])[0]["deployment_id"]
+    store.submit_proposal(d1, "floor", "extraction", {"current_tier": 1, "proposed_tier": 0}, {"samples": 10})
+    store.submit_proposal(d2, "floor", "classification", {"current_tier": 1, "proposed_tier": 0}, {"samples": 12})
+    ids = [str(p["id"]) for p in store.list_proposals(status="pending")]
+    assert len(ids) == 2
+    client.post("/login", data={"email": "boss4@b.com", "password": "password123"})
+    # the queue page lists both customers' pending proposals
+    q = client.get("/admin/proposals").text
+    assert "Review queue" in q and "c1@b.com" in q and "c2@b.com" in q
+    # bulk-approve both (a list value encodes repeated `ids` keys)
+    r = client.post("/admin/proposals/bulk",
+                    data={"ids": ids, "decision": "approved", "note": "batch ok"})
+    assert r.status_code == 303
+    assert store.approved_floors(c1["id"]) == {"extraction": 0}
+    assert store.approved_floors(c2["id"]) == {"classification": 0}
+    assert store.count_pending_proposals() == 0
+    # the decisions are attributed in each customer's audit trail
+    assert store.proposal_history(c1["id"])[0]["note"] == "batch ok"
+
+
+def test_admin_bulk_reject_only_selected(env, client):
+    _, store = env
+    store.create_account("boss5@b.com", "password123", role="admin")
+    c1 = store.create_account("c3@b.com", "password123")
+    d1 = store.deployments_for(c1["id"])[0]["deployment_id"]
+    store.submit_proposal(d1, "floor", "extraction", {"current_tier": 1, "proposed_tier": 0}, {"samples": 10})
+    store.submit_proposal(d1, "rule", "translation", {"name": "t", "any": ["traducir"], "category": "translation"}, {"samples": 9})
+    pend = store.list_proposals(c1["id"], status="pending")
+    keep = [p for p in pend if p["kind"] == "rule"][0]["id"]
+    drop = [p for p in pend if p["kind"] == "floor"][0]["id"]
+    client.post("/login", data={"email": "boss5@b.com", "password": "password123"})
+    client.post("/admin/proposals/bulk", data={"ids": [str(drop)], "decision": "rejected"})
+    # only the floor was rejected; the rule is still pending
+    remaining = [p["id"] for p in store.list_proposals(c1["id"], status="pending")]
+    assert remaining == [keep]
+
+
 def test_proposal_audit_trail(env, client):
     _, store = env
     admin = store.create_account("boss3@b.com", "password123", role="admin")

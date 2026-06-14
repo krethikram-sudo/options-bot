@@ -96,6 +96,7 @@ def page(title: str, body: str, account: dict | None = None, active: str = "") -
                  ("/app/connect", "Connect"), ("/app/billing", "Billing")]
         if account.get("role") == "admin":
             items.append(("/admin", "Admin"))
+            items.append(("/admin/proposals", "Review"))
         links = "".join(
             f'<a class="{"on" if active==href else ""}" href="{href}">{_e(label)}</a>'
             for href, label in items)
@@ -471,10 +472,10 @@ def admin_overview(account: dict, rev: dict, rows: list[dict], pending: int = 0)
           <td>{money(r['cycle_savings'])}</td>
           <td>{money(r['cycle_revenue'])}</td>
           <td class="small muted">{_fmt_date(r['created_at'])}</td></tr>"""
-    pending_card = (f'<div class=card><div class=label>Tuning to review</div>'
+    pending_card = (f'<a class=card href="/admin/proposals" style="display:block;text-decoration:none;color:inherit">'
+                    f'<div class=label>Tuning to review</div>'
                     f'<div class=stat>{pending}</div>'
-                    f'<div class="small muted">auto-proposed floor/rule changes pending approval</div></div>'
-                    if True else "")
+                    f'<div class="small muted">auto-proposed floor/rule changes — click to review &amp; bulk-approve</div></a>')
     body = f"""
     <h1>Admin · overview</h1>
     <p class=muted>Revenue and savings across all customers. Use this to spot where the product is
@@ -512,6 +513,26 @@ def _tier_name(t) -> str:
         return str(t)
 
 
+def _proposal_desc(p: dict) -> tuple[str, str, str]:
+    """(kind label, human description, evidence/meta) for one proposal."""
+    stats = p.get("stats") or {}
+    payload = p.get("payload") or {}
+    if p["kind"] == "floor":
+        cur, prop = payload.get("current_tier"), payload.get("proposed_tier")
+        desc = (f"Lower <b>{_e(p['category'])}</b> floor "
+                f"{_e(_tier_name(cur))} → <b>{_e(_tier_name(prop))}</b>")
+        meta = (f"{int(stats.get('samples', 0))} samples · "
+                f"{(100*stats['non_inferior_rate']):.0f}% non-inferior"
+                if stats.get("non_inferior_rate") is not None
+                else f"{int(stats.get('samples', 0))} samples")
+        return "Floor", desc, meta
+    sigs = (payload.get("any") or []) + payload.get("regex", [])
+    sig_txt = ", ".join(_e(s) for s in sigs[:6]) or "—"
+    desc = (f"Rule <b>{_e(payload.get('name') or p['category'])}</b>: classify as "
+            f"<b>{_e(p['category'])}</b> when prompt matches <span class=muted>{sig_txt}</span>")
+    return "Rule", desc, f"{int(stats.get('samples', 0))} matching samples"
+
+
 def _proposals_section(target_id: int, proposals: list[dict]) -> str:
     if not proposals:
         return ('<h2>Proposed tuning</h2><div class=card><p class="small muted">No pending '
@@ -519,26 +540,9 @@ def _proposals_section(target_id: int, proposals: list[dict]) -> str:
                 '(validated on their own traffic) for your approval.</p></div>')
     cards = ""
     for p in proposals:
-        stats = p.get("stats") or {}
-        payload = p.get("payload") or {}
-        if p["kind"] == "floor":
-            cur, prop = payload.get("current_tier"), payload.get("proposed_tier")
-            desc = (f"Lower <b>{_e(p['category'])}</b> floor "
-                    f"{_e(_tier_name(cur))} → <b>{_e(_tier_name(prop))}</b>")
-            meta = (f"{int(stats.get('samples', 0))} samples · "
-                    f"{(100*stats['non_inferior_rate']):.0f}% non-inferior"
-                    if stats.get("non_inferior_rate") is not None
-                    else f"{int(stats.get('samples', 0))} samples")
-        else:  # rule
-            sigs = (payload.get("any") or []) + payload.get("regex", [])
-            sig_txt = ", ".join(_e(s) for s in sigs[:6]) or "—"
-            desc = (f"Rule <b>{_e(payload.get('name') or p['category'])}</b>: "
-                    f"classify as <b>{_e(p['category'])}</b> when prompt matches "
-                    f"<span class=muted>{sig_txt}</span>")
-            meta = f"{int(stats.get('samples', 0))} matching samples"
+        label, desc, meta = _proposal_desc(p)
         cards += f"""<div class=card style="margin-bottom:10px">
-          <div class=row><div><b>{'Floor' if p['kind']=='floor' else 'Rule'}</b> · {desc}</div>
-            <div class=spacer></div></div>
+          <div class=row><div><b>{label}</b> · {desc}</div><div class=spacer></div></div>
           <p class="small muted" style="margin:6px 0 10px">{meta}</p>
           <form method=post action="/admin/accounts/{target_id}/proposal" class=row style="gap:8px">
             <input type=hidden name=proposal_id value="{p['id']}">
@@ -546,7 +550,45 @@ def _proposals_section(target_id: int, proposals: list[dict]) -> str:
             <button class="btn sm" name=decision value=approved>Approve</button>
             <button class="btn sec sm" name=decision value=rejected>Reject</button>
           </form></div>"""
-    return f'<h2>Proposed tuning <span class="small muted">— {len(proposals)} pending</span></h2>{cards}'
+    return (f'<h2>Proposed tuning <span class="small muted">— {len(proposals)} pending</span></h2>'
+            f'{cards}')
+
+
+def admin_proposals_queue(account: dict, proposals: list[dict], emails: dict) -> str:
+    """Global pending-proposal queue with bulk approve/reject across customers."""
+    if not proposals:
+        body = ('<h1>Review queue</h1><div class=card><p class=muted>No pending tuning proposals '
+                'across any customer.</p></div>')
+        return page("Review queue", body, account, "/admin/proposals")
+    rows = ""
+    for p in proposals:
+        label, desc, meta = _proposal_desc(p)
+        email = _e(emails.get(p["account_id"], "?"))
+        rows += f"""<tr>
+          <td><input type=checkbox name=ids value="{p['id']}" checked></td>
+          <td><a href="/admin/accounts/{p['account_id']}">{email}</a></td>
+          <td><b>{label}</b> · {desc}<br><span class="small muted">{meta}</span></td>
+          <td class="small muted">{_fmt_date(p.get('created_at'))}</td></tr>"""
+    body = f"""
+    <div class=row><h1>Review queue</h1><div class=spacer></div>
+      <a class="small" href="/admin">← overview</a></div>
+    <p class=muted>{len(proposals)} pending tuning proposal(s) across all customers. Tick the ones
+    to act on, add an optional note, then approve or reject in bulk.</p>
+    <form method=post action="/admin/proposals/bulk">
+      <div class=card style="padding:0"><table>
+        <thead><tr>
+          <th><label class=row style="gap:4px"><input type=checkbox checked
+            onclick="for(const c of document.getElementsByName('ids'))c.checked=this.checked"> all</label></th>
+          <th>Customer</th><th>Proposed change</th><th>Submitted</th></tr></thead>
+        <tbody>{rows}</tbody></table></div>
+      <div class=card style="margin-top:12px"><div class=row style="gap:8px">
+        <input name=note placeholder="note applied to all selected (optional)" style="max-width:320px">
+        <span class=spacer></span>
+        <button class="btn" name=decision value=approved>Approve selected</button>
+        <button class="btn sec" name=decision value=rejected>Reject selected</button>
+      </div></div>
+    </form>"""
+    return page("Review queue", body, account, "/admin/proposals")
 
 
 def _audit_section(history: list[dict]) -> str:
