@@ -175,6 +175,11 @@ def extract_features(body: dict) -> dict:
         "n_turns": len(messages),
         "approx_context_tokens": total_chars // CHARS_PER_TOKEN,
         "has_tools": bool(body.get("tools")),
+        # A machine-enforced output contract (structured outputs / JSON schema /
+        # response_format). A cheaper model can be semantically non-inferior yet
+        # emit a structurally different shape that breaks brittle downstream
+        # parsing — so these are routed conservatively (floor sonnet).
+        "has_structured_output": bool(body.get("output_config") or body.get("response_format")),
         "has_images": '"type": "image"' in json.dumps(messages) or '"type":"image"' in json.dumps(messages),
         "has_code": bool(_CODE_HINT.search(prompt)),
         "has_cache_control": has_cache_control,
@@ -232,6 +237,10 @@ def _classify_standalone(features: dict) -> tuple[str, int, float, str]:
             tier = max(tier, 1)
             confidence -= 0.15
             rationale += "; tool use (floor sonnet)"
+        if features.get("has_structured_output"):
+            tier = max(tier, 1)
+            confidence -= 0.10
+            rationale += "; structured-output contract (floor sonnet)"
         if features["has_code"] and category not in ("extraction", "rewrite_format"):
             tier = max(tier, 1)
             confidence -= 0.10

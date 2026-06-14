@@ -278,17 +278,29 @@ dashboard → autopilot would save <span class="g">48% of baseline</span> — sw
 
       <section><div class="wrap">
         <h2>Why the routing is trustworthy</h2>
+        <p class="note"><b>The thing naive routers get wrong:</b> prompt caches are
+          <b>model-scoped</b>, so switching models mid-conversation can forfeit your
+          cache discount and cost <em>more</em>. ModelPilot prices the cache break
+          before every switch and vetoes any move that doesn't actually pay — the
+          difference between a real bill reduction and a vanity routing metric.</p>
         <table>
           <tr><th>Hard problem</th><th>How ModelPilot handles it</th></tr>
+          <tr><td><b>Prompt caches are model-scoped</b> — naive switching loses money</td>
+              <td>Cache-aware economics price the rewrite before any mid-conversation
+                  switch and veto switches that don't pay</td></tr>
+          <tr><td>Does the router itself add latency?</td>
+              <td>The routing decision is local heuristics: <b>~0.05&nbsp;ms</b> per request
+                  (≈3&nbsp;ms even on a 24k-token conversation) — negligible next to
+                  multi-second generation</td></tr>
+          <tr><td>Structured outputs / JSON schemas can break brittle parsers</td>
+              <td>Requests with a tool or output-schema contract are never downgraded
+                  below Sonnet, so the response shape your code depends on is preserved</td></tr>
           <tr><td>"Summarize" can be trivial or expert-level</td>
               <td>Calibrated on a golden dataset with a ≤2% false-downgrade target;
                   when unsure, it doesn't touch your request</td></tr>
           <tr><td>"why?" after a hard exchange looks trivial</td>
               <td>Session-context routing: follow-ups inherit the conversation's
                   difficulty; mechanical tasks over existing content stay cheap</td></tr>
-          <tr><td>Prompt caches are model-scoped — naive switching loses money</td>
-              <td>Cache-aware economics price the rewrite before any mid-conversation
-                  switch and veto switches that don't pay</td></tr>
           <tr><td>Vendors grade their own homework</td>
               <td>Randomized holdout + escalation costs deducted + side-by-side output
                   comparisons on your own traffic: <code>modelpilot compare --from-captures --judge</code></td></tr>

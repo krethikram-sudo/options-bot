@@ -12,6 +12,24 @@ def test_classification_prompt_routes_to_haiku():
     assert rec.confidence >= 0.7
 
 
+def test_structured_output_contract_floors_to_sonnet():
+    prompt = "Classify this review as positive or negative: 'Great product, fast shipping!'"
+    # Without a schema, classification routes to Haiku...
+    assert recommend(_body(prompt)).recommended_model == "claude-haiku-4-5"
+    # ...but a machine-enforced output contract must not be downgraded below Sonnet,
+    # since a cheaper model could break brittle downstream parsing.
+    schema_body = _body(prompt, output_config={"format": {"type": "json_schema", "schema": {}}})
+    rec = recommend(schema_body)
+    assert rec.recommended_model == "claude-sonnet-4-6"
+    assert extract_features(schema_body)["has_structured_output"] is True
+
+
+def test_response_format_also_floors_to_sonnet():
+    rec = recommend(_body("Extract the order id from: 'order #A-1 shipped'.",
+                          response_format={"type": "json_object"}))
+    assert rec.recommended_model != "claude-haiku-4-5"
+
+
 def test_complex_refactor_stays_on_opus():
     rec = recommend(_body("Refactor the billing module across multiple files to use the new event-driven architecture."))
     assert rec.action == "stay"

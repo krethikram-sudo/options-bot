@@ -4,6 +4,18 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.6.0 — 2026-06-14
+
+- **Structured-output safety (behavior change).** Requests carrying a
+  machine-enforced output contract — tool definitions, `output_config`/JSON
+  schema, or `response_format` — are never auto-downgraded below Sonnet, so a
+  cheaper model can't silently change the response *shape* and break brittle
+  downstream parsing. (Addresses an external review's format-brittleness risk;
+  golden-set false-downgrade stays 0%.)
+- Landing page: published the measured router overhead (~0.05 ms/request, ≈3 ms
+  on a 24k-token conversation) and elevated cache-awareness as the lead
+  trust differentiator.
+
 ## 0.5.2 — 2026-06-14
 
 Beta-tester feedback fixes:
