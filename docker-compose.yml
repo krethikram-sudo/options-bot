@@ -1,0 +1,62 @@
+# ModelPilot — one-command stack (VENDOR / INTERNAL).
+# Brings up the three backend services wired together:
+#   console (web app + accounts + billing + machine API)  :8700  -> public
+#   brain   (routing decision + entitlement, reads console):8600  -> internal
+#   ingest  (opt-in aggregate telemetry)                   :8500  -> internal
+#
+#   cp deploy/.env.example .env   # set CONSOLE_SECRET (+ Stripe/SMTP if you have them)
+#   docker compose up -d --build
+#   docker compose exec console env ADMIN_EMAIL=you@co.com ADMIN_PASSWORD=secret \
+#       python -m console.seed      # create your admin login
+#
+# Put console behind HTTPS (a reverse proxy / your platform) and set
+# CONSOLE_BASE_URL + CONSOLE_SECURE_COOKIES=1 for production.
+
+services:
+  brain:
+    build: { context: ., dockerfile: brain/Dockerfile }
+    environment:
+      BRAIN_DB: /data/brain.db
+      CONSOLE_URL: http://console:8700      # entitlement + mode + approved policy
+    volumes: [ "braindata:/data" ]
+    expose: [ "8600" ]
+    restart: unless-stopped
+
+  ingest:
+    build: { context: ., dockerfile: ingest/Dockerfile }
+    environment:
+      INGEST_DB: /data/ingest.db
+    volumes: [ "ingestdata:/data" ]
+    expose: [ "8500" ]
+    restart: unless-stopped
+
+  console:
+    build: { context: ., dockerfile: console/Dockerfile }
+    environment:
+      CONSOLE_DB: /data/console.db
+      CONSOLE_PORT: "8700"
+      CONSOLE_SECRET: ${CONSOLE_SECRET:?set CONSOLE_SECRET in .env}
+      CONSOLE_BASE_URL: ${CONSOLE_BASE_URL:-http://localhost:8700}
+      CONSOLE_SECURE_COOKIES: ${CONSOLE_SECURE_COOKIES:-0}
+      MODELPILOT_BRAIN_URL: http://brain:8600
+      MODELPILOT_INGEST_URL: http://ingest:8500   # powers the /status page
+      # Optional integrations (leave blank to disable):
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-ModelPilot <no-reply@modelpilot.app>}
+      CONSOLE_AUTOAPPROVE: ${CONSOLE_AUTOAPPROVE:-}
+      CONSOLE_DIGEST_HOURS: ${CONSOLE_DIGEST_HOURS:-0}
+    volumes: [ "consoledata:/data" ]
+    ports: [ "8700:8700" ]
+    depends_on: [ brain, ingest ]
+    restart: unless-stopped
+
+volumes:
+  braindata:
+  ingestdata:
+  consoledata:
