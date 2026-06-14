@@ -133,15 +133,16 @@ const CONTACT = "krethikram@gmail.com";
           <a class="btn primary" href={`mailto:${CONTACT}?subject=ModelPilot beta — repo invite`}>Request beta access →</a>
           <a class="btn ghost" href="#quickstart">2-minute quickstart</a>
         </div>
-        <pre class="term"><span class="c"># no API key, no spend — see it route in two minutes</span>
-$ pip install "modelpilot @ git+https://github.com/krethikram-sudo/modelpilot.git"
-$ modelpilot demo --offline
+        <pre class="term"><span class="c"># guidance mode — your key, zero change to your traffic</span>
+$ export ANTHROPIC_API_KEY=sk-ant-...
+$ modelpilot gateway --mode guidance --port 8400
+<span class="c"># point one app at it:  ANTHROPIC_BASE_URL=http://localhost:8400</span>
 
-  1 classification    <span class="g">SWITCH → claude-haiku-4-5</span>   conf 0.85
-  2 debugging         <span class="y">stay   → claude-opus-4-8</span>    quality protected
-  3 extraction        <span class="g">SWITCH → claude-haiku-4-5</span>   conf 0.85
+  classification   <span class="g">→ would route to claude-haiku-4-5</span>   conf 0.85
+  debugging        <span class="y">→ stays on claude-opus-4-8</span>         quality protected
+  extraction       <span class="g">→ would route to claude-haiku-4-5</span>   conf 0.85
   ...
-REALIZED savings: <span class="g">$0.07</span>   POTENTIAL: $0.12  <span class="g">(48% of baseline)</span></pre>
+dashboard → autopilot would save <span class="g">48% of baseline</span> — switch when ready</pre>
       </div></header>
 
       <section><div class="wrap">
