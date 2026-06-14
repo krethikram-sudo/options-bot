@@ -90,7 +90,11 @@ def report_once(db_path: str | None = None, console_url: str | None = None,
             post_fn(payload)
         else:
             import httpx
-            r = httpx.post(f"{console_url}/api/meter", json=payload, timeout=5.0)
+            headers = {}
+            key = os.environ.get("MODELPILOT_API_KEY")
+            if key:
+                headers["Authorization"] = f"Bearer {key}"
+            r = httpx.post(f"{console_url}/api/meter", json=payload, timeout=5.0, headers=headers)
             r.raise_for_status()
     except Exception as e:  # noqa: BLE001 — metering must never break the gateway
         return {"posted": False, "reason": f"post failed: {e}", "delta": delta}

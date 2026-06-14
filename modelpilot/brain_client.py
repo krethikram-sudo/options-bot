@@ -31,8 +31,12 @@ def fetch_policy(console_url: str | None, deployment_id: str | None, timeout: fl
         return {"floors": {}, "rules": []}
     try:
         import httpx
+        headers = {}
+        key = os.environ.get("MODELPILOT_API_KEY")
+        if key:
+            headers["Authorization"] = f"Bearer {key}"
         r = httpx.get(f"{console_url.rstrip('/')}/api/policy",
-                      params={"deployment_id": deployment_id}, timeout=timeout)
+                      params={"deployment_id": deployment_id}, timeout=timeout, headers=headers)
         r.raise_for_status()
         pol = r.json()
         return {"floors": pol.get("floors") or {}, "rules": pol.get("rules") or []}

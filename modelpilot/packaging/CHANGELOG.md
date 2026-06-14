@@ -4,6 +4,21 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.26.0 — 2026-06-14
+
+- **API keys (P0 tablestakes).** Customers create named, per-deployment API keys in
+  the console (Connect page) — shown once, sha256-hashed at rest, revocable, with
+  last-used tracking. The gateway authenticates to the console with
+  `MODELPILOT_API_KEY` (sent as `Authorization: Bearer …`) on metering, policy, and
+  proposal calls; the machine endpoints resolve the key to the deployment and 401 a
+  bad/revoked key. Backward compatible — deployment_id still works when no key is sent.
+- **Spend budgets + alerts (P0 tablestakes).** Set a monthly spend budget + alert
+  threshold in Settings; the dashboard shows a spend-vs-budget bar, and the console
+  emails the account at the warn threshold and again if it goes over (once each per
+  cycle, via the metering path). Off by default (budget 0 = no cap).
+- Client wiring (`brain_client`, `metering`, `proposals`) sends the bearer key when
+  `MODELPILOT_API_KEY` is set. (Console-side features are vendor-internal.)
+
 ## 0.25.0 — 2026-06-14
 
 - **Live policy refresh (no restart).** Both the thin client and the full gateway

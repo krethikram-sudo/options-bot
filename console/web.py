@@ -178,9 +178,25 @@ def _trial_banner(plan: dict, trial: dict) -> str:
             'just unoptimized). <a href="/app/billing">Activate billing</a> to resume savings.</div>')
 
 
+def _budget_card(budget: dict | None) -> str:
+    if not budget or not budget.get("enabled"):
+        return ""
+    pct = min(100, 100 * budget["pct"])
+    color = "#dc2626" if budget["over"] else ("#b45309" if budget["warn"] else "var(--accent)")
+    state = ("Over budget" if budget["over"] else
+             ("Near budget" if budget["warn"] else "Within budget"))
+    return f"""<div class=card><div class=label>Spend budget (this cycle)</div>
+      <div class=row style="margin:6px 0"><div class=stat style="font-size:22px">{money(budget['spend'])}</div>
+        <span class=muted style="margin-left:6px">/ {money(budget['budget'])}</span>
+        <div class=spacer></div><span class="small" style="color:{color};font-weight:600">{state}</span></div>
+      <div class=bar><span style="width:{pct:.0f}%;background:{color}"></span></div>
+      <p class="small muted" style="margin-top:8px">Alerts at {int(budget['alert_pct']*100)}%. Adjust in
+      <a href="/app/settings">Settings</a>.</p></div>"""
+
+
 def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
               cycle: dict, lifetime: dict, bill: dict, deployment: dict,
-              cats: list[dict], proof: dict) -> str:
+              cats: list[dict], proof: dict, budget: dict | None = None) -> str:
     mode = settings["mode"]
     mode_badge = {"autopilot": "paid", "guidance": "trial", "shadow": "off"}.get(mode, "off")
     routed_pct = (100 * cycle["routed"] / cycle["requests"]) if cycle["requests"] else 0
@@ -212,6 +228,7 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
         {_compare_bars(cycle['baseline'], cycle['actual'])}</div>
       {_proof_card(proof)}
     </div>
+    {(' <div style="margin-top:16px">' + _budget_card(budget) + '</div>') if (budget and budget.get('enabled')) else ''}
 
     <h2>Savings by task type <span class="small muted">— where the money comes from</span></h2>
     {_category_savings(cats)}
@@ -313,13 +330,59 @@ def settings_page(account: dict, settings: dict, saved: bool = False) -> str:
           <input type=checkbox name=telemetry_opt_in value=1 {"checked" if settings["telemetry_opt_in"] else ""}
             style="width:auto;margin-right:8px"> Share anonymous, aggregate performance telemetry</label>
           <p class="small muted">Counts and dollars only — never prompt text. Helps us tune routing for your traffic.</p></div>
+        <h2>Spend budget</h2>
+        <div class=field><label>Monthly spend budget (USD, 0 = no cap)</label>
+          <input name=monthly_budget type=number step="0.01" min="0" value="{settings.get('monthly_budget') or 0:g}">
+          <p class="small muted">Your model spend through ModelPilot this cycle. We email you when you cross the alert threshold and again if you go over.</p></div>
+        <div class=field><label>Alert at (% of budget)</label>
+          <input name=budget_alert_pct type=number step="1" min="1" max="100" value="{int((settings.get('budget_alert_pct') or 0.8)*100)}"></div>
         <button class=btn>Save settings</button>
       </form>
     </div>"""
     return page("Settings", body, account, "/app/settings")
 
 
-def connect_page(account: dict, deployments: list[dict], brain_url: str, console_url: str) -> str:
+def _api_keys_section(keys: list[dict], deployments: list[dict], new_key: str = "") -> str:
+    reveal = ""
+    if new_key:
+        reveal = (f'<div class="note"><b>Your new API key (shown once — copy it now):</b><br>'
+                  f'<code style="word-break:break-all">{_e(new_key)}</code></div>')
+    rows = ""
+    for k in keys:
+        revoked = bool(k.get("revoked_at"))
+        status = ('<span class="badge suspended">revoked</span>' if revoked
+                  else '<span class="badge paid">active</span>')
+        last = _fmt_date(k["last_used_at"]) if k.get("last_used_at") else "never"
+        action = ("" if revoked else
+                  f'<form method=post action="/app/keys/revoke" style="margin:0">'
+                  f'<input type=hidden name=key_id value="{k["id"]}">'
+                  f'<button class="btn sec sm">Revoke</button></form>')
+        rows += (f"<tr><td>{_e(k.get('name') or 'key')}</td>"
+                 f"<td><code>{_e(k['prefix'])}…</code></td><td>{status}</td>"
+                 f"<td class='small muted'>{last}</td><td>{action}</td></tr>")
+    dep_opts = "".join(f'<option value="{_e(d["deployment_id"])}">{_e(d.get("label") or d["deployment_id"])}</option>'
+                       for d in deployments)
+    table = (f'<div class=card style="padding:0"><table><thead><tr><th>Name</th><th>Key</th>'
+             f'<th>Status</th><th>Last used</th><th></th></tr></thead><tbody>{rows}</tbody></table></div>'
+             if rows else '<div class=card><p class="small muted">No API keys yet.</p></div>')
+    return f"""
+    <h2>API keys</h2>
+    <p class="small muted">Authenticate your gateway with a named key instead of the raw deployment id.
+    Keys are shown once, hashed at rest, and revocable. Send as <code>Authorization: Bearer &lt;key&gt;</code>
+    (or <code>MODELPILOT_API_KEY</code>).</p>
+    {reveal}
+    {table}
+    <div class=card style="margin-top:12px">
+      <form method=post action="/app/keys" class=row style="gap:8px">
+        <input name=name placeholder="key name (e.g. prod)" style="max-width:200px">
+        <select name=deployment_id>{dep_opts}</select>
+        <button class=btn>Create API key</button>
+      </form>
+    </div>"""
+
+
+def connect_page(account: dict, deployments: list[dict], brain_url: str, console_url: str,
+                 keys: list[dict] | None = None, new_key: str = "") -> str:
     dep = deployments[0]["deployment_id"] if deployments else "—"
     dep_rows = ""
     for d in deployments:
@@ -340,6 +403,7 @@ def connect_page(account: dict, deployments: list[dict], brain_url: str, console
       <h2>2. Configure</h2>
       <pre>export MODELPILOT_BRAIN_URL={_e(brain_url)}
 export MODELPILOT_CONSOLE_URL={_e(console_url)}
+export MODELPILOT_API_KEY=mp_live_…        # create one below (recommended)
 export MODELPILOT_DEPLOYMENT_ID={_e(dep)}
 modelpilot-client            # listens on :8400, proxies to api.anthropic.com</pre>
       <h2>3. Point your SDK at it</h2>
@@ -361,7 +425,8 @@ client = Anthropic(base_url="http://127.0.0.1:8400")  # your key stays local</pr
         <input name=label placeholder="e.g. production-api" style="max-width:240px">
         <button class=btn>Add deployment</button>
       </form>
-    </div>"""
+    </div>
+    {_api_keys_section(keys or [], deployments, new_key)}"""
     return page("Connect", body, account, "/app/connect")
 
 

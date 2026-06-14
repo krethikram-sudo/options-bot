@@ -69,7 +69,9 @@ CREATE TABLE IF NOT EXISTS settings (
     mode TEXT NOT NULL DEFAULT 'guidance',
     telemetry_opt_in INTEGER NOT NULL DEFAULT 1,
     min_model TEXT NOT NULL DEFAULT '',
-    risk TEXT NOT NULL DEFAULT 'balanced'
+    risk TEXT NOT NULL DEFAULT 'balanced',
+    monthly_budget REAL NOT NULL DEFAULT 0,       -- 0 = no cap (dollars of model spend/cycle)
+    budget_alert_pct REAL NOT NULL DEFAULT 0.8
 );
 CREATE TABLE IF NOT EXISTS plans (
     account_id INTEGER PRIMARY KEY REFERENCES accounts(id),
@@ -125,12 +127,34 @@ CREATE TABLE IF NOT EXISTS proposals (
     note TEXT                                     -- optional reviewer note
 );
 CREATE INDEX IF NOT EXISTS idx_prop_acct ON proposals(account_id, status);
+CREATE TABLE IF NOT EXISTS api_keys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL REFERENCES accounts(id),
+    deployment_id TEXT NOT NULL,
+    name TEXT,
+    prefix TEXT NOT NULL,                        -- display: mp_live_ab12cd34…
+    key_hash TEXT NOT NULL UNIQUE,               -- sha256 of the full key
+    created_at REAL NOT NULL,
+    last_used_at REAL,
+    revoked_at REAL
+);
+CREATE INDEX IF NOT EXISTS idx_key_hash ON api_keys(key_hash);
+CREATE INDEX IF NOT EXISTS idx_key_acct ON api_keys(account_id);
+CREATE TABLE IF NOT EXISTS budget_alerts (
+    account_id INTEGER NOT NULL,
+    cycle_start REAL NOT NULL,
+    level TEXT NOT NULL,                          -- 'warn' | 'over'
+    sent_at REAL NOT NULL,
+    PRIMARY KEY (account_id, cycle_start, level)
+);
 """
 
 # Columns added after the proposals table first shipped — applied to existing DBs.
 _MIGRATIONS = [
     "ALTER TABLE proposals ADD COLUMN decided_by INTEGER",
     "ALTER TABLE proposals ADD COLUMN note TEXT",
+    "ALTER TABLE settings ADD COLUMN monthly_budget REAL NOT NULL DEFAULT 0",
+    "ALTER TABLE settings ADD COLUMN budget_alert_pct REAL NOT NULL DEFAULT 0.8",
 ]
 
 RESET_TTL = 3600  # password-reset token lifetime (seconds)
@@ -372,7 +396,8 @@ def get_settings(account_id: int, path: str | None = None) -> dict:
 
 def update_settings(account_id: int, *, mode: str | None = None,
                     telemetry_opt_in: bool | None = None, min_model: str | None = None,
-                    risk: str | None = None, path: str | None = None) -> dict:
+                    risk: str | None = None, monthly_budget: float | None = None,
+                    budget_alert_pct: float | None = None, path: str | None = None) -> dict:
     if mode is not None and mode not in MODES:
         raise StoreError(f"mode must be one of {MODES}")
     if risk is not None and risk not in RISK_LEVELS:
@@ -383,16 +408,137 @@ def update_settings(account_id: int, *, mode: str | None = None,
         "telemetry_opt_in": cur["telemetry_opt_in"] if telemetry_opt_in is None else int(telemetry_opt_in),
         "min_model": cur["min_model"] if min_model is None else min_model,
         "risk": cur["risk"] if risk is None else risk,
+        "monthly_budget": cur["monthly_budget"] if monthly_budget is None else max(0.0, float(monthly_budget)),
+        "budget_alert_pct": (cur["budget_alert_pct"] if budget_alert_pct is None
+                             else min(1.0, max(0.0, float(budget_alert_pct)))),
     }
     conn = connect(path)
     try:
-        conn.execute("UPDATE settings SET mode=?, telemetry_opt_in=?, min_model=?, risk=?"
-                     " WHERE account_id=?",
-                     (new["mode"], new["telemetry_opt_in"], new["min_model"], new["risk"], account_id))
+        conn.execute("UPDATE settings SET mode=?, telemetry_opt_in=?, min_model=?, risk=?,"
+                     " monthly_budget=?, budget_alert_pct=? WHERE account_id=?",
+                     (new["mode"], new["telemetry_opt_in"], new["min_model"], new["risk"],
+                      new["monthly_budget"], new["budget_alert_pct"], account_id))
         conn.commit()
     finally:
         conn.close()
     return get_settings(account_id, path)
+
+
+# --------------------------------------------------------------------------- #
+# API keys (named, scoped to a deployment, hashed at rest, revocable)
+# --------------------------------------------------------------------------- #
+
+KEY_PREFIX = "mp_live_"
+
+
+def create_api_key(account_id: int, deployment_id: str, name: str = "",
+                   path: str | None = None, now: float | None = None) -> dict:
+    """Mint a key. Returns the FULL key once (never recoverable) plus its row.
+    Only the sha256 hash + a display prefix are stored."""
+    if not account_for_deployment(deployment_id, path):
+        raise StoreError("unknown deployment")
+    now = now or time.time()
+    full = KEY_PREFIX + secrets.token_urlsafe(24)
+    prefix = full[:16]
+    key_hash = hashlib.sha256(full.encode()).hexdigest()
+    conn = connect(path)
+    try:
+        conn.execute("INSERT INTO api_keys(account_id, deployment_id, name, prefix, key_hash,"
+                     " created_at) VALUES(?,?,?,?,?,?)",
+                     (account_id, deployment_id, (name or "key").strip(), prefix, key_hash, now))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"full_key": full, "prefix": prefix, "name": name}
+
+
+def list_api_keys(account_id: int, path: str | None = None) -> list[dict]:
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT id, deployment_id, name, prefix, created_at, last_used_at, revoked_at"
+            " FROM api_keys WHERE account_id=? ORDER BY created_at DESC", (account_id,)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def revoke_api_key(key_id: int, account_id: int, path: str | None = None,
+                   now: float | None = None) -> bool:
+    now = now or time.time()
+    conn = connect(path)
+    try:
+        cur = conn.execute("UPDATE api_keys SET revoked_at=? WHERE id=? AND account_id=?"
+                           " AND revoked_at IS NULL", (now, key_id, account_id))
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def resolve_api_key(full_key: str, path: str | None = None, now: float | None = None) -> dict | None:
+    """Validate a presented key. Returns {account_id, deployment_id, key_id} or None
+    (unknown/revoked). Updates last_used_at on success."""
+    if not full_key or not full_key.startswith(KEY_PREFIX):
+        return None
+    now = now or time.time()
+    key_hash = hashlib.sha256(full_key.strip().encode()).hexdigest()
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT * FROM api_keys WHERE key_hash=? AND revoked_at IS NULL",
+                           (key_hash,)).fetchone()
+        if not row:
+            return None
+        conn.execute("UPDATE api_keys SET last_used_at=? WHERE id=?", (now, row["id"]))
+        conn.commit()
+        return {"account_id": row["account_id"], "deployment_id": row["deployment_id"],
+                "key_id": row["id"]}
+    finally:
+        conn.close()
+
+
+# --------------------------------------------------------------------------- #
+# Spend budget + alerts (dollars of model spend per cycle)
+# --------------------------------------------------------------------------- #
+
+def budget_status(account_id: int, path: str | None = None, now: float | None = None) -> dict:
+    """This cycle's model spend vs the configured monthly budget."""
+    now = now or time.time()
+    s = get_settings(account_id, path)
+    budget = s.get("monthly_budget") or 0.0
+    spend = savings_summary(account_id, since=cycle_start(now), path=path)["actual"]
+    pct = (spend / budget) if budget else 0.0
+    return {"budget": budget, "spend": spend, "pct": pct,
+            "alert_pct": s.get("budget_alert_pct") or 0.8,
+            "warn": bool(budget) and pct >= (s.get("budget_alert_pct") or 0.8),
+            "over": bool(budget) and pct >= 1.0, "enabled": bool(budget)}
+
+
+def budget_alert_pending(account_id: int, path: str | None = None, now: float | None = None):
+    """If a budget threshold was just crossed and we haven't emailed for it this
+    cycle, return the level ('over'|'warn') to alert on; else None."""
+    now = now or time.time()
+    st = budget_status(account_id, path, now)
+    if not st["enabled"]:
+        return None
+    level = "over" if st["over"] else ("warn" if st["warn"] else None)
+    if level is None:
+        return None
+    cyc = cycle_start(now)
+    conn = connect(path)
+    try:
+        # 'over' supersedes a prior 'warn'; don't resend the same level in a cycle.
+        seen = {r["level"] for r in conn.execute(
+            "SELECT level FROM budget_alerts WHERE account_id=? AND cycle_start=?",
+            (account_id, cyc)).fetchall()}
+        if level in seen or (level == "warn" and "over" in seen):
+            return None
+        conn.execute("INSERT OR IGNORE INTO budget_alerts(account_id, cycle_start, level, sent_at)"
+                     " VALUES(?,?,?,?)", (account_id, cyc, level, now))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"level": level, **st}
 
 
 # --------------------------------------------------------------------------- #

@@ -48,3 +48,18 @@ def send_reset(email: str, token: str) -> bool:
     body = (f"Reset your ModelPilot password by opening this link (valid for 1 hour):\n\n{link}\n\n"
             "If you didn't request this, you can ignore this email.")
     return send_email(email, "Reset your ModelPilot password", body)
+
+
+def send_budget_alert(email: str, level: str, spend: float, budget: float) -> bool:
+    pct = (100 * spend / budget) if budget else 0
+    if level == "over":
+        subject = "ModelPilot: you've exceeded your monthly spend budget"
+        lead = (f"Your model spend through ModelPilot this cycle is ${spend:,.2f}, "
+                f"which is over your ${budget:,.2f} budget ({pct:.0f}%).")
+    else:
+        subject = "ModelPilot: approaching your monthly spend budget"
+        lead = (f"Your model spend through ModelPilot this cycle is ${spend:,.2f} "
+                f"({pct:.0f}% of your ${budget:,.2f} budget).")
+    body = (f"{lead}\n\nReview usage and adjust your budget or routing mode:\n"
+            f"{base_url()}/app\n\n— ModelPilot")
+    return send_email(email, subject, body)

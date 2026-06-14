@@ -68,6 +68,21 @@ async def _form_multi(request: Request) -> dict:
     return parse_qs(raw, keep_blank_values=True)
 
 
+def _key_deployment(request: Request) -> tuple[str | None, str | None]:
+    """Resolve the deployment from an API key in the request, if one is presented.
+    Returns (deployment_id, error). error='invalid' means a key was sent but is
+    bad/revoked (caller should 401). No key presented -> (None, None) so callers
+    fall back to the body/query deployment_id (backward compatible)."""
+    auth = request.headers.get("authorization", "")
+    tok = auth[7:].strip() if auth[:7].lower() == "bearer " else request.headers.get("x-modelpilot-key", "")
+    if not tok:
+        return None, None
+    resolved = store.resolve_api_key(tok)
+    if not resolved:
+        return None, "invalid"
+    return resolved["deployment_id"], None
+
+
 def _current(request: Request) -> dict | None:
     tok = request.cookies.get(COOKIE)
     if not tok:
@@ -237,8 +252,9 @@ def app_dashboard(request: Request):
     cats = store.savings_by_category(acct["id"], since=bill["cycle_start"])
     proof = store.proof_summary(acct["id"])
     deps = store.deployments_for(acct["id"])
+    budget = store.budget_status(acct["id"])
     return _html(web.dashboard(acct, plan, trial, settings, cycle, lifetime, bill,
-                               deps[0] if deps else {"deployment_id": "—"}, cats, proof))
+                               deps[0] if deps else {"deployment_id": "—"}, cats, proof, budget))
 
 
 @app.post("/app/mode")
@@ -270,13 +286,29 @@ async def settings_post(request: Request):
     if redir:
         return redir
     f = await _form(request)
+    kw = {"risk": f.get("risk"), "min_model": f.get("min_model", ""),
+          "telemetry_opt_in": ("telemetry_opt_in" in f)}
     try:
-        store.update_settings(
-            acct["id"], risk=f.get("risk"), min_model=f.get("min_model", ""),
-            telemetry_opt_in=("telemetry_opt_in" in f))
+        kw["monthly_budget"] = float(f.get("monthly_budget", "") or 0)
+    except ValueError:
+        pass
+    try:
+        kw["budget_alert_pct"] = float(f.get("budget_alert_pct", "") or 80) / 100.0
+    except ValueError:
+        pass
+    try:
+        store.update_settings(acct["id"], **kw)
     except store.StoreError:
         pass
     return _redirect("/app/settings?saved=1")
+
+
+def _connect_html(acct: dict, new_key: str = ""):
+    deps = store.deployments_for(acct["id"])
+    brain = os.environ.get("MODELPILOT_BRAIN_URL", "https://brain.modelpilot.app")
+    console = os.environ.get("CONSOLE_BASE_URL", "https://app.modelpilot.app")
+    keys = store.list_api_keys(acct["id"])
+    return _html(web.connect_page(acct, deps, brain, console, keys, new_key))
 
 
 @app.get("/app/connect", response_class=HTMLResponse)
@@ -284,10 +316,36 @@ def connect(request: Request):
     acct, redir = _require(request)
     if redir:
         return redir
+    return _connect_html(acct)
+
+
+@app.post("/app/keys")
+async def create_key(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
     deps = store.deployments_for(acct["id"])
-    brain = os.environ.get("MODELPILOT_BRAIN_URL", "https://brain.modelpilot.app")
-    console = os.environ.get("CONSOLE_BASE_URL", "https://app.modelpilot.app")
-    return _html(web.connect_page(acct, deps, brain, console))
+    dep = f.get("deployment_id") or (deps[0]["deployment_id"] if deps else "")
+    new_key = ""
+    try:
+        new_key = store.create_api_key(acct["id"], dep, f.get("name", ""))["full_key"]
+    except store.StoreError:
+        pass
+    return _connect_html(acct, new_key)  # show the key once (never recoverable)
+
+
+@app.post("/app/keys/revoke")
+async def revoke_key(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    try:
+        store.revoke_api_key(int(f.get("key_id", "0")), acct["id"])
+    except ValueError:
+        pass
+    return _redirect("/app/connect")
 
 
 @app.post("/app/deployments")
@@ -494,22 +552,29 @@ async def admin_action(request: Request, account_id: int):
 # --------------------------------------------------------------------------- #
 
 @app.get("/api/entitlement")
-def api_entitlement(deployment_id: str):
-    """Server-authoritative entitlement + mode for a deployment (brain reads this)."""
-    return JSONResponse(store.entitlement(deployment_id))
+def api_entitlement(request: Request, deployment_id: str = ""):
+    """Server-authoritative entitlement + mode for a deployment (brain reads this).
+    Accepts an API key (Bearer) or a deployment_id query param."""
+    key_dep, err = _key_deployment(request)
+    if err:
+        return JSONResponse({"error": "invalid api key"}, status_code=401)
+    return JSONResponse(store.entitlement(key_dep or deployment_id))
 
 
 @app.post("/api/meter")
 async def api_meter(request: Request):
     """Accept one aggregate savings report from a gateway. Dollars + counts only —
     reject anything that looks like it carries prompt/output/secret data."""
+    key_dep, err = _key_deployment(request)
+    if err:
+        return JSONResponse({"error": "invalid api key"}, status_code=401)
     body = await request.json()
     if not isinstance(body, dict):
         return JSONResponse({"error": "object required"}, status_code=400)
     lowered = {str(k).lower() for k in body}
     if lowered & store.FORBIDDEN_METER_KEYS:
         return JSONResponse({"error": "payload contains forbidden keys"}, status_code=422)
-    dep = body.get("deployment_id")
+    dep = key_dep or body.get("deployment_id")
     if not dep:
         return JSONResponse({"error": "deployment_id required"}, status_code=400)
     try:
@@ -529,11 +594,18 @@ async def api_meter(request: Request):
                                int(body.get("non_inferior", 0)))
         except store.StoreError:
             pass
-    # Best-effort: push usage to Stripe for paid accounts.
+    # Best-effort: push usage to Stripe for paid accounts + fire budget alerts.
     try:
         acct = store.account_for_deployment(dep)
         if acct:
             stripe_billing.report_usage(acct["id"], res["realized_savings"])
+            alert = store.budget_alert_pending(acct["id"])
+            if alert:
+                try:
+                    notify.send_budget_alert(acct["email"], alert["level"],
+                                             alert["spend"], alert["budget"])
+                except Exception:  # noqa: BLE001
+                    pass
     except Exception:  # noqa: BLE001
         pass
     return JSONResponse(res)
@@ -544,12 +616,15 @@ async def api_proposals(request: Request):
     """A gateway submits an auto-derived tuning proposal (Track A floor / Track C
     rule). Aggregate spec + stats only — reject anything carrying prompt/output
     text or secrets (defense in depth)."""
+    key_dep, err = _key_deployment(request)
+    if err:
+        return JSONResponse({"error": "invalid api key"}, status_code=401)
     body = await request.json()
     if not isinstance(body, dict):
         return JSONResponse({"error": "object required"}, status_code=400)
     if {str(k).lower() for k in body} & store.FORBIDDEN_METER_KEYS:
         return JSONResponse({"error": "payload contains forbidden keys"}, status_code=422)
-    dep = body.get("deployment_id")
+    dep = key_dep or body.get("deployment_id")
     kind = body.get("kind")
     category = body.get("category")
     if not (dep and kind and category):
@@ -564,10 +639,13 @@ async def api_proposals(request: Request):
 
 
 @app.get("/api/policy")
-def api_policy(deployment_id: str):
+def api_policy(request: Request, deployment_id: str = ""):
     """Approved per-customer policy for a deployment: floors (applied by the brain)
-    and rules (loaded by the gateway). Only admin-approved entries are returned."""
-    return JSONResponse(store.approved_policy_for_deployment(deployment_id))
+    and rules (loaded by the gateway). Accepts an API key (Bearer) or deployment_id."""
+    key_dep, err = _key_deployment(request)
+    if err:
+        return JSONResponse({"error": "invalid api key"}, status_code=401)
+    return JSONResponse(store.approved_policy_for_deployment(key_dep or deployment_id))
 
 
 @app.post("/api/stripe/webhook")

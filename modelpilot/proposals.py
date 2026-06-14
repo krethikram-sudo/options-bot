@@ -22,7 +22,11 @@ def _post(url: str, payload: dict, post_fn=None) -> bool:
         post_fn(payload)
         return True
     import httpx
-    r = httpx.post(f"{url}/api/proposals", json=payload, timeout=5.0)
+    headers = {}
+    key = os.environ.get("MODELPILOT_API_KEY")
+    if key:
+        headers["Authorization"] = f"Bearer {key}"
+    r = httpx.post(f"{url}/api/proposals", json=payload, timeout=5.0, headers=headers)
     r.raise_for_status()
     return True
 

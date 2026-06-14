@@ -481,6 +481,99 @@ def test_digest_send_skips_when_empty(env):
     assert digest.send_digest()["sent"] == 0
 
 
+# --- API keys ------------------------------------------------------------- #
+
+def test_api_key_create_resolve_revoke(env):
+    _, store = env
+    a = store.create_account("k@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    out = store.create_api_key(a["id"], dep, "prod")
+    full = out["full_key"]
+    assert full.startswith("mp_live_")
+    # listing never exposes the secret, only the prefix
+    keys = store.list_api_keys(a["id"])
+    assert len(keys) == 1 and keys[0]["prefix"] == full[:16] and "key_hash" not in keys[0]
+    # resolves to the deployment + updates last_used
+    r = store.resolve_api_key(full)
+    assert r["deployment_id"] == dep and r["account_id"] == a["id"]
+    assert store.list_api_keys(a["id"])[0]["last_used_at"] is not None
+    # revoke -> no longer resolves
+    assert store.revoke_api_key(keys[0]["id"], a["id"])
+    assert store.resolve_api_key(full) is None
+    assert store.resolve_api_key("mp_live_bogus") is None and store.resolve_api_key("nope") is None
+
+
+def test_meter_authenticates_by_key_and_rejects_bad(env, client):
+    _, store = env
+    a = store.create_account("k2@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    full = store.create_api_key(a["id"], dep, "g")["full_key"]
+    # key overrides body deployment_id; bad body id is ignored when key is valid
+    r = client.post("/api/meter", json={"deployment_id": "dep_wrong", "baseline_cost": 1.0,
+                                        "actual_cost": 0.6},
+                    headers={"Authorization": f"Bearer {full}"})
+    assert r.status_code == 200
+    assert store.savings_summary(a["id"])["savings"] == pytest.approx(0.4)
+    # an invalid key -> 401 (presented but bad)
+    bad = client.post("/api/meter", json={"deployment_id": dep, "baseline_cost": 1.0},
+                      headers={"Authorization": "Bearer mp_live_nope"})
+    assert bad.status_code == 401
+
+
+def test_api_keys_managed_via_http_with_one_time_reveal(env, client):
+    _, store = env
+    _signup(client, email="kh@b.com")
+    acct = store.get_account_by_email("kh@b.com")
+    dep = store.deployments_for(acct["id"])[0]["deployment_id"]
+    page = client.post("/app/keys", data={"name": "ci", "deployment_id": dep}).text
+    assert "shown once" in page and "mp_live_" in page  # revealed once on the page
+    assert len(store.list_api_keys(acct["id"])) == 1
+    kid = store.list_api_keys(acct["id"])[0]["id"]
+    client.post("/app/keys/revoke", data={"key_id": str(kid)})
+    assert store.list_api_keys(acct["id"])[0]["revoked_at"] is not None
+
+
+# --- spend budget + alerts ------------------------------------------------ #
+
+def test_budget_status_and_alert_levels(env):
+    _, store = env
+    a = store.create_account("bud@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    store.update_settings(a["id"], monthly_budget=10.0, budget_alert_pct=0.8)
+    # spend $8.50 -> 85% -> warn (not over)
+    store.record_meter(dep, baseline_cost=12.0, actual_cost=8.5)
+    st = store.budget_status(a["id"])
+    assert st["enabled"] and st["warn"] and not st["over"]
+    first = store.budget_alert_pending(a["id"])
+    assert first and first["level"] == "warn"
+    # same level again this cycle -> no duplicate alert
+    assert store.budget_alert_pending(a["id"]) is None
+    # push over 100% -> 'over' fires once
+    store.record_meter(dep, baseline_cost=5.0, actual_cost=3.0)  # total 11.5
+    over = store.budget_alert_pending(a["id"])
+    assert over and over["level"] == "over"
+    assert store.budget_alert_pending(a["id"]) is None
+
+
+def test_no_budget_means_no_alerts(env):
+    _, store = env
+    a = store.create_account("nob@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    store.record_meter(dep, baseline_cost=100.0, actual_cost=80.0)
+    assert store.budget_status(a["id"])["enabled"] is False
+    assert store.budget_alert_pending(a["id"]) is None
+
+
+def test_settings_budget_update_via_http(env, client):
+    _, store = env
+    _signup(client, email="budset@b.com")
+    client.post("/app/settings", data={"risk": "balanced", "monthly_budget": "250",
+                                       "budget_alert_pct": "75"})
+    acct = store.get_account_by_email("budset@b.com")
+    s = store.get_settings(acct["id"])
+    assert s["monthly_budget"] == pytest.approx(250.0) and s["budget_alert_pct"] == pytest.approx(0.75)
+
+
 def test_proposal_audit_trail(env, client):
     _, store = env
     admin = store.create_account("boss3@b.com", "password123", role="admin")
