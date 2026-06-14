@@ -70,6 +70,33 @@ def test_check_file(tmp_path, monkeypatch):
     assert check()["licensee"] == "Acme"
 
 
+def test_trial_starts_and_counts_down(tmp_path, monkeypatch):
+    from modelpilot.license import trial_status
+    monkeypatch.setenv("MODELPILOT_TRIAL_FILE", str(tmp_path / "trial"))
+    t0 = 1_000_000.0
+    s = trial_status(now=t0)
+    assert s["active"] and s["ever_started"] and s["days_left"] == 7
+    s2 = trial_status(now=t0 + 3 * 86_400)
+    assert s2["active"] and s2["days_left"] == 4 and s2["started"] == t0
+
+
+def test_trial_expires_after_7_days(tmp_path, monkeypatch):
+    from modelpilot.license import trial_status
+    monkeypatch.setenv("MODELPILOT_TRIAL_FILE", str(tmp_path / "trial"))
+    t0 = 2_000_000.0
+    trial_status(now=t0)
+    expired = trial_status(now=t0 + 8 * 86_400)
+    assert not expired["active"] and expired["days_left"] == 0 and expired["ever_started"]
+
+
+def test_trial_status_peek_does_not_start(tmp_path, monkeypatch):
+    from modelpilot.license import trial_status
+    f = tmp_path / "trial"
+    monkeypatch.setenv("MODELPILOT_TRIAL_FILE", str(f))
+    s = trial_status(start=False)
+    assert not s["active"] and not s["ever_started"] and not f.exists()
+
+
 @pytest.mark.skipif(not ED25519, reason="cryptography/Ed25519 unavailable in this environment")
 def test_ed25519_unforgeable(tmp_path, monkeypatch):
     import modelpilot.license as lic

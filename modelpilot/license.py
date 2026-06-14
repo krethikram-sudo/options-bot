@@ -20,8 +20,9 @@ Mac or CI):
     python -m modelpilot.license issue --key license_private_key.pem \
         --licensee "Acme Corp" --days 30
 
-Guidance/shadow run WITHOUT a license (the funnel); autopilot requires a token.
-crypto is imported lazily so the package never hard-depends on it at import time.
+The gateway runs free for a 7-day trial (see `trial_status`); after that any mode
+requires a license. crypto is imported lazily so the package never hard-depends
+on it at import time.
 """
 from __future__ import annotations
 
@@ -29,6 +30,7 @@ import base64
 import hashlib
 import hmac
 import json
+import math
 import os
 import time
 
@@ -117,6 +119,53 @@ def check(value: str | None = None) -> dict | None:
         with open(raw[1:]) as f:
             raw = f.read().strip()
     return verify_token(raw)
+
+
+# --- free trial (self-serve, local clock) -----------------------------------
+
+TRIAL_DAYS = 7
+
+
+def _trial_file() -> str:
+    override = os.environ.get("MODELPILOT_TRIAL_FILE")
+    if override:
+        return override
+    return os.path.join(os.path.expanduser("~"), ".modelpilot", "trial")
+
+
+def trial_status(now: float | None = None, start: bool = True) -> dict:
+    """The local free-trial clock. On first call (start=True) it records the
+    trial start; thereafter it reports days remaining. Self-serve and offline —
+    a conversion funnel/deterrent, not DRM (a determined user can reset the local
+    file; the unforgeable path is server-issued licenses).
+
+    Returns {started, active, days_left, ever_started}.
+    """
+    now = now if now is not None else time.time()
+    path = _trial_file()
+    started = None
+    try:
+        with open(path) as f:
+            started = float((json.load(f) or {}).get("started"))
+    except (OSError, ValueError, TypeError):
+        started = None
+
+    if started is None:
+        if not start:
+            return {"started": None, "active": False, "days_left": 0, "ever_started": False}
+        started = now
+        try:
+            os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+            with open(path, "w") as f:
+                json.dump({"started": started, "product": "modelpilot"}, f)
+        except OSError:
+            pass  # can't persist (read-only fs) — trial still runs this session
+
+    remaining = TRIAL_DAYS * 86_400 - (now - started)
+    active = remaining > 0
+    return {"started": started, "active": active,
+            "days_left": max(0, math.ceil(remaining / 86_400)) if active else 0,
+            "ever_started": True}
 
 
 # --- issuer CLI (for us) ----------------------------------------------------

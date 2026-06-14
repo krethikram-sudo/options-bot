@@ -136,8 +136,9 @@ pip install "modelpilot @ git+https://github.com/krethikram-sudo/modelpilot.git"
 # 2. Prove it to yourself (no key, no spend)
 modelpilot demo --offline
 
-# 3. Guidance mode: set your license + API key, point your app at it
-export MODELPILOT_LICENSE="&lt;your license token&gt;"
+# 3. Guidance mode: set your API key, point your app at it
+#    (your free 7-day trial starts now — no license needed)
+export ANTHROPIC_API_KEY=sk-ant-...
 modelpilot gateway --mode guidance --port 8400
 #    Python:  anthropic.Anthropic(base_url="http://localhost:8400")
 #    any SDK: ANTHROPIC_BASE_URL=http://localhost:8400
@@ -145,12 +146,15 @@ modelpilot gateway --mode guidance --port 8400
 # 4. Watch the dashboard — it shows what autopilot would save + the proof
 open http://localhost:8400/modelpilot/dashboard
 
-# 5. Convinced? Same license key, one flag.
-modelpilot gateway --mode autopilot --port 8400</pre>
-  <p>A license key is required to run ModelPilot (guidance and autopilot alike); the
-  offline <code>demo</code> is free. We issue your key with the invite.
-  Your API keys pass through and are never stored. The ledger holds token
-  counts and routing metadata — no prompt text. Full details in the
+# 5. Convinced? One flag (free during your trial).
+modelpilot gateway --mode autopilot --port 8400
+
+# 6. After 7 days, keep it running with a license
+export MODELPILOT_LICENSE="&lt;your license token&gt;"</pre>
+  <p>Your first <b>7 days are free</b> — the trial starts on first run, no key needed,
+  full functionality; after that a license keeps it running. The offline
+  <code>demo</code> is always free. Your API keys pass through and are never stored;
+  the ledger holds token counts and routing metadata — no prompt text. Full details in the
   <a href="https://github.com/krethikram-sudo/modelpilot#privacy--security">README</a>.</p>
 </div></section>
 

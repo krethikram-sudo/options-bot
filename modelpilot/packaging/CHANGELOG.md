@@ -4,6 +4,20 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.17.0 — 2026-06-14
+
+- **Free product: a built-in 7-day trial replaces the invite-only beta gate.**
+  The gateway now runs on a valid license OR an active trial — full functionality
+  (guidance + autopilot) free for 7 days, started automatically on first run
+  (`license.trial_status`, a local clock at `~/.modelpilot/trial`). After the
+  trial, a license is required. Self-serve, no backend; honest caveat — the
+  local clock is a conversion funnel/deterrent, not DRM (server-issued licenses
+  remain the unforgeable path). The offline `modelpilot demo` stays free anytime.
+- **Landing page is now a public free-trial site** (no more password gate /
+  `noindex`): "Start your free 7-day trial" CTA, trial-first how-to (no key for
+  the first 7 days, license after), updated bundled site and `validate_local.sh`
+  (no longer requires a license — runs on the trial).
+
 ## 0.16.0 — 2026-06-14
 
 - **Privacy-safe performance telemetry (`modelpilot telemetry`), opt-in.** Lets a

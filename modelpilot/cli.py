@@ -32,25 +32,31 @@ def _gateway_env(args) -> dict:
 
 
 def cmd_gateway(args):
-    # The gateway requires a valid license in EVERY mode — guidance and autopilot
-    # alike. Only `modelpilot demo --offline` (synthetic, no real traffic) is free.
+    # The gateway runs on a valid license OR an active 7-day free trial (full
+    # functionality during the trial). After the trial, a license is required.
     import time as _time
 
     from . import license as _lic
-    _request = ("Try it free with `modelpilot demo --offline`, or request a "
-                "license: krethikram@gmail.com")
     try:
         claims = _lic.check()
     except _lic.LicenseError as e:
-        sys.exit(f"ModelPilot needs a valid license: {e}\n"
-                 f"Set MODELPILOT_LICENSE=<token> (or @/path/to/token).\n{_request}")
-    if not claims:
-        sys.exit("ModelPilot needs a license key to run the gateway — guidance and "
-                 "autopilot both require one.\n"
-                 f"Set MODELPILOT_LICENSE=<token> (or @/path/to/token).\n{_request}")
-    exp = claims.get("exp")
-    print(f"Licensed to {claims.get('licensee') or 'beta'} "
-          f"(expires {_time.strftime('%Y-%m-%d', _time.gmtime(exp)) if exp else 'never'})")
+        sys.exit(f"ModelPilot license invalid: {e}\n"
+                 "Fix or remove MODELPILOT_LICENSE to fall back to your free trial.\n"
+                 "Questions: krethikram@gmail.com")
+    if claims:
+        exp = claims.get("exp")
+        print(f"Licensed to {claims.get('licensee') or 'customer'} "
+              f"(expires {_time.strftime('%Y-%m-%d', _time.gmtime(exp)) if exp else 'never'})")
+    else:
+        trial = _lic.trial_status()
+        if trial["active"]:
+            print(f"ModelPilot free trial — {trial['days_left']} day(s) left. "
+                  "Set MODELPILOT_LICENSE to continue after that (krethikram@gmail.com).")
+        else:
+            sys.exit("Your 7-day ModelPilot free trial has ended.\n"
+                     "Start a plan / get a license: krethikram@gmail.com, then set "
+                     "MODELPILOT_LICENSE=<token>.\n"
+                     "(Free anytime, no key: `modelpilot demo --offline`.)")
     os.environ.update(_gateway_env(args))
     import uvicorn
 

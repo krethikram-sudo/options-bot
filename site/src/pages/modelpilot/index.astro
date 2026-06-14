@@ -1,7 +1,4 @@
 ---
-// SHA-256 hash of the access password. Default: "modelpilot-beta-2026"
-// To change: compute new hash via:  echo -n "your-new-password" | shasum -a 256
-const PASSWORD_HASH = "ebe9105e7f6d8847c5943b9c84a7ef5004c8ca3aefb5add8515641b55f6363e6";
 const CONTACT = "krethikram@gmail.com";
 ---
 
@@ -10,7 +7,7 @@ const CONTACT = "krethikram@gmail.com";
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
-    <meta name="robots" content="noindex, nofollow" />
+    <meta name="robots" content="index, follow" />
     <meta name="description" content="ModelPilot routes each Claude request to the cheapest model that's provably good enough — typically 20–40% lower spend, measured on your own traffic." />
     <title>ModelPilot — cut your Claude bill, typically 20–40% (proven on your traffic)</title>
     <style is:global>
@@ -97,7 +94,7 @@ const CONTACT = "krethikram@gmail.com";
       .stripline b { color: var(--ink); }
 
       /* Password gate */
-      #content { display: none; }
+      #content { display: block; }
       #gate { position: fixed; inset: 0; background: #fbfefc; display: flex;
               align-items: center; justify-content: center; z-index: 1000; }
       .gate-card { background: #fff; border: 1px solid var(--line); border-radius: 12px;
@@ -117,70 +114,18 @@ const CONTACT = "krethikram@gmail.com";
         border-top: 1px solid #f0f0f3; padding-top: 12px; }
       .gate-footnote a { color: var(--blue); }
     </style>
-    <script is:inline define:vars={{ PASSWORD_HASH }}>
-      (async function () {
-        if (sessionStorage.getItem("modelpilot_beta_auth") === "1") {
-          document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("gate").style.display = "none";
-            document.getElementById("content").style.display = "block";
-          });
-          return;
-        }
-        document.addEventListener("DOMContentLoaded", () => {
-          const form = document.getElementById("gate-form");
-          const input = document.getElementById("gate-pw");
-          const errEl = document.getElementById("gate-err");
-          form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            errEl.textContent = "";
-            const enc = new TextEncoder();
-            const hashBuf = await crypto.subtle.digest("SHA-256", enc.encode(input.value));
-            const hashHex = Array.from(new Uint8Array(hashBuf))
-              .map((b) => b.toString(16).padStart(2, "0")).join("");
-            if (hashHex === PASSWORD_HASH) {
-              sessionStorage.setItem("modelpilot_beta_auth", "1");
-              document.getElementById("gate").style.display = "none";
-              document.getElementById("content").style.display = "block";
-            } else {
-              errEl.textContent = "Incorrect password.";
-              input.value = "";
-              input.focus();
-            }
-          });
-          input.focus();
-        });
-      })();
-    </script>
   </head>
   <body>
-    <div id="gate">
-      <div class="gate-card">
-        <span class="tag">ModelPilot · private beta</span>
-        <h2>Access required</h2>
-        <p>This page describes a product in private beta. Enter the access
-        password to continue.</p>
-        <form id="gate-form">
-          <input id="gate-pw" type="password" placeholder="access password" autocomplete="off" />
-          <button type="submit">Enter</button>
-        </form>
-        <div id="gate-err" class="gate-error"></div>
-        <div class="gate-footnote">
-          Don't have access? Email <a href={`mailto:${CONTACT}?subject=ModelPilot beta access request`}>{CONTACT}</a>
-          with a sentence about your Claude usage — we'll send the password and a repo invite.
-        </div>
-      </div>
-    </div>
-
     <div id="content">
       <header class="hero"><div class="wrap">
-        <div class="tag">ModelPilot · private beta</div>
+        <div class="tag">ModelPilot · free 7-day trial</div>
         <h1>Cut your Claude bill — typically 20–40%.<br />Measured on your own traffic, not promised.</h1>
         <p class="sub">A drop-in gateway that routes every request to the cheapest Claude
         model that's provably good enough — informed by the whole conversation, never
         downgrading hard work — and shows you exactly what you saved, per prompt and
         per session, recalculated from the actual tokens each request consumed.</p>
         <div class="cta">
-          <a class="btn primary" href={`mailto:${CONTACT}?subject=ModelPilot beta — repo invite`}>Request beta access →</a>
+          <a class="btn primary" href="#quickstart">Start your free 7-day trial →</a>
           <a class="btn ghost" href="#quickstart">2-minute quickstart</a>
         </div>
         <pre class="term"><span class="c"># guidance mode — your key, zero change to your traffic</span>
@@ -442,19 +387,14 @@ routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
         <p class="note" style="border-color:#f0d9a8;background:#fffdf5">
           <b>What you need:</b> a <b>billable Anthropic API key</b>
           (<a href="https://console.anthropic.com">console.anthropic.com</a>) and an
-          app or service that calls the Claude API. <b>Use your real key from the
-          start</b> — you begin in <b>guidance mode</b>, which uses your key but
-          <em>changes nothing</em> about your traffic (zero risk), then switch to
-          autopilot once the dashboard convinces you. A Claude.ai / Claude Code
-          <em>subscription</em> can't be optimized (it's flat-rate, not per-token).
-          Python 3.10+. <b>A license key is required to run ModelPilot</b> — guidance
-          and autopilot alike; we issue it with your invite. The offline
-          <code>modelpilot demo</code> is free to try without one.</p>
+          app or service that calls the Claude API. Python 3.10+.
+          <b>Your first 7 days are free</b> — the trial starts automatically on your
+          first gateway run, no key needed, full functionality (guidance and
+          autopilot). After the trial, a license keeps it running
+          (<a href={`mailto:${CONTACT}?subject=ModelPilot license`}>email us</a>). A
+          Claude.ai / Claude Code <em>subscription</em> can't be optimized (flat-rate,
+          not per-token); the offline <code>modelpilot demo</code> is always free.</p>
         <ol class="steps">
-          <li><b>Get access.</b> Reply to your invite with your GitHub username; we
-            add you to the private repo and send your <b>license key</b> (required
-            for guidance and autopilot).</li>
-
           <li><b>Install</b> (Python 3.10+):
             <pre class="block">pip install "modelpilot @ git+https://github.com/krethikram-sudo/modelpilot.git"</pre></li>
 
@@ -463,17 +403,15 @@ routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
             analysis command, and finishes with a real routed-vs-baseline proof.
             Nothing is rerouted; spend is a few cents. Prints PASS/FAIL:
             <pre class="block">export ANTHROPIC_API_KEY=sk-ant-...
-export MODELPILOT_LICENSE="&lt;your license token&gt;"
 bash scripts/validate_local.sh</pre></li>
 
-          <li><b>Set your keys</b> (Anthropic API key + your ModelPilot license), then
-            <b>start the gateway in guidance mode</b> — it measures and recommends but
-            changes nothing. Turn on prompt capture so you can generate the proof later:
+          <li><b>Set your API key and start the gateway in guidance mode</b> — it
+            measures and recommends but changes nothing. <b>Your 7-day free trial
+            starts now.</b> Turn on prompt capture so you can generate the proof later:
             <pre class="block">export ANTHROPIC_API_KEY=sk-ant-...
-export MODELPILOT_LICENSE="&lt;your license token&gt;"
 MODELPILOT_CAPTURE_PCT=1.0 modelpilot gateway --mode guidance --port 8400</pre>
-            <span class="muted">Tip: the key lives in your app (step 5); the gateway just
-            forwards it. Setting it here is only needed for the chat playground / demo.</span></li>
+            <span class="muted">No license needed during the trial. The key lives in
+            your app (next step); the gateway just forwards it.</span></li>
 
           <li><b>Point one app at the gateway</b> — a one-line base-URL change. Your
             API key stays in your app, passes through, and is never stored:
@@ -491,10 +429,14 @@ Claude Code / any SDK:  export ANTHROPIC_BASE_URL=http://localhost:8400</pre>
             rendered right on the dashboard:
             <pre class="block">modelpilot compare --from-captures --judge --save-to-db</pre></li>
 
-          <li><b>Switch to autopilot</b> when the evidence convinces you — same license
-            key, one flag. It routes automatically, keeps a randomized holdout running
-            to prove quality parity, and continuously re-tunes to your traffic:
+          <li><b>Switch to autopilot</b> when the evidence convinces you — one flag
+            (free during your trial). It routes automatically, keeps a randomized
+            holdout running to prove quality parity, and continuously re-tunes:
             <pre class="block">modelpilot gateway --mode autopilot --port 8400</pre></li>
+
+          <li><b>After 7 days</b>, keep it running with a license — set
+            <code>MODELPILOT_LICENSE</code> and you're done:
+            <pre class="block">export MODELPILOT_LICENSE="&lt;your license token&gt;"</pre></li>
         </ol>
         <p class="note"><b>Kill switch any time:</b> revert the base URL, or run
         <code>--mode guidance</code> to stop all rerouting. <b>Privacy:</b> no prompt
@@ -506,7 +448,7 @@ Claude Code / any SDK:  export ANTHROPIC_BASE_URL=http://localhost:8400</pre>
       </div></section>
 
       <footer><div class="wrap">
-        ModelPilot · private beta · <a href={`mailto:${CONTACT}`}>{CONTACT}</a><br />
+        ModelPilot · free 7-day trial · <a href={`mailto:${CONTACT}`}>{CONTACT}</a><br />
         Model prices referenced: Claude Fable 5 $10/$50 · Opus 4.8 $5/$25 ·
         Sonnet 4.6 $3/$15 · Haiku 4.5 $1/$5 per MTok (June 2026 list).
       </div></footer>
