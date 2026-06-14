@@ -4,6 +4,13 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.7.2 — 2026-06-14
+
+- **Ed25519 license verification is now LIVE** — a public key is bundled at
+  `modelpilot/license_pubkey.pem`, so the shipped client verifies tokens
+  asymmetrically and the HMAC fallback is retired (HMAC tokens are now rejected).
+  Tokens can only be minted with the private key.
+
 ## 0.7.1 — 2026-06-14
 
 - **Unforgeable license keys (Ed25519).** The gate now supports asymmetric

@@ -17,6 +17,14 @@ def _ed25519_available():
 ED25519 = _ed25519_available()
 
 
+@pytest.fixture(autouse=True)
+def _force_hmac_mode(monkeypatch, tmp_path):
+    # These tests exercise the HMAC fallback; with a real public key now bundled,
+    # point the pubkey path at a nonexistent file so the fallback is what runs.
+    # (The Ed25519 test overrides this with its own temporary public key.)
+    monkeypatch.setattr("modelpilot.license._PUBKEY_PATH", str(tmp_path / "nope.pem"))
+
+
 def test_roundtrip_valid():
     tok = make_token({"licensee": "Acme", "exp": int(time.time()) + 3600})
     claims = verify_token(tok)
