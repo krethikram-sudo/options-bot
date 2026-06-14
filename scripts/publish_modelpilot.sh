@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Assemble the standalone, customer-shareable ModelPilot repo from this
+# Assemble the standalone, customer-shareable Maven repo from this
 # monorepo and (optionally) push it to a GitHub remote.
 #
 # SHIP list is an explicit allowlist: internal strategy docs (PRODUCT_DESIGN,
@@ -93,12 +93,12 @@ if [ ! -d .git ]; then
 fi
 # Publishing must work in bare environments (CI runners, fresh containers):
 # provide an identity if none exists and never require commit signing here.
-git config user.name >/dev/null 2>&1 || git config user.name "ModelPilot Publisher"
+git config user.name >/dev/null 2>&1 || git config user.name "Maven Publisher"
 git config user.email >/dev/null 2>&1 || git config user.email "publish@modelpilot.local"
 git config commit.gpgsign false
 git add -A
 if ! git diff --cached --quiet; then
-    git commit -q -m "ModelPilot beta $(python3 -c 'import modelpilot; print(modelpilot.__version__)' 2>/dev/null || echo 0.1.0)"
+    git commit -q -m "Maven beta $(python3 -c 'import modelpilot; print(modelpilot.__version__)' 2>/dev/null || echo 0.1.0)"
     echo "Committed."
 else
     echo "No changes since last publish."

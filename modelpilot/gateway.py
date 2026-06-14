@@ -141,7 +141,7 @@ async def _lifespan(app):
     app.state.ledger.close()
 
 
-app = FastAPI(title="ModelPilot gateway", lifespan=_lifespan)
+app = FastAPI(title="Maven gateway", lifespan=_lifespan)
 
 
 @dataclass

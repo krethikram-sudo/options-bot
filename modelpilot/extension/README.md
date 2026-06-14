@@ -1,6 +1,6 @@
-# ModelPilot for Claude — browser extension (v0, advisory)
+# Maven for Claude — browser extension (v0, advisory)
 
-Brings the ModelPilot experience to **claude.ai with your regular Claude
+Brings the Maven experience to **claude.ai with your regular Claude
 account**: as you type a prompt, a chip appears telling you which model the
 prompt actually needs and the estimated usage value saved if you pick it —
 informed by the visible conversation (session-context routing), before you
@@ -10,7 +10,7 @@ hit send.
 you type on claude.ai ──► content script (draft + visible transcript)
                               │
                               ▼ (background worker)
-                    local ModelPilot gateway :8400  /modelpilot/preview
+                    local Maven gateway :8400  /modelpilot/preview
                               │
                               ▼
         💡 chip: "claude-haiku-4-5 is enough — est. $0.004 saved if you switch"

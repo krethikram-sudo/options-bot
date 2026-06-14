@@ -1,4 +1,4 @@
-# ModelPilot — GTM execution plan (internal)
+# Maven — GTM execution plan (internal)
 
 Focus decision (2026-06-12): **SF-style startups / small enterprise**, per
 ICP in PILOT_OUTREACH.md. Consumers = free extension as top-of-funnel only.

@@ -168,7 +168,7 @@ def render(report: dict) -> str:
     proj = (f"  (≈ ${report['projected_monthly']:.0f}/mo at this rate)"
             if report.get("projected_monthly") else "")
     lines.append(f"Total prompt-level savings available: ~${total:.2f}{proj}")
-    lines.append("These are recommendations on your own billed tokens — ModelPilot "
+    lines.append("These are recommendations on your own billed tokens — Maven "
                  "never rewrites your prompts.")
     return "\n".join(lines)
 

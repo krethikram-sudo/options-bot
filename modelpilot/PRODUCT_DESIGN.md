@@ -1,4 +1,4 @@
-# ModelPilot — Product Design
+# Maven — Product Design
 
 ## 1. Where the product sits: two deployment surfaces
 
@@ -11,7 +11,7 @@ A drop-in proxy in front of the Claude API. Customers change one line — `base_
 SDK config and route their traffic through us:
 
 ```
-app ──► ModelPilot gateway ──► api.anthropic.com
+app ──► Maven gateway ──► api.anthropic.com
               │
               ├─ router scores prompt + context (target <150ms added latency)
               ├─ Mode 1: annotates response with recommendation (headers + dashboard)

@@ -11,8 +11,8 @@ const CONTACT = "krethikram@gmail.com";
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <meta name="robots" content="noindex, nofollow" />
-    <meta name="description" content="ModelPilot routes each Claude request to the cheapest model that's provably good enough — typically 20–40% lower spend, measured on your own traffic." />
-    <title>ModelPilot — cut your Claude bill, typically 20–40% (proven on your traffic)</title>
+    <meta name="description" content="Maven routes each Claude request to the cheapest model that's provably good enough — typically 20–40% lower spend, measured on your own traffic." />
+    <title>Maven — cut your Claude bill, typically 20–40% (proven on your traffic)</title>
     <style is:global>
       :root { --ink:#1f2430; --mut:#6b7080; --green:#2e9e5b; --blue:#2f6fb6; --line:#e3e3e8; }
       * { box-sizing: border-box; }
@@ -155,7 +155,7 @@ const CONTACT = "krethikram@gmail.com";
   <body>
     <div id="gate">
       <div class="gate-card">
-        <span class="tag">ModelPilot · private beta</span>
+        <span class="tag">Maven · private beta</span>
         <h2>Access required</h2>
         <p>This page describes a product in private beta. Enter the access
         password to continue.</p>
@@ -165,7 +165,7 @@ const CONTACT = "krethikram@gmail.com";
         </form>
         <div id="gate-err" class="gate-error"></div>
         <div class="gate-footnote">
-          Don't have access? Email <a href={`mailto:${CONTACT}?subject=ModelPilot beta access request`}>{CONTACT}</a>
+          Don't have access? Email <a href={`mailto:${CONTACT}?subject=Maven beta access request`}>{CONTACT}</a>
           with a sentence about your Claude usage — we'll send the password and a repo invite.
         </div>
       </div>
@@ -173,14 +173,14 @@ const CONTACT = "krethikram@gmail.com";
 
     <div id="content">
       <header class="hero"><div class="wrap">
-        <div class="tag">ModelPilot · private beta</div>
+        <div class="tag">Maven · private beta</div>
         <h1>Cut your Claude bill — typically 20–40%.<br />Measured on your own traffic, not promised.</h1>
         <p class="sub">A drop-in gateway that routes every request to the cheapest Claude
         model that's provably good enough — informed by the whole conversation, never
         downgrading hard work — and shows you exactly what you saved, per prompt and
         per session, recalculated from the actual tokens each request consumed.</p>
         <div class="cta">
-          <a class="btn primary" href={`mailto:${CONTACT}?subject=ModelPilot beta — repo invite`}>Request beta access →</a>
+          <a class="btn primary" href={`mailto:${CONTACT}?subject=Maven beta — repo invite`}>Request beta access →</a>
           <a class="btn ghost" href="#quickstart">2-minute quickstart</a>
         </div>
         <pre class="term"><span class="c"># guidance mode — your key, zero change to your traffic</span>
@@ -200,7 +200,7 @@ dashboard → autopilot would save <span class="g">48% of baseline</span> — sw
         <div class="demo-wrap">
           <div class="demo-win">
             <div class="demo-top"><i class="r"></i><i class="y"></i><i class="g"></i>
-              <span>ModelPilot — live</span></div>
+              <span>Maven — live</span></div>
             <div class="demo-screen" id="mp-demo">
 
               <div class="scene on" data-scene="1">
@@ -216,7 +216,7 @@ dashboard → autopilot would save <span class="g">48% of baseline</span> — sw
               </div>
 
               <div class="scene" data-scene="2">
-                <div class="dashhead"><b>ModelPilot</b><span class="mode">guidance mode · localhost:8400/modelpilot/dashboard</span></div>
+                <div class="dashhead"><b>Maven</b><span class="mode">guidance mode · localhost:8400/modelpilot/dashboard</span></div>
                 <div class="convbox">
                   <div class="row h">READY TO SWITCH TO AUTOPILOT?</div>
                   <div class="row big">$312 you could save <small>— 41% of your Claude spend this week · ~$16k/yr</small></div>
@@ -233,7 +233,7 @@ dashboard → autopilot would save <span class="g">48% of baseline</span> — sw
                 <div class="row" style="font-size:.82rem;color:var(--mut);margin-bottom:8px">Across 50 of your prompts, routing saved <b style="color:var(--green)">$41 (54%)</b> · 96% of outputs judged non-inferior to the standard model.</div>
                 <div class="sxs2">
                   <div class="col"><h5>Prompt</h5>"Classify: 'I was charged twice this month' — billing / technical / sales?"</div>
-                  <div class="col win"><h5>ModelPilot → Haiku · $0.0004</h5>billing &nbsp;<span class="pill save">✓ non-inferior</span></div>
+                  <div class="col win"><h5>Maven → Haiku · $0.0004</h5>billing &nbsp;<span class="pill save">✓ non-inferior</span></div>
                 </div>
                 <div class="sxs2" style="margin-top:8px">
                   <div class="col"><h5>Standard → Opus · $0.0028</h5>billing</div>
@@ -254,7 +254,7 @@ dashboard → autopilot would save <span class="g">48% of baseline</span> — sw
 
             </div>
           </div>
-          <p class="demo-cap">A recreation of an actual ModelPilot session — the request log, dashboard, and proof you'd see on your own traffic.</p>
+          <p class="demo-cap">A recreation of an actual Maven session — the request log, dashboard, and proof you'd see on your own traffic.</p>
         </div>
       </div></section>
 
@@ -262,7 +262,7 @@ dashboard → autopilot would save <span class="g">48% of baseline</span> — sw
         <h2>Two modes. Start in guidance, switch when convinced.</h2>
         <div class="grid">
           <div class="card"><h3>Guidance <span style="color:var(--green)">· start here</span></h3>
-            <p>Nothing about your traffic changes. ModelPilot scores every request and
+            <p>Nothing about your traffic changes. Maven scores every request and
             shows you, on the dashboard, exactly what autopilot <em>would</em> save —
             so you decide with evidence, at zero risk.</p></div>
           <div class="card"><h3>Autopilot <span style="color:var(--mut)">· when ready</span></h3>
@@ -280,11 +280,11 @@ dashboard → autopilot would save <span class="g">48% of baseline</span> — sw
         <h2>Why the routing is trustworthy</h2>
         <p class="note"><b>The thing naive routers get wrong:</b> prompt caches are
           <b>model-scoped</b>, so switching models mid-conversation can forfeit your
-          cache discount and cost <em>more</em>. ModelPilot prices the cache break
+          cache discount and cost <em>more</em>. Maven prices the cache break
           before every switch and vetoes any move that doesn't actually pay — the
           difference between a real bill reduction and a vanity routing metric.</p>
         <table>
-          <tr><th>Hard problem</th><th>How ModelPilot handles it</th></tr>
+          <tr><th>Hard problem</th><th>How Maven handles it</th></tr>
           <tr><td><b>Prompt caches are model-scoped</b> — naive switching loses money</td>
               <td>Cache-aware economics price the rewrite before any mid-conversation
                   switch and veto switches that don't pay</td></tr>
@@ -310,7 +310,7 @@ dashboard → autopilot would save <span class="g">48% of baseline</span> — sw
       <section><div class="wrap">
         <h2>It adapts to your traffic — and gets cheaper the more you use it</h2>
         <p>A generic router leaves money on the table on <em>your</em> workload.
-          ModelPilot learns four things from your own traffic — every change
+          Maven learns four things from your own traffic — every change
           earned by evidence on your prompts, never a blunt global default:</p>
         <div class="grid">
           <div class="card"><h3>1 · Gates tune themselves</h3>
@@ -397,10 +397,10 @@ dashboard → autopilot would save <span class="g">48% of baseline</span> — sw
         <h2>Already on Bedrock?</h2>
         <p>AWS Bedrock has a cost router — Intelligent Prompt Routing. If you're
           on the first-party Anthropic API, it isn't available to you at all, and
-          ModelPilot is the only cost router for your traffic. If you <em>are</em>
+          Maven is the only cost router for your traffic. If you <em>are</em>
           on Bedrock, here's the honest comparison:</p>
         <table>
-          <tr><th></th><th>Bedrock IPR</th><th>ModelPilot</th></tr>
+          <tr><th></th><th>Bedrock IPR</th><th>Maven</th></tr>
           <tr><td>Models it routes</td>
               <td>Two <b>older</b> models per router (Claude 3.x era)</td>
               <td>The current lineup — Opus 4.8, Sonnet 4.6, Haiku 4.5, Fable 5 —
@@ -422,7 +422,7 @@ dashboard → autopilot would save <span class="g">48% of baseline</span> — sw
       <section><div class="wrap">
         <h2>The proof — embedded in your dashboard, on your own traffic</h2>
         <p>This is what turns a guidance trial into an autopilot customer. Your own
-        captured prompts, run through both arms — ModelPilot's routing vs everything
+        captured prompts, run through both arms — Maven's routing vs everything
         on the biggest model — rendered <b>side by side right on the dashboard</b>:
         each prompt, both outputs, per-chat and cumulative savings, and an independent
         non-inferiority verdict.</p>
@@ -447,7 +447,7 @@ routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
           <em>changes nothing</em> about your traffic (zero risk), then switch to
           autopilot once the dashboard convinces you. A Claude.ai / Claude Code
           <em>subscription</em> can't be optimized (it's flat-rate, not per-token).
-          Python 3.10+. <b>A license key is required to run ModelPilot</b> — guidance
+          Python 3.10+. <b>A license key is required to run Maven</b> — guidance
           and autopilot alike; we issue it with your invite. The offline
           <code>modelpilot demo</code> is free to try without one.</p>
         <ol class="steps">
@@ -466,7 +466,7 @@ routed 14/20 prompts · saved 61% ($1.87) · non-inferior 100%
 export MODELPILOT_LICENSE="&lt;your license token&gt;"
 bash scripts/validate_local.sh</pre></li>
 
-          <li><b>Set your keys</b> (Anthropic API key + your ModelPilot license), then
+          <li><b>Set your keys</b> (Anthropic API key + your Maven license), then
             <b>start the gateway in guidance mode</b> — it measures and recommends but
             changes nothing. Turn on prompt capture so you can generate the proof later:
             <pre class="block">export ANTHROPIC_API_KEY=sk-ant-...
@@ -500,13 +500,13 @@ Claude Code / any SDK:  export ANTHROPIC_BASE_URL=http://localhost:8400</pre>
         <code>--mode guidance</code> to stop all rerouting. <b>Privacy:</b> no prompt
         text is stored by default — the ledger holds token counts and routing metadata
         only (capture in step 4 is opt-in and stays in your deployment). <b>It improves
-        with use:</b> in autopilot ModelPilot keeps re-tuning per-category routing to
+        with use:</b> in autopilot Maven keeps re-tuning per-category routing to
         your workload — capturing more where it's proven safe, backing off anywhere
         quality slips.</p>
       </div></section>
 
       <footer><div class="wrap">
-        ModelPilot · private beta · <a href={`mailto:${CONTACT}`}>{CONTACT}</a><br />
+        Maven · private beta · <a href={`mailto:${CONTACT}`}>{CONTACT}</a><br />
         Model prices referenced: Claude Fable 5 $10/$50 · Opus 4.8 $5/$25 ·
         Sonnet 4.6 $3/$15 · Haiku 4.5 $1/$5 per MTok (June 2026 list).
       </div></footer>

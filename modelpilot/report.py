@@ -62,7 +62,7 @@ def render(db_path: str, days: float) -> str:
     since = time.time() - days * 86_400 if days else 0.0
     s = ledger.summary(since)
     lines = [
-        f"ModelPilot savings report — last {days:g} days" if days else "ModelPilot savings report — all time",
+        f"Maven savings report — last {days:g} days" if days else "Maven savings report — all time",
         "=" * 60,
         f"Requests scored:            {s['n']:,}",
         f"Tokens (in/out):            {s['tok_in']:,} / {s['tok_out']:,}",

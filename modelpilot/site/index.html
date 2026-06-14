@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ModelPilot — cut your Claude bill, typically 20–40% (proven on your traffic)</title>
+<title>Maven — cut your Claude bill, typically 20–40% (proven on your traffic)</title>
 <meta name="description" content="A drop-in gateway that routes each Claude request to the cheapest model that's provably good enough — and shows you the savings live.">
 <style>
   :root { --ink:#1f2430; --mut:#6b7080; --green:#2e9e5b; --blue:#2f6fb6; --line:#e3e3e8; }
@@ -38,7 +38,7 @@
 <body>
 
 <header class="hero"><div class="wrap">
-  <div class="tag">ModelPilot · beta</div>
+  <div class="tag">Maven · beta</div>
   <h1>Cut your Claude bill — typically 20–40%.<br>Measured on your own traffic, not promised.</h1>
   <p class="sub">A drop-in gateway that routes every request to the cheapest Claude
   model that's provably good enough — informed by the whole conversation, never
@@ -63,7 +63,7 @@ REALIZED savings: <span class="g">$0.07</span>   POTENTIAL: $0.12  <span class="
   <h2>Two modes. Start in guidance, switch when convinced.</h2>
   <div class="grid">
     <div class="card"><h3>Guidance <span style="color:var(--green)">· start here</span></h3>
-      <p>Nothing about your traffic changes. ModelPilot scores every request and
+      <p>Nothing about your traffic changes. Maven scores every request and
       shows you, on the dashboard, exactly what autopilot <em>would</em> save —
       so you decide with evidence, at zero risk.</p></div>
     <div class="card"><h3>Autopilot <span style="color:var(--mut)">· when ready</span></h3>
@@ -81,7 +81,7 @@ REALIZED savings: <span class="g">$0.07</span>   POTENTIAL: $0.12  <span class="
   <h2>The recommended rollout</h2>
   <div class="grid">
     <div class="card"><h3>1 · Run in guidance</h3><p>One base-URL change. Your app
-      behaves exactly as before; ModelPilot just watches and scores.
+      behaves exactly as before; Maven just watches and scores.
       <code>modelpilot gateway --mode guidance</code></p></div>
     <div class="card"><h3>2 · Read the dashboard</h3><p>It shows what autopilot
       would save (per chat and cumulative), and a side-by-side of your real
@@ -96,7 +96,7 @@ REALIZED savings: <span class="g">$0.07</span>   POTENTIAL: $0.12  <span class="
 <section><div class="wrap">
   <h2>Why the routing is trustworthy</h2>
   <table>
-    <tr><th>Hard problem</th><th>How ModelPilot handles it</th></tr>
+    <tr><th>Hard problem</th><th>How Maven handles it</th></tr>
     <tr><td>"Summarize" can be trivial or expert-level</td>
         <td>Calibrated on a golden dataset with a ≤2% false-downgrade target;
             when unsure, it doesn't touch your request</td></tr>
@@ -115,7 +115,7 @@ REALIZED savings: <span class="g">$0.07</span>   POTENTIAL: $0.12  <span class="
 <section><div class="wrap">
   <h2>The proof artifact — on your own traffic</h2>
   <p>This is what converts guidance users to autopilot. Run <b>your captured
-  prompts</b> through both arms — ModelPilot's routing vs everything on the
+  prompts</b> through both arms — Maven's routing vs everything on the
   biggest model — and get one page with <b>costs and outputs side by side</b>,
   plus independent non-inferiority verdicts per prompt:</p>
   <pre class="block">$ modelpilot compare --from-captures --judge
@@ -147,7 +147,7 @@ open http://localhost:8400/modelpilot/dashboard
 
 # 5. Convinced? Same license key, one flag.
 modelpilot gateway --mode autopilot --port 8400</pre>
-  <p>A license key is required to run ModelPilot (guidance and autopilot alike); the
+  <p>A license key is required to run Maven (guidance and autopilot alike); the
   offline <code>demo</code> is free. We issue your key with the invite.
   Your API keys pass through and are never stored. The ledger holds token
   counts and routing metadata — no prompt text. Full details in the
@@ -155,7 +155,7 @@ modelpilot gateway --mode autopilot --port 8400</pre>
 </div></section>
 
 <footer><div class="wrap">
-  ModelPilot · beta evaluation license ·
+  Maven · beta evaluation license ·
   <a href="https://github.com/krethikram-sudo/modelpilot">GitHub</a> ·
   <a href="https://github.com/krethikram-sudo/modelpilot/issues">Feedback &amp; issues</a><br>
   Model prices referenced: Claude Fable 5 $10/$50 · Opus 4.8 $5/$25 ·

@@ -74,7 +74,7 @@ def test_digest_slack_payload_is_text(tmp_path):
     ledger.close()
 
     payload = render_slack(build_digest(db, days=7))
-    assert "text" in payload and "ModelPilot" in payload["text"]
+    assert "text" in payload and "Maven" in payload["text"]
 
 
 def test_digest_pct_uses_autopilot_baseline_not_diluted(tmp_path):

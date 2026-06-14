@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Replay a small, realistic mixed-difficulty workload through the ModelPilot
+"""Replay a small, realistic mixed-difficulty workload through the Maven
 gateway so the digest/dashboard show a representative savings number.
 
 It simulates a customer who defaults *everything* to one expensive model
-(--baseline, default Opus) — exactly the over-provisioning ModelPilot exists to
+(--baseline, default Opus) — exactly the over-provisioning Maven exists to
 fix. Each request goes through the gateway to the real Anthropic API, so it
 costs a little real money (small max_tokens keeps it to cents). The gateway
 records token usage; `modelpilot digest` then reads it.
@@ -27,7 +27,7 @@ import sys
 import httpx
 
 # A representative *ICP* workload: a support/document-ops pipeline, which is
-# what ModelPilot targets — mostly cheap, routable tasks (triage, extraction,
+# what Maven targets — mostly cheap, routable tasks (triage, extraction,
 # summarization, drafting) with a few genuinely hard ones that correctly stay
 # on the top model. This mirrors where real customer spend is routable, so the
 # number is representative rather than a worst case.

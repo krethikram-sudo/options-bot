@@ -1,4 +1,4 @@
-# ModelPilot — Proving the Savings (Dashboard & Methodology)
+# Maven — Proving the Savings (Dashboard & Methodology)
 
 The dashboard's job is to make a skeptical FinOps lead or CFO say "fine, that number is real."
 That requires getting the *measurement* right before the visualization. Three layers, in

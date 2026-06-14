@@ -96,7 +96,7 @@ def test_collect_stats_and_rct(tmp_path):
 def test_dashboard_html_renders(tmp_path):
     ledger = _seeded_ledger(tmp_path)
     html = render_html(collect_stats(ledger, days=0))
-    for marker in ("ModelPilot", "Cumulative savings", "Verified saving",
+    for marker in ("Maven", "Cumulative savings", "Verified saving",
                    "model mix", "<svg", "classification"):
         assert marker in html, marker
     ledger.close()
@@ -141,7 +141,7 @@ def test_chat_send_roundtrip(monkeypatch, tmp_path):
     try:
         with TestClient(gw.app) as client:
             page = client.get("/modelpilot/chat")
-            assert page.status_code == 200 and "ModelPilot chat" in page.text
+            assert page.status_code == 200 and "Maven chat" in page.text
 
             r = client.post("/modelpilot/chat/send", json={
                 "messages": [{"role": "user", "content":

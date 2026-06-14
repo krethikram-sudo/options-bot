@@ -1,4 +1,4 @@
-# Competitive landscape — ModelPilot (internal)
+# Competitive landscape — Maven (internal)
 
 Researched 2026-06-11. Web-sourced; vendor claims are theirs, not verified.
 This file is internal (not on the publish allowlist).
@@ -7,7 +7,7 @@ This file is internal (not on the publish allowlist).
 
 Model routing is an **established category** (Martian, Not Diamond, Unify,
 open-source RouteLLM, plus a long tail), and every major AI gateway has some
-routing feature. Nobody we found ships ModelPilot's combination of
+routing feature. Nobody we found ships Maven's combination of
 **session-context routing + customer-side verification** (RCT holdout,
 escalation netting, side-by-side compare artifact). Position as the
 **proof/assurance layer**, not "a router."
@@ -55,7 +55,7 @@ OpenRouter (600+ models, auto-router), LiteLLM (OSS, self-hosted), Portkey,
 Kong AI Gateway, Cloudflare AI Gateway, Bifrost (11μs overhead), Requesty.
 Some do cache-aware passthrough. They make our *proxy plumbing* a commodity;
 none make our measurement claims. Integration risk: customers already behind
-one of these may want ModelPilot as a scoring/verification sidecar rather
+one of these may want Maven as a scoring/verification sidecar rather
 than another proxy hop — keep the advisory API (`/modelpilot/preview`) and
 declared-baseline header first-class for that.
 
@@ -71,7 +71,7 @@ declared-baseline header first-class for that.
 
 ## Differentiation that held up under research
 
-| Capability | Field | ModelPilot |
+| Capability | Field | Maven |
 |---|---|---|
 | Per-prompt routing | Everyone | Yes (commodity) |
 | Session-context routing (follow-up inheritance, mechanical-task carve-out) | Not found anywhere | **Yes** |
