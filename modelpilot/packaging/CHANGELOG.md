@@ -4,6 +4,14 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.4.2 — 2026-06-14
+
+- **Decluttered dashboard.** Default view is now just the conversion story:
+  the "switch to autopilot" panel, the live session strip, the side-by-side
+  proof, and the cumulative-savings chart. Totals, recent sessions, model-mix,
+  the category table, and the RCT/quality block moved into a collapsible
+  "Details & methodology" section.
+
 ## 0.4.1 — 2026-06-14
 
 - **Side-by-side proof embedded in the dashboard.** `modelpilot compare

@@ -423,6 +423,9 @@ def render_html(stats: dict) -> str:
   .sxs h4 {{ margin: 6px 0; font-size: 0.82rem; }}
   .sxs pre {{ white-space: pre-wrap; background: #fbfbfc; border: 1px solid #eee; border-radius: 6px;
         padding: 8px; font-size: 0.8rem; max-height: 320px; overflow-y: auto; }}
+  details.adv {{ margin-top: 2.2rem; }}
+  details.adv > summary {{ font-weight: 600; color: #6b7080; }}
+  details.adv h3 {{ font-size: 0.95rem; margin: 1.3rem 0 0.4rem; }}
 </style></head><body>
 <h1>ModelPilot <span class="muted" style="font-size:0.8rem;font-weight:400">— {stats['display_mode']} mode</span></h1>
 {_conversion_panel(stats)}
@@ -431,32 +434,34 @@ def render_html(stats: dict) -> str:
 <h2>Proof: recommended vs standard model, side by side</h2>
 {_proof_section(stats)}
 
-<h2>History — {window} <span class="muted" style="font-weight:400">
+<h2>Cumulative savings <span class="muted" style="font-size:0.8rem;font-weight:400">— {window}
 (<a href="?days=1{f'&session={session_key}' if session_key else ''}">day</a> ·
  <a href="?days=7{f'&session={session_key}' if session_key else ''}">week</a> ·
  <a href="?days=30{f'&session={session_key}' if session_key else ''}">month</a> ·
  <a href="?days=0{f'&session={session_key}' if session_key else ''}">all</a>)</span></h2>
-<div class="cards">{cards}</div>
-
-<h2>Recent sessions</h2>
-{_sessions_table(stats, stats["window_days"])}
-
-<h2>Cumulative savings</h2>
 {_line_chart({"potential (est.)": cum_potential, "realized": cum_realized}, days,
              colors={"potential (est.)": "#2f6fb6", "realized": "#2e9e5b"})}
 
-<h2>Recommended model mix (the migration story)</h2>
+<details class="adv"><summary>Details &amp; methodology</summary>
+<h3>Totals</h3>
+<div class="cards">{cards}</div>
+
+<h3>Recent sessions</h3>
+{_sessions_table(stats, stats["window_days"])}
+
+<h3>Recommended model mix (the migration story)</h3>
 {_mix_chart(stats["daily_mix"])}
 
-<h2>Top opportunities by category</h2>
+<h3>Top opportunities by category</h3>
 <table><tr><th>category</th><th>requests</th><th>potential</th><th>avg confidence</th></tr>{cat_rows}</table>
 
-<h2>Quality assurance</h2>
+<h3>Quality assurance</h3>
 {esc_line}
 {_rct_block(stats["rct"], stats["guardrails"])}
 
 <p class="note">Potential savings are Layer-1 estimates (same tokens re-priced at the requested
 model). The verified number comes from the randomized holdout above; replay sampling further
 calibrates output-length differences. Savings are reported net of escalation re-runs.</p>
+</details>
 {_POLL_SCRIPT.replace("__DAYS__", f"{stats['window_days']:g}").replace("__SESSION__", session_key)}
 </body></html>"""
