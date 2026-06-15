@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ModelPilot vs. AI gateways (OpenRouter, Portkey, Helicone)</title>
+<meta name="description" content="How ModelPilot differs from AI gateways like OpenRouter (incl. Fusion), Portkey, and Helicone: prompts never leave your system, pay only for realized savings, and proven cost reduction within Claude.">
+<link rel="canonical" href="https://modelpilot.pages.dev/compare.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/docs/docs.css">
+</head><body>
+<div class="top"><div class="row">
+  <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
+  <span class="tag">Compare</span><span class="sp"></span>
+  <a class="lnk" href="/security.html">Security</a>
+  <a class="lnk" href="/docs/">Docs</a>
+  <a class="cta" href="https://modelpilot-console-prod.fly.dev/signup">Start free trial</a>
+</div></div>
+
+<main style="max-width:820px;margin:0 auto;padding:34px 22px 80px">
+  <h1>ModelPilot vs. AI gateways &amp; routers</h1>
+  <p class="lead">If you're comparing us to AI <b>gateways</b> (OpenRouter incl. Fusion, Portkey,
+    Helicone, LiteLLM, Cloudflare AI Gateway) or LLM <b>routers</b> (Martian, Not Diamond, Unify,
+    Requesty, RouteLLM) — here's the honest version. We're not a gateway, and we optimize differently
+    from the routers too.</p>
+
+  <div class="note"><b>The short answer:</b> gateways are a <b>hosted layer your traffic flows through</b>
+    to reach many models. ModelPilot is a <b>privacy-preserving cost layer on your own Claude key</b> that
+    routes each request <b>down</b> to the cheapest model that's provably good enough — and bills you only a
+    slice of what it saves. Your prompts never touch our servers.</p>
+
+  <h2>The three things gateways structurally don't do</h2>
+  <ul>
+    <li><b>Your prompts never leave your system.</b> A gateway sits in your data path — it has to see your
+      prompt to route and meter it. ModelPilot classifies <em>locally</em>; only a task category and numeric
+      features ever reach us. Never prompt text, model outputs, or your API key.</li>
+    <li><b>You pay only for realized savings.</b> Gateways bill on usage (token markup, a credit fee, or a
+      % of spend / BYOK fee) — they make money when your spend goes <em>up</em>. We charge a share of the
+      savings we actually deliver. No savings, no bill — our incentive is your bill going <em>down</em>.</li>
+    <li><b>Proven cost reduction, not just access.</b> We measure savings against a held-out control arm and
+      check the cheaper model side-by-side for non-inferiority on your own traffic (0% false-downgrades on
+      our golden set). The number on your dashboard is audited, not a marketing figure.</li>
+  </ul>
+
+  <h2>Side by side</h2>
+  <table>
+    <thead><tr><th></th><th>Typical AI gateway</th><th>ModelPilot</th></tr></thead>
+    <tbody>
+      <tr><td><b>What it is</b></td><td>Hosted API in front of many providers/models</td><td>Drop-in proxy on your own Claude account</td></tr>
+      <tr><td><b>Goal</b></td><td>Access &amp; breadth (and, for OpenRouter Fusion, <em>higher</em> quality via a multi-model panel — ~4–5× the cost of one call)</td><td>Cut cost — route down to the cheapest good-enough model</td></tr>
+      <tr><td><b>Your prompts</b></td><td>Flow through their servers (routed, sometimes sampled/logged)</td><td>Never leave your system — classified locally</td></tr>
+      <tr><td><b>Billing</b></td><td>Token pass-through + fee, or % of spend / BYOK fee</td><td>% of <em>realized savings</em> (20% PAYG / 15% on subscription tiers)</td></tr>
+      <tr><td><b>Relationship</b></td><td>They become your API + billing layer</td><td>You keep your direct Anthropic account; we fail open to it</td></tr>
+      <tr><td><b>Proof</b></td><td>Quality/latency optimization</td><td>RCT control arm + non-inferiority judging, per-category floors</td></tr>
+      <tr><td><b>Scope</b></td><td>Broad — many providers</td><td>Deep on the Claude family</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What about LLM routers (Martian, Not Diamond, RouteLLM)?</h2>
+  <p>Routers also pick a cheaper/better model per request — and several are excellent. But to decide,
+    a router has to <b>read your prompt</b>: it routes <em>on the prompt</em>, so your content is in its
+    data path. ModelPilot routes on a <b>local classification</b> instead — the decision is made on your
+    box from a task category + numeric features, so the prompt itself never reaches us. We also bill on
+    <b>realized savings</b> (routers bill usage or enterprise contracts) and prove it with a held-out
+    control arm and non-inferiority checks on your own traffic, rather than quoting a savings range.</p>
+
+  <h2>When a gateway or router is the better fit</h2>
+  <p>We'd rather be straight with you: if you need <b>one API across many providers</b> (OpenAI, Google,
+    open-weight models), built-in fallbacks across vendors, or — with OpenRouter Fusion — a
+    <b>multi-model ensemble for maximum answer quality</b>, a gateway is the right tool, and we're not
+    trying to replace it. Some teams even run both: a gateway for breadth, ModelPilot to stop overspending
+    on the easy requests.</p>
+  <p>ModelPilot is the better fit when you're <b>Claude-heavy</b>, your <b>prompts are sensitive</b> (they
+    can't leave your environment), and you want <b>cost cut with proof</b> — paying only when it works.</p>
+
+  <p style="margin-top:30px"><a class="cta" href="https://modelpilot-console-prod.fly.dev/signup">Start a free 7-day trial</a></p>
+  <p class="foot" style="margin-top:24px">Questions? <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a>
+    · <a href="/security.html">How we optimize without seeing your data</a></p>
+</main>
+</body></html>

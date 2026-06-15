@@ -110,3 +110,45 @@ declared-baseline header first-class for that.
 4. **Manual TODO before first pitches:** check notdiamond.ai/pricing and
    withmartian.com/pricing in a browser (both block scrapers); skim
    RouterBench to speak its language.
+
+## Update — 2026-06-15 (deeper pass + OpenRouter Fusion)
+
+**OpenRouter Fusion** (new): multi-model *ensemble* — a panel of models answers a
+prompt in parallel, a judge model synthesizes. Priced ≈ **4–5× a single completion**
+(sum of all panel + judge calls). It optimizes for *quality by spending more* — the
+opposite of ModelPilot (route down to spend less). Reinforces our wedge: we're a
+cost-DOWN layer, not an ensemble. (openrouter.ai/docs/guides/routing/routers/fusion-router)
+
+**Pricing anchors (2026-06):** Portkey ~$49/mo Pro; Helicone $79/mo Pro ($799 Team);
+LiteLLM ~$49/mo; Cloudflare AI Gateway generous free tier; OpenRouter BYOK 1M free
+req/mo then **5% fee**; Martian metered (2.5k free req); Not Diamond enterprise/usage,
+**SOC-2 + ISO 27001**. Performance-billing comparables: **ProsperOps** ($0.05 per $1
+saved), **CloudHealth** ~3% of spend — validates our %-of-savings model. Hybrid
+(subscription + usage) pricing shows the best median growth/NRR — validates our
+subscription + 15% tiers.
+
+**Martian** reportedly nearing a **$1.3B valuation** (Accenture-backed) — a well-funded
+incumbent that routes ON the prompt (data path). Don't out-fund; out-position.
+
+**Routing cost-savings claims in the wild:** 40–85% (RouteLLM ~85% at ~95% quality;
+Martian "20–97%"; Not Diamond "30%+"). Our differentiator isn't a bigger % — it's that
+ours is **measured against a held-out control** and **non-inferiority-checked on the
+customer's own traffic** (0% false-downgrades on the golden set), so it's auditable, not
+a brochure number.
+
+### How ModelPilot compares across the WHOLE field (gateways + routers)
+Three structural wedges **no competitor we found combines**:
+1. **Prompts never leave the customer's system.** We classify *locally* and send only
+   metadata. The entire router/gateway category structurally must SEE the prompt to route
+   it (Martian, Not Diamond, OpenRouter, Unify, Requesty all route on the prompt → it's in
+   their data path). This is our hardest-to-copy edge.
+2. **Pay only for realized savings** (20% / 15%). Others bill usage, token markup, % of
+   spend, or flat subscription — they win when spend rises; we win when it falls.
+3. **Proof, not promises** — RCT control arm + per-customer non-inferiority judging.
+
+Plus: BYOK (keep your Anthropic account), **fail-open**, and depth on the Claude family.
+
+**Honest read:** crowded, hot, well-funded category. We will not out-breadth OpenRouter
+or out-fund Martian. The defensible wedge is the **privacy architecture + pay-for-savings
++ Claude specialization** combo. Lead with privacy ("route without ever seeing your
+prompts") — it's the one claim the rest of the field can't make.
