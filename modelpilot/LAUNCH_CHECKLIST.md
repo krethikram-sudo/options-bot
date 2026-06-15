@@ -126,3 +126,35 @@ Not legal/tax advice — run the legal + financial items past a startup attorney
 ## Marketing honesty (ongoing)
 - [ ] Keep savings claims substantiated ("typically 20–40%, measured on your traffic") — never
       inflate (FTC truth-in-advertising). The site copy already does this.
+
+## Compliance readiness (SOC 2 / HIPAA) — the #1 ICP unlock
+Our beachhead (healthcare, legal, fintech — see `ICP.md`) buys on this. The architecture already
+gives us the strongest possible story ("PHI/prompts physically can't reach us"), but regulated
+buyers also want a paper trail. This is a **founder + auditor process**, not code — sequence it so
+spend tracks real demand (don't pay for SOC 2 before a prospect asks). Do **not** claim any cert
+we don't hold; the `/healthcare` page and `/security` page stay honest until each box is checked.
+
+Order of operations:
+- [ ] **Form the entity first.** SOC 2 / BAAs are signed by a legal entity; the audit scopes to it.
+      (Gated by the S-corp/LLC item above.)
+- [ ] **Designate a security owner** (you, to start) and write the baseline **security policies**
+      a SOC 2 needs: access control, change management, incident response (we have
+      `INCIDENT_RESPONSE.md` — adopt it formally), vendor management, data classification,
+      business continuity, acceptable use. Most are short.
+- [ ] **Adopt a compliance automation tool** (Vanta / Drata / Secureframe) — they give the policy
+      templates, evidence collection, and an auditor network. Budget ~$7–15k/yr + audit fee.
+- [ ] **Scope SOC 2 Type I first** (point-in-time; ~weeks) to get a report in hand for sales, then
+      **Type II** (observation window, typically 3–6 months) when a deal needs it.
+- [ ] **Get an independent pen-test** of the console + brain; keep a shareable **summary** (not the
+      raw findings) for security questionnaires.
+- [ ] **HIPAA path (only when handling PHI):** complete a **HIPAA gap assessment**, stand up a
+      **BAA template** (counsel-reviewed), and confirm **Anthropic will sign a BAA** with us for the
+      downstream model calls (or document that PHI in prompts is the customer's direct relationship
+      with Anthropic under their key — which is our actual architecture). Keep the `/healthcare`
+      "not yet certified, ask us about a BAA" language until the BAA + assessment exist.
+- [ ] **Build a reusable security questionnaire response** (SIG-lite / CAIQ): data flow diagram
+      showing prompts/keys never transit us, subprocessor list, encryption-at-rest/in-transit,
+      retention, deletion, breach notification. This unblocks most mid-market reviews **before**
+      a full SOC 2.
+- [ ] **On-prem / VPC brain deploy** option for the most paranoid enterprises (max privacy = max
+      moat; see `ICP.md` moat-hardening #2).
