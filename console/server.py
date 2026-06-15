@@ -559,8 +559,11 @@ async def billing_convert(request: Request):
             url = stripe_billing.create_checkout_session(acct)
             if url:
                 return _redirect(url)
-        except Exception:  # noqa: BLE001 — fall back to recording the plan
-            pass
+        except Exception as e:  # noqa: BLE001 — log, then fall back to recording the plan
+            import sys
+            import traceback
+            print(f"[billing] checkout session failed: {e!r}", file=sys.stderr)
+            traceback.print_exc()
     # Stripe not configured (or hiccup): record the plan so metering/billing continues.
     store.convert_to_paid(acct["id"])
     return _redirect("/app/billing?converted=1")
