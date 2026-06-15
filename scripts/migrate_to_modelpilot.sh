@@ -66,7 +66,7 @@ cp "$SRC"/PRODUCT_DESIGN.md "$SRC"/ROUTER_TUNING_PLAN.md "$SRC"/SAVINGS_DASHBOAR
    "$SRC"/DEMO_SCRIPT.md "$SRC"/GTM_PLAN.md "$SRC"/COMPETITIVE.md \
    "$SRC"/PILOT_OUTREACH.md "$SRC"/SPLIT_ARCHITECTURE.md "$SRC"/PLATFORM_RESEARCH.md \
    "$SRC"/LAUNCH_CHECKLIST.md "$SRC"/CONTRACTOR_AGREEMENTS.md "$SRC"/INCIDENT_RESPONSE.md \
-   "$SRC"/pilot_tracker.csv "$WORK/internal/"
+   "$SRC"/ICP.md "$SRC"/pilot_tracker.csv "$WORK/internal/"
 cp "$SRC"/README.md "$WORK/internal/PRODUCT_README.md"
 
 # --- customer-facing test matrix ---
