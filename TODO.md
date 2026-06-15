@@ -31,7 +31,16 @@ Live URLs:
 - [x] Anthropic terms verified for the BYOK proxy; customer disclosures added (Terms §10 + docs).
 - [x] Hero headline: "Cut your Claude bill through model optimization."
 - [x] Dashboard $/tokens toggle (customer + admin): "equivalent tokens saved" view (savings $
-      expressed as Opus-4.8-equivalent tokens, ~$15/1M blended, clearly labeled). **Needs `fly deploy`.**
+      expressed as Opus-4.8-equivalent tokens, ~$15/1M blended, clearly labeled).
+- [x] Landing page de-vibecoded: SVG icons, honest "example" labels, Space Grotesk + mono
+      eyebrows, Apple-style scroll animations (staggered reveals both directions, hero parallax,
+      count-up, hover-lift).
+- [x] Dashboard leads with **% bill reduction** (early-confidence metric) + $/tokens detail.
+- [x] Console restyled to match the brand: balanced dark canvas + light cards, Space Grotesk,
+      violet accents, page-wide entrance animations + hover transitions.
+- [x] Signed-in IA redesign: **left sidebar**, 6 tabs -> 4 (Home/Setup/Settings/Billing),
+      **setup-first** routing (new customers -> Setup; set-up -> Home), onboarding welcome.
+      (All console UI changes need a `fly deploy` to go live.)
 
 ## 🔜 Next (in progress)
 - [ ] **Deploy the account-deletion feature** — `cd ~/options-bot && git pull && fly deploy`
