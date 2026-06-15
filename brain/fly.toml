@@ -1,0 +1,46 @@
+# Fly.io config for the ModelPilot BRAIN (routing decision + entitlement).
+# The brain imports the modelpilot/ package, so it MUST build with the repo root
+# as the Docker context. Deploy from the repo root:
+#   fly deploy -c brain/fly.toml
+# If the build can't find modelpilot/, force repo-root context:
+#   fly deploy -c brain/fly.toml --dockerfile brain/Dockerfile
+#
+# Full setup steps: brain/FLY_DEPLOY.md
+# No secrets required: licenses verify with the bundled PUBLIC key, and with
+# CONSOLE_URL set the brain reads entitlement from the console keylessly.
+#
+# app name must be globally unique. If `fly apps create` says it's taken, pick
+# another and update: this `app` line, console MODELPILOT_BRAIN_URL, and the docs.
+
+app = "modelpilot-brain-prod"
+primary_region = "iad"
+
+[build]
+  dockerfile = "brain/Dockerfile"
+
+[env]
+  PORT = "8600"
+  BRAIN_DB = "/data/brain.db"
+  CONSOLE_URL = "https://modelpilot-console-prod.fly.dev"
+
+[http_service]
+  internal_port = 8600
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/health"
+    interval = "15s"
+    timeout = "2s"
+    grace_period = "10s"
+
+[[mounts]]
+  source = "braindata"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

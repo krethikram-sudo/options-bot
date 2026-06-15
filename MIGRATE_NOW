@@ -1,1 +1,1 @@
-Migration trigger — 2026-06-15T02:48:00Z (Repoint customer-facing CTAs/links to the live Fly console URL; CONSOLE_BASE_URL set to match)
+Migration trigger — 2026-06-15T02:58:00Z (Brain Fly deploy config + runbook; point customer brain URL at modelpilot-brain-prod.fly.dev)

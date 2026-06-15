@@ -18,7 +18,7 @@ primary_region = "iad"
 [env]
   CONSOLE_PORT = "8700"
   CONSOLE_BASE_URL = "https://modelpilot-console-prod.fly.dev"
-  MODELPILOT_BRAIN_URL = "https://brain.modelpilot.app"
+  MODELPILOT_BRAIN_URL = "https://modelpilot-brain-prod.fly.dev"
   CONSOLE_SECURE_COOKIES = "1"
 
 # Secrets (NEVER put these in this file — set with `fly secrets set ...`):
