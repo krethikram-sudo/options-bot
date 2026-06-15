@@ -15,28 +15,32 @@ BRAND = "ModelPilot"
 
 _CSS = """
 :root{--accent:#111111;--accent-d:#000000;--ink:#0a0a0a;--muted:#6b6b70;
-  --line:#e6e6e8;--bg:#fafafa;--card:#fff;--warn:#b45309;--bad:#b91c1c;}
+  --line:#e6e6e8;--bg:#fafafa;--card:#fff;--warn:#b45309;--bad:#b91c1c;
+  --vio:#7c3aed;--blue:#2563eb;
+  --disp:"Space Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
 *{box-sizing:border-box}
 body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   color:var(--ink);background:var(--bg)}
 a{color:var(--accent-d);text-decoration:none}a:hover{text-decoration:underline}
 .top{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
 .top .wrap{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:18px}
-.brand{font-weight:700;font-size:18px;color:var(--ink)}
-.brand .dot{color:var(--accent)}
+.brand{font-family:var(--disp);font-weight:700;font-size:18px;color:var(--ink);letter-spacing:-.03em}
+.brand .dot{color:var(--vio)}
 .nav{display:flex;gap:16px;margin-left:8px;flex-wrap:wrap}
 .nav a{color:var(--muted);font-weight:500}.nav a.on{color:var(--ink)}
 .spacer{flex:1}
 .wrap{max-width:1080px;margin:0 auto;padding:24px 20px}
 .muted{color:var(--muted)}.small{font-size:13px}
-h1{font-size:24px;margin:0 0 4px}h2{font-size:17px;margin:24px 0 12px}
+h1,h2{font-family:var(--disp);letter-spacing:-.02em}
+h1{font-size:25px;margin:0 0 4px}h2{font-size:17px;margin:24px 0 12px}
 .grid{display:grid;gap:16px}
 .cols-3{grid-template-columns:repeat(3,1fr)}.cols-2{grid-template-columns:repeat(2,1fr)}
 @media(max-width:760px){.cols-3,.cols-2{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
-.stat{font-size:30px;font-weight:700;letter-spacing:-.5px}
+.stat{font-family:var(--disp);font-size:30px;font-weight:700;letter-spacing:-.02em}
 .stat.green{color:var(--accent-d)}
-.label{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.label{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:500}
 .btn{display:inline-block;background:var(--accent);color:#fff;border:0;border-radius:8px;
   padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer}
 .btn:hover{background:var(--accent-d);text-decoration:none}
@@ -189,6 +193,9 @@ def page(title: str, body: str, account: dict | None = None, active: str = "") -
                '<a href="/login">Sign in</a><a class="btn sm" href="/signup">Start free trial</a></div>')
     return f"""<!doctype html><html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <title>{_e(title)} · {BRAND}</title><style>{_CSS}</style></head><body>
 <div class=top><div class=wrap style="padding-top:12px;padding-bottom:12px">
 <a class=brand href="{'/app' if account else '/'}">Model<span class=dot>Pilot</span></a>{nav}
