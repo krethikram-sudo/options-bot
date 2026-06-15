@@ -100,6 +100,34 @@ def test_entitlement_trial_paid_suspended(env):
     assert store.entitlement("dep_unknown")["reason"] == "unknown deployment"
 
 
+def test_autopilot_ramp_in_entitlement(env):
+    _, store = env
+    a = store.create_account("ramp@y.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    # guidance -> not applied, ramp reported as 0 (nothing auto-routes)
+    ent = store.entitlement(dep)
+    assert ent["apply_pct"] == 0
+    # autopilot defaults to 100% rollout
+    store.update_settings(a["id"], mode="autopilot")
+    assert store.entitlement(dep)["apply_pct"] == 100
+    # ramp down to a canary slice; clamps to [0,100]
+    store.update_settings(a["id"], autopilot_pct=25)
+    assert store.get_settings(a["id"])["autopilot_pct"] == 25
+    assert store.entitlement(dep)["apply"] and store.entitlement(dep)["apply_pct"] == 25
+    store.update_settings(a["id"], autopilot_pct=500)
+    assert store.get_settings(a["id"])["autopilot_pct"] == 100
+    store.update_settings(a["id"], autopilot_pct=-5)
+    assert store.get_settings(a["id"])["autopilot_pct"] == 0
+
+
+def test_autopilot_ramp_via_http(env, client):
+    server, store = env
+    _signup(client, email="ramphttp@b.com")
+    client.post("/app/autopilot", data={"autopilot_pct": "50"})
+    acct = store.get_account_by_email("ramphttp@b.com")
+    assert store.get_settings(acct["id"])["autopilot_pct"] == 50
+
+
 def test_metering_and_billing(env):
     _, store = env
     a = store.create_account("m@y.com", "password123")

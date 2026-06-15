@@ -87,7 +87,8 @@ CREATE TABLE IF NOT EXISTS settings (
     min_model TEXT NOT NULL DEFAULT '',
     risk TEXT NOT NULL DEFAULT 'balanced',
     monthly_budget REAL NOT NULL DEFAULT 0,       -- 0 = no cap (dollars of model spend/cycle)
-    budget_alert_pct REAL NOT NULL DEFAULT 0.8
+    budget_alert_pct REAL NOT NULL DEFAULT 0.8,
+    autopilot_pct INTEGER NOT NULL DEFAULT 100    -- gradual rollout: % of eligible traffic to auto-route in autopilot
 );
 CREATE TABLE IF NOT EXISTS plans (
     account_id INTEGER PRIMARY KEY REFERENCES accounts(id),
@@ -218,6 +219,7 @@ _MIGRATIONS = [
     "ALTER TABLE accounts ADD COLUMN twofa_channel TEXT",
     "ALTER TABLE accounts ADD COLUMN twofa_dest TEXT",
     "ALTER TABLE plans ADD COLUMN tier TEXT NOT NULL DEFAULT 'payg'",
+    "ALTER TABLE settings ADD COLUMN autopilot_pct INTEGER NOT NULL DEFAULT 100",
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -701,7 +703,8 @@ def get_settings(account_id: int, path: str | None = None) -> dict:
 def update_settings(account_id: int, *, mode: str | None = None,
                     telemetry_opt_in: bool | None = None, min_model: str | None = None,
                     risk: str | None = None, monthly_budget: float | None = None,
-                    budget_alert_pct: float | None = None, path: str | None = None) -> dict:
+                    budget_alert_pct: float | None = None, autopilot_pct: int | None = None,
+                    path: str | None = None) -> dict:
     if mode is not None and mode not in MODES:
         raise StoreError(f"mode must be one of {MODES}")
     if risk is not None and risk not in RISK_LEVELS:
@@ -715,13 +718,15 @@ def update_settings(account_id: int, *, mode: str | None = None,
         "monthly_budget": cur["monthly_budget"] if monthly_budget is None else max(0.0, float(monthly_budget)),
         "budget_alert_pct": (cur["budget_alert_pct"] if budget_alert_pct is None
                              else min(1.0, max(0.0, float(budget_alert_pct)))),
+        "autopilot_pct": (cur.get("autopilot_pct", 100) if autopilot_pct is None
+                          else min(100, max(0, int(autopilot_pct)))),
     }
     conn = connect(path)
     try:
         conn.execute("UPDATE settings SET mode=?, telemetry_opt_in=?, min_model=?, risk=?,"
-                     " monthly_budget=?, budget_alert_pct=? WHERE account_id=?",
+                     " monthly_budget=?, budget_alert_pct=?, autopilot_pct=? WHERE account_id=?",
                      (new["mode"], new["telemetry_opt_in"], new["min_model"], new["risk"],
-                      new["monthly_budget"], new["budget_alert_pct"], account_id))
+                      new["monthly_budget"], new["budget_alert_pct"], new["autopilot_pct"], account_id))
         conn.commit()
     finally:
         conn.close()
@@ -951,8 +956,11 @@ def entitlement(deployment_id: str, path: str | None = None, now: float | None =
         entitled = ts["active"]
         reason = f"trial ({ts['days_left']}d left)" if entitled else "trial ended"
     apply = entitled and mode == "autopilot"
-    return {"entitled": entitled, "apply": apply, "mode": mode, "reason": reason,
-            "account_id": acct["id"], "plan": plan.get("plan", "trial")}
+    # Gradual rollout: in autopilot, the customer can ramp what share of eligible
+    # traffic is actually auto-routed (build trust first, then expand to 100%).
+    apply_pct = int(settings.get("autopilot_pct", 100)) if apply else 0
+    return {"entitled": entitled, "apply": apply, "apply_pct": apply_pct, "mode": mode,
+            "reason": reason, "account_id": acct["id"], "plan": plan.get("plan", "trial")}
 
 
 # --------------------------------------------------------------------------- #

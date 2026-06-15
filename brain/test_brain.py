@@ -51,6 +51,41 @@ def test_rejects_sensitive_payload(tmp_path):
         assert c.post("/route", json=bad).status_code == 422
 
 
+def test_passes_ramp_boundaries(tmp_path):
+    _, srv = _client(tmp_path)
+    # deterministic boundaries
+    assert all(srv._passes_ramp(100) for _ in range(50))
+    assert not any(srv._passes_ramp(0) for _ in range(50))
+    # a mid ramp samples both outcomes over many draws
+    draws = [srv._passes_ramp(50) for _ in range(400)]
+    assert any(draws) and not all(draws)
+
+
+def test_ramp_holds_back_switch_when_pct_zero(tmp_path, monkeypatch):
+    c, srv = _client(tmp_path)
+    # Simulate a console saying autopilot is on but ramped to 0%.
+    monkeypatch.setattr(srv, "_CONSOLE_URL", "http://console.test")
+    monkeypatch.setattr(srv, "_console_entitlement", lambda dep: {
+        "entitled": True, "via": "console", "mode": "autopilot",
+        "apply_mode": True, "apply_pct": 0, "reason": "paid", "plan": "paid"})
+    monkeypatch.setattr(srv, "_console_policy", lambda dep: {})
+    d = c.post("/route", json=_req()).json()
+    # Still a recommendation, but not auto-applied — flagged as held by the ramp.
+    assert d["action"] == "switch" and d["apply"] is False
+    assert d.get("ramp_held") is True and d["apply_pct"] == 0
+
+
+def test_ramp_full_applies_switch(tmp_path, monkeypatch):
+    c, srv = _client(tmp_path)
+    monkeypatch.setattr(srv, "_CONSOLE_URL", "http://console.test")
+    monkeypatch.setattr(srv, "_console_entitlement", lambda dep: {
+        "entitled": True, "via": "console", "mode": "autopilot",
+        "apply_mode": True, "apply_pct": 100, "reason": "paid", "plan": "paid"})
+    monkeypatch.setattr(srv, "_console_policy", lambda dep: {})
+    d = c.post("/route", json=_req()).json()
+    assert d["action"] == "switch" and d["apply"] is True and not d.get("ramp_held")
+
+
 def test_trial_entitlement_expires_server_side(tmp_path):
     _, srv = _client(tmp_path)
     now = 1_000_000.0

@@ -404,6 +404,20 @@ async def app_mode(request: Request):
     return _redirect("/app/settings" if "settings" in ref else "/app")
 
 
+@app.post("/app/autopilot")
+async def app_autopilot(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    try:
+        store.update_settings(acct["id"], autopilot_pct=int(f.get("autopilot_pct")))
+    except (store.StoreError, ValueError, TypeError):
+        pass
+    ref = request.headers.get("referer", "")
+    return _redirect("/app/settings" if "settings" in ref else "/app")
+
+
 @app.get("/app/settings", response_class=HTMLResponse)
 def settings_get(request: Request):
     acct, redir = _require(request)

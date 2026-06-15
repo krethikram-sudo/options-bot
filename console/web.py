@@ -475,19 +475,18 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
     <div class="grid cols-3">
       <div class=card><div class=label>Bill cut this cycle</div>
         <div class="stat green">{pct_cycle}%</div>
-        <div class="small muted">{dual_metric(cycle['savings'], suffix="")} saved · {int(cycle['requests']):,} req · {int(cycle['routed']):,} routed</div></div>
+        <div class="small muted">{dual_metric(cycle['savings'], suffix="")} saved · {pct_life}% lifetime · {int(cycle['requests']):,} req · {int(cycle['routed']):,} routed</div></div>
+      {_quality_card_top(proof, cycle)}
       <div class=card><div class=label>{'Your bill this cycle' if bill['is_paid'] else 'Projected bill (free during trial)'}</div>
         <div class=stat>{money(bill['would_bill'])}</div>
         <div class="small muted">{int(bill['rate']*100)}% of savings · you keep {money(bill['cycle_savings']-bill['would_bill'])}</div></div>
-      <div class=card><div class=label>Lifetime bill cut</div>
-        <div class="stat green">{pct_life}%</div>
-        <div class="small muted">{dual_metric(lifetime['savings'], suffix="")} saved · {int(lifetime['requests']):,} requests</div></div>
     </div>
 
     <h2>Routing mode</h2>
     <div class=card>{mode_toggle(mode)}
       <p class="small muted" style="margin-top:10px">Guidance recommends switches without changing traffic;
       autopilot applies them automatically. Change takes effect on your gateway within seconds.</p>
+      {_autopilot_ramp(int(settings.get('autopilot_pct', 100)), mode)}
     </div>
 
     <div class="grid cols-2" style="margin-top:16px">
@@ -507,6 +506,49 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
         <a class="btn sec sm" href="/app/logs">View request logs</a></div></div>
     {metric_toggle_assets()}"""
     return page("Home", body, account, "/app")
+
+
+def _quality_card_top(proof: dict, cycle: dict) -> str:
+    """First-class quality metric for the top of the dashboard — equal billing with
+    savings. Leads with the measured non-inferiority rate when available; otherwise
+    shows that quality is actively protected on every request (floor + auto-escalation)."""
+    comp = proof.get("comparisons") or 0
+    rate = proof.get("rate")
+    routed = int(cycle.get("routed") or 0)
+    esc = int(cycle.get("escalations") or 0)
+    if comp and rate is not None:
+        pct = 100 * rate
+        return (f'<div class=card><div class=label>Quality preserved</div>'
+                f'<div class="stat green">{pct:.0f}%</div>'
+                f'<div class="small muted">non-inferior to the top model across '
+                f'{int(comp):,} side-by-side checks · {esc:,} auto-escalations this cycle</div></div>')
+    return ('<div class=card><div class=label>Quality preserved</div>'
+            '<div class="stat green">Protected</div>'
+            f'<div class="small muted">quality floor + auto-escalation guard every request '
+            f'({esc:,} escalated of {routed:,} routed this cycle). Run '
+            f'<code>modelpilot compare</code> for a measured non-inferiority rate.</div></div>')
+
+
+def _autopilot_ramp(pct: int, mode: str) -> str:
+    """Gradual autopilot rollout control — auto-route a chosen share of eligible
+    traffic, ramping up as trust builds. Only takes effect in autopilot."""
+    presets = [10, 25, 50, 100]
+    active = mode == "autopilot"
+    btns = "".join(
+        f'<button name=autopilot_pct value="{p}" class="btn sm{"" if p==pct else " sec"}"'
+        f' style="margin-right:6px">{p}%</button>'
+        for p in presets)
+    if active:
+        note = (f"Autopilot is auto-routing <b>{pct}%</b> of eligible traffic. "
+                "Start low to build confidence, then ramp to 100% — held-back requests "
+                "are still recommended, just not auto-applied.")
+    else:
+        note = ("Choose how much traffic Autopilot will auto-route once you enable it. "
+                "Ramp up gradually as you build trust.")
+    op = "" if active else ' style="opacity:.55"'
+    return (f'<div class=field{op}><label style="margin-top:6px">Autopilot rollout</label>'
+            f'<form method=post action="/app/autopilot">{btns}</form>'
+            f'<p class="small muted" style="margin-top:8px">{note}</p></div>')
 
 
 def _proof_card(proof: dict) -> str:
@@ -585,6 +627,7 @@ def settings_page(account: dict, settings: dict, saved: bool = False,
     <div class=card>
       <h2 style="margin-top:0">Routing mode</h2>
       {mode_toggle(settings['mode'])}
+      {_autopilot_ramp(int(settings.get('autopilot_pct', 100)), settings['mode'])}
     </div>
     <div class=card style="margin-top:16px">
       <form method=post action="/app/settings">

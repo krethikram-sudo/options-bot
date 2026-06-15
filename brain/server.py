@@ -88,6 +88,7 @@ def _console_entitlement(deployment_id: str) -> dict | None:
         return None
     return {"entitled": bool(d.get("entitled")), "via": "console",
             "mode": d.get("mode"), "apply_mode": bool(d.get("apply")),
+            "apply_pct": int(d.get("apply_pct", 100)),
             "reason": d.get("reason"), "plan": d.get("plan")}
 
 
@@ -191,6 +192,20 @@ def _decision(req: dict, floors: dict | None = None) -> dict:
             "rationale": f"route {category} -> {candidate} (conf {confidence:.2f} vs gate {GATE_DEFAULT})"}
 
 
+def _passes_ramp(apply_pct: int) -> bool:
+    """Gradual-rollout canary gate. In autopilot the customer can ramp what share
+    of eligible switches is actually applied (build trust, then expand to 100%).
+    A switch decision still stands as a *recommendation* when it doesn't pass —
+    we just don't auto-apply it. Boundaries are deterministic (0 = never auto-apply,
+    100 = always); in between we sample uniformly per request."""
+    if apply_pct >= 100:
+        return True
+    if apply_pct <= 0:
+        return False
+    import random
+    return random.random() < (apply_pct / 100.0)
+
+
 app = FastAPI(title="ModelPilot routing brain")
 
 
@@ -219,8 +234,15 @@ async def route(request: Request):
     # Console owns the routing mode: only apply (auto-route) in autopilot. In
     # guidance/shadow the brain still returns the recommendation, but apply=False.
     if ent.get("via") == "console":
-        d["apply"] = bool(d.get("apply")) and bool(ent.get("apply_mode"))
+        apply_pct = int(ent.get("apply_pct", 100))
+        applied = bool(d.get("apply")) and bool(ent.get("apply_mode")) and _passes_ramp(apply_pct)
+        # If a switch was held back purely by the rollout ramp, surface it so the
+        # client/dashboard can distinguish "recommended but not yet ramped" from "stay".
+        if d.get("action") == "switch" and bool(d.get("apply")) and bool(ent.get("apply_mode")) and not applied:
+            d["ramp_held"] = True
+        d["apply"] = applied
         d["mode"] = ent.get("mode")
+        d["apply_pct"] = apply_pct
     return {"entitled": True, **d, "entitlement": ent}
 
 
