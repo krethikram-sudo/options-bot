@@ -19,11 +19,15 @@ Live URLs:
 - [x] Hero headline: "Cut your Claude bill through model optimization."
 
 ## 🔜 Next (in progress)
-- [ ] **Stripe activation.** Test mode first: create metered ($0.20/unit, sum) price → set
-      `STRIPE_SECRET_KEY` / `STRIPE_PRICE_ID` / `STRIPE_WEBHOOK_SECRET` Fly secrets → test
-      convert-to-paid with card `4242…`. **Open question:** does Stripe show legacy *usage-records*
-      or the new *meter* flow? If meter-only, Claude updates `console/stripe_billing.py` to the
-      Meter Events API. Then redo the 3 keys in **live** mode.
+- [ ] **Stripe activation — TEST mode now** (free, reversible; no entity/bank needed). Create a
+      metered ($0.20/unit, sum) price → set `STRIPE_SECRET_KEY` / `STRIPE_PRICE_ID` /
+      `STRIPE_WEBHOOK_SECRET` Fly secrets → test convert-to-paid with card `4242…`. **Open question:**
+      does Stripe show legacy *usage-records* or the new *meter* flow? If meter-only, Claude updates
+      `console/stripe_billing.py` to the Meter Events API.
+- [ ] **Stripe LIVE mode — GATED on the entity.** Set up the *live* Stripe account under the
+      **company** (entity + EIN + business bank account), NOT personal/SSN — commingling weakens the
+      liability veil and complicates taxes. So: form entity → EIN → business bank → activate Stripe
+      live (redo the 3 keys with `sk_live_…`). Do this only after the entity exists.
 - [ ] **Rotate the leaked Anthropic API key** (pasted in an earlier session — treat as compromised).
 
 ## 🏛️ Legal / corporate
