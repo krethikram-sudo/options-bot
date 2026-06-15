@@ -11,6 +11,10 @@ from dataclasses import dataclass, field
 CACHE_READ_MULT = 0.10
 CACHE_WRITE_MULT = 1.25
 
+# Anthropic minimum tokens for a prompt-cache breakpoint, and the Batch API discount.
+MIN_CACHEABLE_TOKENS = 1024
+BATCH_DISCOUNT = 0.50
+
 
 @dataclass(frozen=True)
 class ModelPrice:
@@ -131,6 +135,30 @@ def cache_switch_penalty(model_to: str, cached_prefix_tokens: int) -> float:
         return 0.0
     per_tok = price.input_per_mtok / 1_000_000
     return cached_prefix_tokens * per_tok * (CACHE_WRITE_MULT - 0.0)
+
+
+def cache_savings(model: str, prefix_tokens: int, turns: float) -> float:
+    """Estimated dollars saved over `turns` by caching a reusable prefix
+    (system prompt / shared context) instead of re-sending it uncached each turn.
+
+    Uncached: the prefix is billed at 1.0x input every turn. Cached: 1.25x once to
+    write, then 0.10x to read on each subsequent turn. Returns 0 when caching isn't
+    worthwhile (prefix below the cache minimum, or a single turn)."""
+    price = resolve_price(model)
+    if price is None or prefix_tokens < MIN_CACHEABLE_TOKENS or turns < 2:
+        return 0.0
+    per_tok = price.input_per_mtok / 1_000_000
+    uncached = turns * 1.0
+    cached = CACHE_WRITE_MULT + (turns - 1) * CACHE_READ_MULT
+    return max(0.0, prefix_tokens * per_tok * (uncached - cached))
+
+
+def batch_savings(model: str, input_tokens: int, output_tokens: int) -> float:
+    """Dollars saved by sending a latency-tolerant request through the Batch API
+    (50% off both input and output) instead of the synchronous endpoint."""
+    cost = request_cost(model, Usage(input_tokens=int(input_tokens),
+                                     output_tokens=int(output_tokens)))
+    return 0.0 if cost is None else cost * BATCH_DISCOUNT
 
 
 def net_switch_benefit(

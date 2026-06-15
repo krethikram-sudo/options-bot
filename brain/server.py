@@ -26,7 +26,8 @@ import time
 from fastapi import FastAPI, HTTPException, Request
 
 from modelpilot.license import LicenseError, verify_token
-from modelpilot.pricing import CAPABILITY_LADDER, ladder_tier, net_switch_benefit
+from modelpilot.pricing import (CAPABILITY_LADDER, batch_savings, cache_savings,
+                                ladder_tier, net_switch_benefit)
 from modelpilot.taxonomy import floor_tier
 
 GATE_DEFAULT = float(os.environ.get("BRAIN_GATE", "0.7"))
@@ -192,6 +193,34 @@ def _decision(req: dict, floors: dict | None = None) -> dict:
             "rationale": f"route {category} -> {candidate} (conf {confidence:.2f} vs gate {GATE_DEFAULT})"}
 
 
+def _opportunities(req: dict) -> list[dict]:
+    """Savings levers *beyond* model choice — orthogonal to the switch decision.
+    Each entry is advisory: a type, an estimated dollar saving, and a human detail.
+    Computed server-side (pricing economics stay here); the client only surfaces
+    them. Never includes prompt content — only the numeric features we were given."""
+    f = req.get("features", {}) or {}
+    model = req.get("original_model", "")
+    ctx = int(f.get("approx_context_tokens", 0) or 0)
+    turns = float(req.get("expected_remaining_turns", 1.0) or 1.0)
+    out: list[dict] = []
+    # 1) Prompt caching: a large reusable prefix that isn't cached yet, reused across turns.
+    if not f.get("has_cache_control"):
+        saved = cache_savings(model, ctx, turns)
+        if saved > 0:
+            out.append({"type": "prompt_cache", "est_savings": round(saved, 6),
+                        "detail": (f"Cache your ~{ctx:,}-token reusable prefix across "
+                                   f"{turns:.0f} expected turns — cached reads bill at ~10% "
+                                   "of input price.")})
+    # 2) Batch API: traffic the customer has flagged latency-tolerant -> 50% off.
+    if f.get("latency_tolerant"):
+        est_out = max(int(f.get("requested_max_tokens", 0)) // 4, 300)
+        saved = batch_savings(model, max(ctx, 500), est_out)
+        if saved > 0:
+            out.append({"type": "batch_api", "est_savings": round(saved, 6),
+                        "detail": "Route this latency-tolerant request through the Batch API for 50% off."})
+    return out
+
+
 def _passes_ramp(apply_pct: int) -> bool:
     """Gradual-rollout canary gate. In autopilot the customer can ramp what share
     of eligible switches is actually applied (build trust, then expand to 100%).
@@ -243,6 +272,9 @@ async def route(request: Request):
         d["apply"] = applied
         d["mode"] = ent.get("mode")
         d["apply_pct"] = apply_pct
+    opps = _opportunities(body)
+    if opps:
+        d["opportunities"] = opps
     return {"entitled": True, **d, "entitlement": ent}
 
 

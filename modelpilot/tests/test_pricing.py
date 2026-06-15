@@ -1,11 +1,36 @@
 from modelpilot.pricing import (
+    BATCH_DISCOUNT,
+    MIN_CACHEABLE_TOKENS,
     Usage,
     baseline_cost,
+    batch_savings,
+    cache_savings,
     ladder_tier,
     net_switch_benefit,
     request_cost,
     resolve_price,
 )
+
+
+def test_cache_savings_grows_with_turns():
+    # A 10k-token prefix reused across turns saves more the more it's reused.
+    s2 = cache_savings("claude-opus-4-8", 10_000, 2)
+    s10 = cache_savings("claude-opus-4-8", 10_000, 10)
+    assert s2 > 0 and s10 > s2
+    # 10k tokens * $5/MTok input over 2 turns: uncached 2.0x vs cached 1.35x = 0.65x.
+    per_tok = 5.0 / 1_000_000
+    assert abs(s2 - 10_000 * per_tok * (2.0 - 1.35)) < 1e-9
+
+
+def test_cache_savings_zero_when_not_worthwhile():
+    assert cache_savings("claude-opus-4-8", MIN_CACHEABLE_TOKENS - 1, 10) == 0.0  # below cache min
+    assert cache_savings("claude-opus-4-8", 50_000, 1) == 0.0                     # single turn
+    assert cache_savings("nope", 50_000, 10) == 0.0                               # unknown model
+
+
+def test_batch_savings_is_half_of_request_cost():
+    cost = request_cost("claude-haiku-4-5", Usage(input_tokens=20_000, output_tokens=2_000))
+    assert abs(batch_savings("claude-haiku-4-5", 20_000, 2_000) - cost * BATCH_DISCOUNT) < 1e-12
 
 
 def test_request_cost_basic():

@@ -51,6 +51,30 @@ def test_rejects_sensitive_payload(tmp_path):
         assert c.post("/route", json=bad).status_code == 422
 
 
+def test_opportunity_prompt_cache(tmp_path):
+    c, _ = _client(tmp_path)
+    # Large uncached reusable prefix over several turns -> a caching opportunity.
+    feats = {**_req()["features"], "approx_context_tokens": 20_000, "has_cache_control": False}
+    d = c.post("/route", json=_req(features=feats, expected_remaining_turns=8.0)).json()
+    opps = {o["type"]: o for o in d.get("opportunities", [])}
+    assert "prompt_cache" in opps and opps["prompt_cache"]["est_savings"] > 0
+
+
+def test_opportunity_none_when_already_cached(tmp_path):
+    c, _ = _client(tmp_path)
+    feats = {**_req()["features"], "approx_context_tokens": 20_000, "has_cache_control": True}
+    d = c.post("/route", json=_req(features=feats, expected_remaining_turns=8.0)).json()
+    assert not any(o["type"] == "prompt_cache" for o in d.get("opportunities", []))
+
+
+def test_opportunity_batch_when_latency_tolerant(tmp_path):
+    c, _ = _client(tmp_path)
+    feats = {**_req()["features"], "latency_tolerant": True}
+    d = c.post("/route", json=_req(features=feats)).json()
+    assert any(o["type"] == "batch_api" and o["est_savings"] > 0
+               for o in d.get("opportunities", []))
+
+
 def test_passes_ramp_boundaries(tmp_path):
     _, srv = _client(tmp_path)
     # deterministic boundaries
