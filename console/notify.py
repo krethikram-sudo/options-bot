@@ -50,6 +50,38 @@ def send_reset(email: str, token: str) -> bool:
     return send_email(email, "Reset your ModelPilot password", body)
 
 
+def sms_enabled() -> bool:
+    return bool(os.environ.get("TWILIO_ACCOUNT_SID") and os.environ.get("TWILIO_AUTH_TOKEN")
+                and os.environ.get("TWILIO_FROM"))
+
+
+def send_sms(to: str, body: str) -> bool:
+    """Send an SMS via Twilio's REST API (stdlib only). Logs in dev if unconfigured."""
+    if not sms_enabled():
+        print(f"[notify:dev sms] to={to}\n{body}")
+        return False
+    import base64
+    import urllib.parse
+    import urllib.request
+    sid = os.environ["TWILIO_ACCOUNT_SID"]
+    tok = os.environ["TWILIO_AUTH_TOKEN"]
+    data = urllib.parse.urlencode({"From": os.environ["TWILIO_FROM"], "To": to, "Body": body}).encode()
+    req = urllib.request.Request(
+        f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json", data=data)
+    req.add_header("Authorization", "Basic " + base64.b64encode(f"{sid}:{tok}".encode()).decode())
+    with urllib.request.urlopen(req, timeout=10) as r:
+        return r.status in (200, 201)
+
+
+def send_otp(dest: str, code: str, channel: str = "email") -> bool:
+    """Deliver a 2FA one-time code via the chosen channel (email now; SMS via Twilio)."""
+    body = (f"Your ModelPilot verification code is {code}\n\n"
+            "It expires in 10 minutes. If you didn't request it, you can ignore this message.")
+    if channel == "sms":
+        return send_sms(dest, body)
+    return send_email(dest, "Your ModelPilot verification code", body)
+
+
 def send_budget_alert(email: str, level: str, spend: float, budget: float) -> bool:
     pct = (100 * spend / budget) if budget else 0
     if level == "over":

@@ -21,6 +21,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from . import notify, store, stripe_billing, web
 
 COOKIE = "mp_session"
+PENDING_2FA_COOKIE = "mp_2fa"  # short-lived marker between password and OTP steps
 # Where to send users after they sign out — the public marketing landing page.
 LANDING_URL = os.environ.get("LANDING_URL", "https://modelpilot.pages.dev/")
 app = FastAPI(title="ModelPilot console")
@@ -232,6 +233,14 @@ async def login(request: Request):
     f = await _form(request)
     acct = store.authenticate(f.get("email", ""), f.get("password", ""))
     if acct:  # account owner
+        tf = store.get_2fa(acct["id"])
+        if tf["enabled"]:  # password OK -> challenge for a one-time code, no session yet
+            _issue_and_send_otp(acct, tf)
+            resp = _redirect("/login/verify")
+            secure = os.environ.get("CONSOLE_SECURE_COOKIES") == "1"
+            resp.set_cookie(PENDING_2FA_COOKIE, store.make_pending_2fa(acct["id"]),
+                            httponly=True, samesite="lax", secure=secure, max_age=600)
+            return resp
         resp = _redirect(_post_auth_dest(acct))  # Setup first if not set up, else Home
         _set_session(resp, acct, "owner", 0)
         return resp
@@ -243,6 +252,47 @@ async def login(request: Request):
         return resp
     return _html(web.auth_form("login", "Wrong email or password (or account suspended).",
                                f.get("email", "")), 401)
+
+
+def _issue_and_send_otp(acct: dict, tf: dict) -> None:
+    code = store.issue_otp(acct["id"])
+    try:
+        notify.send_otp(tf.get("dest") or acct["email"], code, tf.get("channel") or "email")
+    except Exception:  # noqa: BLE001 — never break the login flow on a send hiccup
+        pass
+
+
+@app.get("/login/verify", response_class=HTMLResponse)
+def verify_2fa_form(request: Request):
+    if not store.read_pending_2fa(request.cookies.get(PENDING_2FA_COOKIE, "")):
+        return _redirect("/login")
+    return _html(web.twofa_verify_form())
+
+
+@app.post("/login/verify")
+async def verify_2fa(request: Request):
+    aid = store.read_pending_2fa(request.cookies.get(PENDING_2FA_COOKIE, ""))
+    if not aid:
+        return _redirect("/login")
+    f = await _form(request)
+    if store.verify_otp(aid, f.get("code", "")):
+        acct = store.get_account(aid)
+        resp = _redirect(_post_auth_dest(acct))
+        _set_session(resp, acct, "owner", 0)
+        resp.delete_cookie(PENDING_2FA_COOKIE)
+        return resp
+    return _html(web.twofa_verify_form("That code didn't match or has expired."), 401)
+
+
+@app.post("/login/verify/resend")
+async def verify_2fa_resend(request: Request):
+    aid = store.read_pending_2fa(request.cookies.get(PENDING_2FA_COOKIE, ""))
+    if not aid:
+        return _redirect("/login")
+    acct = store.get_account(aid)
+    if acct:
+        _issue_and_send_otp(acct, store.get_2fa(aid))
+    return _html(web.twofa_verify_form(note="A new code is on its way."))
 
 
 @app.post("/logout")
@@ -361,7 +411,44 @@ def settings_get(request: Request):
         return redir
     return _html(web.settings_page(acct, store.get_settings(acct["id"]),
                                    saved=request.query_params.get("saved") == "1",
-                                   delete_error=request.query_params.get("delete_error") == "1"))
+                                   delete_error=request.query_params.get("delete_error") == "1",
+                                   twofa=request.query_params.get("twofa", "")))
+
+
+# --- two-factor authentication -------------------------------------------- #
+
+@app.post("/app/2fa/start")
+async def twofa_start(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    code = store.issue_otp(acct["id"])
+    try:  # email channel: code goes to the account email (no tampering possible)
+        notify.send_otp(acct["email"], code, "email")
+    except Exception:  # noqa: BLE001
+        pass
+    return _redirect("/app/settings?twofa=verify")
+
+
+@app.post("/app/2fa/confirm")
+async def twofa_confirm(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    if store.verify_otp(acct["id"], f.get("code", "")):
+        store.set_2fa(acct["id"], "email", acct["email"])
+        return _redirect("/app/settings?twofa=on")
+    return _redirect("/app/settings?twofa=bad")
+
+
+@app.post("/app/2fa/disable")
+async def twofa_disable(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    store.disable_2fa(acct["id"])
+    return _redirect("/app/settings?twofa=off")
 
 
 @app.post("/app/account/delete")

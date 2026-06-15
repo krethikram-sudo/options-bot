@@ -311,6 +311,54 @@ def landing() -> str:
     return page("Cut your Claude bill", body)
 
 
+def twofa_verify_form(error: str = "", note: str = "") -> str:
+    err = f'<div class="note bad">{_e(error)}</div>' if error else ""
+    nt = f'<div class="note">{_e(note)}</div>' if note else ""
+    body = f"""
+    <div class=auth><div class=card>
+      <h1>Verify it's you</h1>
+      <p class=muted small>Enter the 6-digit code we just sent you. It expires in 10 minutes.</p>
+      {err}{nt}
+      <form method=post action="/login/verify">
+        <div class=field><label>Verification code</label>
+          <input name=code inputmode=numeric autocomplete=one-time-code pattern="[0-9]*" maxlength=6
+            required placeholder="123456" style="letter-spacing:4px;font-size:18px"></div>
+        <button class="btn" style="width:100%">Verify &amp; sign in</button>
+      </form>
+      <form method=post action="/login/verify/resend" style="margin-top:10px">
+        <button class="btn sec sm" style="width:100%">Resend code</button></form>
+    </div></div>"""
+    return page("Verify", body)
+
+
+def _twofa_section(account: dict, state: str = "") -> str:
+    tf = store.get_2fa(account["id"])
+    note = ""
+    if state == "on":
+        note = '<div class="note">Two-factor authentication is on.</div>'
+    elif state == "off":
+        note = '<div class="note">Two-factor authentication turned off.</div>'
+    elif state == "bad":
+        note = '<div class="note bad">That code was wrong or expired — start again.</div>'
+    if tf["enabled"]:
+        inner = (f'<p class="small muted">On — a one-time code is sent to <b>{_e(tf["dest"])}</b> '
+                 f'({_e(tf["channel"])}) at each sign-in.</p>'
+                 '<form method=post action="/app/2fa/disable">'
+                 '<button class="btn sec sm">Turn off 2FA</button></form>')
+    elif state == "verify":
+        inner = ('<p class="small muted">We emailed you a 6-digit code — enter it to finish enabling 2FA.</p>'
+                 '<form method=post action="/app/2fa/confirm" class=row style="gap:8px">'
+                 '<input name=code inputmode=numeric pattern="[0-9]*" maxlength=6 required '
+                 'placeholder="123456" style="max-width:150px;letter-spacing:3px">'
+                 '<button class=btn>Confirm &amp; enable</button></form>')
+    else:
+        inner = ('<p class="small muted">Require a one-time code at sign-in (emailed to you). '
+                 'Strongly recommended for account security.</p>'
+                 '<form method=post action="/app/2fa/start"><button class=btn>Enable email 2FA</button></form>')
+    return (f'<div class=card style="margin-top:16px"><div class=label>Two-factor authentication</div>'
+            f'{note}{inner}</div>')
+
+
 def auth_form(kind: str, error: str = "", email: str = "") -> str:
     is_signup = kind == "signup"
     title = "Start your free trial" if is_signup else "Sign in"
@@ -523,7 +571,7 @@ def mode_toggle(current: str) -> str:
 # --------------------------------------------------------------------------- #
 
 def settings_page(account: dict, settings: dict, saved: bool = False,
-                  delete_error: bool = False) -> str:
+                  delete_error: bool = False, twofa: str = "") -> str:
     from .store import RISK_LEVELS
     risk_opts = "".join(
         f'<option value="{r}"{" selected" if settings["risk"]==r else ""}>{r.title()}</option>'
@@ -560,7 +608,7 @@ def settings_page(account: dict, settings: dict, saved: bool = False,
           <input name=budget_alert_pct type=number step="1" min="1" max="100" value="{int((settings.get('budget_alert_pct') or 0.8)*100)}"></div>
         <button class=btn>Save settings</button>
       </form>
-    </div>{_settings_links(account)}{_danger_zone(account, delete_error)}"""
+    </div>{_settings_links(account)}{_twofa_section(account, twofa)}{_danger_zone(account, delete_error)}"""
     return page("Settings", body, account, "/app/settings")
 
 

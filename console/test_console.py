@@ -218,6 +218,28 @@ def test_convert_without_stripe_marks_paid(env, client):
     assert store.get_plan(acct["id"])["plan"] == "paid"
 
 
+def test_2fa_enable_then_login_challenge(env, client):
+    _, store = env
+    _signup(client, email="tf@b.com")
+    acct = store.get_account_by_email("tf@b.com")
+    # enable: start sends a code (dev: not actually sent), confirm with the real code
+    client.post("/app/2fa/start")
+    code = store.issue_otp(acct["id"])          # deterministically grab a known code
+    r = client.post("/app/2fa/confirm", data={"code": code})
+    assert r.status_code == 303 and "twofa=on" in r.headers["location"]
+    assert store.get_2fa(acct["id"])["enabled"]
+    # now logging in challenges for a code instead of granting a session
+    client.cookies.clear()
+    r = client.post("/login", data={"email": "tf@b.com", "password": "password123"})
+    assert r.status_code == 303 and r.headers["location"] == "/login/verify"
+    assert client.cookies.get("mp_2fa") and not client.cookies.get("mp_session")
+    # wrong code is rejected; correct code completes login
+    assert client.post("/login/verify", data={"code": "000000"}).status_code == 401
+    code = store.issue_otp(acct["id"])
+    r = client.post("/login/verify", data={"code": code})
+    assert r.status_code == 303 and client.cookies.get("mp_session")
+
+
 def test_expired_trial_gates_app_to_billing(env, client):
     _, store = env
     _signup(client, email="exp@b.com")

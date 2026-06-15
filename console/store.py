@@ -190,6 +190,13 @@ CREATE TABLE IF NOT EXISTS sso_configs (
     scim_token_hash TEXT                          -- sha256 of the SCIM bearer token
 );
 CREATE INDEX IF NOT EXISTS idx_sso_domain ON sso_configs(domain);
+CREATE TABLE IF NOT EXISTS otp_codes (
+    account_id INTEGER PRIMARY KEY REFERENCES accounts(id),  -- one live code per account
+    code_hash TEXT NOT NULL,
+    salt TEXT NOT NULL,
+    expires_at REAL NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0
+);
 """
 
 WEBHOOK_EVENTS = ("budget.warn", "budget.over", "proposal.pending", "account.suspended")
@@ -202,7 +209,13 @@ _MIGRATIONS = [
     "ALTER TABLE settings ADD COLUMN budget_alert_pct REAL NOT NULL DEFAULT 0.8",
     "ALTER TABLE resets ADD COLUMN member_id INTEGER",
     "ALTER TABLE accounts ADD COLUMN tos_accepted_at REAL",
+    "ALTER TABLE accounts ADD COLUMN twofa_enabled INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE accounts ADD COLUMN twofa_channel TEXT",
+    "ALTER TABLE accounts ADD COLUMN twofa_dest TEXT",
 ]
+
+OTP_TTL = 600          # one-time code lifetime (seconds)
+OTP_MAX_ATTEMPTS = 5   # wrong tries before a code is burned
 
 TEAM_ROLES = ("admin", "member", "billing")
 
@@ -348,6 +361,105 @@ def authenticate(email: str, password: str, path: str | None = None) -> dict | N
     if not verify_password(password, acct["pw_hash"], acct["pw_salt"]):
         return None
     return acct
+
+
+# --------------------------------------------------------------------------- #
+# Two-factor authentication (email/SMS one-time codes)
+# --------------------------------------------------------------------------- #
+
+def get_2fa(account_id: int, path: str | None = None) -> dict:
+    acct = get_account(account_id, path)
+    if not acct:
+        return {"enabled": False, "channel": None, "dest": None}
+    return {"enabled": bool(acct.get("twofa_enabled")),
+            "channel": acct.get("twofa_channel"), "dest": acct.get("twofa_dest")}
+
+
+def set_2fa(account_id: int, channel: str, dest: str, path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE accounts SET twofa_enabled=1, twofa_channel=?, twofa_dest=? WHERE id=?",
+                     (channel, dest, account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def disable_2fa(account_id: int, path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE accounts SET twofa_enabled=0, twofa_channel=NULL, twofa_dest=NULL WHERE id=?",
+                     (account_id,))
+        conn.execute("DELETE FROM otp_codes WHERE account_id=?", (account_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def issue_otp(account_id: int, path: str | None = None, now: float | None = None) -> str:
+    """Generate a fresh 6-digit code, store it hashed (replacing any prior), and
+    return the plaintext for the caller to deliver via the chosen channel."""
+    now = now or time.time()
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    salt = secrets.token_hex(16)
+    code_hash = hashlib.pbkdf2_hmac("sha256", code.encode(), bytes.fromhex(salt), 50_000).hex()
+    conn = connect(path)
+    try:
+        conn.execute(
+            "INSERT INTO otp_codes(account_id, code_hash, salt, expires_at, attempts) VALUES(?,?,?,?,0)"
+            " ON CONFLICT(account_id) DO UPDATE SET code_hash=excluded.code_hash,"
+            " salt=excluded.salt, expires_at=excluded.expires_at, attempts=0",
+            (account_id, code_hash, salt, now + OTP_TTL))
+        conn.commit()
+    finally:
+        conn.close()
+    return code
+
+
+def verify_otp(account_id: int, code: str, path: str | None = None, now: float | None = None) -> bool:
+    now = now or time.time()
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT code_hash, salt, expires_at, attempts FROM otp_codes WHERE account_id=?",
+                           (account_id,)).fetchone()
+        if not row:
+            return False
+        if now > row["expires_at"] or row["attempts"] >= OTP_MAX_ATTEMPTS:
+            conn.execute("DELETE FROM otp_codes WHERE account_id=?", (account_id,))
+            conn.commit()
+            return False
+        calc = hashlib.pbkdf2_hmac("sha256", (code or "").strip().encode(),
+                                   bytes.fromhex(row["salt"]), 50_000).hex()
+        if hmac.compare_digest(calc, row["code_hash"]):
+            conn.execute("DELETE FROM otp_codes WHERE account_id=?", (account_id,))
+            conn.commit()
+            return True
+        conn.execute("UPDATE otp_codes SET attempts=attempts+1 WHERE account_id=?", (account_id,))
+        conn.commit()
+        return False
+    finally:
+        conn.close()
+
+
+def make_pending_2fa(account_id: int, path: str | None = None) -> str:
+    """Short-lived signed marker carried between the password step and the OTP step."""
+    payload = f"p2fa:{account_id}:{int(time.time())}"
+    sig = hmac.new(_secret(path), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}:{sig}"
+
+
+def read_pending_2fa(token: str, path: str | None = None, max_age: int = 600) -> int | None:
+    try:
+        marker, aid, issued, sig = token.split(":")
+    except (ValueError, AttributeError):
+        return None
+    if marker != "p2fa":
+        return None
+    payload = f"{marker}:{aid}:{issued}"
+    good = hmac.new(_secret(path), payload.encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(good, sig) or time.time() - int(issued) > max_age:
+        return None
+    return int(aid)
 
 
 def list_accounts(path: str | None = None) -> list[dict]:
