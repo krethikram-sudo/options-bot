@@ -347,6 +347,9 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
     mode = settings["mode"]
     mode_badge = {"autopilot": "paid", "guidance": "trial", "shadow": "off"}.get(mode, "off")
     routed_pct = (100 * cycle["routed"] / cycle["requests"]) if cycle["requests"] else 0
+    # % bill reduction — the early-confidence metric (meaningful even when $ is tiny)
+    pct_cycle = round(100 * cycle["savings"] / cycle["baseline"]) if cycle.get("baseline") else 0
+    pct_life = round(100 * lifetime["savings"] / lifetime["baseline"]) if lifetime.get("baseline") else 0
     body = f"""
     {_trial_banner(plan, trial)}
     <div class=row><h1>Dashboard</h1><div class=spacer></div>
@@ -354,15 +357,15 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
       <span class="badge {mode_badge}">{_e(mode)} mode</span></div>
     <p class=muted>Savings delivered this billing cycle (since {_fmt_date(bill['cycle_start'])}).</p>
     <div class="grid cols-3">
-      <div class=card><div class=label>Savings this cycle</div>
-        <div class="stat green">{dual_metric(cycle['savings'])}</div>
-        <div class="small muted">{int(cycle['requests']):,} requests · {int(cycle['routed']):,} routed ({routed_pct:.0f}%)</div></div>
+      <div class=card><div class=label>Bill cut this cycle</div>
+        <div class="stat green">{pct_cycle}%</div>
+        <div class="small muted">{dual_metric(cycle['savings'], suffix="")} saved · {int(cycle['requests']):,} req · {int(cycle['routed']):,} routed</div></div>
       <div class=card><div class=label>{'Your bill this cycle' if bill['is_paid'] else 'Projected bill (free during trial)'}</div>
         <div class=stat>{money(bill['would_bill'])}</div>
         <div class="small muted">{int(bill['rate']*100)}% of savings · you keep {money(bill['cycle_savings']-bill['would_bill'])}</div></div>
-      <div class=card><div class=label>Lifetime savings</div>
-        <div class=stat>{dual_metric(lifetime['savings'])}</div>
-        <div class="small muted">across {int(lifetime['requests']):,} requests</div></div>
+      <div class=card><div class=label>Lifetime bill cut</div>
+        <div class="stat green">{pct_life}%</div>
+        <div class="small muted">{dual_metric(lifetime['savings'], suffix="")} saved · {int(lifetime['requests']):,} requests</div></div>
     </div>
 
     <h2>Routing mode</h2>
