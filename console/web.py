@@ -14,65 +14,74 @@ ACCENT = "#111111"
 BRAND = "ModelPilot"
 
 _CSS = """
-:root{--accent:#111111;--accent-d:#000000;--ink:#0a0a0a;--muted:#6b6b70;
-  --line:#e6e6e8;--bg:#fafafa;--card:#fff;--warn:#b45309;--bad:#b91c1c;
-  --vio:#7c3aed;--blue:#2563eb;
+:root{--accent:#7c3aed;--accent-d:#8b5cf6;--ink:#f4f5f7;--muted:#8b97ad;
+  --line:#26262b;--bg:#0a0a0a;--card:#141416;--warn:#fbbf24;--bad:#f87171;
+  --vio:#7c3aed;--blue:#2563eb;--grad:linear-gradient(135deg,#a78bfa,#60a5fa);
   --disp:"Space Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --ease:cubic-bezier(.22,.61,.36,1);}
 *{box-sizing:border-box}
 body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  color:var(--ink);background:var(--bg)}
+  color:var(--ink);-webkit-font-smoothing:antialiased;background:
+    radial-gradient(900px 500px at 85% -8%,rgba(124,58,237,.16),transparent 60%),
+    radial-gradient(760px 460px at 4% 0%,rgba(37,99,235,.12),transparent 55%),
+    var(--bg);background-attachment:fixed}
 a{color:var(--accent-d);text-decoration:none}a:hover{text-decoration:underline}
-.top{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.top{background:rgba(10,10,12,.7);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
 .top .wrap{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:18px}
 .brand{font-family:var(--disp);font-weight:700;font-size:18px;color:var(--ink);letter-spacing:-.03em}
 .brand .dot{color:var(--vio)}
 .nav{display:flex;gap:16px;margin-left:8px;flex-wrap:wrap}
-.nav a{color:var(--muted);font-weight:500}.nav a.on{color:var(--ink)}
+.nav a{color:var(--muted);font-weight:500;transition:color .15s}.nav a.on,.nav a:hover{color:var(--ink)}
 .spacer{flex:1}
 .wrap{max-width:1080px;margin:0 auto;padding:24px 20px}
 .muted{color:var(--muted)}.small{font-size:13px}
-h1,h2{font-family:var(--disp);letter-spacing:-.02em}
+h1,h2{font-family:var(--disp);letter-spacing:-.02em;color:#fff}
 h1{font-size:25px;margin:0 0 4px}h2{font-size:17px;margin:24px 0 12px}
 .grid{display:grid;gap:16px}
 .cols-3{grid-template-columns:repeat(3,1fr)}.cols-2{grid-template-columns:repeat(2,1fr)}
 @media(max-width:760px){.cols-3,.cols-2{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
-.stat{font-family:var(--disp);font-size:30px;font-weight:700;letter-spacing:-.02em}
-.stat.green{color:var(--accent-d)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;
+  transition:transform .25s var(--ease),box-shadow .25s ease,border-color .25s}
+.card:hover{border-color:#34343c}
+.stat{font-family:var(--disp);font-size:30px;font-weight:700;letter-spacing:-.02em;color:#fff}
+.stat.green{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .label{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:500}
 .btn{display:inline-block;background:var(--accent);color:#fff;border:0;border-radius:8px;
-  padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer}
-.btn:hover{background:var(--accent-d);text-decoration:none}
-.btn.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
-.btn.sec:hover{background:#f1f5f9}
-.btn.bad{background:var(--bad)}.btn.sm{padding:6px 10px;font-size:13px}
+  padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;
+  transition:transform .15s var(--ease),background .15s,box-shadow .2s}
+.btn:hover{background:var(--accent-d);text-decoration:none;transform:translateY(-1px);box-shadow:0 12px 24px -12px rgba(124,58,237,.6)}
+.btn.sec{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.sec:hover{background:rgba(255,255,255,.05);box-shadow:none;transform:none}
+.btn.bad{background:#b91c1c;color:#fff}.btn.bad:hover{background:#991b1b}.btn.sm{padding:6px 10px;font-size:13px}
 table{width:100%;border-collapse:collapse;font-size:14px}
 th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
-th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
-tr:hover td{background:#fafcff}
+th{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+tr:hover td{background:rgba(255,255,255,.025)}
 .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600}
-.badge.trial{background:#ececec;color:#444}.badge.paid{background:#111;color:#fff}
-.badge.suspended{background:#fee2e2;color:#991b1b}.badge.admin{background:#e6e6e8;color:#1a1a1a}
-.badge.off{background:#f1f5f9;color:#475569}
-.bar{height:10px;background:#eef2f7;border-radius:6px;overflow:hidden}
-.bar>span{display:block;height:100%;background:var(--accent)}
+.badge.trial{background:#26262b;color:#c2cbdb}.badge.paid{background:var(--vio);color:#fff}
+.badge.suspended{background:#3a1a1a;color:#fca5a5}.badge.admin{background:#1e1b3a;color:#c4b5fd}
+.badge.off{background:#1e2433;color:#8b97ad}
+.bar{height:10px;background:#1f1f24;border-radius:6px;overflow:hidden}
+.bar>span{display:block;height:100%;background:var(--grad)}
 .field{margin:14px 0}.field label{display:block;font-weight:600;margin-bottom:6px}
-.field input,.field select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px}
-.note{background:#f3f3f4;border:1px solid #e2e2e5;color:#1a1a1a;padding:10px 14px;border-radius:8px;margin:12px 0}
-.note.warn{background:#fffbeb;border-color:#fde68a;color:#92400e}
-.note.bad{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+.field input,.field select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px;
+  background:#0f0f12;color:var(--ink)}
+.field input:focus,.field select:focus{outline:none;border-color:var(--vio)}
+.note{background:#15151f;border:1px solid #2a2a3a;color:#d7def0;padding:10px 14px;border-radius:8px;margin:12px 0}
+.note.warn{background:#241d10;border-color:#5a4416;color:#fcd34d}
+.note.bad{background:#241313;border-color:#5a1f1f;color:#fca5a5}
 .modes{display:flex;gap:8px;flex-wrap:wrap}
 .modes button{flex:1;min-width:150px;text-align:left;padding:14px;border:2px solid var(--line);
-  border-radius:10px;background:#fff;cursor:pointer}
-.modes button.on{border-color:var(--accent);background:#f3f3f4}
+  border-radius:10px;background:#101013;cursor:pointer;color:var(--ink);transition:border-color .2s,background .2s}
+.modes button.on{border-color:var(--vio);background:#17132a}
 .modes b{display:block;font-size:15px}.modes .small{color:var(--muted)}
-code{background:#0f172a;color:#e2e8f0;padding:2px 6px;border-radius:5px;font-size:13px}
-pre{background:#0f172a;color:#e2e8f0;padding:16px;border-radius:10px;overflow:auto;font-size:13px;line-height:1.6}
+code{background:#000;color:#cdd6e6;padding:2px 6px;border-radius:5px;font-size:13px;border:1px solid var(--line)}
+pre{background:#000;color:#cdd6e6;padding:16px;border-radius:10px;overflow:auto;font-size:13px;line-height:1.6;border:1px solid var(--line)}
 .auth{max-width:400px;margin:48px auto}
 .center{text-align:center}
-.hero{max-width:640px;margin:40px auto;text-align:center}
-.hero h1{font-size:34px;letter-spacing:-1px}
+.hero{max-width:640px;margin:56px auto;text-align:center}
+.hero h1{font-size:40px;letter-spacing:-.035em;line-height:1.05}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 """
 
@@ -145,9 +154,9 @@ def metric_toggle_assets() -> str:
     choice in localStorage so it sticks across the customer + admin dashboards."""
     return """
     <style>
-      .metric-toggle{display:inline-flex;border:1px solid #ddd;border-radius:8px;overflow:hidden;margin-right:10px}
-      .metric-toggle .seg{background:#fff;border:0;padding:6px 12px;font:inherit;cursor:pointer;color:#666}
-      .metric-toggle .seg.on{background:#111;color:#fff}
+      .metric-toggle{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-right:10px}
+      .metric-toggle .seg{background:transparent;border:0;padding:6px 12px;font:inherit;cursor:pointer;color:var(--muted)}
+      .metric-toggle .seg.on{background:var(--vio);color:#fff}
     </style>
     <script>
       (function(){
@@ -402,7 +411,7 @@ def _compare_bars(baseline: float, actual: float) -> str:
     return f"""
     <div style="margin-top:10px"><div class="row small"><span>Baseline (all top-model)</span>
       <div class=spacer></div><span class=muted>{money(baseline)}</span></div>
-      <div class=bar><span style="width:{bw:.0f}%;background:#94a3b8"></span></div></div>
+      <div class=bar><span style="width:{bw:.0f}%;background:#3a4257"></span></div></div>
     <div style="margin-top:10px"><div class="row small"><span>Actual (with ModelPilot)</span>
       <div class=spacer></div><span class=muted>{money(actual)}</span></div>
       <div class=bar><span style="width:{aw:.0f}%"></span></div></div>"""
