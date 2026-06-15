@@ -84,6 +84,83 @@ def money(x) -> str:
         return "$0.00"
 
 
+# "Equivalent tokens saved": express dollar savings as the number of top-model
+# (Claude Opus 4.8) tokens that money would have bought. Opus 4.8 is ~$5/1M in,
+# $25/1M out; we use the ~$15/1M blended midpoint. This is an APPROXIMATE,
+# clearly-labeled framing of the same dollar savings — routing re-prices the same
+# tokens, so this is "what your savings are worth in premium tokens," not tokens
+# literally avoided.
+_OPUS_BLENDED_PER_1M = 15.0
+
+
+def equiv_tokens(dollars) -> float:
+    try:
+        d = float(dollars or 0)
+    except (TypeError, ValueError):
+        return 0.0
+    return (d / _OPUS_BLENDED_PER_1M) * 1_000_000 if d > 0 else 0.0
+
+
+def fmt_tokens(n) -> str:
+    """Compact token count: 2.1M, 840K, 512."""
+    try:
+        n = float(n or 0)
+    except (TypeError, ValueError):
+        n = 0.0
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f}M"
+    if n >= 1_000:
+        return f"{n / 1_000:.0f}K"
+    return f"{int(n)}"
+
+
+# --- $ / tokens-saved view toggle (shared by the customer + admin dashboards) ---
+_TOK_TIP = ("Approx. Claude Opus 4.8 tokens your savings would buy (~$15/1M blended). "
+            "Same dollars shown as premium-token equivalents — routing re-prices the same "
+            "tokens, so this is what the savings are worth, not tokens literally avoided.")
+
+
+def metric_toggle_control() -> str:
+    """The $ / Tokens segmented toggle (place in a page header)."""
+    return (f'<div class="metric-toggle" title="{_TOK_TIP}">'
+            '<button type=button class="seg on" data-metric="usd">$ saved</button>'
+            '<button type=button class="seg" data-metric="tok">Tokens saved</button></div>')
+
+
+def dual_metric(dollars, suffix="tok-eq") -> str:
+    """A savings value rendered both as $ and as equivalent tokens; the toggle
+    shows one or the other client-side. Pass suffix="" for compact table cells."""
+    suf = f'<span class="small muted"> {suffix}</span>' if suffix else ""
+    return (f'<span class=m-usd>{money(dollars)}</span>'
+            f'<span class=m-tok style="display:none" title="{_TOK_TIP}">'
+            f'{fmt_tokens(equiv_tokens(dollars))}{suf}</span>')
+
+
+def metric_toggle_assets() -> str:
+    """CSS + JS for the toggle (include once per page that uses it). Persists the
+    choice in localStorage so it sticks across the customer + admin dashboards."""
+    return """
+    <style>
+      .metric-toggle{display:inline-flex;border:1px solid #ddd;border-radius:8px;overflow:hidden;margin-right:10px}
+      .metric-toggle .seg{background:#fff;border:0;padding:6px 12px;font:inherit;cursor:pointer;color:#666}
+      .metric-toggle .seg.on{background:#111;color:#fff}
+    </style>
+    <script>
+      (function(){
+        function apply(m){
+          document.querySelectorAll('.m-usd').forEach(function(e){e.style.display=(m==='tok')?'none':'';});
+          document.querySelectorAll('.m-tok').forEach(function(e){e.style.display=(m==='tok')?'':'none';});
+          document.querySelectorAll('.metric-toggle .seg').forEach(function(b){b.classList.toggle('on',b.dataset.metric===m);});
+        }
+        var m=localStorage.getItem('mp_metric')||'usd';
+        apply(m);
+        document.querySelectorAll('.metric-toggle .seg').forEach(function(b){
+          b.addEventListener('click',function(){var x=this.dataset.metric;localStorage.setItem('mp_metric',x);apply(x);});
+        });
+      })();
+    </script>"""
+
+
 def _fmt_date(ts) -> str:
     if not ts:
         return "—"
@@ -241,17 +318,18 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
     body = f"""
     {_trial_banner(plan, trial)}
     <div class=row><h1>Dashboard</h1><div class=spacer></div>
+      {metric_toggle_control()}
       <span class="badge {mode_badge}">{_e(mode)} mode</span></div>
     <p class=muted>Savings delivered this billing cycle (since {_fmt_date(bill['cycle_start'])}).</p>
     <div class="grid cols-3">
       <div class=card><div class=label>Savings this cycle</div>
-        <div class="stat green">{money(cycle['savings'])}</div>
+        <div class="stat green">{dual_metric(cycle['savings'])}</div>
         <div class="small muted">{int(cycle['requests']):,} requests · {int(cycle['routed']):,} routed ({routed_pct:.0f}%)</div></div>
       <div class=card><div class=label>{'Your bill this cycle' if bill['is_paid'] else 'Projected bill (free during trial)'}</div>
         <div class=stat>{money(bill['would_bill'])}</div>
         <div class="small muted">{int(bill['rate']*100)}% of savings · you keep {money(bill['cycle_savings']-bill['would_bill'])}</div></div>
       <div class=card><div class=label>Lifetime savings</div>
-        <div class=stat>{money(lifetime['savings'])}</div>
+        <div class=stat>{dual_metric(lifetime['savings'])}</div>
         <div class="small muted">across {int(lifetime['requests']):,} requests</div></div>
     </div>
 
@@ -274,7 +352,8 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
     <div class=card style="margin-top:16px"><div class=label>Your connection</div>
       <p class="small muted">Point your gateway at ModelPilot with this deployment id:</p>
       <p><code>{_e(deployment['deployment_id'])}</code></p>
-      <a class="btn sec sm" href="/app/connect">Setup &amp; deployments</a></div>"""
+      <a class="btn sec sm" href="/app/connect">Setup &amp; deployments</a></div>
+    {metric_toggle_assets()}"""
     return page("Dashboard", body, account, "/app")
 
 
@@ -749,8 +828,8 @@ def admin_overview(account: dict, rev: dict, rows: list[dict], pending: int = 0)
           <td><a href="/admin/accounts/{r['id']}">{_e(r['email'])}</a>{admin_tag}{pend}<br>
             <span class="small muted">{_e(r['company'] or '')}</span></td>
           <td>{badge}</td>
-          <td>{money(r['lifetime_savings'])}</td>
-          <td>{money(r['cycle_savings'])}</td>
+          <td>{dual_metric(r['lifetime_savings'], suffix="")}</td>
+          <td>{dual_metric(r['cycle_savings'], suffix="")}</td>
           <td>{money(r['cycle_revenue'])}</td>
           <td class="small muted">{_fmt_date(r['created_at'])}</td></tr>"""
     pending_card = (f'<a class=card href="/admin/proposals" style="display:block;text-decoration:none;color:inherit">'
@@ -758,7 +837,7 @@ def admin_overview(account: dict, rev: dict, rows: list[dict], pending: int = 0)
                     f'<div class=stat>{pending}</div>'
                     f'<div class="small muted">auto-proposed floor/rule changes — click to review &amp; bulk-approve</div></a>')
     body = f"""
-    <h1>Admin · overview</h1>
+    <div class=row><h1>Admin · overview</h1><div class=spacer></div>{metric_toggle_control()}</div>
     <p class=muted>Revenue and savings across all customers. Use this to spot where the product is
     (and isn't) delivering value.</p>
     <div class="grid cols-2">
@@ -766,8 +845,8 @@ def admin_overview(account: dict, rev: dict, rows: list[dict], pending: int = 0)
         <div class="stat green">{money(rev['cycle_revenue'])}</div>
         <div class="small muted">lifetime {money(rev['total_revenue'])}</div></div>
       <div class=card><div class=label>Savings delivered this cycle</div>
-        <div class=stat>{money(rev['cycle_savings'])}</div>
-        <div class="small muted">lifetime {money(rev['total_savings_delivered'])}</div></div>
+        <div class=stat>{dual_metric(rev['cycle_savings'])}</div>
+        <div class="small muted">lifetime {dual_metric(rev['total_savings_delivered'], suffix="")}</div></div>
     </div>
     <div class="grid cols-2" style="margin-top:16px">
       <div class=card><div class=label>Accounts</div>
@@ -780,7 +859,8 @@ def admin_overview(account: dict, rev: dict, rows: list[dict], pending: int = 0)
       <table><thead><tr><th>Account</th><th>Plan</th><th>Lifetime savings</th>
         <th>Savings (cycle)</th><th>Revenue (cycle)</th><th>Joined</th></tr></thead>
         <tbody>{trs or '<tr><td colspan=6 class="muted">No accounts yet.</td></tr>'}</tbody></table>
-    </div>"""
+    </div>
+    {metric_toggle_assets()}"""
     return page("Admin", body, account, "/admin")
 
 

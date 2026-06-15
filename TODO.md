@@ -30,6 +30,8 @@ Live URLs:
       (Dollar value sub-cent on trivial test traffic — pipeline proven, magnitude needs real volume.)
 - [x] Anthropic terms verified for the BYOK proxy; customer disclosures added (Terms §10 + docs).
 - [x] Hero headline: "Cut your Claude bill through model optimization."
+- [x] Dashboard $/tokens toggle (customer + admin): "equivalent tokens saved" view (savings $
+      expressed as Opus-4.8-equivalent tokens, ~$15/1M blended, clearly labeled). **Needs `fly deploy`.**
 
 ## 🔜 Next (in progress)
 - [ ] **Deploy the account-deletion feature** — `cd ~/options-bot && git pull && fly deploy`
