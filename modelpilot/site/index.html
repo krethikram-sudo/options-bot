@@ -27,6 +27,7 @@
     --vio:#7c3aed; --blue:#2563eb; --grad:linear-gradient(135deg,#7c3aed,#2563eb);
     --disp:"Space Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --ease:cubic-bezier(.22,.61,.36,1);
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
@@ -188,9 +189,22 @@
   footer a{color:#aeb9cc;font-size:14px}
   footer a:hover{color:#fff}
   footer .sep{flex:1}
-  .reveal{opacity:0;transform:translateY(18px);transition:opacity .7s cubic-bezier(.2,.6,.2,1),transform .7s cubic-bezier(.2,.6,.2,1)}
+  /* scroll-in reveals (staggered via --rd), animated bar fills, hover lift */
+  .reveal{opacity:0;transform:translateY(24px);
+    transition:opacity .6s var(--ease),transform .6s var(--ease),box-shadow .35s ease;
+    transition-delay:var(--rd,0ms);will-change:opacity,transform}
   .reveal.in{opacity:1;transform:none}
-  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+  .reveal .bar>span,.reveal .lbar>span{transform:scaleX(0);transform-origin:left;
+    transition:transform 1s var(--ease) .12s}
+  .reveal.in .bar>span,.reveal.in .lbar>span{transform:scaleX(1)}
+  .step:hover,.card:hover,.proofcard:hover{transform:translateY(-4px);
+    box-shadow:0 26px 50px -30px rgba(15,23,42,.5)}
+  .btn{transition:transform .15s var(--ease),background .15s,box-shadow .2s}
+  .btn.primary:hover{transform:translateY(-1px);box-shadow:0 12px 24px -12px rgba(124,58,237,.6)}
+  @media(prefers-reduced-motion:reduce){
+    .reveal{opacity:1;transform:none;transition:none}
+    .reveal .bar>span,.reveal .lbar>span{transform:none}
+    .step:hover,.card:hover,.proofcard:hover,.btn.primary:hover{transform:none}}
 </style>
 </head>
 <body>
@@ -446,8 +460,29 @@ realized savings × <span class="g">20%</span></code>
 </footer>
 
 <script>
-(function(){if(!('IntersectionObserver' in window))return;
-var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});
-document.querySelectorAll('section,.strip').forEach(function(el){el.classList.add('reveal');io.observe(el);});})();
+(function(){
+  var d=document;
+  var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce||!('IntersectionObserver' in window))return;   // no JS/reduced motion -> content stays visible
+  // staggered cascade within each group
+  [['.steps',90],['.feat',80],['.statlist',90],['.guards',70],['.flow',60]].forEach(function(g){
+    d.querySelectorAll(g[0]).forEach(function(grp){
+      Array.prototype.forEach.call(grp.children,function(ch,i){ch.style.setProperty('--rd',(i*g[1])+'ms');});
+    });
+  });
+  // hero entrance sequence
+  var htext=d.querySelector('.hero .herogrid>div'), demo=d.querySelector('.hero .demo');
+  if(htext){Array.prototype.forEach.call(htext.children,function(ch,i){ch.classList.add('reveal');ch.style.setProperty('--rd',(i*90)+'ms');});}
+  if(demo){demo.classList.add('reveal');demo.style.setProperty('--rd','240ms');}
+  // granular reveal targets
+  var sel='.strip,.sec-head,.step,.card,.proofcard,.statlist .s,.flow .node,.guards .guard,'+
+          '.price,.faq details,.final h2,.final p,.final .center';
+  d.querySelectorAll(sel).forEach(function(el){el.classList.add('reveal');});
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){
+    if(e.isIntersecting){var t=e.target;t.classList.add('in');
+      setTimeout(function(){t.style.removeProperty('--rd');},800);  // clear delay so hover stays snappy
+      io.unobserve(t);}});},{threshold:.12,rootMargin:'0px 0px -8% 0px'});
+  d.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+})();
 </script>
 </body></html>
