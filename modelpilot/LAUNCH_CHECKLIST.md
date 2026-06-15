@@ -22,6 +22,32 @@ Not legal/tax advice — run the legal + financial items past a startup attorney
 - [ ] **Have counsel finalize the templates** above and set governing law/venue.
 - [ ] **Verify the model provider's terms** allow a hosted proxy using the customer's own key
       (we don't resell tokens — but confirm Anthropic's commercial/API terms permit this). **Load-bearing.**
+      - Research finding (2026-06, not legal advice — confirm with counsel + Anthropic in writing):
+        - **The thing Anthropic banned in Feb 2026 is _subscription credential_ arbitrage** — third
+          parties routing requests through Claude.ai Free/Pro/Max OAuth tokens "on behalf of" their
+          users. That is **not** our model and we must never do it.
+        - **API-key auth via the Console is the *sanctioned* path** for "developers building products
+          or services that interact with Claude." **Bring-Your-Own-Key (BYOK)** — each customer uses
+          their *own* API key for their *own* traffic — is the explicitly recommended compliance pattern.
+          We are BYOK. ✅
+        - We never **resell/pool** access (no single key fanned out to many third parties; each
+          customer pays Anthropic directly on their own key) — this is the line the terms draw, and
+          we're on the right side of it.
+        - **Architecture is our strongest defense:** in thin-client / self-hosted mode the API key and
+          prompts **never leave the customer's box** — we're just software they run against their own
+          key (like LiteLLM/Kong AI Gateway), which no Anthropic term restricts.
+      - **Open risk to close before GA — the *fully hosted* gateway mode**, where customer traffic +
+        key transit our servers: there we become a **processor acting on the customer's behalf**, and
+        the customer is **disclosing its key to us** (Anthropic's guidance is "don't share keys; get
+        your own"). Steps: (1) keep the **default** deployment self-hosted/thin-client; (2) for hosted
+        mode, contractually make the **customer responsible for use under its key** + name us as an
+        authorized processor (our MSA/DPA already lean this way — have counsel confirm); (3) **email
+        Anthropic** (sales/legal) describing the BYOK-proxy model and get written confirmation it's
+        permitted; (4) **never** touch subscription credentials.
+      - Sources: anthropic.com/news/expanded-legal-protections-api-improvements; theregister.com
+        2026/02/20 third-party Claude access clarification; support.anthropic.com API key best
+        practices ("get your own key rather than sharing"); /legal/commercial-terms (no-resell /
+        no-competing-use restrictions).
 - [ ] **Trademark:** knockout-search "ModelPilot" (may be taken); file a word mark if clear.
 - [ ] **IP:** strategy is trade-secret (split architecture keeps routing IP server-side) +
       contractor IP-assignment/NDAs. A provisional patent only if a genuinely novel method is
