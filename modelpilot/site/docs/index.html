@@ -80,6 +80,19 @@ client = Anthropic(base_url=<span class="y">"http://127.0.0.1:8400"</span>)   <s
     <div class="note warn"><b>It always fails open.</b> If ModelPilot is ever unreachable, your request is
       forwarded straight to the Claude API, unrouted. We can degrade your savings, never your uptime.</div>
 
+    <h2 id="compliance">One compliance note before you go live</h2>
+    <p>You're using your own Anthropic key, so <b>Anthropic's Usage Policy still applies to your
+      traffic</b> when it routes through ModelPilot. Two things to check for your use case:</p>
+    <ul>
+      <li><b>High-risk domains</b> — legal, healthcare, insurance, finance, employment or housing,
+        academic testing, and journalism — need a qualified <b>human reviewing outputs</b> and an
+        <b>"AI was involved" disclosure</b> to your end users.</li>
+      <li><b>Any user-facing chatbot or agent</b> should tell users they're talking to AI.</li>
+    </ul>
+    <p class="small muted">These are Anthropic's requirements, not ModelPilot's — we just don't want
+      routing to put you offside. Full detail and a couple of other disclosures (IP-indemnity scope,
+      Anthropic's own data handling) are in <a href="/legal/terms.html#10">Terms §10</a>.</p>
+
     <div class="pager"><span></span><a href="/docs/configuration.html">Configuration →</a></div>
     <p class="foot">© 2026 ModelPilot · <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a></p>
   </main>
