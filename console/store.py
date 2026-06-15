@@ -22,7 +22,12 @@ import time
 from datetime import datetime, timezone
 
 TRIAL_DAYS = 7
-DEFAULT_RATE = 0.20            # we bill 20% of realized savings
+DEFAULT_RATE = 0.20            # we bill 20% of realized savings (Pay-as-you-go)
+# Pricing tiers: Pay-as-you-go (20% of savings), and two subscription tiers that
+# unlock per-customer tuning on the customer's own (local) prompt data at 15%.
+TIERS = ("payg", "self_optimize", "managed")
+TIER_RATES = {"payg": 0.20, "self_optimize": 0.15, "managed": 0.15}
+TIER_LABELS = {"payg": "Pay-as-you-go", "self_optimize": "Self-optimize", "managed": "Managed"}
 DAY = 86_400
 SESSION_TTL = 14 * DAY
 MODES = ("guidance", "autopilot")
@@ -212,6 +217,7 @@ _MIGRATIONS = [
     "ALTER TABLE accounts ADD COLUMN twofa_enabled INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE accounts ADD COLUMN twofa_channel TEXT",
     "ALTER TABLE accounts ADD COLUMN twofa_dest TEXT",
+    "ALTER TABLE plans ADD COLUMN tier TEXT NOT NULL DEFAULT 'payg'",
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -899,6 +905,23 @@ def set_rate(account_id: int, rate: float, path: str | None = None) -> None:
     conn = connect(path)
     try:
         conn.execute("UPDATE plans SET rate=? WHERE account_id=?", (max(0.0, rate), account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_tier(account_id: int, path: str | None = None) -> str:
+    return get_plan(account_id, path).get("tier") or "payg"
+
+
+def set_tier(account_id: int, tier: str, path: str | None = None) -> None:
+    """Set the pricing tier and align the savings rate (payg=20%, sub tiers=15%)."""
+    if tier not in TIERS:
+        raise StoreError(f"tier must be one of {TIERS}")
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE plans SET tier=?, rate=? WHERE account_id=?",
+                     (tier, TIER_RATES[tier], account_id))
         conn.commit()
     finally:
         conn.close()

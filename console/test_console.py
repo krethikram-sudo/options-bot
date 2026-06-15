@@ -240,6 +240,23 @@ def test_2fa_enable_then_login_challenge(env, client):
     assert r.status_code == 303 and client.cookies.get("mp_session")
 
 
+def test_tier_upgrade_sets_rate_and_gates_tuning(env, client):
+    _, store = env
+    _signup(client, email="tier@b.com")
+    acct = store.get_account_by_email("tier@b.com")
+    assert store.get_tier(acct["id"]) == "payg"
+    assert store.get_plan(acct["id"])["rate"] == 0.20
+    # tuning capture is gated on payg
+    assert "MODELPILOT_CAPTURE_PCT" not in client.get("/app/connect").text
+    # upgrade to Self-optimize (no Stripe configured -> records tier + paid)
+    r = client.post("/app/billing/convert", data={"tier": "self_optimize"})
+    assert r.status_code == 303
+    p = store.get_plan(acct["id"])
+    assert store.get_tier(acct["id"]) == "self_optimize" and p["rate"] == 0.15 and p["plan"] == "paid"
+    # tuning capture dial now unlocked
+    assert "MODELPILOT_CAPTURE_PCT" in client.get("/app/connect").text
+
+
 def test_expired_trial_gates_app_to_billing(env, client):
     _, store = env
     _signup(client, email="exp@b.com")

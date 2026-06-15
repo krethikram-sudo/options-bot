@@ -708,9 +708,13 @@ async def billing_convert(request: Request):
     if acct.get("team_role") not in ("owner", "admin", "billing"):
         return _html(web.page("Forbidden", "<h1>403</h1><p class=muted>Billing changes need an "
                               "owner, admin, or billing role.</p>", acct), 403)
+    f = await _form(request)
+    tier = f.get("tier", "payg")
+    if tier not in store.TIERS:
+        tier = "payg"
     if stripe_billing.enabled():
         try:
-            url = stripe_billing.create_checkout_session(acct)
+            url = stripe_billing.create_checkout_session(acct, tier)
             if url:
                 return _redirect(url)
         except Exception as e:  # noqa: BLE001 — log, then fall back to recording the plan
@@ -718,9 +722,10 @@ async def billing_convert(request: Request):
             import traceback
             print(f"[billing] checkout session failed: {e!r}", file=sys.stderr)
             traceback.print_exc()
-    # Stripe not configured (or hiccup): record the plan so metering/billing continues.
+    # Stripe not configured (or hiccup): record the plan + tier so metering continues.
     store.convert_to_paid(acct["id"])
-    return _redirect("/app/billing?converted=1")
+    store.set_tier(acct["id"], tier)
+    return _redirect(f"/app/billing?converted=1&tier={tier}")
 
 
 # --------------------------------------------------------------------------- #

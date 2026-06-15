@@ -40,9 +40,20 @@ def _base_url() -> str:
     return os.environ.get("CONSOLE_BASE_URL", "http://127.0.0.1:8700").rstrip("/")
 
 
-def create_checkout_session(account: dict) -> str | None:
-    """Start a Stripe Checkout session for the subscription. Returns the hosted
-    Checkout URL, or None if Stripe is not configured."""
+def tier_sub_price(tier: str) -> str | None:
+    """The flat monthly subscription price id for a tier (None for payg or until set)."""
+    if tier == "self_optimize":
+        return os.environ.get("STRIPE_SELFOPT_PRICE_ID")
+    if tier == "managed":
+        return os.environ.get("STRIPE_MANAGED_PRICE_ID")
+    return None
+
+
+def create_checkout_session(account: dict, tier: str = "payg") -> str | None:
+    """Start a Stripe Checkout session for the chosen tier. Returns the hosted
+    Checkout URL, or None if Stripe is not configured. Subscription tiers add the
+    flat monthly price (when its STRIPE_*_PRICE_ID is set) alongside the metered
+    20%/15%-of-savings price."""
     if not enabled():
         return None
     price = os.environ.get("STRIPE_PRICE_ID")
@@ -55,15 +66,18 @@ def create_checkout_session(account: dict) -> str | None:
         customer = stripe.Customer.create(
             email=account["email"], name=account.get("company") or account["email"],
             metadata={"account_id": account["id"]}).id
-        store.convert_to_paid  # noqa: B018 — keep import warm; convert happens on success
         _save_customer(account["id"], customer)
+    line_items = [{"price": price}]  # metered savings price -> no quantity
+    sub_price = tier_sub_price(tier)
+    if sub_price:  # flat monthly subscription for the optimization tier
+        line_items.append({"price": sub_price, "quantity": 1})
     session = stripe.checkout.Session.create(
         mode="subscription",
         customer=customer,
-        line_items=[{"price": price}],  # metered price -> no quantity
+        line_items=line_items,
         success_url=f"{_base_url()}/app/billing?checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
         cancel_url=f"{_base_url()}/app/billing?checkout=cancel",
-        metadata={"account_id": account["id"]},
+        metadata={"account_id": account["id"], "tier": tier},
     )
     return session.url
 
@@ -93,6 +107,9 @@ def finalize_checkout(account: dict, session_id: str) -> bool:
     item_id = sub_obj["items"]["data"][0]["id"]
     store.convert_to_paid(account["id"], stripe_customer_id=session.customer,
                           stripe_subscription_id=sub_id, stripe_item_id=item_id)
+    tier = (session.metadata or {}).get("tier", "payg")
+    if tier in store.TIERS:
+        store.set_tier(account["id"], tier)  # aligns the savings rate (20% vs 15%)
     return True
 
 

@@ -765,19 +765,33 @@ client = Anthropic(base_url="http://127.0.0.1:8400")  # your key stays local</pr
     </div>
     {_api_keys_section(keys or [], deployments, new_key)}
     {_webhooks_section(webhooks or [])}
+    {_tuning_capture_section(account)}"""
+    return page("Configuration", body, account, "/app/connect")
+
+
+def _tuning_capture_section(account: dict) -> str:
+    """Self-serve tuning capture — gated to the Self-optimize / Managed tiers."""
+    tier = store.get_tier(account["id"])
+    if tier == "payg":
+        return ("""
+    <h2>Tuning capture <span class="small muted">— Self-optimize plan</span></h2>
+    <div class=card>
+      <p class="small muted">On the <b>Self-optimize</b> plan you can tune routing to your own workload —
+        the proxy samples prompts <b>locally, on your system</b>, to validate cheaper models on your real
+        traffic, and proposes safe per-category floors. Captured prompts never leave your machine.</p>
+      <a class="btn sm" href="/app/billing">See plans</a>
+    </div>""")
+    return ("""
     <h2>Tuning capture <span class="small muted">— optional, stays on your machine</span></h2>
     <div class=card>
-      <p class="small muted">ModelPilot tunes routing to your workload from category labels and outcomes —
-        no prompt content needed. For <b>sharper</b> per-category tuning you can let the proxy sample a
-        fraction of prompts <b>locally, on your own system</b>, to validate cheaper models on your real
-        traffic. Captured prompts are used only for local tuning and <b>never leave your machine</b>.
-        Off by default.</p>
+      <p class="small muted">Your plan includes per-customer tuning. Let the proxy sample a fraction of
+        prompts <b>locally, on your own system</b>, to validate cheaper models on your real traffic.
+        Captured prompts are used only for local tuning and <b>never leave your machine</b>. Off by default.</p>
       <pre>export MODELPILOT_CAPTURE_PCT=0.05   <span class="muted"># sample 5% locally for tuning (0 = off, the default)</span></pre>
       <p class="small muted">Then run <code>modelpilot tune</code> / <code>modelpilot learn-floors</code> on your
         box to turn that local sample into proposed floors — which you review and approve here before anything
         changes. See <a href="/security.html#optimize">how we optimize without seeing your data</a>.</p>
-    </div>"""
-    return page("Configuration", body, account, "/app/connect")
+    </div>""")
 
 
 def _sso_section(sso: dict, scim_token: str = "") -> str:
@@ -945,9 +959,11 @@ def reset_form(token: str, error: str = "") -> str:
 def billing_page(account: dict, plan: dict, trial: dict, bill: dict,
                  stripe_on: bool, flash: str = "") -> str:
     is_paid = plan.get("plan") == "paid"
-    status_badge = ('<span class="badge paid">Paid plan</span>' if is_paid else
+    tier = plan.get("tier") or "payg"
+    tier_badge = f'<span class="badge admin">{_e(store.TIER_LABELS.get(tier, tier))}</span>'
+    status_badge = (('<span class="badge paid">Paid plan</span>' if is_paid else
                     (f'<span class="badge trial">Trial · {trial["days_left"]}d left</span>'
-                     if trial["active"] else '<span class="badge suspended">Trial ended</span>'))
+                     if trial["active"] else '<span class="badge suspended">Trial ended</span>')) + " " + tier_badge)
     flash_html = ""
     if flash == "success":
         flash_html = '<div class="note">Billing is active — thanks! Your savings are now being metered.</div>'
@@ -985,6 +1001,7 @@ def billing_page(account: dict, plan: dict, trial: dict, bill: dict,
     <div class=row><h1>Billing</h1><div class=spacer></div>{status_badge}</div>
     {flash_html}
     <div class=card>{action}</div>
+    {_tier_options(plan, stripe_on)}
     <div class=card style="margin-top:16px">
       <div class=label>How billing works</div>
       <p class="small muted">We meter the realized savings on every routed request (baseline cost minus
@@ -992,6 +1009,32 @@ def billing_page(account: dict, plan: dict, trial: dict, bill: dict,
       of that. Lifetime savings delivered: <b>{money(bill['lifetime_savings'])}</b>.</p>
     </div>"""
     return page("Billing", body, account, "/app/billing")
+
+
+def _tier_options(plan: dict, stripe_on: bool) -> str:
+    """The three pricing tiers with switch/upgrade controls; current tier marked."""
+    current = plan.get("tier") or "payg"
+    defs = [
+        ("payg", "Pay-as-you-go", "20% of savings",
+         "No subscription — pure pay-for-savings."),
+        ("self_optimize", "Self-optimize", "Subscription + 15%",
+         "Tune your own model on your prompt data — locally, we never see it. Subscription pricing coming soon."),
+        ("managed", "Managed", "Subscription + 15%",
+         "We tune your model further on your data — still local. Subscription pricing coming soon."),
+    ]
+    cards = ""
+    for key, name, price, desc in defs:
+        if key == current:
+            ctl = '<span class="badge paid">Current plan</span>'
+        else:
+            label = "Switch" if key == "payg" else "Upgrade"
+            ctl = (f'<form method=post action="/app/billing/convert" style="margin:0">'
+                   f'<input type=hidden name=tier value="{key}">'
+                   f'<button class="btn sm">{label}</button></form>')
+        cards += (f'<div class=card style="margin:0"><div class=label>{_e(name)}</div>'
+                  f'<div class=stat style="font-size:21px">{_e(price)}</div>'
+                  f'<p class="small muted" style="min-height:54px">{_e(desc)}</p>{ctl}</div>')
+    return f'<h2 style="margin-top:22px">Plans</h2><div class="grid cols-3">{cards}</div>'
 
 
 # --------------------------------------------------------------------------- #
