@@ -1,9 +1,11 @@
 # Fly.io config for the ModelPilot BRAIN (routing decision + entitlement).
 # The brain imports the modelpilot/ package, so it MUST build with the repo root
-# as the Docker context. Deploy from the repo root:
-#   fly deploy -c brain/fly.toml
-# If the build can't find modelpilot/, force repo-root context:
+# as the Docker context. Because this config lives in a subdirectory, you MUST
+# pass --dockerfile so Fly uses the repo root (your cwd) as the build context.
+# Deploy from the repo root with EXACTLY:
 #   fly deploy -c brain/fly.toml --dockerfile brain/Dockerfile
+# (No [build] section here on purpose — a config-relative dockerfile path would
+# resolve to brain/brain/Dockerfile and fail; the flag avoids that.)
 #
 # Full setup steps: brain/FLY_DEPLOY.md
 # No secrets required: licenses verify with the bundled PUBLIC key, and with
@@ -14,9 +16,6 @@
 
 app = "modelpilot-brain-prod"
 primary_region = "iad"
-
-[build]
-  dockerfile = "brain/Dockerfile"
 
 [env]
   PORT = "8600"

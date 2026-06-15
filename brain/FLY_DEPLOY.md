@@ -28,11 +28,12 @@ If `fly apps create` says the name is taken, pick another — and tell Claude so
 
 ## 3. Deploy the brain
 ```
-fly deploy -c brain/fly.toml
+fly deploy -c brain/fly.toml --dockerfile brain/Dockerfile
 ```
-(The build context is the repo root, so the image includes the `modelpilot/`
-package the brain imports. If you ever see a "modelpilot not found" build error,
-re-run with `--dockerfile brain/Dockerfile` appended.)
+The `--dockerfile` flag is **required**: it forces the Docker build context to the
+repo root (your cwd) so the image includes the `modelpilot/` package the brain
+imports. Without it, Fly resolves the Dockerfile relative to `brain/` and the
+build fails (`brain/brain/Dockerfile` not found).
 
 ## 4. Re-deploy the console once
 So the console's Connect page + /status show customers the real brain URL:
