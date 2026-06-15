@@ -65,10 +65,41 @@ Not legal/tax advice — run the legal + financial items past a startup attorney
         model and get written confirmation; (4) **never** touch subscription credentials; (5) note
         §M.4 — using a processor is not a prohibited "assignment" (customer stays the contracting
         party), so no consent needed on that basis.
-      - Sources: **Commercial Terms of Service eff. 2025-06-17 (read in full — §§A.1, D.2, D.4, D.5,
-        E.2, K.1/K.3, M.4)**; Usage Policy + Service Specific Terms (incorporated by §D.2); the
-        Feb-2026 third-party-access clarification (subscription-credential ban); Anthropic API key
-        best-practices ("get your own key rather than sharing").
+      - **Usage Policy (eff. 2025-09-15) — read in full.** Two findings: (a) its scope line expressly
+        names *"**passthrough access**"* as a recognized access mode — Anthropic's own policy
+        contemplates requests reaching the Services through an intermediary; it only binds the end
+        users to the content rules, it does **not** prohibit the proxy. (b) It imposes **flow-through
+        customer obligations** we should restate in our Terms: High-Risk Use Cases (legal, healthcare,
+        insurance, finance, employment/housing, academic testing, journalism) need **human-in-the-loop
+        + AI-involvement disclosure**; any consumer-facing chatbot/agent must disclose it's AI. *Caveat:
+        the "Do Not Abuse our Platform" sub-bullets render as a collapsed accordion — not yet read;
+        that's the only spot left where a rate-limit-evasion / systematic-extraction clause could live.
+        We don't evade limits or scrape, so low risk, but read it to be thorough.*
+      - **Service Specific Terms (eff. 2026-06-08) — read in full. RESOLVES the API-specific question:
+        there is NO authentication/credential-use, no anti-proxy, and no API resale clause** beyond
+        Commercial §D.4. Notable adjacent items: §E **Development Partner Mode** is an opt-in that lets
+        Anthropic **train on Customer Content** — ensure customers don't enable it unknowingly; §F
+        **Covered Models** lets Anthropic **retain Inputs/Outputs for safety review even under ZDR** —
+        so our privacy claims must be scoped to *our* systems (we don't see prompts), not to Anthropic's
+        own retention, which we don't control.
+      - **API Key Best Practices (eff. 2026-03-16) — guidance, not contract — and it's permissive:** it
+        does **not** forbid giving your key to a third-party tool. It says *"exercise caution with
+        third-party tools … you are giving the developer of that tool access to your Console account …
+        if you don't trust their reputation, don't trust them with your key,"* and *"always add your API
+        key as an **encrypted secret**."* This frames hosted/BYOK-to-a-vendor as a **permitted trust/
+        security decision the customer makes** — exactly our hosted mode — provided we store keys
+        encrypted and earn the trust. (Also: GitHub secret-scanning → Anthropic auto-deactivates leaked
+        keys; reinforces rotating the leaked key + our .gitignore discipline.)
+      - **CONCLUSION: the BYOK-proxy model is permitted across all incorporated docs.** Default stays
+        self-hosted (no term even reaches it); hosted mode is consistent with the key-guidance if keys
+        are encrypted + customer-chosen. Residual to-dos: (1) read the one collapsed Usage-Policy
+        section; (2) add flow-through Usage-Policy + §K.3-indemnity + ZDR/Covered-Models disclosures to
+        our customer Terms; (3) optional written Anthropic confirmation for enterprise hosted comfort;
+        (4) never touch subscription credentials.
+      - Sources (all read in full): **Commercial Terms eff. 2025-06-17 (§§A.1, D.2, D.4, D.5, E.2,
+        K.1/K.3, M.4); Usage Policy eff. 2025-09-15; Service Specific Terms eff. 2026-06-08; API Key
+        Best Practices support article eff. 2026-03-16.** Plus the Feb-2026 third-party-access
+        clarification (subscription-credential ban — a different access path, not API BYOK).
 - [ ] **Trademark:** knockout-search "ModelPilot" (may be taken); file a word mark if clear.
 - [ ] **IP:** strategy is trade-secret (split architecture keeps routing IP server-side) +
       contractor IP-assignment/NDAs. A provisional patent only if a genuinely novel method is
