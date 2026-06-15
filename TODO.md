@@ -45,6 +45,13 @@ Live URLs:
 - [x] 2FA: opt-in email one-time-code (Settings enroll + login challenge); SMS scaffolded via
       Twilio (`TWILIO_*`) when you add a provider.
       (All console UI/auth changes need a `fly deploy` to go live.)
+- [x] **ICP/GTM doc** (`modelpilot/ICP.md`) — sharp ICP, target verticals, qualifying questions,
+      per-vertical messaging, moat-hardening (SOC-2/HIPAA/on-prem). Internal-only (in migrate list).
+- [x] **/compare pages** — honest comparisons vs gateways & routers (`compare.html`,
+      `compare-openrouter.html`, `compare-martian.html`), cross-linked; lead with the privacy wedge.
+- [x] **/healthcare vertical landing page** (`modelpilot/site/healthcare.html`) — PHI-never-leaves
+      messaging, honest "not yet certified / ask us about a BAA" stance; linked from landing privacy
+      section. SOC-2/HIPAA readiness checklist added to `LAUNCH_CHECKLIST.md` (founder/auditor path).
 
 ## 🔜 Next (in progress)
 - [ ] **Deploy the account-deletion feature** — `cd ~/options-bot && git pull && fly deploy`
