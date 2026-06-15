@@ -1108,6 +1108,7 @@ def billing_page(account: dict, plan: dict, trial: dict, bill: dict,
     <div class=row><h1>Billing</h1><div class=spacer></div>{status_badge}</div>
     {flash_html}
     <div class=card>{action}</div>
+    {_tier_decision_panel(bill, tier)}
     {_tier_options(plan, stripe_on)}
     <div class=card style="margin-top:16px">
       <div class=label>How billing works</div>
@@ -1116,6 +1117,55 @@ def billing_page(account: dict, plan: dict, trial: dict, bill: dict,
       of that. Lifetime savings delivered: <b>{money(bill['lifetime_savings'])}</b>.</p>
     </div>"""
     return page("Billing", body, account, "/app/billing")
+
+
+# Self-optimize uplift: how much MORE the bill is cut when routing is tuned on the
+# customer's own traffic vs. the global PAYG floors. Range is honest/illustrative —
+# the exact figure is measured on each customer's own data once they're on the tier.
+# (Methodology + measurement in modelpilot/SELF_OPTIMIZE_EVAL.md.)
+SELFOPT_UPLIFT_LO = 0.15
+SELFOPT_UPLIFT_HI = 0.35
+SELFOPT_FEE = 99.0
+_PAYG_RATE, _SUB_RATE = 0.20, 0.15
+
+
+def _tier_decision_panel(bill: dict, current_tier: str) -> str:
+    """Personalized PAYG-vs-Self-optimize comparison from the customer's own savings,
+    so they can decide with real numbers. Two value drivers, both shown: the rate cut
+    (20%->15%, guaranteed) and the tuning uplift (estimated 15-35% more savings)."""
+    S = float(bill.get("cycle_savings") or 0.0)
+    u_mid = (SELFOPT_UPLIFT_LO + SELFOPT_UPLIFT_HI) / 2
+    breakeven = SELFOPT_FEE / ((1 + u_mid) * (1 - _SUB_RATE) - (1 - _PAYG_RATE))
+    if S < 1:
+        return (f'<div class=card style="margin-top:16px"><div class=label>Which tier is right for you?</div>'
+                f'<p class="small muted">Once you have a billing cycle of routed traffic, a personalized '
+                f'comparison appears here. Rule of thumb: <b>Pay-as-you-go</b> (20% of savings, no fee) is best '
+                f'while you ramp; <b>Self-optimize</b> ($99/mo + 15%) pulls ahead once your monthly savings clear '
+                f'~{money(breakeven)} — it both cuts the rate <i>and</i> tunes routing on your own traffic for an '
+                f'estimated {int(SELFOPT_UPLIFT_LO*100)}–{int(SELFOPT_UPLIFT_HI*100)}% more savings.</p></div>')
+    payg_keep = (1 - _PAYG_RATE) * S
+    rate_only = (1 - _SUB_RATE) * S - SELFOPT_FEE                 # guaranteed: rate cut, zero tuning uplift
+    keep_lo = (1 - _SUB_RATE) * S * (1 + SELFOPT_UPLIFT_LO) - SELFOPT_FEE
+    keep_hi = (1 - _SUB_RATE) * S * (1 + SELFOPT_UPLIFT_HI) - SELFOPT_FEE
+    delta_mid = ((keep_lo + keep_hi) / 2) - payg_keep
+    verdict = ("Self-optimize likely nets you more" if delta_mid > 0
+               else "Pay-as-you-go is likely the better deal for now")
+    sign = "+" if delta_mid >= 0 else "−"
+    return f"""<div class=card style="margin-top:16px">
+      <div class=label>Which tier is right for you? <span class="small muted">— from your own savings</span></div>
+      <p class="small muted" style="margin:6px 0 12px">Your savings this cycle: <b>{money(S)}</b>. Self-optimize has
+      two effects: a <b>guaranteed rate cut</b> (20% → 15%) and an <b>estimated {int(SELFOPT_UPLIFT_LO*100)}–{int(SELFOPT_UPLIFT_HI*100)}%
+      more savings</b> from tuning routing on your own traffic.</p>
+      <table><thead><tr><th>Plan</th><th>You keep this cycle</th></tr></thead><tbody>
+        <tr><td>Pay-as-you-go (20%, no fee)</td><td>{money(payg_keep)}</td></tr>
+        <tr><td>Self-optimize — rate cut only (worst case)</td><td>{money(rate_only)}</td></tr>
+        <tr><td>Self-optimize — with {int(SELFOPT_UPLIFT_LO*100)}–{int(SELFOPT_UPLIFT_HI*100)}% tuning uplift</td>
+            <td>{money(keep_lo)} – {money(keep_hi)}</td></tr>
+      </tbody></table>
+      <p class="small muted" style="margin-top:10px"><b>{_e(verdict)}</b> — about <b>{sign}{money(abs(delta_mid))}</b>/cycle
+      vs pay-as-you-go at the midpoint estimate. The uplift range is illustrative; your <i>exact</i> figure is
+      measured on your own traffic (held-out control arm) once you switch — never a guess after the fact.</p>
+    </div>"""
 
 
 def _tier_options(plan: dict, stripe_on: bool) -> str:

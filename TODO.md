@@ -47,6 +47,13 @@ Live URLs:
       (All console UI/auth changes need a `fly deploy` to go live.)
 - [x] **ICP/GTM doc** (`modelpilot/ICP.md`) — sharp ICP, target verticals, qualifying questions,
       per-vertical messaging, moat-hardening (SOC-2/HIPAA/on-prem). Internal-only (in migrate list).
+- [x] **Self-optimize tier: evaluation + decision tooling** (`modelpilot/SELF_OPTIMIZE_EVAL.md`).
+      Measured uplift from tuning on own data: ~35% more savings (realistic) / up to ~51% (ceiling),
+      i.e. coverage 56%→~77%. Break-even: pays for itself above ~$300–500/mo savings. Personalized
+      PAYG-vs-Self-optimize panel on the console billing page (uses the customer's real savings; shows
+      rate-cut-only worst case + tuning-uplift range); "Which tier?" explainer on the site pricing
+      section. Learned floors now **gated** to self_optimize/managed at `/api/policy` so the
+      differentiation is real. Honest: uplift is illustrative; exact figure measured per-customer (RCT).
 - [x] **/compare pages** — honest comparisons vs gateways & routers (`compare.html`,
       `compare-openrouter.html`, `compare-martian.html`), cross-linked; lead with the privacy wedge.
 - [x] **/healthcare vertical landing page** (`modelpilot/site/healthcare.html`) — PHI-never-leaves

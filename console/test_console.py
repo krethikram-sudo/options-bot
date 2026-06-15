@@ -538,7 +538,27 @@ def test_api_proposals_and_policy_http(env, client):
     assert client.get("/api/policy", params={"deployment_id": dep}).json()["floors"] == {}
     pid = store.list_proposals(a["id"])[0]["id"]
     store.decide_proposal(pid, "approved")
+    # Learned floors are a Self-optimize/Managed benefit — PAYG does NOT get them via /api/policy.
+    assert client.get("/api/policy", params={"deployment_id": dep}).json()["floors"] == {}
+    store.set_tier(a["id"], "self_optimize")
     assert client.get("/api/policy", params={"deployment_id": dep}).json()["floors"] == {"classification": 0}
+
+
+def test_payg_does_not_receive_learned_floors(env):
+    _, store = env
+    a = store.create_account("gate@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    store.submit_proposal(dep, "floor", "extraction", {"current_tier": 1, "proposed_tier": 0},
+                          {"samples": 30})
+    store.decide_proposal(store.list_proposals(a["id"])[0]["id"], "approved")
+    # PAYG: floor learned/approved but not served (no per-customer tuning on PAYG).
+    assert store.approved_policy_for_deployment(dep)["floors"] == {}
+    # Self-optimize: served.
+    store.set_tier(a["id"], "self_optimize")
+    assert store.approved_policy_for_deployment(dep)["floors"] == {"extraction": 0}
+    # Managed too.
+    store.set_tier(a["id"], "managed")
+    assert store.approved_policy_for_deployment(dep)["floors"] == {"extraction": 0}
 
 
 def test_api_proposals_rejects_sensitive_keys(env, client):

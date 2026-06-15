@@ -1291,8 +1291,12 @@ def approved_policy_for_deployment(deployment_id: str, path: str | None = None) 
     acct = account_for_deployment(deployment_id, path)
     if not acct:
         return {"floors": {}, "rules": []}
-    return {"floors": approved_floors(acct["id"], path),
-            "rules": approved_rules(acct["id"], path)}
+    # Per-customer LEARNED floors are the Self-optimize / Managed benefit — only
+    # served to those tiers. Pay-as-you-go gets the global calibrated floors (no
+    # per-customer tuning). Customer-authored rules (Track C) are available to all.
+    tier = get_tier(acct["id"], path)
+    floors = approved_floors(acct["id"], path) if tier in ("self_optimize", "managed") else {}
+    return {"floors": floors, "rules": approved_rules(acct["id"], path)}
 
 
 # --------------------------------------------------------------------------- #
