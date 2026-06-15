@@ -170,7 +170,7 @@ client = Anthropic(base_url=<span class="y">"http://127.0.0.1:8400"</span>)
     <section id="how"><div class="wrap">
       <div class="sec-head"><div class="eyebrow">How it works</div>
         <h2>Live in five minutes. Savings on day one.</h2>
-        <p>A drop-in proxy plus a hosted dashboard. Start in shadow mode to measure, then flip to autopilot
+        <p>A drop-in proxy plus a hosted dashboard. Start in guidance mode to see recommendations, then flip to autopilot
            when you trust the numbers — all from the console, no redeploy.</p></div>
       <div class="steps">
         <div class="step"><div class="n">1</div><h3>Drop in the proxy</h3>
@@ -180,7 +180,7 @@ client = Anthropic(base_url=<span class="y">"http://127.0.0.1:8400"</span>)
 base_url=<span class="g">"127.0.0.1:8400"</span></code></div>
         <div class="step"><div class="n">2</div><h3>It routes, you stay in control</h3>
           <p>Each request is classified and sent to the cheapest model that's good enough. Choose
-             <b>shadow</b>, <b>guidance</b>, or <b>autopilot</b> — toggle anytime.</p>
+             <b>guidance</b> (recommend) or <b>autopilot</b> (auto-route) — toggle anytime.</p>
           <code class="codeblock"><span class="c"># classify → floor → economics</span>
 opus → <span class="g">haiku</span>  <span class="c">(non-inferior)</span></code></div>
         <div class="step"><div class="n">3</div><h3>See the savings</h3>
@@ -281,14 +281,14 @@ realized savings × <span class="g">20%</span></code></div>
             and a guard that keeps structured-output and tool-using calls on a capable model. Our golden set
             shows 0% false-downgrades, and you can run side-by-side non-inferiority checks on your own prompts.</p></details>
         <details><summary>Can I keep full control?</summary>
-          <p>Yes. Start in shadow mode, move to guidance, and flip to autopilot when ready — all from the
-            dashboard, no redeploy. Set a minimum model, risk tolerance, and a spend budget per deployment.</p></details>
+          <p>Yes. Start in guidance mode (recommendations only, traffic unchanged), and flip to autopilot
+            when ready — all from the dashboard, no redeploy. Set a minimum model, risk tolerance, and a spend budget per deployment.</p></details>
       </div>
     </div></section>
 
     <section class="final"><div class="wrap">
       <h2>See what you'd save this week.</h2>
-      <p>Start in shadow mode, watch the savings add up on real traffic, and only pay when we actually cut your bill.</p>
+      <p>Start in guidance mode, watch the savings add up on real traffic, and only pay when we actually cut your bill.</p>
       <div class="center"><a class="btn primary lg" href={SIGNUP}>Start your 7-day free trial →</a></div>
       <p style="font-size:13px;color:#8b97ad;margin-top:18px">No card to start · prompts never leave your box · cancel anytime</p>
     </div></section>

@@ -71,8 +71,7 @@ client = Anthropic(base_url=<span class="y">"http://127.0.0.1:8400"</span>)   <s
     <table>
       <thead><tr><th>Mode</th><th>What it does</th><th>When to use</th></tr></thead>
       <tbody>
-        <tr><td><b>shadow</b></td><td>Scores every request and measures savings — changes nothing.</td><td>First, to quantify the opportunity with zero risk.</td></tr>
-        <tr><td><b>guidance</b></td><td>Recommends a cheaper model per request; you decide.</td><td>To review routing before trusting it.</td></tr>
+        <tr><td><b>guidance</b></td><td>Recommends a cheaper model per request; traffic is unchanged. The default.</td><td>To review routing before trusting it.</td></tr>
         <tr><td><b>autopilot</b></td><td>Auto-routes to the cheapest good-enough model.</td><td>Once the numbers convince you. This is where you save.</td></tr>
       </tbody>
     </table>

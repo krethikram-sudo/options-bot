@@ -25,7 +25,7 @@ TRIAL_DAYS = 7
 DEFAULT_RATE = 0.20            # we bill 20% of realized savings
 DAY = 86_400
 SESSION_TTL = 14 * DAY
-MODES = ("shadow", "guidance", "autopilot")
+MODES = ("guidance", "autopilot")
 RISK_LEVELS = ("conservative", "balanced", "aggressive")
 
 # Aggregate-only metering. These keys must NEVER appear in a meter payload; if

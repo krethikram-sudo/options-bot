@@ -224,7 +224,7 @@ def page(title: str, body: str, account: dict | None = None, active: str = "") -
     if account:
         # Customer-first: a few clear destinations. Logs live inside Home,
         # Team/SSO inside Settings — reached contextually, not as top-level tabs.
-        items = [("/app", "Home"), ("/app/connect", "Setup"),
+        items = [("/app", "Home"), ("/app/connect", "Configuration"),
                  ("/app/settings", "Settings"), ("/app/billing", "Billing")]
         links = "".join(f'<a class="{"on" if active == href else ""}" href="{href}">{_e(label)}</a>'
                         for href, label in items)
@@ -462,7 +462,7 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
               cycle: dict, lifetime: dict, bill: dict, deployment: dict,
               cats: list[dict], proof: dict, budget: dict | None = None) -> str:
     mode = settings["mode"]
-    mode_badge = {"autopilot": "paid", "guidance": "trial", "shadow": "off"}.get(mode, "off")
+    mode_badge = {"autopilot": "paid", "guidance": "trial"}.get(mode, "trial")
     routed_pct = (100 * cycle["routed"] / cycle["requests"]) if cycle["requests"] else 0
     # % bill reduction — the early-confidence metric (meaningful even when $ is tiny)
     pct_cycle = round(100 * cycle["savings"] / cycle["baseline"]) if cycle.get("baseline") else 0
@@ -503,7 +503,7 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
     <div class=card style="margin-top:16px"><div class=label>Your connection</div>
       <p class="small muted">Point your gateway at ModelPilot with this deployment id:</p>
       <p><code>{_e(deployment['deployment_id'])}</code></p>
-      <div class=row><a class="btn sec sm" href="/app/connect">Setup &amp; deployments</a>
+      <div class=row><a class="btn sec sm" href="/app/connect">Configuration &amp; deployments</a>
         <a class="btn sec sm" href="/app/logs">View request logs</a></div></div>
     {metric_toggle_assets()}"""
     return page("Home", body, account, "/app")
@@ -555,7 +555,6 @@ def _compare_bars(baseline: float, actual: float) -> str:
 
 def mode_toggle(current: str) -> str:
     opts = [
-        ("shadow", "Shadow", "Score only — measure savings, change nothing."),
         ("guidance", "Guidance", "Recommend cheaper models; you stay in control."),
         ("autopilot", "Autopilot", "Auto-route to the cheapest good-enough model."),
     ]
@@ -731,7 +730,7 @@ def connect_page(account: dict, deployments: list[dict], brain_url: str, console
                'flow through, your <a href="/app">Home dashboard</a> lights up with savings.</div>'
                if not keys else "")
     body = f"""
-    <h1>Set up ModelPilot</h1>
+    <h1>Configuration</h1>
     {welcome}
     <p class=muted>ModelPilot is a drop-in proxy for the Claude Messages API. Point your SDK at it —
     only a task category + numeric features ever leave your box, never prompt text or your API key.</p>
@@ -766,7 +765,7 @@ client = Anthropic(base_url="http://127.0.0.1:8400")  # your key stays local</pr
     </div>
     {_api_keys_section(keys or [], deployments, new_key)}
     {_webhooks_section(webhooks or [])}"""
-    return page("Connect", body, account, "/app/connect")
+    return page("Configuration", body, account, "/app/connect")
 
 
 def _sso_section(sso: dict, scim_token: str = "") -> str:

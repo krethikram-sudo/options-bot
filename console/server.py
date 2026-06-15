@@ -161,8 +161,8 @@ def _suggestions(cats: list[dict], settings: dict) -> list[str]:
         if routed >= 30 and esc == 0 and (c.get("savings") or 0) > 0:
             out.append(f"'{c['category']}': {routed} routed with zero escalations — safe to loosen "
                        f"the floor a tier and capture more savings.")
-    if settings.get("mode") == "shadow":
-        out.append("Customer is in shadow mode — nudge them to guidance/autopilot to realize savings.")
+    if settings.get("mode") == "guidance":
+        out.append("Customer is in guidance mode — nudge them to autopilot to auto-capture savings.")
     return out
 
 
