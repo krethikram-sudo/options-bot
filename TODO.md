@@ -118,8 +118,9 @@ Live URLs:
       `x-modelpilot-opportunity-*` headers + records to the ledger; metering reports aggregate
       `opportunity_saved` to the console; dashboard shows an "Additional potential savings" callout.
       Advisory/estimated, never billed.
-- [ ] **Opt-in auto-apply of prompt caching** — let the client inject `cache_control` on large reusable
-      prefixes so the caching opportunity is captured automatically (gated by an opt-in setting; mutates
-      requests, so needs a careful safety pass). The recommendations + economics already exist.
+- [x] **Opt-in auto-apply of prompt caching** (`MODELPILOT_AUTO_CACHE=1`) — gateway adds an ephemeral
+      cache breakpoint to large reusable system prompts, capturing the caching opportunity automatically.
+      Conservative (no-op if already cached / no sizable system / below a safe size floor); compatible
+      with tools/structured output; `x-modelpilot-cache-applied` header. Off by default.
 - [ ] End-to-end smoke test: sign up (test acct) → Connect gateway → send traffic → see savings on dashboard.
 - [ ] `ingest/` opt-in telemetry service (optional; deploys like the brain on port 8500).

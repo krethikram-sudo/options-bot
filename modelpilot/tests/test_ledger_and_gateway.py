@@ -81,6 +81,46 @@ def test_advice_headers_surface_opportunities():
     assert abs(d.opportunity_saved() - 0.003) < 1e-9
 
 
+def test_auto_cache_applies_to_large_string_system():
+    from modelpilot.gateway import apply_auto_cache
+    big = "You are a careful assistant. " * 400  # well over the char floor
+    body = {"model": "claude-opus-4-8", "system": big,
+            "messages": [{"role": "user", "content": "hi"}]}
+    assert apply_auto_cache(body) is True
+    assert body["system"][0]["cache_control"] == {"type": "ephemeral"}
+    assert body["system"][0]["text"] == big
+
+
+def test_auto_cache_marks_last_text_block_of_list_system():
+    from modelpilot.gateway import apply_auto_cache
+    big = "policy " * 1500
+    body = {"system": [{"type": "text", "text": "short preamble"},
+                       {"type": "text", "text": big}]}
+    assert apply_auto_cache(body) is True
+    assert "cache_control" not in body["system"][0]
+    assert body["system"][1]["cache_control"] == {"type": "ephemeral"}
+
+
+def test_auto_cache_noop_cases():
+    from modelpilot.gateway import apply_auto_cache
+    # too small -> no breakpoint (stays safely above the cache minimum)
+    assert apply_auto_cache({"system": "tiny prompt"}) is False
+    # no system -> nothing to cache
+    assert apply_auto_cache({"messages": [{"role": "user", "content": "x" * 9000}]}) is False
+    # already cached -> respect the caller's existing breakpoint
+    pre = {"system": [{"type": "text", "text": "p " * 5000,
+                       "cache_control": {"type": "ephemeral"}}]}
+    assert apply_auto_cache(pre) is False
+
+
+def test_auto_cache_compatible_with_tools():
+    from modelpilot.gateway import apply_auto_cache
+    body = {"system": "s " * 5000, "tools": [{"name": "f", "input_schema": {}}],
+            "messages": [{"role": "user", "content": "go"}]}
+    assert apply_auto_cache(body) is True
+    assert body["system"][0]["cache_control"] == {"type": "ephemeral"}
+
+
 def test_sse_usage_extraction_across_chunks():
     events = [
         {"type": "message_start", "message": {"usage": {"input_tokens": 1200, "cache_read_input_tokens": 800}}},

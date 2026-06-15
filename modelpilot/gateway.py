@@ -11,6 +11,8 @@ Env:  MODELPILOT_MODE=shadow|advise|autopilot   (default shadow)
       MODELPILOT_UPSTREAM=https://api.anthropic.com
       MODELPILOT_DB=modelpilot.db
       MODELPILOT_CONFIDENCE=0.8                 (autopilot gate)
+      MODELPILOT_AUTO_CACHE=1                   (opt-in: cache large system prompts)
+      MODELPILOT_AUTO_CACHE_MIN_CHARS=6000      (size floor for the cache breakpoint)
 """
 
 import asyncio
@@ -44,6 +46,12 @@ HOLDOUT_PCT = float(os.environ.get("MODELPILOT_HOLDOUT_PCT", "0.10"))
 MAX_RETRIES = int(os.environ.get("MODELPILOT_MAX_RETRIES", str(_retry.DEFAULT_MAX_RETRIES)))
 FALLBACK = os.environ.get("MODELPILOT_FALLBACK", "1") not in ("0", "false", "no", "")
 CACHE_ON = os.environ.get("MODELPILOT_CACHE", "") in ("1", "true", "yes", "on")
+# Opt-in: auto-add a prompt-cache breakpoint to a large reusable system prompt so
+# repeated calls bill cached reads at ~10% of input price. Mutates the request
+# (adds cache_control) — off by default. The char floor stays safely above the
+# ~1024-token cache minimum so we never send an un-cacheable breakpoint (which 400s).
+AUTO_CACHE = os.environ.get("MODELPILOT_AUTO_CACHE", "") in ("1", "true", "yes", "on")
+AUTO_CACHE_MIN_CHARS = int(os.environ.get("MODELPILOT_AUTO_CACHE_MIN_CHARS", "6000"))
 CACHE = _cache.ResponseCache(
     ttl=float(os.environ.get("MODELPILOT_CACHE_TTL", str(_cache.DEFAULT_TTL))),
     maxsize=int(os.environ.get("MODELPILOT_CACHE_MAX", str(_cache.DEFAULT_MAX))))
@@ -364,6 +372,49 @@ def _advice_headers(decision: Decision) -> dict:
     return headers
 
 
+def _has_cache_control(body: dict) -> bool:
+    """True if the request already declares any cache breakpoint — we never touch
+    a request the caller has already configured for caching."""
+    def scan(x):
+        if isinstance(x, dict):
+            return "cache_control" in x or any(scan(v) for v in x.values())
+        if isinstance(x, list):
+            return any(scan(v) for v in x)
+        return False
+    return scan(body.get("system")) or scan(body.get("messages")) or scan(body.get("tools"))
+
+
+def _system_text_len(system) -> int:
+    if isinstance(system, str):
+        return len(system)
+    if isinstance(system, list):
+        return sum(len(b.get("text", "")) for b in system if isinstance(b, dict))
+    return 0
+
+
+def apply_auto_cache(body: dict, min_chars: int = AUTO_CACHE_MIN_CHARS) -> bool:
+    """Opt-in transform: put an ephemeral cache breakpoint on a large reusable
+    system prompt. Returns True iff it mutated `body`. Conservative by design —
+    no-op when caching is already present, when there's no sizable system prompt,
+    or on any shape we don't recognize. Compatible with tools/structured output
+    (caching the system prefix doesn't change model behavior, only billing)."""
+    if not isinstance(body, dict) or _has_cache_control(body):
+        return False
+    system = body.get("system")
+    if _system_text_len(system) < min_chars:
+        return False
+    bp = {"type": "ephemeral"}
+    if isinstance(system, str):
+        body["system"] = [{"type": "text", "text": system, "cache_control": bp}]
+        return True
+    if isinstance(system, list):
+        for blk in reversed(system):
+            if isinstance(blk, dict) and blk.get("type") == "text" and blk.get("text"):
+                blk["cache_control"] = bp
+                return True
+    return False
+
+
 class _SSEUsage:
     """Extracts the usage block from a pass-through SSE stream.
 
@@ -605,6 +656,11 @@ async def messages(request: Request):
                             applied=False, arm=decision.arm)
     if decision.applied:
         body["model"] = decision.routed_model
+    # Opt-in caching auto-apply: capture the prompt-cache opportunity automatically
+    # instead of only recommending it. Independent of routing mode (the flag is the
+    # opt-in). Re-serialize once if anything changed.
+    cache_applied = apply_auto_cache(body) if AUTO_CACHE else False
+    if decision.applied or cache_applied:
         raw = json.dumps(body).encode()
 
     request_id = uuid.uuid4().hex
@@ -614,6 +670,8 @@ async def messages(request: Request):
     url = f"{UPSTREAM}/v1/messages"
     extra = _advice_headers(decision) if MODE in ("advise", "autopilot") else {"x-modelpilot-mode": MODE}
     extra["x-modelpilot-request-id"] = request_id
+    if cache_applied:
+        extra["x-modelpilot-cache-applied"] = "system"
 
     original_model = decision.recommendation.original_model
     streaming = bool(body.get("stream"))

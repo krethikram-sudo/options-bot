@@ -1,1 +1,1 @@
-Migration trigger — 2026-06-16T01:00:00Z (Realize savings opportunities end-to-end: gateway emits per-request opportunity headers + records to ledger; metering reports aggregate opportunity_saved to console; pricing.cache_request_overpay)
+Migration trigger — 2026-06-16T01:40:00Z (Opt-in caching auto-apply MODELPILOT_AUTO_CACHE: gateway adds an ephemeral cache breakpoint to large reusable system prompts; landing copy: drop shadow mode -> guidance -> autopilot)

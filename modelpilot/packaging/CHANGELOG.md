@@ -4,6 +4,18 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.35.0 — 2026-06-16
+
+- **Opt-in caching auto-apply (`MODELPILOT_AUTO_CACHE=1`).** Beyond *recommending*
+  prompt caching, the gateway can now capture it for you: when a large reusable
+  system prompt isn't already cached, it adds an ephemeral cache breakpoint so
+  repeated calls bill cached reads at ~10% of input price. Off by default; conservative
+  (no-op if caching is already present, if there's no sizable system prompt, or below a
+  safe size floor that stays above the ~1024-token cache minimum). Compatible with
+  tools/structured output — caching the prefix doesn't change model behavior, only
+  billing/latency. Tunable floor via `MODELPILOT_AUTO_CACHE_MIN_CHARS` (default 6000).
+  Sets an `x-modelpilot-cache-applied` response header when it acts.
+
 ## 0.34.0 — 2026-06-16
 
 - **Savings opportunities are now surfaced and reported.** When the routing brain
