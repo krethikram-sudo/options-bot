@@ -151,7 +151,7 @@ def status_page(components: list[dict]) -> str:
 def landing() -> str:
     body = f"""
     <div class=hero>
-      <h1>Cut your Claude bill — typically 20–40%, proven on your own traffic.</h1>
+      <h1>Cut your Claude bill through model optimization.</h1>
       <p class=muted>ModelPilot routes each request to the cheapest model that's provably
       good enough. Drop-in proxy, no prompt data leaves your box. Start free for 7 days;
       after that you only pay <b>20% of the savings we actually deliver</b>.</p>
