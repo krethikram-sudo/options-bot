@@ -4,6 +4,16 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.33.0 — 2026-06-16
+
+- **Savings levers beyond model choice.** New pricing helpers quantify two
+  optimizations the router can recommend on top of cheaper-model routing:
+  `cache_savings()` (dollars saved by caching a large reusable prefix across turns
+  — cached reads bill at ~10% of input price) and `batch_savings()` (50% off
+  latency-tolerant traffic via the Batch API). Estimates only; nothing mutates your
+  requests. Honest by omission: no `max_tokens` "savings" lever, because billing is
+  on actual output tokens, not the cap.
+
 ## 0.32.0 — 2026-06-14
 
 - **Semantic caching (opt-in, more savings).** Beyond exact-match, near-duplicate

@@ -52,6 +52,16 @@ Live URLs:
 - [x] **/healthcare vertical landing page** (`modelpilot/site/healthcare.html`) — PHI-never-leaves
       messaging, honest "not yet certified / ask us about a BAA" stance; linked from landing privacy
       section. SOC-2/HIPAA readiness checklist added to `LAUNCH_CHECKLIST.md` (founder/auditor path).
+- [x] **Quality is now first-class on the dashboard** — top-grid "Quality preserved" card (measured
+      non-inferiority rate when available, else "Protected" via floor + auto-escalation with live
+      escalation counts). Makes the #1 autopilot objection ("will it degrade my outputs?") visible.
+- [x] **Gradual autopilot rollout ramp** — `autopilot_pct` setting (10/25/50/100%); brain honors it
+      as a canary gate (held-back switches stay recommendations, not auto-applied). Build trust, then
+      ramp to 100%. Surfaced under Routing mode on dashboard + Settings.
+- [x] **Savings levers beyond model choice** — routing brain emits advisory opportunities: prompt
+      caching (large uncached reused prefix) + Batch API (latency-tolerant traffic), with honest
+      server-side economics (`pricing.cache_savings` / `batch_savings`). (Skipped max_tokens — billing
+      is on actual output, not the cap, so trimming it doesn't cut normal cost.)
 
 ## 🔜 Next (in progress)
 - [ ] **Deploy the account-deletion feature** — `cd ~/options-bot && git pull && fly deploy`
@@ -104,5 +114,10 @@ Live URLs:
       *licensed* on-box judge that tunes on actual prompt content, staying local) is a possible future
       upgrade — only if worth the added surface; defended by license + brain entitlement + updates, not
       secrecy. Site/console copy now reflects Option A.
+- [ ] **Realize the savings opportunities** the brain now emits: (a) surface prompt-cache / Batch-API
+      recommendations in the gateway output + a console "additional potential savings" tile (needs the
+      gateway to report aggregate opportunity $ to the meter); (b) optional opt-in auto-apply of prompt
+      caching in the client (inject `cache_control` on large reusable prefixes — carefully, it mutates
+      requests). The economics + recommendations exist; this is the realization/UX layer.
 - [ ] End-to-end smoke test: sign up (test acct) → Connect gateway → send traffic → see savings on dashboard.
 - [ ] `ingest/` opt-in telemetry service (optional; deploys like the brain on port 8500).
