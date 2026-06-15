@@ -300,7 +300,7 @@ def landing() -> str:
     <div class=hero>
       <h1>Cut your Claude bill through model optimization.</h1>
       <p class=muted>ModelPilot routes each request to the cheapest model that's provably
-      good enough. Drop-in proxy, no prompt data leaves your box. Start free for 7 days;
+      good enough. Drop-in proxy, no prompt data leaves your system. Start free for 7 days;
       after that you only pay <b>20% of the savings we actually deliver</b>.</p>
       <div class="row center" style="justify-content:center;margin-top:18px">
         <a class=btn href="/signup">Start your 7-day free trial</a>
@@ -733,7 +733,7 @@ def connect_page(account: dict, deployments: list[dict], brain_url: str, console
     <h1>Configuration</h1>
     {welcome}
     <p class=muted>ModelPilot is a drop-in proxy for the Claude Messages API. Point your SDK at it —
-    only a task category + numeric features ever leave your box, never prompt text or your API key.</p>
+    only a task category + numeric features ever leave your system, never prompt text or your API key.</p>
     <div class=card>
       <h2 style="margin-top:0">1. Install the client</h2>
       <pre>pip install modelpilot-client</pre>
@@ -769,7 +769,7 @@ client = Anthropic(base_url="http://127.0.0.1:8400")  # your key stays local</pr
     <div class=card>
       <p class="small muted">ModelPilot tunes routing to your workload from category labels and outcomes —
         no prompt content needed. For <b>sharper</b> per-category tuning you can let the proxy sample a
-        fraction of prompts <b>locally, on your own box</b>, to validate cheaper models on your real
+        fraction of prompts <b>locally, on your own system</b>, to validate cheaper models on your real
         traffic. Captured prompts are used only for local tuning and <b>never leave your machine</b>.
         Off by default.</p>
       <pre>export MODELPILOT_CAPTURE_PCT=0.05   <span class="muted"># sample 5% locally for tuning (0 = off, the default)</span></pre>
@@ -866,7 +866,7 @@ def logs_page(account: dict, logs: list[dict], total: int) -> str:
         body = """
         <h1>Request logs</h1>
         <p class=muted>Per-request <b>metadata only</b> — timestamps, models, category, token counts,
-          cost, and routed/escalated flags. Prompt text and outputs never leave your box.</p>
+          cost, and routed/escalated flags. Prompt text and outputs never leave your system.</p>
         <div class=card><p class="muted">No logs yet. They're <b>opt-in</b>: run your gateway with
           <code>MODELPILOT_LOGS=1</code> (ships metadata to the console) and/or
           <code>MODELPILOT_OTEL_ENDPOINT=…</code> (exports OTLP traces to your own collector).

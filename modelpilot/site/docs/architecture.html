@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Architecture &amp; privacy — ModelPilot docs</title>
-<meta name="description" content="How ModelPilot is built so your prompts never leave your box: a local proxy classifies, a hosted brain decides, and only categories + token counts cross the wire.">
+<meta name="description" content="How ModelPilot is built so your prompts never leave your system: a local proxy classifies, a hosted brain decides, and only categories + token counts cross the wire.">
 <link rel="canonical" href="https://modelpilot.pages.dev/docs/architecture.html">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="/docs/docs.css">
@@ -30,7 +30,7 @@
   <main>
     <h1>Architecture &amp; privacy</h1>
     <p class="lead">ModelPilot is split so the sensitive data physically can't reach us. A local proxy
-      classifies on your box; a hosted brain returns the routing decision from a category and numbers.</p>
+      classifies on your system; a hosted brain returns the routing decision from a category and numbers.</p>
 
     <h2 id="flow">Request flow</h2>
     <pre>your app ──▶ <b>local proxy</b> ──▶ Anthropic API ──▶ your app
@@ -49,7 +49,7 @@
       <li>If the brain is unreachable, the proxy <b>fails open</b>: the request goes straight to Anthropic, unrouted.</li>
     </ol>
 
-    <h2 id="what-leaves">What leaves your box — and what never does</h2>
+    <h2 id="what-leaves">What leaves your system — and what never does</h2>
     <table>
       <thead><tr><th>Stays local</th><th>Sent to ModelPilot</th></tr></thead>
       <tbody>
