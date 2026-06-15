@@ -1544,20 +1544,21 @@ def revenue_overview(path: str | None = None, now: float | None = None) -> dict:
     cyc = cycle_start(now)
     accounts = list_accounts(path)
     total_savings = total_revenue = cycle_savings = cycle_revenue = 0.0
+    total_baseline = cycle_baseline = 0.0
     n_trial = n_paid = n_suspended = 0
     for a in accounts:
         if a["status"] == "suspended":
             n_suspended += 1
         plan = get_plan(a["id"], path)
         rate = plan.get("rate", DEFAULT_RATE)
-        life = savings_summary(a["id"], path=path)["savings"]
-        cyc_s = savings_summary(a["id"], since=cyc, path=path)["savings"]
-        total_savings += life
-        cycle_savings += cyc_s
+        life = savings_summary(a["id"], path=path)
+        cyc_sum = savings_summary(a["id"], since=cyc, path=path)
+        total_savings += life["savings"]; total_baseline += life["baseline"]
+        cycle_savings += cyc_sum["savings"]; cycle_baseline += cyc_sum["baseline"]
         if plan.get("plan") == "paid":
             n_paid += 1
-            total_revenue += rate * life
-            cycle_revenue += rate * cyc_s
+            total_revenue += rate * life["savings"]
+            cycle_revenue += rate * cyc_sum["savings"]
         else:
             n_trial += 1
     return {
@@ -1570,4 +1571,7 @@ def revenue_overview(path: str | None = None, now: float | None = None) -> dict:
         "total_revenue": round(total_revenue, 6),
         "cycle_savings": round(cycle_savings, 6),
         "cycle_revenue": round(cycle_revenue, 6),
+        # bill-cut % across all customers (early-confidence metric, like the dashboard)
+        "cycle_pct": round(100 * cycle_savings / cycle_baseline) if cycle_baseline else 0,
+        "total_pct": round(100 * total_savings / total_baseline) if total_baseline else 0,
     }

@@ -747,11 +747,13 @@ def admin_overview(request: Request):
     rows = []
     for a in store.list_accounts():
         plan = store.get_plan(a["id"])
-        life = store.savings_summary(a["id"])["savings"]
-        cyc_s = store.savings_summary(a["id"], since=cyc)["savings"]
+        life = store.savings_summary(a["id"])
+        cyc_sum = store.savings_summary(a["id"], since=cyc)
+        cyc_s = cyc_sum["savings"]
         paid = plan.get("plan") == "paid"
         rows.append({
-            **a, "lifetime_savings": life, "cycle_savings": cyc_s,
+            **a, "lifetime_savings": life["savings"], "cycle_savings": cyc_s,
+            "cycle_pct": round(100 * cyc_s / cyc_sum["baseline"]) if cyc_sum.get("baseline") else 0,
             "cycle_revenue": (plan.get("rate", 0.2) * cyc_s) if paid else 0.0,
             "plan_label": "paid" if paid else ("suspended" if a["status"] != "active" else "trial"),
             "plan_badge": "paid" if paid else ("suspended" if a["status"] != "active" else "trial"),

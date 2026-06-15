@@ -1011,6 +1011,7 @@ def admin_overview(account: dict, rev: dict, rows: list[dict], pending: int = 0)
           <td>{badge}</td>
           <td>{dual_metric(r['lifetime_savings'], suffix="")}</td>
           <td>{dual_metric(r['cycle_savings'], suffix="")}</td>
+          <td><b>{r.get('cycle_pct', 0)}%</b></td>
           <td>{money(r['cycle_revenue'])}</td>
           <td class="small muted">{_fmt_date(r['created_at'])}</td></tr>"""
     pending_card = (f'<a class=card href="/admin/proposals" style="display:block;text-decoration:none;color:inherit">'
@@ -1025,9 +1026,9 @@ def admin_overview(account: dict, rev: dict, rows: list[dict], pending: int = 0)
       <div class=card><div class=label>Revenue this cycle</div>
         <div class="stat green">{money(rev['cycle_revenue'])}</div>
         <div class="small muted">lifetime {money(rev['total_revenue'])}</div></div>
-      <div class=card><div class=label>Savings delivered this cycle</div>
-        <div class=stat>{dual_metric(rev['cycle_savings'])}</div>
-        <div class="small muted">lifetime {dual_metric(rev['total_savings_delivered'], suffix="")}</div></div>
+      <div class=card><div class=label>Bill cut delivered (cycle)</div>
+        <div class="stat green">{rev.get('cycle_pct', 0)}%</div>
+        <div class="small muted">{dual_metric(rev['cycle_savings'], suffix="")} saved · lifetime {rev.get('total_pct', 0)}%</div></div>
     </div>
     <div class="grid cols-2" style="margin-top:16px">
       <div class=card><div class=label>Accounts</div>
@@ -1038,8 +1039,8 @@ def admin_overview(account: dict, rev: dict, rows: list[dict], pending: int = 0)
     <h2>Customers</h2>
     <div class=card style="padding:0">
       <table><thead><tr><th>Account</th><th>Plan</th><th>Lifetime savings</th>
-        <th>Savings (cycle)</th><th>Revenue (cycle)</th><th>Joined</th></tr></thead>
-        <tbody>{trs or '<tr><td colspan=6 class="muted">No accounts yet.</td></tr>'}</tbody></table>
+        <th>Savings (cycle)</th><th>Cut (cycle)</th><th>Revenue (cycle)</th><th>Joined</th></tr></thead>
+        <tbody>{trs or '<tr><td colspan=7 class="muted">No accounts yet.</td></tr>'}</tbody></table>
     </div>
     {metric_toggle_assets()}"""
     return page("Admin", body, account, "/admin")
