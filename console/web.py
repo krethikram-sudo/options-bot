@@ -29,6 +29,30 @@ body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,H
 a{color:var(--accent-d);text-decoration:none}a:hover{text-decoration:underline}
 .top{background:rgba(10,10,12,.7);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
 .top .wrap{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:18px}
+/* left sidebar shell (signed-in) */
+.shell{display:flex;min-height:100vh;align-items:stretch}
+.side{width:236px;flex-shrink:0;display:flex;flex-direction:column;padding:18px 14px;
+  border-right:1px solid var(--line);background:rgba(12,12,15,.55);backdrop-filter:blur(10px);
+  position:sticky;top:0;height:100vh}
+.side .brand{padding:6px 10px 2px;font-size:19px}
+.sidenav{display:flex;flex-direction:column;gap:2px;margin-top:18px}
+.sidenav a{color:var(--muted);padding:9px 12px;border-radius:8px;font-weight:500;font-size:14.5px;
+  transition:background .15s,color .15s}
+.sidenav a:hover{color:var(--ink);background:rgba(255,255,255,.05);text-decoration:none}
+.sidenav a.on{color:#fff;background:rgba(124,58,237,.18)}
+.navgrp{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 0 6px 12px}
+.side-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
+.side-foot .email{color:var(--muted);font-size:13px;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.main{flex:1;min-width:0}
+.inner{max-width:1040px;margin:0 auto;padding:30px 30px 64px}
+@media(max-width:820px){
+  .shell{flex-direction:column}
+  .side{width:auto;height:auto;position:static;flex-direction:row;align-items:center;flex-wrap:wrap;gap:4px;border-right:0;border-bottom:1px solid var(--line)}
+  .side .brand{padding:6px 10px}
+  .sidenav{flex-direction:row;flex-wrap:wrap;margin:0 0 0 8px;flex:1}
+  .navgrp{display:none}
+  .side-foot{margin:0 0 0 auto;border:0;padding:0}.side-foot .email{display:none}
+  .inner{padding:20px}}
 .brand{font-family:var(--disp);font-weight:700;font-size:18px;color:var(--ink);letter-spacing:-.03em}
 .brand .dot{color:var(--vio)}
 .nav{display:flex;gap:16px;margin-left:8px;flex-wrap:wrap}
@@ -190,34 +214,41 @@ def _fmt_date(ts) -> str:
 
 
 def page(title: str, body: str, account: dict | None = None, active: str = "") -> str:
-    nav = ""
     if account:
-        items = [("/app", "Dashboard"), ("/app/logs", "Logs"), ("/app/settings", "Settings"),
-                 ("/app/connect", "Connect"), ("/app/billing", "Billing")]
-        if account.get("team_role") in ("owner", "admin"):
-            items.append(("/app/team", "Team"))
+        # Customer-first: a few clear destinations. Logs live inside Home,
+        # Team/SSO inside Settings — reached contextually, not as top-level tabs.
+        items = [("/app", "Home"), ("/app/connect", "Setup"),
+                 ("/app/settings", "Settings"), ("/app/billing", "Billing")]
+        links = "".join(f'<a class="{"on" if active == href else ""}" href="{href}">{_e(label)}</a>'
+                        for href, label in items)
+        admin = ""
         if account.get("role") == "admin":
-            items.append(("/admin", "Admin"))
-            items.append(("/admin/proposals", "Review"))
-        links = "".join(
-            f'<a class="{"on" if active==href else ""}" href="{href}">{_e(label)}</a>'
-            for href, label in items)
-        nav = (f'<div class="nav">{links}</div><div class="spacer"></div>'
-               f'<span class="muted small">{_e(account.get("display_email") or account["email"])}</span>'
-               f'<form method="post" action="/logout" style="margin:0">'
-               f'<button class="btn sec sm">Sign out</button></form>')
+            admin = ('<div class=navgrp>Vendor</div>'
+                     f'<a class="{"on" if active == "/admin" else ""}" href="/admin">Overview</a>'
+                     f'<a class="{"on" if active == "/admin/proposals" else ""}" href="/admin/proposals">Review</a>')
+        em = _e(account.get("display_email") or account["email"])
+        chrome = (
+            '<div class=shell><aside class=side>'
+            '<a class=brand href="/app">Model<span class=dot>Pilot</span></a>'
+            f'<nav class=sidenav>{links}{admin}</nav>'
+            f'<div class=side-foot><div class=email>{em}</div>'
+            '<form method=post action="/logout" style="margin:0">'
+            '<button class="btn sec sm" style="width:100%">Sign out</button></form></div>'
+            f'</aside><main class=main><div class=inner>{body}</div></main></div>')
     else:
         nav = ('<div class="spacer"></div><div class="nav">'
                '<a href="/login">Sign in</a><a class="btn sm" href="/signup">Start free trial</a></div>')
+        chrome = (
+            '<div class=top><div class=wrap style="padding-top:12px;padding-bottom:12px">'
+            f'<a class=brand href="/">Model<span class=dot>Pilot</span></a>{nav}'
+            f'</div></div><div class=wrap>{body}</div>')
     return f"""<!doctype html><html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <title>{_e(title)} · {BRAND}</title><style>{_CSS}</style></head><body>
-<div class=top><div class=wrap style="padding-top:12px;padding-bottom:12px">
-<a class=brand href="{'/app' if account else '/'}">Model<span class=dot>Pilot</span></a>{nav}
-</div></div><div class=wrap>{body}</div>
+{chrome}
 <script>(function(){{var d=document;
 if(!('IntersectionObserver' in window)||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches))return;
 var els=[].slice.call(d.querySelectorAll('.card,.hero'));
@@ -387,9 +418,10 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
     <div class=card style="margin-top:16px"><div class=label>Your connection</div>
       <p class="small muted">Point your gateway at ModelPilot with this deployment id:</p>
       <p><code>{_e(deployment['deployment_id'])}</code></p>
-      <a class="btn sec sm" href="/app/connect">Setup &amp; deployments</a></div>
+      <div class=row><a class="btn sec sm" href="/app/connect">Setup &amp; deployments</a>
+        <a class="btn sec sm" href="/app/logs">View request logs</a></div></div>
     {metric_toggle_assets()}"""
-    return page("Dashboard", body, account, "/app")
+    return page("Home", body, account, "/app")
 
 
 def _proof_card(proof: dict) -> str:
@@ -491,8 +523,17 @@ def settings_page(account: dict, settings: dict, saved: bool = False,
           <input name=budget_alert_pct type=number step="1" min="1" max="100" value="{int((settings.get('budget_alert_pct') or 0.8)*100)}"></div>
         <button class=btn>Save settings</button>
       </form>
-    </div>{_danger_zone(account, delete_error)}"""
+    </div>{_settings_links(account)}{_danger_zone(account, delete_error)}"""
     return page("Settings", body, account, "/app/settings")
+
+
+def _settings_links(account: dict) -> str:
+    """Team & access — folded into Settings rather than a top-level tab."""
+    if account.get("team_role") not in ("owner", "admin"):
+        return ""
+    return ('<div class=card style="margin-top:16px"><div class=label>Team &amp; access</div>'
+            '<p class="small muted">Invite teammates, manage roles, and configure SSO.</p>'
+            '<a class="btn sec sm" href="/app/team">Manage team</a></div>')
 
 
 def _danger_zone(account: dict, delete_error: bool = False) -> str:
@@ -600,8 +641,13 @@ def connect_page(account: dict, deployments: list[dict], brain_url: str, console
             <input name=label value="{_e(d.get('label') or '')}" style="padding:6px;max-width:200px">
             <button class="btn sec sm">Rename</button></form></td>
           <td class="small muted">{_fmt_date(d.get('created_at'))}</td></tr>"""
+    welcome = ('<div class=note style="margin-bottom:18px"><b>Welcome to ModelPilot 👋</b> '
+               'Let\'s get you connected — it takes about five minutes. Once your first requests '
+               'flow through, your <a href="/app">Home dashboard</a> lights up with savings.</div>'
+               if not keys else "")
     body = f"""
-    <h1>Connect your app</h1>
+    <h1>Set up ModelPilot</h1>
+    {welcome}
     <p class=muted>ModelPilot is a drop-in proxy for the Claude Messages API. Point your SDK at it —
     only a task category + numeric features ever leave your box, never prompt text or your API key.</p>
     <div class=card>

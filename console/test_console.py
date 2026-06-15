@@ -172,9 +172,10 @@ def test_revenue_overview_keeps_subcent_precision(env):
 def test_signup_login_logout_flow(client, env):
     server, _ = env
     r = _signup(client)
-    assert r.status_code == 303 and r.headers["location"] == "/app"
+    # brand-new customer lands on Setup first
+    assert r.status_code == 303 and r.headers["location"] == "/app/connect"
     assert client.cookies.get("mp_session")
-    # dashboard reachable
+    # dashboard (Home) reachable
     assert client.get("/app").status_code == 200
     # logout redirects to the public landing page and clears the session
     r = client.post("/logout")
@@ -660,7 +661,8 @@ def test_owner_login_unchanged(env, client):
     _signup(client, email="o2@b.com")
     client.cookies.clear()
     r = client.post("/login", data={"email": "o2@b.com", "password": "password123"})
-    assert r.status_code == 303 and r.headers["location"] == "/app"
+    # not set up yet -> Setup first; the owner auth path itself is untouched
+    assert r.status_code == 303 and r.headers["location"] == "/app/connect"
 
 
 def test_member_login_and_team_nav(env, client):
@@ -682,7 +684,7 @@ def test_owner_sees_team_and_can_invite(env, client):
     _, store = env
     _signup(client, email="boss@team.com")
     acct = store.get_account_by_email("boss@team.com")
-    assert "/app/team" in client.get("/app").text   # owner has Team nav
+    assert "/app/team" in client.get("/app/settings").text   # owner reaches Team from Settings
     r = client.post("/app/team/invite", data={"email": "new@team.com", "role": "admin"})
     assert r.status_code == 303 and "invite_token=" in r.headers["location"]
     members = store.list_members(acct["id"])

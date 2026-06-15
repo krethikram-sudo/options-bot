@@ -169,6 +169,27 @@ def _suggestions(cats: list[dict], settings: dict) -> list[str]:
 # Public / auth
 # --------------------------------------------------------------------------- #
 
+def _is_set_up(account: dict) -> bool:
+    """Has the customer completed setup (created an API key / sent any traffic)?
+    Drives where we land them after auth: Setup first, then Home/Dashboard."""
+    try:
+        if store.list_api_keys(account["id"]):
+            return True
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        return store.savings_summary(account["id"])["requests"] > 0
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _post_auth_dest(account: dict) -> str:
+    """Vendor admins -> admin; set-up customers -> Home; new customers -> Setup."""
+    if account.get("role") == "admin":
+        return "/admin"
+    return "/app" if _is_set_up(account) else "/app/connect"
+
+
 @app.get("/", response_class=HTMLResponse)
 def root(request: Request):
     if _current(request):
@@ -194,7 +215,7 @@ async def signup(request: Request):
                                     company=f.get("company", ""), consent=True)
     except store.StoreError as e:
         return _html(web.auth_form("signup", str(e), f.get("email", "")), 400)
-    resp = _redirect("/app")
+    resp = _redirect("/app/connect")  # brand-new customer -> Setup first
     _set_session(resp, acct)
     return resp
 
@@ -211,7 +232,7 @@ async def login(request: Request):
     f = await _form(request)
     acct = store.authenticate(f.get("email", ""), f.get("password", ""))
     if acct:  # account owner
-        resp = _redirect("/admin" if acct["role"] == "admin" else "/app")
+        resp = _redirect(_post_auth_dest(acct))  # Setup first if not set up, else Home
         _set_session(resp, acct, "owner", 0)
         return resp
     member = store.authenticate_member(f.get("email", ""), f.get("password", ""))
