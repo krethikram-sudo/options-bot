@@ -148,6 +148,8 @@ def test_revenue_overview(env):
     store.convert_to_paid(a["id"])
     rev = store.revenue_overview()
     assert rev["n_paid"] == 1
+    assert rev["total_savings_delivered"] == pytest.approx(40.0)
+    assert rev["total_revenue"] == pytest.approx(8.0)  # 20% of 40
 
 
 def test_revenue_overview_keeps_subcent_precision(env):
@@ -163,8 +165,6 @@ def test_revenue_overview_keeps_subcent_precision(env):
     assert per > 0
     assert rev["total_savings_delivered"] == pytest.approx(per)
     assert rev["cycle_savings"] == pytest.approx(per)
-    assert rev["total_savings_delivered"] == pytest.approx(40.0)
-    assert rev["total_revenue"] == pytest.approx(8.0)  # 20% of 40
 
 
 # --- HTTP / auth flows ---------------------------------------------------- #
