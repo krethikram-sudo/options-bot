@@ -770,27 +770,26 @@ client = Anthropic(base_url="http://127.0.0.1:8400")  # your key stays local</pr
 
 
 def _tuning_capture_section(account: dict) -> str:
-    """Self-serve tuning capture — gated to the Self-optimize / Managed tiers."""
+    """Per-customer tuning — gated to the Self-optimize / Managed tiers. Tuning is
+    driven by traffic metadata only (no prompt content ever reaches us)."""
     tier = store.get_tier(account["id"])
     if tier == "payg":
         return ("""
-    <h2>Tuning capture <span class="small muted">— Self-optimize plan</span></h2>
+    <h2>Per-customer tuning <span class="small muted">— Self-optimize plan</span></h2>
     <div class=card>
-      <p class="small muted">On the <b>Self-optimize</b> plan you can tune routing to your own workload —
-        the proxy samples prompts <b>locally, on your system</b>, to validate cheaper models on your real
-        traffic, and proposes safe per-category floors. Captured prompts never leave your machine.</p>
+      <p class="small muted">On the <b>Self-optimize</b> plan, ModelPilot tunes routing to <b>your</b>
+        workload — learning per-category quality floors from your own traffic (category labels, token
+        counts, routing outcomes — <b>never prompt content</b>) and proposing safe, judge-validated
+        changes you approve. It gets cheaper-safe the more you use it.</p>
       <a class="btn sm" href="/app/billing">See plans</a>
     </div>""")
     return ("""
-    <h2>Tuning capture <span class="small muted">— optional, stays on your machine</span></h2>
+    <h2>Per-customer tuning <span class="small muted">— active on your plan</span></h2>
     <div class=card>
-      <p class="small muted">Your plan includes per-customer tuning. Let the proxy sample a fraction of
-        prompts <b>locally, on your own system</b>, to validate cheaper models on your real traffic.
-        Captured prompts are used only for local tuning and <b>never leave your machine</b>. Off by default.</p>
-      <pre>export MODELPILOT_CAPTURE_PCT=0.05   <span class="muted"># sample 5% locally for tuning (0 = off, the default)</span></pre>
-      <p class="small muted">Then run <code>modelpilot tune</code> / <code>modelpilot learn-floors</code> on your
-        box to turn that local sample into proposed floors — which you review and approve here before anything
-        changes. See <a href="/security.html#optimize">how we optimize without seeing your data</a>.</p>
+      <p class="small muted">ModelPilot continuously tunes routing to <b>your</b> workload from your
+        traffic metadata — category labels, token counts, and routing outcomes — <b>never prompt
+        content</b>. Proposed per-category floor changes appear for you to review and approve; nothing
+        to install. See <a href="/security.html#optimize">how we optimize without seeing your data</a>.</p>
     </div>""")
 
 
@@ -1018,9 +1017,9 @@ def _tier_options(plan: dict, stripe_on: bool) -> str:
         ("payg", "Pay-as-you-go", "20% of savings",
          "No subscription — pure pay-for-savings."),
         ("self_optimize", "Self-optimize", "Subscription + 15%",
-         "Tune your own model on your prompt data — locally, we never see it. Subscription pricing coming soon."),
+         "Routing tuned to your own traffic (metadata only — never your content). Subscription pricing coming soon."),
         ("managed", "Managed", "Subscription + 15%",
-         "We tune your model further on your data — still local. Subscription pricing coming soon."),
+         "We continuously tune routing to your traffic for you (metadata only). Subscription pricing coming soon."),
     ]
     cards = ""
     for key, name, price, desc in defs:

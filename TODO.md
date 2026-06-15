@@ -90,5 +90,12 @@ Live URLs:
 - [ ] (Optional) Custom domain `app.modelpilot.app` via `fly certs add` — currently on free `.fly.dev`.
 
 ## 🧩 Product (optional / later)
+- [ ] **Tuning model = Option A (metadata-only), chosen for the moat.** Per-customer tuning is driven by
+      traffic metadata (labels, token counts, outcomes) — never prompt content — and ALL routing/tuning
+      IP stays server-side (the shipped client carries none of it; leak-audit-enforced in
+      `scripts/build_client.sh`). So customers can't take the codebase and DIY. **Option B** (ship a
+      *licensed* on-box judge that tunes on actual prompt content, staying local) is a possible future
+      upgrade — only if worth the added surface; defended by license + brain entitlement + updates, not
+      secrecy. Site/console copy now reflects Option A.
 - [ ] End-to-end smoke test: sign up (test acct) → Connect gateway → send traffic → see savings on dashboard.
 - [ ] `ingest/` opt-in telemetry service (optional; deploys like the brain on port 8500).
