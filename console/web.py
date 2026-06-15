@@ -481,6 +481,7 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
         <div class=stat>{money(bill['would_bill'])}</div>
         <div class="small muted">{int(bill['rate']*100)}% of savings · you keep {money(bill['cycle_savings']-bill['would_bill'])}</div></div>
     </div>
+    {_opportunity_card(cycle)}
 
     <h2>Routing mode</h2>
     <div class=card>{mode_toggle(mode)}
@@ -527,6 +528,23 @@ def _quality_card_top(proof: dict, cycle: dict) -> str:
             f'<div class="small muted">quality floor + auto-escalation guard every request '
             f'({esc:,} escalated of {routed:,} routed this cycle). Run '
             f'<code>modelpilot compare</code> for a measured non-inferiority rate.</div></div>')
+
+
+def _opportunity_card(cycle: dict) -> str:
+    """Realization callout: additional savings the gateway found beyond model routing
+    (uncached reusable prompts, latency-tolerant traffic) but that aren't captured
+    yet. Estimated, never billed — only realized savings bill."""
+    opp = float(cycle.get("opportunity") or 0.0)
+    if opp <= 0:
+        return ""
+    return (f'<div class=card style="margin-top:16px;border-left:3px solid var(--accent)">'
+            f'<div class=label>Additional potential savings this cycle</div>'
+            f'<div class=stat>{money(opp)}</div>'
+            f'<div class="small muted">Money left on the table <i>beyond</i> model routing — mostly '
+            f'uncached reusable prompts and latency-tolerant traffic that could use the Batch API. '
+            f'Your gateway flags these per request (<code>x-modelpilot-opportunity-*</code> response '
+            f'headers); enabling them captures the savings with no quality change. Estimate only — '
+            f'never billed.</div></div>')
 
 
 def _autopilot_ramp(pct: int, mode: str) -> str:

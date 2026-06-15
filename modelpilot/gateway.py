@@ -18,7 +18,7 @@ import hashlib
 import json
 import os
 import uuid
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 
 import httpx
 from fastapi import FastAPI, Request, Response
@@ -265,6 +265,13 @@ class Decision:
     applied: bool
     arm: str = "observe"  # treatment | control | observe
     entitled: bool = True  # False once a brain reports the trial/license lapsed
+    # Savings levers beyond model choice (prompt caching, Batch API) the brain
+    # surfaced for this request. Advisory: never mutates the request.
+    opportunities: list = field(default_factory=list)
+
+    def opportunity_saved(self) -> float:
+        """Per-request dollars left on the table across all surfaced opportunities."""
+        return float(sum(float(o.get("est_savings") or 0.0) for o in self.opportunities))
 
 
 def assign_arm(session_key: str, holdout_pct: float) -> str:
@@ -311,7 +318,8 @@ def decide(body: dict, mode: str, confidence_gate: float = CONFIDENCE_GATE,
                        and bool(ent.get("entitled")) and bool(ent.get("apply"))
                        and rec.action == "switch")
             routed = rec.recommended_model if applied else rec.original_model
-            return Decision(rec, routed, applied, arm, entitled=bool(ent.get("entitled", True)))
+            return Decision(rec, routed, applied, arm, entitled=bool(ent.get("entitled", True)),
+                            opportunities=ent.get("opportunities") or [])
         # brain unreachable/errored -> fall through to local routing (fail-open)
 
     clf = classifier or mp_router.classify
@@ -347,6 +355,12 @@ def _advice_headers(decision: Decision) -> dict:
         headers["x-modelpilot-routed-model"] = decision.routed_model
     if decision.arm != "observe":
         headers["x-modelpilot-arm"] = decision.arm
+    # Surface savings levers beyond model choice (caching, Batch API) inline so the
+    # caller sees them per request — advisory, the request is never altered.
+    for opp in decision.opportunities:
+        otype = str(opp.get("type", "")).replace("_", "-")
+        if otype:
+            headers[f"x-modelpilot-opportunity-{otype}-usd"] = f"{float(opp.get('est_savings') or 0.0):.6f}"
     return headers
 
 
@@ -400,6 +414,7 @@ def _record(decision: Decision, status_code: int, usage: Usage,
         retry_of=retry_of,
         request_id=request_id,
         session_key=session_key,
+        opportunity_saved=decision.opportunity_saved(),
     )
     _maybe_autotune()
 

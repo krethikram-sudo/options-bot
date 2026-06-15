@@ -142,6 +142,31 @@ def test_metering_and_billing(env):
     assert store.bill_estimate(a["id"])["bill"] == pytest.approx(0.8)
 
 
+def test_opportunity_savings_metered_and_summed(env, client):
+    from console import web
+    server, store = env
+    a = store.create_account("opp@y.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    # via HTTP meter (the path the gateway uses) + a direct record
+    r = client.post("/api/meter", json={"deployment_id": dep, "requests": 10, "routed": 5,
+                                        "baseline_cost": 1.0, "actual_cost": 0.6,
+                                        "opportunity_saved": 0.25})
+    assert r.status_code == 200
+    store.record_meter(dep, requests=5, baseline_cost=0.5, actual_cost=0.4, opportunity_saved=0.10)
+    summ = store.savings_summary(a["id"])
+    assert summ["opportunity"] == pytest.approx(0.35)
+    # opportunity is advisory only — it never inflates the realized savings that bill
+    assert summ["savings"] == pytest.approx(0.5)  # (1.0-0.6) + (0.5-0.4)
+    # and it shows up on the dashboard as a callout
+    body = web.dashboard(store.get_account(a["id"]), store.get_plan(a["id"]),
+                         store.trial_status(a["id"]), store.get_settings(a["id"]),
+                         store.savings_summary(a["id"], since=store.bill_estimate(a["id"])["cycle_start"]),
+                         store.savings_summary(a["id"]), store.bill_estimate(a["id"]),
+                         {"deployment_id": dep}, store.savings_by_category(a["id"]),
+                         store.proof_summary(a["id"]), store.budget_status(a["id"]))
+    assert "Additional potential savings" in body
+
+
 def test_delete_account_cascade(env):
     _, store = env
     a = store.create_account("del@y.com", "password123")

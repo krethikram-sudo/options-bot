@@ -15,7 +15,7 @@ import json
 import os
 
 _FIELDS = ("requests", "routed", "baseline_cost", "actual_cost", "realized_savings",
-           "comparisons", "non_inferior")
+           "comparisons", "non_inferior", "opportunity_saved")
 
 
 def _marker_path(db_path: str) -> str:
@@ -49,6 +49,8 @@ def _cumulative_from_summary(summary: dict, proof: dict | None = None) -> dict:
         # Aggregate side-by-side proof counts (no compared text leaves the box).
         "comparisons": float(proof.get("n_judged", 0)),
         "non_inferior": float(proof.get("n_ni", 0)),
+        # Additional savings available but not yet captured (caching / Batch API).
+        "opportunity_saved": float(summary.get("opportunity_saved", 0.0)),
     }
 
 
@@ -84,7 +86,8 @@ def report_once(db_path: str | None = None, console_url: str | None = None,
                "actual_cost": round(delta["actual_cost"], 6),
                "realized_savings": round(delta["realized_savings"], 6),
                "comparisons": int(delta["comparisons"]),
-               "non_inferior": int(delta["non_inferior"])}
+               "non_inferior": int(delta["non_inferior"]),
+               "opportunity_saved": round(delta["opportunity_saved"], 6)}
     try:
         if post_fn is not None:
             post_fn(payload)

@@ -26,8 +26,8 @@ import time
 from fastapi import FastAPI, HTTPException, Request
 
 from modelpilot.license import LicenseError, verify_token
-from modelpilot.pricing import (CAPABILITY_LADDER, batch_savings, cache_savings,
-                                ladder_tier, net_switch_benefit)
+from modelpilot.pricing import (CAPABILITY_LADDER, batch_savings, cache_request_overpay,
+                                cache_savings, ladder_tier, net_switch_benefit)
 from modelpilot.taxonomy import floor_tier
 
 GATE_DEFAULT = float(os.environ.get("BRAIN_GATE", "0.7"))
@@ -204,13 +204,16 @@ def _opportunities(req: dict) -> list[dict]:
     turns = float(req.get("expected_remaining_turns", 1.0) or 1.0)
     out: list[dict] = []
     # 1) Prompt caching: a large reusable prefix that isn't cached yet, reused across turns.
-    if not f.get("has_cache_control"):
-        saved = cache_savings(model, ctx, turns)
-        if saved > 0:
-            out.append({"type": "prompt_cache", "est_savings": round(saved, 6),
-                        "detail": (f"Cache your ~{ctx:,}-token reusable prefix across "
-                                   f"{turns:.0f} expected turns — cached reads bill at ~10% "
-                                   "of input price.")})
+    #    est_savings is the PER-REQUEST overpay (so it sums honestly across traffic);
+    #    the detail quotes the conversation-level figure as the motivating number.
+    if not f.get("has_cache_control") and turns >= 2:
+        per_req = cache_request_overpay(model, ctx)
+        if per_req > 0:
+            convo = cache_savings(model, ctx, turns)
+            out.append({"type": "prompt_cache", "est_savings": round(per_req, 6),
+                        "detail": (f"Cache your ~{ctx:,}-token reusable prefix — cached reads "
+                                   f"bill at ~10% of input price (~${convo:.4f} over "
+                                   f"{turns:.0f} expected turns).")})
     # 2) Batch API: traffic the customer has flagged latency-tolerant -> 50% off.
     if f.get("latency_tolerant"):
         est_out = max(int(f.get("requested_max_tokens", 0)) // 4, 300)

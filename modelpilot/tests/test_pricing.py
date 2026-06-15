@@ -4,6 +4,7 @@ from modelpilot.pricing import (
     Usage,
     baseline_cost,
     batch_savings,
+    cache_request_overpay,
     cache_savings,
     ladder_tier,
     net_switch_benefit,
@@ -26,6 +27,13 @@ def test_cache_savings_zero_when_not_worthwhile():
     assert cache_savings("claude-opus-4-8", MIN_CACHEABLE_TOKENS - 1, 10) == 0.0  # below cache min
     assert cache_savings("claude-opus-4-8", 50_000, 1) == 0.0                     # single turn
     assert cache_savings("nope", 50_000, 10) == 0.0                               # unknown model
+
+
+def test_cache_request_overpay_is_per_request_marginal():
+    # 10k-token prefix at opus $5/MTok input, billed full vs ~10% cache read = 0.9x.
+    per_tok = 5.0 / 1_000_000
+    assert abs(cache_request_overpay("claude-opus-4-8", 10_000) - 10_000 * per_tok * 0.9) < 1e-12
+    assert cache_request_overpay("claude-opus-4-8", 500) == 0.0  # below cache minimum
 
 
 def test_batch_savings_is_half_of_request_cost():

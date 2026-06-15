@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS requests (
     potential_saved REAL,              -- baseline - routed (what following advice saves)
     arm TEXT NOT NULL DEFAULT 'observe',  -- treatment | control | observe
     retry_of TEXT,                     -- request id this re-run escalates (quality failure)
-    session_key TEXT NOT NULL DEFAULT ''  -- conversation identity (for arm + continuation model)
+    session_key TEXT NOT NULL DEFAULT '',  -- conversation identity (for arm + continuation model)
+    opportunity_saved REAL NOT NULL DEFAULT 0  -- per-request $ left on the table (caching/batch)
 );
 CREATE INDEX IF NOT EXISTS idx_requests_ts ON requests (ts);
 CREATE INDEX IF NOT EXISTS idx_requests_category ON requests (category);
@@ -87,11 +88,18 @@ class Ledger:
         self._lock = threading.Lock()
         with self._lock:
             self._conn.executescript(_SCHEMA)
+            # Columns added after first ship — applied to pre-existing ledgers.
+            for ddl in ("ALTER TABLE requests ADD COLUMN opportunity_saved REAL NOT NULL DEFAULT 0",):
+                try:
+                    self._conn.execute(ddl)
+                except sqlite3.OperationalError:
+                    pass  # already present
             self._conn.commit()
 
     def record(self, *, mode, recommendation, routed_model, applied, status_code, usage: Usage,
                arm: str = "observe", retry_of: str | None = None,
-               request_id: str | None = None, session_key: str = "") -> str:
+               request_id: str | None = None, session_key: str = "",
+               opportunity_saved: float = 0.0) -> str:
         actual = request_cost(routed_model, usage)
         base = baseline_cost(recommendation.original_model, usage)
         routed = request_cost(recommendation.recommended_model, usage)
@@ -109,8 +117,8 @@ class Ledger:
                        applied, action, confidence, category, rationale, status_code,
                        input_tokens, output_tokens, cache_read_tokens, cache_write_tokens,
                        actual_cost, baseline_cost, routed_cost, realized_saved, potential_saved,
-                       arm, retry_of, session_key
-                   ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                       arm, retry_of, session_key, opportunity_saved
+                   ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     request_id,
                     time.time(),
@@ -136,6 +144,7 @@ class Ledger:
                     arm,
                     retry_of,
                     session_key,
+                    float(opportunity_saved or 0.0),
                 ),
             )
             self._conn.commit()
@@ -313,7 +322,8 @@ class Ledger:
                           COALESCE(SUM(CASE WHEN action='switch' THEN potential_saved ELSE 0 END), 0) potential,
                           COALESCE(SUM(CASE WHEN action='switch' AND confidence >= ? THEN potential_saved ELSE 0 END), 0) gated_potential,
                           COALESCE(SUM(CASE WHEN action='switch' THEN 1 ELSE 0 END), 0) n_switch_recs,
-                          COALESCE(SUM(applied), 0) n_applied
+                          COALESCE(SUM(applied), 0) n_applied,
+                          COALESCE(SUM(opportunity_saved), 0) opportunity_saved
                    FROM requests WHERE ts >= ? AND status_code = 200{mode_clause}""",
                 params,
             ).fetchone()

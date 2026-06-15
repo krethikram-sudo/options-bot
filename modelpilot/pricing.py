@@ -153,6 +153,20 @@ def cache_savings(model: str, prefix_tokens: int, turns: float) -> float:
     return max(0.0, prefix_tokens * per_tok * (uncached - cached))
 
 
+def cache_request_overpay(model: str, prefix_tokens: int) -> float:
+    """Per-request dollars overpaid by sending a large reusable prefix uncached
+    (billed at 1.0x input) instead of as a cache read (~0.10x of input price).
+
+    This is the steady-state marginal for a *reused* prefix, so it aggregates
+    honestly across requests (sum it over a window = money left on the table by
+    not caching). Returns 0 below the cache minimum."""
+    price = resolve_price(model)
+    if price is None or prefix_tokens < MIN_CACHEABLE_TOKENS:
+        return 0.0
+    per_tok = price.input_per_mtok / 1_000_000
+    return prefix_tokens * per_tok * (1.0 - CACHE_READ_MULT)
+
+
 def batch_savings(model: str, input_tokens: int, output_tokens: int) -> float:
     """Dollars saved by sending a latency-tolerant request through the Batch API
     (50% off both input and output) instead of the synchronous endpoint."""

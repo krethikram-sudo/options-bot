@@ -26,7 +26,8 @@ def _seed_ledger(path):
     led.record(mode="autopilot", recommendation=rec, routed_model="claude-haiku-4-5",
                applied=True, status_code=200,
                usage=Usage(input_tokens=1000, output_tokens=1000),
-               arm="treatment", retry_of=None, request_id="r1", session_key="s1")
+               arm="treatment", retry_of=None, request_id="r1", session_key="s1",
+               opportunity_saved=0.0042)
     led.close()
 
 
@@ -40,6 +41,8 @@ def test_report_once_posts_delta_then_nothing_new(tmp_path):
     p = posted[0]
     assert p["deployment_id"] == "dep_abc"
     assert p["realized_savings"] > 0 and p["requests"] == 1
+    # opportunity savings ride along (advisory; never billed)
+    assert abs(p["opportunity_saved"] - 0.0042) < 1e-9
     # forbidden keys never appear in a metering payload
     assert not ({"messages", "prompt", "text"} & set(p))
     # second run with no new ledger activity -> nothing to post (marker advanced)

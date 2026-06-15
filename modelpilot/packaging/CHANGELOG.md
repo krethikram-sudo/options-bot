@@ -4,6 +4,17 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.34.0 — 2026-06-16
+
+- **Savings opportunities are now surfaced and reported.** When the routing brain
+  spots savings beyond model choice (an uncached reusable prefix, or latency-tolerant
+  traffic that could use the Batch API), the gateway now: (1) returns it inline per
+  request as `x-modelpilot-opportunity-<type>-usd` response headers, and (2) records
+  the per-request estimate in the local ledger and reports the aggregate to the
+  console (`opportunity_saved`) so it shows up as "Additional potential savings" on
+  your dashboard. Advisory only — estimates never bill; nothing mutates your requests.
+  Privacy unchanged: counts + dollars only, no prompt content.
+
 ## 0.33.0 — 2026-06-16
 
 - **Savings levers beyond model choice.** New pricing helpers quantify two

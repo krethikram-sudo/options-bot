@@ -56,6 +56,31 @@ def test_ledger_realized_vs_potential(tmp_path):
     ledger.close()
 
 
+def test_ledger_records_and_sums_opportunity(tmp_path):
+    ledger = Ledger(str(tmp_path / "opp.db"))
+    usage = Usage(input_tokens=10_000, output_tokens=2_000)
+    rec = recommend(_body(CLASSIFY))
+    ledger.record(mode="autopilot", recommendation=rec, routed_model=rec.recommended_model,
+                  applied=True, status_code=200, usage=usage, opportunity_saved=0.0123)
+    ledger.record(mode="autopilot", recommendation=rec, routed_model=rec.recommended_model,
+                  applied=True, status_code=200, usage=usage, opportunity_saved=0.0077)
+    s = ledger.summary()
+    assert abs(s["opportunity_saved"] - 0.02) < 1e-9
+    ledger.close()
+
+
+def test_advice_headers_surface_opportunities():
+    from modelpilot.gateway import Decision, _advice_headers
+    rec = recommend(_body(CLASSIFY))
+    d = Decision(recommendation=rec, routed_model=rec.original_model, applied=False,
+                 opportunities=[{"type": "prompt_cache", "est_savings": 0.0021},
+                                {"type": "batch_api", "est_savings": 0.0009}])
+    h = _advice_headers(d)
+    assert h["x-modelpilot-opportunity-prompt-cache-usd"] == "0.002100"
+    assert h["x-modelpilot-opportunity-batch-api-usd"] == "0.000900"
+    assert abs(d.opportunity_saved() - 0.003) < 1e-9
+
+
 def test_sse_usage_extraction_across_chunks():
     events = [
         {"type": "message_start", "message": {"usage": {"input_tokens": 1200, "cache_read_input_tokens": 800}}},

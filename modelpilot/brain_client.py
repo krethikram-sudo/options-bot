@@ -85,6 +85,7 @@ def remote_decide(body: dict, brain_url: str, deployment_id: str,
         est_net_benefit=d.get("est_net_benefit"),
     )
     entitlement = {"entitled": d.get("entitled", True), "apply": d.get("apply", False),
+                   "opportunities": d.get("opportunities") or [],
                    **(d.get("entitlement") or {})}
     return rec, entitlement
 
