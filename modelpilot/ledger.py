@@ -10,7 +10,7 @@ import threading
 import time
 import uuid
 
-from .pricing import Usage, baseline_cost, request_cost
+from .pricing import Usage, baseline_cost, realized_cache_savings, request_cost
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS requests (
@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS requests (
     arm TEXT NOT NULL DEFAULT 'observe',  -- treatment | control | observe
     retry_of TEXT,                     -- request id this re-run escalates (quality failure)
     session_key TEXT NOT NULL DEFAULT '',  -- conversation identity (for arm + continuation model)
-    opportunity_saved REAL NOT NULL DEFAULT 0  -- per-request $ left on the table (caching/batch)
+    opportunity_saved REAL NOT NULL DEFAULT 0,  -- per-request $ left on the table (caching/batch)
+    caching_saved REAL NOT NULL DEFAULT 0  -- measured $ saved by caching WE auto-applied (goodwill, not billed)
 );
 CREATE INDEX IF NOT EXISTS idx_requests_ts ON requests (ts);
 CREATE INDEX IF NOT EXISTS idx_requests_category ON requests (category);
@@ -89,7 +90,8 @@ class Ledger:
         with self._lock:
             self._conn.executescript(_SCHEMA)
             # Columns added after first ship — applied to pre-existing ledgers.
-            for ddl in ("ALTER TABLE requests ADD COLUMN opportunity_saved REAL NOT NULL DEFAULT 0",):
+            for ddl in ("ALTER TABLE requests ADD COLUMN opportunity_saved REAL NOT NULL DEFAULT 0",
+                        "ALTER TABLE requests ADD COLUMN caching_saved REAL NOT NULL DEFAULT 0"):
                 try:
                     self._conn.execute(ddl)
                 except sqlite3.OperationalError:
@@ -99,10 +101,16 @@ class Ledger:
     def record(self, *, mode, recommendation, routed_model, applied, status_code, usage: Usage,
                arm: str = "observe", retry_of: str | None = None,
                request_id: str | None = None, session_key: str = "",
-               opportunity_saved: float = 0.0) -> str:
+               opportunity_saved: float = 0.0, cache_applied: bool = False) -> str:
         actual = request_cost(routed_model, usage)
         base = baseline_cost(recommendation.original_model, usage)
         routed = request_cost(recommendation.recommended_model, usage)
+        # Measured caching savings — only credited when WE auto-applied the cache
+        # breakpoint (never when the caller already had caching). Goodwill metric,
+        # never billed. Exact from the real usage block; nets the write penalty.
+        caching = (realized_cache_savings(routed_model, usage.cache_read_input_tokens,
+                                          usage.cache_creation_input_tokens)
+                   if cache_applied else 0.0)
         # Realized whenever the request ran below its baseline — whether the
         # gateway switched it (autopilot) or the caller followed advice and
         # declared the baseline via x-modelpilot-baseline (advise mode).
@@ -117,8 +125,8 @@ class Ledger:
                        applied, action, confidence, category, rationale, status_code,
                        input_tokens, output_tokens, cache_read_tokens, cache_write_tokens,
                        actual_cost, baseline_cost, routed_cost, realized_saved, potential_saved,
-                       arm, retry_of, session_key, opportunity_saved
-                   ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                       arm, retry_of, session_key, opportunity_saved, caching_saved
+                   ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     request_id,
                     time.time(),
@@ -145,6 +153,7 @@ class Ledger:
                     retry_of,
                     session_key,
                     float(opportunity_saved or 0.0),
+                    float(caching or 0.0),
                 ),
             )
             self._conn.commit()
@@ -323,7 +332,8 @@ class Ledger:
                           COALESCE(SUM(CASE WHEN action='switch' AND confidence >= ? THEN potential_saved ELSE 0 END), 0) gated_potential,
                           COALESCE(SUM(CASE WHEN action='switch' THEN 1 ELSE 0 END), 0) n_switch_recs,
                           COALESCE(SUM(applied), 0) n_applied,
-                          COALESCE(SUM(opportunity_saved), 0) opportunity_saved
+                          COALESCE(SUM(opportunity_saved), 0) opportunity_saved,
+                          COALESCE(SUM(caching_saved), 0) caching_saved
                    FROM requests WHERE ts >= ? AND status_code = 200{mode_clause}""",
                 params,
             ).fetchone()

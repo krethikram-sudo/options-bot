@@ -6,6 +6,7 @@ from modelpilot.pricing import (
     batch_savings,
     cache_request_overpay,
     cache_savings,
+    realized_cache_savings,
     ladder_tier,
     net_switch_benefit,
     request_cost,
@@ -34,6 +35,16 @@ def test_cache_request_overpay_is_per_request_marginal():
     per_tok = 5.0 / 1_000_000
     assert abs(cache_request_overpay("claude-opus-4-8", 10_000) - 10_000 * per_tok * 0.9) < 1e-12
     assert cache_request_overpay("claude-opus-4-8", 500) == 0.0  # below cache minimum
+
+
+def test_realized_cache_savings_nets_write_penalty():
+    per_tok = 5.0 / 1_000_000  # opus input
+    # reads save 0.90x, writes cost 0.25x extra
+    assert abs(realized_cache_savings("claude-opus-4-8", 10_000, 0) - 10_000 * per_tok * 0.9) < 1e-12
+    assert abs(realized_cache_savings("claude-opus-4-8", 0, 10_000) - (-10_000 * per_tok * 0.25)) < 1e-12
+    # mixed: a write turn plus later reads nets positive
+    mixed = realized_cache_savings("claude-opus-4-8", 30_000, 10_000)
+    assert abs(mixed - (30_000 * per_tok * 0.9 - 10_000 * per_tok * 0.25)) < 1e-12 and mixed > 0
 
 
 def test_batch_savings_is_half_of_request_cost():

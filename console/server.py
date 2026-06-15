@@ -921,6 +921,7 @@ async def api_meter(request: Request):
             actual_cost=body.get("actual_cost", 0.0),
             realized_savings=body.get("realized_savings"),
             opportunity_saved=body.get("opportunity_saved", 0.0),
+            caching_saved=body.get("caching_saved", 0.0),
             category=body.get("category"))
     except store.StoreError as e:
         return JSONResponse({"error": str(e)}, status_code=404)

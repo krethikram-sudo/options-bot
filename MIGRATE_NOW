@@ -1,1 +1,1 @@
-Migration trigger — 2026-06-16T01:40:00Z (Opt-in caching auto-apply MODELPILOT_AUTO_CACHE: gateway adds an ephemeral cache breakpoint to large reusable system prompts; landing copy: drop shadow mode -> guidance -> autopilot)
+Migration trigger — 2026-06-16T02:10:00Z (Measure caching savings exactly from real usage and show as a free goodwill line on the dashboard — never billed; pricing.realized_cache_savings, ledger/metering caching_saved)

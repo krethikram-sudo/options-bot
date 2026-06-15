@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS meter (
     actual_cost REAL NOT NULL DEFAULT 0,
     realized_savings REAL NOT NULL DEFAULT 0,
     opportunity_saved REAL NOT NULL DEFAULT 0,   -- additional savings available, not yet captured (caching/batch)
+    caching_saved REAL NOT NULL DEFAULT 0,       -- measured savings captured via auto-applied caching (goodwill, NOT billed)
     stripe_reported INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_meter_dep ON meter(deployment_id);
@@ -222,6 +223,7 @@ _MIGRATIONS = [
     "ALTER TABLE plans ADD COLUMN tier TEXT NOT NULL DEFAULT 'payg'",
     "ALTER TABLE settings ADD COLUMN autopilot_pct INTEGER NOT NULL DEFAULT 100",
     "ALTER TABLE meter ADD COLUMN opportunity_saved REAL NOT NULL DEFAULT 0",
+    "ALTER TABLE meter ADD COLUMN caching_saved REAL NOT NULL DEFAULT 0",
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -972,13 +974,14 @@ def entitlement(deployment_id: str, path: str | None = None, now: float | None =
 def record_meter(deployment_id: str, *, requests: int = 0, routed: int = 0,
                  escalations: int = 0, baseline_cost: float = 0.0, actual_cost: float = 0.0,
                  realized_savings: float | None = None, opportunity_saved: float = 0.0,
-                 category: str | None = None,
+                 caching_saved: float = 0.0, category: str | None = None,
                  ts: float | None = None, path: str | None = None) -> dict:
     """Record one aggregate metering report from a gateway. Dollars + counts only.
 
     `realized_savings` defaults to baseline_cost - actual_cost (never negative for
     billing). `opportunity_saved` is additional savings available but not yet
-    captured (caching/Batch API) — reported for visibility, never billed. Raises if
+    captured (caching/Batch API). `caching_saved` is savings we DID capture by
+    auto-applying caching. Both are shown for visibility and NEVER billed. Raises if
     the deployment is unknown."""
     if not account_for_deployment(deployment_id, path):
         raise StoreError("unknown deployment")
@@ -989,11 +992,11 @@ def record_meter(deployment_id: str, *, requests: int = 0, routed: int = 0,
     try:
         conn.execute(
             "INSERT INTO meter(deployment_id, ts, category, requests, routed, escalations,"
-            " baseline_cost, actual_cost, realized_savings, opportunity_saved)"
-            " VALUES(?,?,?,?,?,?,?,?,?,?)",
+            " baseline_cost, actual_cost, realized_savings, opportunity_saved, caching_saved)"
+            " VALUES(?,?,?,?,?,?,?,?,?,?,?)",
             (deployment_id, ts, category, int(requests), int(routed), int(escalations),
              float(baseline_cost), float(actual_cost), float(realized_savings),
-             max(0.0, float(opportunity_saved))))
+             max(0.0, float(opportunity_saved)), max(0.0, float(caching_saved))))
         conn.commit()
     finally:
         conn.close()
@@ -1013,7 +1016,8 @@ def _account_savings(conn, account_id: int, since: float | None, until: float | 
         f" COALESCE(SUM(m.baseline_cost),0) AS baseline,"
         f" COALESCE(SUM(m.actual_cost),0) AS actual,"
         f" COALESCE(SUM(m.realized_savings),0) AS savings,"
-        f" COALESCE(SUM(m.opportunity_saved),0) AS opportunity"
+        f" COALESCE(SUM(m.opportunity_saved),0) AS opportunity,"
+        f" COALESCE(SUM(m.caching_saved),0) AS caching"
         f" FROM meter m JOIN deployments d ON d.deployment_id=m.deployment_id"
         f" WHERE {clause}", params).fetchone()
     return dict(row)

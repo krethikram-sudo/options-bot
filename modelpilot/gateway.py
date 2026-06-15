@@ -453,7 +453,8 @@ class _SSEUsage:
 
 
 def _record(decision: Decision, status_code: int, usage: Usage,
-            request_id: str, retry_of: str | None, session_key: str = ""):
+            request_id: str, retry_of: str | None, session_key: str = "",
+            cache_applied: bool = False):
     app.state.ledger.record(
         mode=MODE,
         recommendation=decision.recommendation,
@@ -466,6 +467,7 @@ def _record(decision: Decision, status_code: int, usage: Usage,
         request_id=request_id,
         session_key=session_key,
         opportunity_saved=decision.opportunity_saved(),
+        cache_applied=cache_applied,
     )
     _maybe_autotune()
 
@@ -695,7 +697,8 @@ async def messages(request: Request):
                     yield chunk
             finally:
                 await upstream.aclose()
-                _record(rec_decision, upstream.status_code, sse.usage, request_id, retry_of, session_key)
+                _record(rec_decision, upstream.status_code, sse.usage, request_id, retry_of,
+                        session_key, cache_applied=cache_applied)
 
         resp_headers = {k: v for k, v in upstream.headers.items() if k.lower() in _RETURN_HEADERS}
         return StreamingResponse(relay(), status_code=upstream.status_code, headers={**resp_headers, **extra})
@@ -706,7 +709,8 @@ async def messages(request: Request):
             usage = Usage.from_api(upstream.json().get("usage") or {})
         except (json.JSONDecodeError, AttributeError):
             pass
-    _record(rec_decision, upstream.status_code, usage, request_id, retry_of, session_key)
+    _record(rec_decision, upstream.status_code, usage, request_id, retry_of, session_key,
+            cache_applied=cache_applied)
     if cache_key and upstream.status_code == 200:
         CACHE.put(cache_key, upstream.content, upstream.headers.get("content-type", "application/json"))
         extra["x-modelpilot-cache"] = "MISS"

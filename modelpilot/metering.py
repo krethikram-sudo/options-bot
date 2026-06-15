@@ -15,7 +15,7 @@ import json
 import os
 
 _FIELDS = ("requests", "routed", "baseline_cost", "actual_cost", "realized_savings",
-           "comparisons", "non_inferior", "opportunity_saved")
+           "comparisons", "non_inferior", "opportunity_saved", "caching_saved")
 
 
 def _marker_path(db_path: str) -> str:
@@ -51,6 +51,8 @@ def _cumulative_from_summary(summary: dict, proof: dict | None = None) -> dict:
         "non_inferior": float(proof.get("n_ni", 0)),
         # Additional savings available but not yet captured (caching / Batch API).
         "opportunity_saved": float(summary.get("opportunity_saved", 0.0)),
+        # Measured savings we captured by auto-applying caching (goodwill, not billed).
+        "caching_saved": float(summary.get("caching_saved", 0.0)),
     }
 
 
@@ -87,7 +89,8 @@ def report_once(db_path: str | None = None, console_url: str | None = None,
                "realized_savings": round(delta["realized_savings"], 6),
                "comparisons": int(delta["comparisons"]),
                "non_inferior": int(delta["non_inferior"]),
-               "opportunity_saved": round(delta["opportunity_saved"], 6)}
+               "opportunity_saved": round(delta["opportunity_saved"], 6),
+               "caching_saved": round(delta["caching_saved"], 6)}
     try:
         if post_fn is not None:
             post_fn(payload)

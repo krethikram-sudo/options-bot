@@ -122,5 +122,9 @@ Live URLs:
       cache breakpoint to large reusable system prompts, capturing the caching opportunity automatically.
       Conservative (no-op if already cached / no sizable system / below a safe size floor); compatible
       with tools/structured output; `x-modelpilot-cache-applied` header. Off by default.
+- [x] **Caching savings: measured & shown free, never billed** (founder decision: "show but don't bill").
+      Exact $ from real usage tokens (`pricing.realized_cache_savings`), credited only when WE applied
+      caching; rolls up to a "Caching savings captured" goodwill line on the dashboard. Only model-routing
+      savings (control-arm proven) bill. (Mechanism exists to bill it later at any rate if desired.)
 - [ ] End-to-end smoke test: sign up (test acct) → Connect gateway → send traffic → see savings on dashboard.
 - [ ] `ingest/` opt-in telemetry service (optional; deploys like the brain on port 8500).

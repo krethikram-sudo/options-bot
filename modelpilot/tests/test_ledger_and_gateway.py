@@ -69,6 +69,22 @@ def test_ledger_records_and_sums_opportunity(tmp_path):
     ledger.close()
 
 
+def test_ledger_credits_caching_only_when_we_applied(tmp_path):
+    ledger = Ledger(str(tmp_path / "cache.db"))
+    rec = recommend(_body(CLASSIFY))
+    usage = Usage(input_tokens=500, output_tokens=200, cache_read_input_tokens=20_000)
+    # We applied caching -> measured savings credited.
+    ledger.record(mode="autopilot", recommendation=rec, routed_model=rec.original_model,
+                  applied=False, status_code=200, usage=usage, cache_applied=True)
+    # Caller already cached it (we didn't apply) -> no credit, even with cache reads.
+    ledger.record(mode="autopilot", recommendation=rec, routed_model=rec.original_model,
+                  applied=False, status_code=200, usage=usage, cache_applied=False)
+    s = ledger.summary()
+    # only the first row contributes: 20k reads * opus $5/MTok * 0.9
+    assert abs(s["caching_saved"] - 20_000 * (5.0 / 1_000_000) * 0.9) < 1e-9
+    ledger.close()
+
+
 def test_advice_headers_surface_opportunities():
     from modelpilot.gateway import Decision, _advice_headers
     rec = recommend(_body(CLASSIFY))

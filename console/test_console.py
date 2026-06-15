@@ -167,6 +167,33 @@ def test_opportunity_savings_metered_and_summed(env, client):
     assert "Additional potential savings" in body
 
 
+def test_caching_savings_shown_but_not_billed(env, client):
+    from console import web
+    server, store = env
+    a = store.create_account("cache@y.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    # gateway reports realized model-switch savings + measured caching savings
+    r = client.post("/api/meter", json={"deployment_id": dep, "requests": 10,
+                                        "baseline_cost": 1.0, "actual_cost": 0.6,
+                                        "caching_saved": 0.50})
+    assert r.status_code == 200
+    summ = store.savings_summary(a["id"])
+    assert summ["caching"] == pytest.approx(0.50)
+    # caching savings are goodwill — they must NOT inflate the billable amount
+    store.convert_to_paid(a["id"])
+    bill = store.bill_estimate(a["id"])
+    assert bill["cycle_savings"] == pytest.approx(0.4)        # only the model-switch savings
+    assert bill["bill"] == pytest.approx(0.08)                # 20% of $0.4, NOT of $0.9
+    # and it surfaces on the dashboard as a captured-for-free callout
+    body = web.dashboard(store.get_account(a["id"]), store.get_plan(a["id"]),
+                         store.trial_status(a["id"]), store.get_settings(a["id"]),
+                         store.savings_summary(a["id"], since=bill["cycle_start"]),
+                         store.savings_summary(a["id"]), bill,
+                         {"deployment_id": dep}, store.savings_by_category(a["id"]),
+                         store.proof_summary(a["id"]), store.budget_status(a["id"]))
+    assert "Caching savings captured" in body
+
+
 def test_delete_account_cascade(env):
     _, store = env
     a = store.create_account("del@y.com", "password123")

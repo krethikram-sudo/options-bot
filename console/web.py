@@ -481,6 +481,7 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
         <div class=stat>{money(bill['would_bill'])}</div>
         <div class="small muted">{int(bill['rate']*100)}% of savings · you keep {money(bill['cycle_savings']-bill['would_bill'])}</div></div>
     </div>
+    {_caching_card(cycle)}
     {_opportunity_card(cycle)}
 
     <h2>Routing mode</h2>
@@ -545,6 +546,20 @@ def _opportunity_card(cycle: dict) -> str:
             f'Your gateway flags these per request (<code>x-modelpilot-opportunity-*</code> response '
             f'headers); enabling them captures the savings with no quality change. Estimate only — '
             f'never billed.</div></div>')
+
+
+def _caching_card(cycle: dict) -> str:
+    """Goodwill callout: savings we captured for free by auto-applying prompt
+    caching. Measured exactly from your token usage; never billed."""
+    cached = float(cycle.get("caching") or 0.0)
+    if cached <= 0:
+        return ""
+    return (f'<div class=card style="margin-top:16px;border-left:3px solid var(--ok,#16a34a)">'
+            f'<div class=label>Caching savings captured this cycle</div>'
+            f'<div class="stat green">{money(cached)}</div>'
+            f'<div class="small muted">Delivered free by auto-applying prompt caching on your '
+            f'reusable prompts — measured exactly from your token usage (cache reads bill at ~10% '
+            f'of input price). <b>Never billed</b> — this one\'s on us.</div></div>')
 
 
 def _autopilot_ramp(pct: int, mode: str) -> str:

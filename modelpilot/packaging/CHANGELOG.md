@@ -4,6 +4,17 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.36.0 — 2026-06-16
+
+- **Measured caching savings, shown free (never billed).** When the gateway
+  auto-applies caching (`MODELPILOT_AUTO_CACHE`), it now measures the *exact* dollars
+  that caching saved — straight from the real `usage` token counts in each response
+  (cache reads bill at 10% of input price; the one-time write penalty is netted out) —
+  and only credits caching it actually applied (never the caller's own). This rolls up
+  to the console as a "Caching savings captured" goodwill line on the dashboard. It is
+  deliberately **not** billed: only model-routing savings (proven against a control
+  arm) bill. Privacy unchanged — counts + dollars only.
+
 ## 0.35.0 — 2026-06-16
 
 - **Opt-in caching auto-apply (`MODELPILOT_AUTO_CACHE=1`).** Beyond *recommending*

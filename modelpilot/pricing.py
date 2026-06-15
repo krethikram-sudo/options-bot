@@ -167,6 +167,20 @@ def cache_request_overpay(model: str, prefix_tokens: int) -> float:
     return prefix_tokens * per_tok * (1.0 - CACHE_READ_MULT)
 
 
+def realized_cache_savings(model: str, cache_read_tokens: int, cache_creation_tokens: int) -> float:
+    """EXACT dollars saved by caching on a request, from the real billed token
+    counts in the response usage block (not an estimate): cache reads bill at
+    CACHE_READ_MULT of input price (save the other 0.90), while the one-time cache
+    write costs CACHE_WRITE_MULT (a 0.25 penalty). Returns the net — which can be
+    negative on a write-only turn, so it nets out correctly when summed."""
+    price = resolve_price(model)
+    if price is None:
+        return 0.0
+    per_tok = price.input_per_mtok / 1_000_000
+    return (cache_read_tokens * per_tok * (1.0 - CACHE_READ_MULT)
+            - cache_creation_tokens * per_tok * (CACHE_WRITE_MULT - 1.0))
+
+
 def batch_savings(model: str, input_tokens: int, output_tokens: int) -> float:
     """Dollars saved by sending a latency-tolerant request through the Batch API
     (50% off both input and output) instead of the synchronous endpoint."""
