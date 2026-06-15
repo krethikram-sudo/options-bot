@@ -1,6 +1,6 @@
 # ModelPilot — Running TODO (founder)
 
-Living checklist. Claude keeps this current as we work. Last updated: **2026-06-15**.
+Living checklist. Claude keeps this current as we work. Last updated: **2026-06-15 (eve)**.
 (Detailed legal/terms analysis lives in `modelpilot/LAUNCH_CHECKLIST.md`; this is the
 short, prioritized running list.)
 
@@ -9,12 +9,18 @@ Live URLs:
 - Console (admin + customer): https://modelpilot-console-prod.fly.dev/  (admin → `/admin`)
 - Brain: https://modelpilot-brain-prod.fly.dev/  (health: `/health`)
 
+> **▶️ RESUME HERE next session:** Stripe **test mode**. On the price-creation screen,
+> report which flow Stripe shows — **(A)** a "Meter" to create, or **(B)** plain per-unit +
+> aggregation (no meter). That answer decides whether `console/stripe_billing.py` needs the
+> Meter Events API update before wiring keys. Everything is committed/pushed; nothing lost.
+
 ---
 
 ## ✅ Done
 - [x] Console deployed to Fly (`modelpilot-console-prod`), admin login working.
 - [x] Brain deployed to Fly (`modelpilot-brain-prod`), healthy, wired to console via `CONSOLE_URL`.
 - [x] Customer landing CTAs repointed to the live console (free `.fly.dev` route).
+- [x] Sign out returns users to the public landing page (`LANDING_URL`, default pages.dev). **Live.**
 - [x] Anthropic terms verified for the BYOK proxy; customer disclosures added (Terms §10 + docs).
 - [x] Hero headline: "Cut your Claude bill through model optimization."
 
