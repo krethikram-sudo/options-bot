@@ -41,6 +41,10 @@ fly secrets set \
 
 # Optional — billing (the console runs fine without these):
 # fly secrets set STRIPE_SECRET_KEY=sk_live_... STRIPE_PRICE_ID=price_... STRIPE_WEBHOOK_SECRET=whsec_...
+# Optional — subscription tiers (flat monthly Stripe prices; set when pricing is decided):
+# fly secrets set STRIPE_SELFOPT_PRICE_ID=price_...   # Self-optimize monthly subscription
+# fly secrets set STRIPE_MANAGED_PRICE_ID=price_...   # Managed monthly subscription
+#   (STRIPE_PRICE_ID = the metered 20%/15%-of-savings price, added to every checkout)
 ```
 
 > **Verify email works** after deploy: trigger a password reset (or enable 2FA in
