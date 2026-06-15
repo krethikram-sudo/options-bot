@@ -72,6 +72,10 @@ Live URLs:
 - [ ] Tech E&O + cyber-liability insurance before real production traffic.
 
 ## 🔒 Security / go-live
+- [ ] **Fly.io billing** — free trial ended; add a card (fly.io/dashboard → Billing) to keep
+      `modelpilot-console-prod` + `modelpilot-brain-prod` alive. Both are now **scale-to-zero**
+      (`fly deploy` each to apply) → ~$0 compute when idle + ~$0.30/mo volumes. Move Fly billing to
+      the business card once the entity exists.
 - [ ] Verify `CONSOLE_SECRET` is a **stable** Fly secret (don't rotate casually — it logs everyone out).
 - [ ] **Configure SMTP** (`SMTP_*` Fly secrets) — REQUIRED for 2FA codes, password resets, and budget
       alerts to actually send (without it they're only logged in dev). See `console/FLY_DEPLOY.md`.
