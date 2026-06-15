@@ -21,6 +21,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from . import notify, store, stripe_billing, web
 
 COOKIE = "mp_session"
+# Where to send users after they sign out — the public marketing landing page.
+LANDING_URL = os.environ.get("LANDING_URL", "https://modelpilot.pages.dev/")
 app = FastAPI(title="ModelPilot console")
 
 
@@ -224,7 +226,7 @@ async def login(request: Request):
 
 @app.post("/logout")
 def logout():
-    resp = _redirect("/")
+    resp = _redirect(LANDING_URL)
     resp.delete_cookie(COOKIE)
     return resp
 

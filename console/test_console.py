@@ -128,14 +128,16 @@ def test_revenue_overview(env):
 
 # --- HTTP / auth flows ---------------------------------------------------- #
 
-def test_signup_login_logout_flow(client):
+def test_signup_login_logout_flow(client, env):
+    server, _ = env
     r = _signup(client)
     assert r.status_code == 303 and r.headers["location"] == "/app"
     assert client.cookies.get("mp_session")
     # dashboard reachable
     assert client.get("/app").status_code == 200
-    # logout clears session
-    client.post("/logout")
+    # logout redirects to the public landing page and clears the session
+    r = client.post("/logout")
+    assert r.status_code == 303 and r.headers["location"] == server.LANDING_URL
     client.cookies.clear()
     assert client.get("/app").status_code in (303, 307)  # redirect to login
 
