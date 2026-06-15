@@ -9,7 +9,7 @@
 #   2) after you add the custom domain, set CONSOLE_BASE_URL to https://app.modelpilot.app
 #      (until then, use your https://<app>.fly.dev URL so reset/login links are correct).
 
-app = "modelpilot-console"
+app = "modelpilot-console-prod"
 primary_region = "iad"
 
 [build]
