@@ -57,6 +57,11 @@ Live URLs:
       liability veil and complicates taxes. So: form entity → EIN → business bank → activate Stripe
       live (redo the 3 keys with `sk_live_…`). Do this only after the entity exists.
 - [ ] **Rotate the leaked Anthropic API key** (pasted in an earlier session — treat as compromised).
+- [ ] **Finalize tier pricing** (pricing page currently says "Pricing coming soon"). Decide
+      Self-serve vs **Managed** (done-for-you local tuning) rates — recommend keeping %-of-savings and
+      making Managed a higher share (e.g. 20% vs 25–30%), with a flat-subscription option for
+      enterprise. Set the number once you have data on how much extra Managed tuning saves; then wire
+      plan tiers + rate into the console billing.
 
 ## 🏛️ Legal / corporate
 - [ ] **Form the entity — S-corp.** Note: "S-corp" is a *tax election*, not an entity type — usually
