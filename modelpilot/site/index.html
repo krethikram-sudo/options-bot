@@ -42,7 +42,7 @@
   .btn.lite{background:#fff;color:var(--ink);border-color:var(--line)}
   .btn.lite:hover{background:var(--soft);text-decoration:none}
   .btn.lg{padding:14px 26px;font-size:16px}
-  .eyebrow{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .eyebrow{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--vio)}
 
   /* nav */
   nav{position:sticky;top:0;z-index:50;background:rgba(10,15,30,.85);backdrop-filter:blur(10px);
@@ -84,6 +84,7 @@
   .resultcard{background:linear-gradient(180deg,#0f1830,#0c1426);border:1px solid var(--dl);
               border-radius:12px;padding:18px 20px}
   .resultcard .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#8b97ad;font-weight:700}
+  .resultcard .lbl .ex{font-size:10px;font-weight:700;letter-spacing:.05em;color:#9aa6bc;border:1px solid #2a3550;border-radius:999px;padding:2px 7px;margin-left:8px;vertical-align:middle}
   .resultcard .big{font-size:34px;font-weight:800;background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:-.02em;margin-top:2px}
   .resultcard .meta{font-size:13px;color:#9aa6bc;margin-top:2px}
   .barwrap{margin-top:14px}
@@ -128,15 +129,16 @@
   .lbar>span{display:block;height:100%;border-radius:7px}
   .statlist{display:grid;gap:22px}
   .statlist .s{display:flex;gap:14px;align-items:flex-start}
-  .statlist .v{font-size:30px;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;min-width:130px;letter-spacing:-.02em}
+  .statlist .v{font-size:30px;font-weight:800;color:var(--ink);min-width:130px;letter-spacing:-.02em}
   .statlist .d{font-size:14.5px;color:var(--mut)}
 
   /* features */
   .feat{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
   @media(max-width:880px){.feat{grid-template-columns:1fr}}
   .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px}
-  .card .ic{font-size:20px}
-  .card h3{font-size:16.5px;margin:12px 0 7px}
+  .card .ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(124,58,237,.08);color:var(--vio)}
+  .card .ic svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .card h3{font-size:16.5px;margin:14px 0 7px}
   .card p{font-size:14px;color:var(--mut);margin:0}
 
   /* privacy */
@@ -231,7 +233,7 @@ client = Anthropic(base_url=<span class="y">"http://127.0.0.1:8400"</span>)
 <span class="g">✓ routing live — guidance mode</span></pre>
     </div>
     <div class="resultcard">
-      <div class="lbl">Saved this month</div>
+      <div class="lbl">Saved this month <span class="ex">example</span></div>
       <div class="big">$1,240 <span style="font-size:18px;color:#9aa6bc;font-weight:600">· 31%</span></div>
       <div class="meta">48,210 requests · 27,905 routed · 0 quality regressions</div>
       <div class="barwrap">
@@ -321,12 +323,12 @@ realized savings × <span class="g">20%</span></code>
     <h2>Built to earn a place in your request path.</h2>
   </div>
   <div class="feat">
-    <div class="card"><div class="ic">🎚️</div><h3>Shadow → guidance → autopilot</h3><p>Adopt at your own pace. Measure first, recommend next, auto-route when you're convinced — switched server-side, no redeploy.</p></div>
-    <div class="card"><div class="ic">📊</div><h3>Live savings dashboard</h3><p>Realized savings by task type, baseline-vs-actual, lifetime totals, and your projected bill — recomputed from real tokens.</p></div>
-    <div class="card"><div class="ic">🔒</div><h3>Prompts never leave your box</h3><p>Classification happens locally. Only a category label and numeric features reach us — never prompt text, outputs, or your API key.</p></div>
-    <div class="card"><div class="ic">✅</div><h3>Quality, proven</h3><p>Per-category floors, a universal guard that never downgrades structured-output or tool calls, and side-by-side non-inferiority checks.</p></div>
-    <div class="card"><div class="ic">🧠</div><h3>Adapts to your traffic</h3><p>It learns per-customer floors and rules from your own usage (judge-validated) and gets cheaper-safe over time — with your approval.</p></div>
-    <div class="card"><div class="ic">🛟</div><h3>Fails open, always</h3><p>If our brain is ever unreachable, traffic passes straight through to Anthropic, unrouted. We can never block your requests.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></div><h3>Shadow → guidance → autopilot</h3><p>Adopt at your own pace. Measure first, recommend next, auto-route when you're convinced — switched server-side, no redeploy.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><h3>Live savings dashboard</h3><p>Realized savings by task type, baseline-vs-actual, lifetime totals, and your projected bill — recomputed from real tokens.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h3>Prompts never leave your box</h3><p>Classification happens locally. Only a category label and numeric features reach us — never prompt text, outputs, or your API key.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><h3>Quality, proven</h3><p>Per-category floors, a universal guard that never downgrades structured-output or tool calls, and side-by-side non-inferiority checks.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div><h3>Adapts to your traffic</h3><p>It learns per-customer floors and rules from your own usage (judge-validated) and gets cheaper-safe over time — with your approval.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3>Fails open, always</h3><p>If our brain is ever unreachable, traffic passes straight through to Anthropic, unrouted. We can never block your requests.</p></div>
   </div>
 </div></section>
 
