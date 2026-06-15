@@ -1,0 +1,56 @@
+# Fly.io config for the ModelPilot CONSOLE (vendor-internal control plane).
+# Stateful: SQLite lives on a persistent volume at /data, so we run exactly ONE
+# always-on machine (SQLite is single-writer — do NOT scale this to >1 machine).
+#
+# First-time setup + deploy steps are in console/FLY_DEPLOY.md.
+#
+# TODO before first deploy:
+#   1) set `app` to your chosen Fly app name (must be globally unique).
+#   2) after you add the custom domain, set CONSOLE_BASE_URL to https://app.modelpilot.app
+#      (until then, use your https://<app>.fly.dev URL so reset/login links are correct).
+
+app = "modelpilot-console"
+primary_region = "iad"
+
+[build]
+  dockerfile = "console/Dockerfile"
+
+[env]
+  CONSOLE_PORT = "8700"
+  CONSOLE_BASE_URL = "https://app.modelpilot.app"
+  MODELPILOT_BRAIN_URL = "https://brain.modelpilot.app"
+  CONSOLE_SECURE_COOKIES = "1"
+
+# Secrets (NEVER put these in this file — set with `fly secrets set ...`):
+#   CONSOLE_SECRET           required — signs session cookies; set once, keep stable
+#   STRIPE_SECRET_KEY        optional — live billing
+#   STRIPE_PRICE_ID          optional — the metered $0.20/savings price
+#   STRIPE_WEBHOOK_SECRET    optional — /api/stripe/webhook
+#   ADMIN_EMAIL/ADMIN_PASSWORD  temporary — only to seed the admin, then unset ADMIN_PASSWORD
+
+[http_service]
+  internal_port = 8700
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/healthz"
+    interval = "15s"
+    timeout = "2s"
+    grace_period = "10s"
+
+[[mounts]]
+  source = "consoledata"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
