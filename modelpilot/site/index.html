@@ -254,7 +254,7 @@ client = Anthropic(base_url=<span class="y">"http://127.0.0.1:8400"</span>)
     </div>
     <div class="resultcard">
       <div class="lbl">Saved this month <span class="ex">example</span></div>
-      <div class="big">$1,240 <span style="font-size:18px;color:#9aa6bc;font-weight:600">· 31%</span></div>
+      <div class="big"><span data-count="1240" data-prefix="$">$1,240</span> <span style="font-size:18px;color:#9aa6bc;font-weight:600">· <span data-count="31" data-suffix="%">31%</span></span></div>
       <div class="meta">48,210 requests · 27,905 routed · 0 quality regressions</div>
       <div class="barwrap">
         <div class="barrow"><span>Baseline (all top-model)</span><span>$4,000</span></div>
@@ -321,9 +321,9 @@ realized savings × <span class="g">20%</span></code>
   <div class="proofgrid">
     <div class="proofcard">
       <div class="lbl">Baseline vs. actual — last 30 days</div>
-      <div style="margin:14px 0 4px;display:flex;justify-content:space-between;font-size:13px;color:var(--mut)"><span>Baseline (all top-model)</span><b style="color:var(--ink)">$4,000</b></div>
+      <div style="margin:14px 0 4px;display:flex;justify-content:space-between;font-size:13px;color:var(--mut)"><span>Baseline (all top-model)</span><b style="color:var(--ink)" data-count="4000" data-prefix="$">$4,000</b></div>
       <div class="lbar"><span style="width:100%;background:#94a3b8"></span></div>
-      <div style="margin:14px 0 4px;display:flex;justify-content:space-between;font-size:13px;color:var(--mut)"><span>With ModelPilot</span><b style="color:var(--green-d)">$2,760</b></div>
+      <div style="margin:14px 0 4px;display:flex;justify-content:space-between;font-size:13px;color:var(--mut)"><span>With ModelPilot</span><b style="color:var(--green-d)" data-count="2760" data-prefix="$">$2,760</b></div>
       <div class="lbar"><span style="width:69%;background:var(--green)"></span></div>
       <p class="muted" style="font-size:13px;margin:16px 0 0">Illustrative. Your dashboard shows your numbers, per prompt and per session.</p>
     </div>
@@ -478,11 +478,27 @@ realized savings × <span class="g">20%</span></code>
   var sel='.strip,.sec-head,.step,.card,.proofcard,.statlist .s,.flow .node,.guards .guard,'+
           '.price,.faq details,.final h2,.final p,.final .center';
   d.querySelectorAll(sel).forEach(function(el){el.classList.add('reveal');});
+  // count-up numbers (keep literal text as fallback)
+  function countUp(el){
+    if(el._c)return; el._c=1;
+    var target=parseFloat(el.getAttribute('data-count'))||0;
+    var pre=el.getAttribute('data-prefix')||'', suf=el.getAttribute('data-suffix')||'', dur=1100, t0=null;
+    function fmt(n){return pre+Math.round(n).toLocaleString('en-US')+suf;}
+    function step(ts){if(!t0)t0=ts; var p=Math.min((ts-t0)/dur,1), e=1-Math.pow(1-p,3);
+      el.textContent=fmt(target*e); if(p<1)requestAnimationFrame(step);}
+    requestAnimationFrame(step);
+  }
   var io=new IntersectionObserver(function(es){es.forEach(function(e){
     if(e.isIntersecting){var t=e.target;t.classList.add('in');
+      t.querySelectorAll&&t.querySelectorAll('[data-count]').forEach(countUp);
       setTimeout(function(){t.style.removeProperty('--rd');},800);  // clear delay so hover stays snappy
       io.unobserve(t);}});},{threshold:.12,rootMargin:'0px 0px -8% 0px'});
   d.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+  // subtle hero parallax drift
+  if(demo){var tick=false;
+    addEventListener('scroll',function(){if(tick)return;tick=true;
+      requestAnimationFrame(function(){var y=pageYOffset||0;
+        if(y<700)demo.style.translate='0 '+(y*0.06).toFixed(1)+'px';tick=false;});},{passive:true});}
 })();
 </script>
 </body></html>
