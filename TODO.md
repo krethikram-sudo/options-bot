@@ -9,10 +9,10 @@ Live URLs:
 - Console (admin + customer): https://modelpilot-console-prod.fly.dev/  (admin → `/admin`)
 - Brain: https://modelpilot-brain-prod.fly.dev/  (health: `/health`)
 
-> **▶️ RESUME HERE next session:** Core end-to-end smoke test — install the gateway, point real
-> Claude traffic at it, and confirm savings show up on the dashboard. That's the one thing that
-> proves the *product* works (signup/billing/console are all done). Then rotate the leaked
-> Anthropic key. Everything is committed/pushed.
+> **▶️ RESUME HERE next session:** Core loop is proven end-to-end (gateway → brain routed 57% →
+> metered to console → dashboard shows baseline-vs-actual). Remaining: confirm the leaked Anthropic
+> key is rotated, deploy the account-deletion feature, and (founder track) form the entity to unlock
+> live Stripe. Everything is committed/pushed.
 
 ---
 
@@ -25,16 +25,18 @@ Live URLs:
       cancels Stripe sub, email-confirm required, owner-only). **Needs `fly deploy` to go live.**
 - [x] Stripe billing migrated to the Meter Events API; convert-to-paid logs errors (not swallowed).
 - [x] **Stripe TEST mode verified** — real Checkout + card collection + paid conversion works.
+- [x] **Core end-to-end smoke test PASSED** — real Claude traffic → gateway → hosted brain routed
+      57% → savings metered to the console; dashboard shows requests/routed + baseline-vs-actual.
+      (Dollar value sub-cent on trivial test traffic — pipeline proven, magnitude needs real volume.)
 - [x] Anthropic terms verified for the BYOK proxy; customer disclosures added (Terms §10 + docs).
 - [x] Hero headline: "Cut your Claude bill through model optimization."
 
 ## 🔜 Next (in progress)
 - [ ] **Deploy the account-deletion feature** — `cd ~/options-bot && git pull && fly deploy`
       (then delete the stuck "bypass-paid" test account).
-- [ ] **Core end-to-end smoke test.** Install `modelpilot-client`, connect with the Connect-page
-      env vars, send real Claude traffic, and confirm savings appear on the dashboard. Proves the
-      actual routing/savings value prop (everything so far is the signup/billing shell).
-- [ ] **Rotate the leaked Anthropic API key** (pasted in an earlier session — treat as compromised).
+- [ ] **Confirm the leaked Anthropic API key is rotated** — if the smoke test used a fresh key and
+      the old one was deleted in the Anthropic console, this is done; otherwise rotate it.
+- [ ] (Optional) Re-run the smoke test with realistic traffic to see a meaningful savings $ figure.
 - [ ] **Stripe LIVE mode — GATED on the entity.** Set up the *live* Stripe account under the
       **company** (entity + EIN + business bank account), NOT personal/SSN — commingling weakens the
       liability veil and complicates taxes. So: form entity → EIN → business bank → activate Stripe
