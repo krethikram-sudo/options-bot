@@ -1451,8 +1451,11 @@ def revenue_overview(path: str | None = None, now: float | None = None) -> dict:
     return {
         "n_accounts": len(accounts), "n_trial": n_trial, "n_paid": n_paid,
         "n_suspended": n_suspended,
-        "total_savings_delivered": round(total_savings, 2),
-        "total_revenue": round(total_revenue, 2),
-        "cycle_savings": round(cycle_savings, 2),
-        "cycle_revenue": round(cycle_revenue, 2),
+        # Keep sub-cent precision: money() still displays cents, but the
+        # tokens-saved view (and parity with per-account rows) needs the real
+        # value — rounding to 2 here collapsed sub-cent savings to $0.00 / 0 tokens.
+        "total_savings_delivered": round(total_savings, 6),
+        "total_revenue": round(total_revenue, 6),
+        "cycle_savings": round(cycle_savings, 6),
+        "cycle_revenue": round(cycle_revenue, 6),
     }

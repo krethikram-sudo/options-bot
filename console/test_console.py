@@ -148,6 +148,21 @@ def test_revenue_overview(env):
     store.convert_to_paid(a["id"])
     rev = store.revenue_overview()
     assert rev["n_paid"] == 1
+
+
+def test_revenue_overview_keeps_subcent_precision(env):
+    # Aggregate must not round sub-cent savings to $0.00 — the tokens-saved view
+    # and parity with the per-account rows depend on the real value.
+    _, store = env
+    a = store.create_account("sub@y.com", "password123")
+    store.convert_to_paid(a["id"])
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    store.record_meter(dep, baseline_cost=0.0103, actual_cost=0.0064)  # $0.0039 saved
+    per = store.savings_summary(a["id"])["savings"]
+    rev = store.revenue_overview()
+    assert per > 0
+    assert rev["total_savings_delivered"] == pytest.approx(per)
+    assert rev["cycle_savings"] == pytest.approx(per)
     assert rev["total_savings_delivered"] == pytest.approx(40.0)
     assert rev["total_revenue"] == pytest.approx(8.0)  # 20% of 40
 
