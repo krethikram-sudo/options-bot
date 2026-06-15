@@ -377,6 +377,29 @@ def set_role(account_id: int, role: str, path: str | None = None) -> None:
         conn.close()
 
 
+def delete_account(account_id: int, path: str | None = None) -> None:
+    """Permanently delete an account and ALL its data: deployments, settings,
+    plan, metering, proofs, proposals, API keys, request logs, webhooks, budget
+    alerts, password resets, team members, and SSO config. Irreversible.
+    (Does not touch Stripe — cancel the subscription before calling this.)"""
+    conn = connect(path)
+    try:
+        deps = [r["deployment_id"] for r in conn.execute(
+            "SELECT deployment_id FROM deployments WHERE account_id=?", (account_id,)).fetchall()]
+        if deps:
+            placeholders = ",".join("?" for _ in deps)
+            conn.execute(f"DELETE FROM meter WHERE deployment_id IN ({placeholders})", deps)
+            conn.execute(f"DELETE FROM proofs WHERE deployment_id IN ({placeholders})", deps)
+        # tables keyed directly by account_id
+        for tbl in ("api_keys", "request_logs", "proposals", "webhooks", "budget_alerts",
+                    "resets", "members", "sso_configs", "settings", "plans", "deployments"):
+            conn.execute(f"DELETE FROM {tbl} WHERE account_id=?", (account_id,))
+        conn.execute("DELETE FROM accounts WHERE id=?", (account_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 # --------------------------------------------------------------------------- #
 # Team members (additive: the account owner stays on `accounts`; invited
 # teammates live here with a per-account role). Members never get vendor-admin.

@@ -315,7 +315,29 @@ def settings_get(request: Request):
     if redir:
         return redir
     return _html(web.settings_page(acct, store.get_settings(acct["id"]),
-                                   saved=request.query_params.get("saved") == "1"))
+                                   saved=request.query_params.get("saved") == "1",
+                                   delete_error=request.query_params.get("delete_error") == "1"))
+
+
+@app.post("/app/account/delete")
+async def account_delete(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    # Only the account owner may delete the whole account — not invited teammates.
+    if acct.get("team_role") != "owner":
+        return _html(web.page("Forbidden", "<h1>403</h1><p class=muted>Only the account owner can "
+                              "delete the account. Ask your owner, or remove yourself from Team.</p>",
+                              acct), 403)
+    f = await _form(request)
+    # Confirm by typing the account email — guards against accidental deletion.
+    if f.get("confirm_email", "").strip().lower() != (acct.get("email") or "").lower():
+        return _redirect("/app/settings?delete_error=1")
+    stripe_billing.cancel_subscription(acct["id"])  # best-effort; never raises
+    store.delete_account(acct["id"])
+    resp = _redirect(LANDING_URL)  # account gone -> back to the public landing page
+    resp.delete_cookie(COOKIE)
+    return resp
 
 
 @app.post("/app/settings")

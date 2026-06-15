@@ -114,6 +114,32 @@ def test_metering_and_billing(env):
     assert store.bill_estimate(a["id"])["bill"] == pytest.approx(0.8)
 
 
+def test_delete_account_cascade(env):
+    _, store = env
+    a = store.create_account("del@y.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    store.record_meter(dep, baseline_cost=10.0, actual_cost=6.0)
+    store.convert_to_paid(a["id"])
+    store.delete_account(a["id"])
+    assert store.get_account(a["id"]) is None
+    assert store.get_account_by_email("del@y.com") is None
+    assert store.deployments_for(a["id"]) == []
+    assert store.savings_summary(a["id"])["savings"] == 0.0
+
+
+def test_delete_account_requires_email_confirmation(env, client):
+    _, store = env
+    _signup(client, email="owner@del.com")
+    # wrong confirmation -> bounced back with an error, account still exists
+    r = client.post("/app/account/delete", data={"confirm_email": "nope@x.com"})
+    assert r.status_code == 303 and "delete_error=1" in r.headers["location"]
+    assert store.get_account_by_email("owner@del.com") is not None
+    # correct confirmation -> account deleted, session cleared
+    r = client.post("/app/account/delete", data={"confirm_email": "owner@del.com"})
+    assert r.status_code == 303
+    assert store.get_account_by_email("owner@del.com") is None
+
+
 def test_revenue_overview(env):
     _, store = env
     a = store.create_account("r1@y.com", "password123")

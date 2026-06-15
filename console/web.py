@@ -339,7 +339,8 @@ def mode_toggle(current: str) -> str:
 # Settings / connect
 # --------------------------------------------------------------------------- #
 
-def settings_page(account: dict, settings: dict, saved: bool = False) -> str:
+def settings_page(account: dict, settings: dict, saved: bool = False,
+                  delete_error: bool = False) -> str:
     from .store import RISK_LEVELS
     risk_opts = "".join(
         f'<option value="{r}"{" selected" if settings["risk"]==r else ""}>{r.title()}</option>'
@@ -376,8 +377,31 @@ def settings_page(account: dict, settings: dict, saved: bool = False) -> str:
           <input name=budget_alert_pct type=number step="1" min="1" max="100" value="{int((settings.get('budget_alert_pct') or 0.8)*100)}"></div>
         <button class=btn>Save settings</button>
       </form>
-    </div>"""
+    </div>{_danger_zone(account, delete_error)}"""
     return page("Settings", body, account, "/app/settings")
+
+
+def _danger_zone(account: dict, delete_error: bool = False) -> str:
+    """Account deletion — owner only. Confirm by typing the account email."""
+    if account.get("team_role") != "owner":
+        return ""
+    email = _e(account.get("email", ""))
+    err = ('<div class="note warn">That didn\'t match. Type your account email exactly to confirm.</div>'
+           if delete_error else "")
+    return f"""
+    <div class=card style="margin-top:16px;border:1px solid #e3b3b3">
+      <h2 style="margin-top:0">Danger zone</h2>
+      <p class="small muted">Permanently delete this account and <b>all</b> its data — deployments,
+        API keys, routing history, savings/metering, team members, and settings. This cannot be undone.
+        Any active Stripe subscription is cancelled.</p>
+      {err}
+      <form method=post action="/app/account/delete"
+            onsubmit="return confirm('Permanently delete your account and all data? This cannot be undone.')">
+        <div class=field><label>Type your email (<b>{email}</b>) to confirm</label>
+          <input name=confirm_email type=email autocomplete=off placeholder="{email}" required></div>
+        <button class=btn style="background:#b00020;border-color:#b00020">Delete my account</button>
+      </form>
+    </div>"""
 
 
 def _api_keys_section(keys: list[dict], deployments: list[dict], new_key: str = "") -> str:

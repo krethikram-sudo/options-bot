@@ -21,6 +21,9 @@ Live URLs:
 - [x] Brain deployed to Fly (`modelpilot-brain-prod`), healthy, wired to console via `CONSOLE_URL`.
 - [x] Customer landing CTAs repointed to the live console (free `.fly.dev` route).
 - [x] Sign out returns users to the public landing page (`LANDING_URL`, default pages.dev). **Live.**
+- [x] Customers can delete their account (Settings → Danger zone; cascade-deletes all data,
+      cancels Stripe sub, email-confirm required, owner-only). **Needs `fly deploy` to go live.**
+- [x] Stripe billing migrated to the Meter Events API; convert-to-paid logs errors (not swallowed).
 - [x] Anthropic terms verified for the BYOK proxy; customer disclosures added (Terms §10 + docs).
 - [x] Hero headline: "Cut your Claude bill through model optimization."
 

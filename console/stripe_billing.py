@@ -121,6 +121,23 @@ def report_usage(account_id: int, savings_dollars: float) -> bool:
     return True
 
 
+def cancel_subscription(account_id: int) -> bool:
+    """Best-effort cancel the account's Stripe subscription (e.g. on account
+    deletion) so billing stops. No-op if Stripe isn't configured or there's no
+    subscription; never raises."""
+    if not enabled():
+        return False
+    plan = store.get_plan(account_id)
+    sub = plan.get("stripe_subscription_id")
+    if not sub:
+        return False
+    try:
+        _client().Subscription.cancel(sub)
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def sync_unreported_usage(path: str | None = None) -> dict:
     """Report any metered savings not yet pushed to Stripe for paid accounts.
     Returns counts. Safe to call on a schedule."""
