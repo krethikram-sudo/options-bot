@@ -31,12 +31,13 @@ primary_region = "iad"
 [http_service]
   internal_port = 8700
   force_https = true
-  # Scale to zero to cut cost: Fly stops the machine when idle and starts it on
-  # the next request (a brief cold start). The SQLite volume re-attaches, so data
-  # persists. Set min_machines_running = 1 again if you want always-on / no cold start.
-  auto_stop_machines = "stop"
+  # Always-on: keep one machine warm so the console has no cold-start lag on a
+  # click (worth it for the signed-in UX). This costs ~a small always-on
+  # shared-cpu-1x/512mb fee + the volume, instead of ~$0 when idle. To go back to
+  # scale-to-zero for cost, set auto_stop_machines = "stop" and min_machines_running = 0.
+  auto_stop_machines = "off"
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
 
   [http_service.concurrency]
     type = "requests"

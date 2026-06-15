@@ -96,9 +96,11 @@ Live URLs:
 
 ## 🔒 Security / go-live
 - [ ] **Fly.io billing** — free trial ended; add a card (fly.io/dashboard → Billing) to keep
-      `modelpilot-console-prod` + `modelpilot-brain-prod` alive. Both are now **scale-to-zero**
-      (`fly deploy` each to apply) → ~$0 compute when idle + ~$0.30/mo volumes. Move Fly billing to
-      the business card once the entity exists.
+      `modelpilot-console-prod` + `modelpilot-brain-prod` alive. **Console is now always-on**
+      (`min_machines_running = 1`, `auto_stop = off`) so the signed-in UX has no cold-start lag —
+      costs a small always-on shared-cpu-1x/512mb fee. **Brain is still scale-to-zero** (fails open,
+      so a cold brain just means that first request passes through unrouted). `fly deploy` the console
+      to apply. Move Fly billing to the business card once the entity exists.
 - [ ] Verify `CONSOLE_SECRET` is a **stable** Fly secret (don't rotate casually — it logs everyone out).
 - [ ] **Configure SMTP** (`SMTP_*` Fly secrets) — REQUIRED for 2FA codes, password resets, and budget
       alerts to actually send (without it they're only logged in dev). See `console/FLY_DEPLOY.md`.
