@@ -1,17 +1,19 @@
 """Stripe billing for the ModelPilot console — usage-based: the customer's bill
 is 20% of the realized savings we deliver.
 
-Model: a metered (usage-based) recurring Price where 1 unit = $1 of realized
-savings and the per-unit amount is the rate (default $0.20). We report usage
-records equal to the dollars of savings delivered; Stripe then invoices
-rate * savings each cycle. Convert-to-paid runs Stripe Checkout (subscription
-mode) to collect a card and create the subscription.
+Model: a Stripe **Meter** (event name e.g. `modelpilot_savings`, aggregation = sum)
+with a metered recurring Price linked to it where 1 unit = $1 of realized savings
+and the per-unit amount is the rate (default $0.20). We report **meter events**
+equal to the dollars of savings delivered, keyed to the customer; Stripe aggregates
+them and invoices rate * savings each cycle. Convert-to-paid runs Stripe Checkout
+(subscription mode) to collect a card and create the subscription.
 
 Configuration (env):
   STRIPE_SECRET_KEY      sk_live_... / sk_test_...   (required to enable Stripe)
-  STRIPE_PRICE_ID        price_...  metered recurring price, $0.20/unit
+  STRIPE_PRICE_ID        price_...  metered recurring price linked to the meter, $0.20/unit
+  STRIPE_METER_EVENT     the meter's event name (default "modelpilot_savings")
   STRIPE_WEBHOOK_SECRET  whsec_...  (optional, for webhook verification)
-  CONSOLE_BASE_URL       https://app.modelpilot... (Checkout redirect base)
+  CONSOLE_BASE_URL       https://...  (Checkout redirect base)
 
 If STRIPE_SECRET_KEY is unset the console still runs end-to-end: convert-to-paid
 records the plan change directly (manual/again-later billing) and the UI shows a
@@ -94,20 +96,28 @@ def finalize_checkout(account: dict, session_id: str) -> bool:
     return True
 
 
+def _meter_event_name() -> str:
+    """The Stripe Meter's event name (set when you create the Meter in Stripe)."""
+    return os.environ.get("STRIPE_METER_EVENT", "modelpilot_savings")
+
+
 def report_usage(account_id: int, savings_dollars: float) -> bool:
-    """Push a usage record (= dollars of savings) onto the account's metered
-    subscription item. Stripe invoices rate * dollars. No-op if not paid/configured."""
+    """Report a meter event (= dollars of savings) for the account's customer.
+    Stripe's meter aggregates these and the linked price invoices rate * total
+    each cycle. No-op if not paid/configured."""
     if not enabled() or savings_dollars <= 0:
         return False
     plan = store.get_plan(account_id)
-    item = plan.get("stripe_item_id")
-    if plan.get("plan") != "paid" or not item:
+    customer = plan.get("stripe_customer_id")
+    if plan.get("plan") != "paid" or not customer:
         return False
     import time
     stripe = _client()
-    stripe.SubscriptionItem.create_usage_record(
-        item, quantity=int(round(savings_dollars)), timestamp=int(time.time()),
-        action="increment")
+    stripe.billing.MeterEvent.create(
+        event_name=_meter_event_name(),
+        payload={"stripe_customer_id": customer,
+                 "value": str(int(round(savings_dollars)))},
+        timestamp=int(time.time()))
     return True
 
 
