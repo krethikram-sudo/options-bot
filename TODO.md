@@ -114,10 +114,12 @@ Live URLs:
       *licensed* on-box judge that tunes on actual prompt content, staying local) is a possible future
       upgrade — only if worth the added surface; defended by license + brain entitlement + updates, not
       secrecy. Site/console copy now reflects Option A.
-- [ ] **Realize the savings opportunities** the brain now emits: (a) surface prompt-cache / Batch-API
-      recommendations in the gateway output + a console "additional potential savings" tile (needs the
-      gateway to report aggregate opportunity $ to the meter); (b) optional opt-in auto-apply of prompt
-      caching in the client (inject `cache_control` on large reusable prefixes — carefully, it mutates
-      requests). The economics + recommendations exist; this is the realization/UX layer.
+- [x] **Realize the savings opportunities (surfacing)** — gateway emits per-request
+      `x-modelpilot-opportunity-*` headers + records to the ledger; metering reports aggregate
+      `opportunity_saved` to the console; dashboard shows an "Additional potential savings" callout.
+      Advisory/estimated, never billed.
+- [ ] **Opt-in auto-apply of prompt caching** — let the client inject `cache_control` on large reusable
+      prefixes so the caching opportunity is captured automatically (gated by an opt-in setting; mutates
+      requests, so needs a careful safety pass). The recommendations + economics already exist.
 - [ ] End-to-end smoke test: sign up (test acct) → Connect gateway → send traffic → see savings on dashboard.
 - [ ] `ingest/` opt-in telemetry service (optional; deploys like the brain on port 8500).
