@@ -6,6 +6,9 @@
 <meta name="description" content="A drop-in proxy that routes each Claude request to the cheapest model that's provably good enough — measured on your own traffic. You pay 20% of what we save you. Prompts never leave your box.">
 <link rel="canonical" href="https://modelpilot.pages.dev/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <meta name="robots" content="index, follow">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://modelpilot.pages.dev/">
@@ -22,6 +25,8 @@
     --nav-h:60px; --max:1080px;
     --dark:#0a0a0a; --dark2:#141416; --dl:#2a2a2d;
     --vio:#7c3aed; --blue:#2563eb; --grad:linear-gradient(135deg,#7c3aed,#2563eb);
+    --disp:"Space Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
@@ -29,7 +34,7 @@
        color:var(--body);background:var(--bg);-webkit-font-smoothing:antialiased}
   a{color:var(--green-d);text-decoration:none}
   a:hover{text-decoration:underline;color:var(--blue)}
-  h1,h2,h3{color:var(--ink);letter-spacing:-.02em;line-height:1.12;margin:0}
+  h1,h2,h3{font-family:var(--disp);color:var(--ink);letter-spacing:-.025em;line-height:1.1;margin:0;font-weight:600}
   p{margin:0 0 1rem}
   .wrap{max-width:var(--max);margin:0 auto;padding:0 22px}
   .muted{color:var(--mut)}
@@ -42,13 +47,14 @@
   .btn.lite{background:#fff;color:var(--ink);border-color:var(--line)}
   .btn.lite:hover{background:var(--soft);text-decoration:none}
   .btn.lg{padding:14px 26px;font-size:16px}
-  .eyebrow{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--vio)}
+  .eyebrow{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--vio)}
+  .eyebrow::before{content:"// "}
 
   /* nav */
   nav{position:sticky;top:0;z-index:50;background:rgba(10,15,30,.85);backdrop-filter:blur(10px);
       border-bottom:1px solid rgba(255,255,255,.08);height:var(--nav-h)}
   nav .wrap{display:flex;align-items:center;gap:26px;height:var(--nav-h)}
-  .brand{font-weight:800;font-size:19px;color:#fff;letter-spacing:-.02em}
+  .brand{font-family:var(--disp);font-weight:700;font-size:19px;color:#fff;letter-spacing:-.03em}
   .brand .dot{color:#d4d4d4}
   .navlinks{display:flex;gap:22px;margin-left:6px}
   .navlinks a{color:#c2cbdb;font-size:14.5px;font-weight:500}
@@ -64,7 +70,7 @@
       radial-gradient(760px 440px at 8% 2%, rgba(37,99,235,.16), transparent 55%),
       var(--dark);
     color:#e7ecf5;padding:84px 0 92px;border-bottom:1px solid var(--dl)}
-  .hero h1{color:#fff;font-size:54px;max-width:15ch}
+  .hero h1{color:#fff;font-size:56px;max-width:15ch;letter-spacing:-.035em;line-height:1.03}
   .hero .sub{font-size:20px;color:#aeb9cc;max-width:60ch;margin:20px 0 28px}
   .hero .ctarow{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
   .trustline{margin-top:18px;font-size:13.5px;color:#8b97ad}
