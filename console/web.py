@@ -764,7 +764,19 @@ client = Anthropic(base_url="http://127.0.0.1:8400")  # your key stays local</pr
       </form>
     </div>
     {_api_keys_section(keys or [], deployments, new_key)}
-    {_webhooks_section(webhooks or [])}"""
+    {_webhooks_section(webhooks or [])}
+    <h2>Tuning capture <span class="small muted">— optional, stays on your machine</span></h2>
+    <div class=card>
+      <p class="small muted">ModelPilot tunes routing to your workload from category labels and outcomes —
+        no prompt content needed. For <b>sharper</b> per-category tuning you can let the proxy sample a
+        fraction of prompts <b>locally, on your own box</b>, to validate cheaper models on your real
+        traffic. Captured prompts are used only for local tuning and <b>never leave your machine</b>.
+        Off by default.</p>
+      <pre>export MODELPILOT_CAPTURE_PCT=0.05   <span class="muted"># sample 5% locally for tuning (0 = off, the default)</span></pre>
+      <p class="small muted">Then run <code>modelpilot tune</code> / <code>modelpilot learn-floors</code> on your
+        box to turn that local sample into proposed floors — which you review and approve here before anything
+        changes. See <a href="/security.html#optimize">how we optimize without seeing your data</a>.</p>
+    </div>"""
     return page("Configuration", body, account, "/app/connect")
 
 

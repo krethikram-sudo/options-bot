@@ -42,6 +42,25 @@
     that contains prompt/output/secret-looking fields (HTTP 422) — even though the client already guarantees
     aggregates only.</p>
 
+  <h2 id="optimize">How we optimize without seeing your data</h2>
+  <p>ModelPilot gets better for you the more you use it — driven by <b>outcomes and metadata, never your
+    content</b>:</p>
+  <ul>
+    <li><b>Learns from your own traffic.</b> Per-category quality floors and classification rules are tuned
+      to your workload from the category labels, token counts, and routing outcomes above — so routing gets
+      safely cheaper where <em>your</em> traffic proves it can.</li>
+    <li><b>Proven before it's applied.</b> A floor is only lowered when the cheaper model passes a
+      <b>side-by-side non-inferiority check</b> on your prompts, and savings are measured against a held-out
+      <b>control group</b> running the baseline — so improvements are real, not self-serving.</li>
+    <li><b>You stay in control.</b> Tuning changes are proposals you review and approve (auto-approval is
+      off by default), and every change is auditable.</li>
+    <li><b>Optional local tuning capture.</b> For sharper tuning you can let the proxy sample prompts
+      <b>on your own machine</b> (off by default). Captured prompts are used for local tuning and
+      <b>still never leave your box</b> — you trade nothing in privacy for better optimization.</li>
+    <li><b>Fails open.</b> If our routing brain is unreachable, traffic passes straight through to Anthropic
+      unrouted — we can degrade savings, never block or alter your requests.</li>
+  </ul>
+
   <h2 id="logs">Optional request logs</h2>
   <p>Per-request logging is <b>opt-in and metadata-only</b> (timestamps, models, category, token counts,
     cost, status, routed/escalated flags) — never content. You can also export this telemetry to your own
