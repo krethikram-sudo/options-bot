@@ -30,7 +30,19 @@ def client(env):
 
 
 def _signup(client, email="a@b.com", pw="password123", company="Acme"):
-    return client.post("/signup", data={"email": email, "password": pw, "company": company})
+    return client.post("/signup", data={"email": email, "password": pw, "company": company,
+                                        "accept": "1"})
+
+
+def test_signup_requires_terms_consent(env, client):
+    _, store = env
+    r = client.post("/signup", data={"email": "noconsent@b.com", "password": "password123"})
+    assert r.status_code == 400 and "Terms" in r.text
+    assert store.get_account_by_email("noconsent@b.com") is None
+    # with consent -> created and consent timestamped
+    ok = client.post("/signup", data={"email": "yes@b.com", "password": "password123", "accept": "1"})
+    assert ok.status_code == 303
+    assert store.get_account_by_email("yes@b.com")["tos_accepted_at"] is not None
 
 
 # --- store-level ---------------------------------------------------------- #

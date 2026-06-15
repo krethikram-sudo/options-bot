@@ -170,6 +170,13 @@ def auth_form(kind: str, error: str = "", email: str = "") -> str:
     err = f'<div class="note bad">{_e(error)}</div>' if error else ""
     company = ('<div class=field><label>Company <span class=muted>(optional)</span></label>'
                '<input name=company placeholder="Acme Inc."></div>') if is_signup else ""
+    consent = ('<div class=field><label class=row style="gap:8px;font-weight:400;font-size:13px">'
+               '<input type=checkbox name=accept value=1 required style="width:auto"> '
+               'I agree to the <a href="https://modelpilot.pages.dev/legal/terms.html" target=_blank>Terms</a>'
+               ' and <a href="https://modelpilot.pages.dev/legal/privacy.html" target=_blank>Privacy Policy</a>.'
+               '</label></div>') if is_signup else ""
+    beta = ('<p class="small muted center" style="margin-top:10px">ModelPilot is in early access — '
+            'we move fast and value your feedback.</p>') if is_signup else ""
     sub = "Create account" if is_signup else "Sign in"
     alt = ('Already have an account? <a href="/login">Sign in</a>' if is_signup
            else 'New here? <a href="/signup">Start a free trial</a> · '
@@ -185,8 +192,10 @@ def auth_form(kind: str, error: str = "", email: str = "") -> str:
         {company}
         <div class=field><label>Password</label>
           <input name=password type=password required minlength=8 placeholder="At least 8 characters"></div>
+        {consent}
         <button class="btn" style="width:100%">{_e(sub)}</button>
       </form>
+      {beta}
       <p class="small center muted" style="margin-top:14px">{alt}</p>
     </div></div>"""
     return page(title, body)

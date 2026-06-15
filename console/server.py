@@ -184,9 +184,12 @@ def signup_form(request: Request):
 @app.post("/signup")
 async def signup(request: Request):
     f = await _form(request)
+    if "accept" not in f:
+        return _html(web.auth_form("signup", "Please accept the Terms and Privacy Policy to continue.",
+                                   f.get("email", "")), 400)
     try:
         acct = store.create_account(f.get("email", ""), f.get("password", ""),
-                                    company=f.get("company", ""))
+                                    company=f.get("company", ""), consent=True)
     except store.StoreError as e:
         return _html(web.auth_form("signup", str(e), f.get("email", "")), 400)
     resp = _redirect("/app")

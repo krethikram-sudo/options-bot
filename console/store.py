@@ -56,7 +56,8 @@ CREATE TABLE IF NOT EXISTS accounts (
     pw_salt TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'customer',     -- 'customer' | 'admin'
     status TEXT NOT NULL DEFAULT 'active',      -- 'active' | 'suspended'
-    created_at REAL NOT NULL
+    created_at REAL NOT NULL,
+    tos_accepted_at REAL                        -- when the owner accepted Terms + Privacy
 );
 CREATE TABLE IF NOT EXISTS deployments (
     deployment_id TEXT PRIMARY KEY,
@@ -200,6 +201,7 @@ _MIGRATIONS = [
     "ALTER TABLE settings ADD COLUMN monthly_budget REAL NOT NULL DEFAULT 0",
     "ALTER TABLE settings ADD COLUMN budget_alert_pct REAL NOT NULL DEFAULT 0.8",
     "ALTER TABLE resets ADD COLUMN member_id INTEGER",
+    "ALTER TABLE accounts ADD COLUMN tos_accepted_at REAL",
 ]
 
 TEAM_ROLES = ("admin", "member", "billing")
@@ -287,8 +289,10 @@ class StoreError(ValueError):
 
 
 def create_account(email: str, password: str, company: str = "", role: str = "customer",
-                   path: str | None = None, now: float | None = None) -> dict:
-    """Create an account + its deployment + default settings + a started trial."""
+                   path: str | None = None, now: float | None = None,
+                   consent: bool = False) -> dict:
+    """Create an account + its deployment + default settings + a started trial.
+    `consent=True` records that the owner accepted the Terms + Privacy Policy."""
     email = (email or "").strip().lower()
     if "@" not in email or len(email) < 5:
         raise StoreError("Enter a valid email address.")
@@ -300,9 +304,9 @@ def create_account(email: str, password: str, company: str = "", role: str = "cu
     try:
         try:
             cur = conn.execute(
-                "INSERT INTO accounts(email, company, pw_hash, pw_salt, role, status, created_at)"
-                " VALUES(?,?,?,?,?, 'active', ?)",
-                (email, company.strip(), pw_hash, salt, role, now))
+                "INSERT INTO accounts(email, company, pw_hash, pw_salt, role, status, created_at,"
+                " tos_accepted_at) VALUES(?,?,?,?,?, 'active', ?, ?)",
+                (email, company.strip(), pw_hash, salt, role, now, now if consent else None))
         except sqlite3.IntegrityError:
             raise StoreError("An account with that email already exists.")
         account_id = cur.lastrowid
