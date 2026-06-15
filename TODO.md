@@ -9,10 +9,10 @@ Live URLs:
 - Console (admin + customer): https://modelpilot-console-prod.fly.dev/  (admin → `/admin`)
 - Brain: https://modelpilot-brain-prod.fly.dev/  (health: `/health`)
 
-> **▶️ RESUME HERE next session:** Stripe **test mode**. On the price-creation screen,
-> report which flow Stripe shows — **(A)** a "Meter" to create, or **(B)** plain per-unit +
-> aggregation (no meter). That answer decides whether `console/stripe_billing.py` needs the
-> Meter Events API update before wiring keys. Everything is committed/pushed; nothing lost.
+> **▶️ RESUME HERE next session:** Core end-to-end smoke test — install the gateway, point real
+> Claude traffic at it, and confirm savings show up on the dashboard. That's the one thing that
+> proves the *product* works (signup/billing/console are all done). Then rotate the leaked
+> Anthropic key. Everything is committed/pushed.
 
 ---
 
@@ -24,15 +24,17 @@ Live URLs:
 - [x] Customers can delete their account (Settings → Danger zone; cascade-deletes all data,
       cancels Stripe sub, email-confirm required, owner-only). **Needs `fly deploy` to go live.**
 - [x] Stripe billing migrated to the Meter Events API; convert-to-paid logs errors (not swallowed).
+- [x] **Stripe TEST mode verified** — real Checkout + card collection + paid conversion works.
 - [x] Anthropic terms verified for the BYOK proxy; customer disclosures added (Terms §10 + docs).
 - [x] Hero headline: "Cut your Claude bill through model optimization."
 
 ## 🔜 Next (in progress)
-- [ ] **Stripe activation — TEST mode now** (free, reversible; no entity/bank needed). Create a
-      metered ($0.20/unit, sum) price → set `STRIPE_SECRET_KEY` / `STRIPE_PRICE_ID` /
-      `STRIPE_WEBHOOK_SECRET` Fly secrets → test convert-to-paid with card `4242…`. **Open question:**
-      does Stripe show legacy *usage-records* or the new *meter* flow? If meter-only, Claude updates
-      `console/stripe_billing.py` to the Meter Events API.
+- [ ] **Deploy the account-deletion feature** — `cd ~/options-bot && git pull && fly deploy`
+      (then delete the stuck "bypass-paid" test account).
+- [ ] **Core end-to-end smoke test.** Install `modelpilot-client`, connect with the Connect-page
+      env vars, send real Claude traffic, and confirm savings appear on the dashboard. Proves the
+      actual routing/savings value prop (everything so far is the signup/billing shell).
+- [ ] **Rotate the leaked Anthropic API key** (pasted in an earlier session — treat as compromised).
 - [ ] **Stripe LIVE mode — GATED on the entity.** Set up the *live* Stripe account under the
       **company** (entity + EIN + business bank account), NOT personal/SSN — commingling weakens the
       liability veil and complicates taxes. So: form entity → EIN → business bank → activate Stripe
