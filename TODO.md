@@ -73,6 +73,9 @@ Live URLs:
 
 ## 🔒 Security / go-live
 - [ ] Verify `CONSOLE_SECRET` is a **stable** Fly secret (don't rotate casually — it logs everyone out).
+- [ ] **Configure SMTP** (`SMTP_*` Fly secrets) — REQUIRED for 2FA codes, password resets, and budget
+      alerts to actually send (without it they're only logged in dev). See `console/FLY_DEPLOY.md`.
+      Optional: `TWILIO_*` for SMS 2FA.
 - [ ] Change any seeded/default admin password; confirm strong admin credentials.
 - [ ] (Optional) Custom domain `app.modelpilot.app` via `fly certs add` — currently on free `.fly.dev`.
 

@@ -27,9 +27,25 @@ fly secrets set CONSOLE_SECRET=$(openssl rand -hex 32)
 # Your admin login (temporary — used once to seed, password unset afterward).
 fly secrets set ADMIN_EMAIL=you@yourco.com ADMIN_PASSWORD='a-strong-passphrase'
 
+# Email (SMTP) — REQUIRED for transactional email: 2FA codes, password resets,
+# budget alerts. Without it those flows still "work" but the message is only
+# logged server-side (dev mode), never delivered — so set this before relying on
+# 2FA in production. Use any SMTP provider (e.g. Postmark, SES, SendGrid, Resend).
+fly secrets set \
+  SMTP_HOST=smtp.your-provider.com SMTP_PORT=587 \
+  SMTP_USER=your-smtp-username SMTP_PASSWORD='your-smtp-password' \
+  SMTP_FROM='ModelPilot <no-reply@yourdomain.com>'
+
+# Optional — SMS 2FA via Twilio (the 'sms' channel; email 2FA needs none of this):
+# fly secrets set TWILIO_ACCOUNT_SID=AC... TWILIO_AUTH_TOKEN=... TWILIO_FROM='+15551234567'
+
 # Optional — billing (the console runs fine without these):
 # fly secrets set STRIPE_SECRET_KEY=sk_live_... STRIPE_PRICE_ID=price_... STRIPE_WEBHOOK_SECRET=whsec_...
 ```
+
+> **Verify email works** after deploy: trigger a password reset (or enable 2FA in
+> Settings) and confirm the message arrives. If it doesn't, check `fly logs` — a
+> `[notify:dev]` line means SMTP isn't configured (the message was only logged).
 
 ## 3. Deploy
 ```bash
