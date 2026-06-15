@@ -40,7 +40,11 @@ Live URLs:
       violet accents, page-wide entrance animations + hover transitions.
 - [x] Signed-in IA redesign: **left sidebar**, 6 tabs -> 4 (Home/Setup/Settings/Billing),
       **setup-first** routing (new customers -> Setup; set-up -> Home), onboarding welcome.
-      (All console UI changes need a `fly deploy` to go live.)
+- [x] Free-trial enforcement: app-wide countdown + escalating banners + sidebar pill; console
+      gated to Billing once the trial ends unconverted (routing already stops via entitlement).
+- [x] 2FA: opt-in email one-time-code (Settings enroll + login challenge); SMS scaffolded via
+      Twilio (`TWILIO_*`) when you add a provider.
+      (All console UI/auth changes need a `fly deploy` to go live.)
 
 ## 🔜 Next (in progress)
 - [ ] **Deploy the account-deletion feature** — `cd ~/options-bot && git pull && fly deploy`
