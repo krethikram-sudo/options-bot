@@ -123,6 +123,19 @@ pre{background:#0d0d10;color:#cdd6e6;padding:16px;border-radius:10px;overflow:au
 .reveal{opacity:0;transform:translateY(14px);transition:opacity .55s var(--ease),transform .55s var(--ease);transition-delay:var(--rd,0ms)}
 .reveal.in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.card:hover,.modes button:hover{transform:none}}
+/* navigation progress bar + button busy spinner — feedback during cold starts so
+   a slow page never looks unresponsive */
+#nprogress{position:fixed;top:0;left:0;right:0;height:3px;z-index:9999;opacity:0;transition:opacity .25s}
+#nprogress.on{opacity:1}
+#nprogress b{display:block;height:100%;width:0;border-radius:0 3px 3px 0;
+  background:linear-gradient(90deg,var(--accent),var(--accent-d));box-shadow:0 0 10px var(--accent);
+  transition:width .25s ease}
+.btn.loading{position:relative;color:transparent!important;pointer-events:none}
+.btn.loading::after{content:"";position:absolute;top:50%;left:50%;width:14px;height:14px;margin:-7px 0 0 -7px;
+  border:2px solid rgba(255,255,255,.55);border-top-color:#fff;border-radius:50%;animation:mp-spin .6s linear infinite}
+.btn.sec.loading::after{border-color:rgba(0,0,0,.25);border-top-color:#111}
+@keyframes mp-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){#nprogress b{transition:opacity .2s}.btn.loading::after{animation:none}}
 """
 
 
@@ -255,7 +268,26 @@ def page(title: str, body: str, account: dict | None = None, active: str = "") -
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <title>{_e(title)} · {BRAND}</title><style>{_CSS}</style></head><body>
+<div id=nprogress><b></b></div>
 {chrome}
+<script>(function(){{var d=document,bar=d.getElementById('nprogress'),fill=bar&&bar.firstChild,t=null,p=0;
+function set(v){{p=v;if(fill)fill.style.width=(v*100)+'%';}}
+function start(){{if(!bar)return;bar.classList.add('on');set(.08);if(t)clearInterval(t);
+  t=setInterval(function(){{set(Math.min(p+(.9-p)*.12+.004,.92));}},300);}}
+function done(){{if(t){{clearInterval(t);t=null;}}if(!bar)return;set(1);
+  setTimeout(function(){{bar.classList.remove('on');set(0);}},250);
+  [].forEach.call(d.querySelectorAll('.btn.loading'),function(b){{b.classList.remove('loading');}});}}
+function isFile(h){{return /\\.(csv|json|pdf|zip|png|jpe?g|txt)(\\?|#|$)/i.test(h);}}
+function internal(a){{if(!a||a.target==='_blank'||a.hasAttribute('download'))return false;
+  var h=a.getAttribute('href')||'';
+  if(!h||h.charAt(0)==='#'||/^(mailto:|tel:|javascript:)/i.test(h)||isFile(h))return false;
+  return a.origin===location.origin;}}
+d.addEventListener('click',function(e){{if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+  var a=e.target.closest&&e.target.closest('a');if(internal(a))start();}},true);
+d.addEventListener('submit',function(e){{var f=e.target;if(!f||f.getAttribute('target')==='_blank')return;start();
+  var b=e.submitter||f.querySelector('button[type=submit],button:not([type]),input[type=submit]');
+  if(b&&b.classList)b.classList.add('loading');}},true);
+window.addEventListener('pageshow',function(ev){{if(ev.persisted)done();}});}})();</script>
 <script>(function(){{var d=document;
 if(!('IntersectionObserver' in window)||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches))return;
 var els=[].slice.call(d.querySelectorAll('.card,.hero'));
