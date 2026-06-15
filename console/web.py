@@ -1016,8 +1016,8 @@ def _tier_options(plan: dict, stripe_on: bool) -> str:
     defs = [
         ("payg", "Pay-as-you-go", "20% of savings",
          "No subscription — pure pay-for-savings."),
-        ("self_optimize", "Self-optimize", "Subscription + 15%",
-         "Routing tuned to your own traffic (metadata only — never your content). Subscription pricing coming soon."),
+        ("self_optimize", "Self-optimize", "$99/mo + 15%",
+         "Routing tuned to your own traffic (metadata only — never your content)."),
         ("managed", "Managed", "Subscription + 15%",
          "We continuously tune routing to your traffic for you (metadata only). Subscription pricing coming soon."),
     ]
