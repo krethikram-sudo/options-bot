@@ -218,6 +218,21 @@ def test_convert_without_stripe_marks_paid(env, client):
     assert store.get_plan(acct["id"])["plan"] == "paid"
 
 
+def test_expired_trial_gates_app_to_billing(env, client):
+    _, store = env
+    _signup(client, email="exp@b.com")
+    acct = store.get_account_by_email("exp@b.com")
+    store.extend_trial(acct["id"], -3)  # trial ended 3 days ago
+    # the app is gated -> redirected to billing
+    r = client.get("/app", follow_redirects=False)
+    assert r.status_code in (303, 307) and "/app/billing" in r.headers["location"]
+    # billing itself stays reachable so they can convert
+    assert client.get("/app/billing").status_code == 200
+    # converting lifts the gate
+    store.convert_to_paid(acct["id"])
+    assert client.get("/app").status_code == 200
+
+
 # --- admin ---------------------------------------------------------------- #
 
 def test_status_page_public(client):

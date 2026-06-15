@@ -290,10 +290,34 @@ async def reset_post(request: Request):
 # Customer app
 # --------------------------------------------------------------------------- #
 
+# An expired, unconverted trial can still reach Billing (to convert) — everything
+# else in the app is gated until they activate.
+_TRIAL_OK_PREFIXES = ("/app/billing",)
+
+
+def _is_paid(account: dict) -> bool:
+    try:
+        return store.get_plan(account["id"]).get("plan") == "paid"
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _trial_expired(account: dict) -> bool:
+    try:
+        return not store.trial_status(account["id"])["active"]
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _require(request: Request):
     acct = _current(request)
     if not acct:
         return None, _redirect("/login")
+    # Free-trial enforcement: once it ends and they haven't converted, the app is
+    # gated to Billing until they activate. Vendor admins are exempt.
+    if acct.get("role") != "admin" and _trial_expired(acct) and not _is_paid(acct):
+        if not request.url.path.startswith(_TRIAL_OK_PREFIXES):
+            return None, _redirect("/app/billing?trial=ended")
     return acct, None
 
 

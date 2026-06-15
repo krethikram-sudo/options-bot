@@ -10,6 +10,8 @@ import os
 import time
 from datetime import datetime, timezone
 
+from . import store
+
 ACCENT = "#111111"
 BRAND = "ModelPilot"
 
@@ -43,6 +45,11 @@ a{color:var(--accent-d);text-decoration:none}a:hover{text-decoration:underline}
 .navgrp{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 0 6px 12px}
 .side-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
 .side-foot .email{color:var(--muted);font-size:13px;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trialpill{display:block;text-align:center;margin-bottom:12px;padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:600;
+  background:rgba(124,58,237,.16);color:#cbb8ff;border:1px solid rgba(124,58,237,.3)}
+.trialpill:hover{text-decoration:none;background:rgba(124,58,237,.26)}
+.trialpill.warn{background:rgba(251,191,36,.14);color:#fcd34d;border-color:rgba(251,191,36,.32)}
+.trialpill.bad{background:rgba(248,113,113,.14);color:#fca5a5;border-color:rgba(248,113,113,.36)}
 .main{flex:1;min-width:0}
 .inner{max-width:1040px;margin:0 auto;padding:30px 30px 64px}
 @media(max-width:820px){
@@ -231,10 +238,10 @@ def page(title: str, body: str, account: dict | None = None, active: str = "") -
             '<div class=shell><aside class=side>'
             '<a class=brand href="/app">Model<span class=dot>Pilot</span></a>'
             f'<nav class=sidenav>{links}{admin}</nav>'
-            f'<div class=side-foot><div class=email>{em}</div>'
+            f'<div class=side-foot>{_trial_pill(account)}<div class=email>{em}</div>'
             '<form method=post action="/logout" style="margin:0">'
             '<button class="btn sec sm" style="width:100%">Sign out</button></form></div>'
-            f'</aside><main class=main><div class=inner>{body}</div></main></div>')
+            f'</aside><main class=main><div class=inner>{_account_trial_banner(account)}{body}</div></main></div>')
     else:
         nav = ('<div class="spacer"></div><div class="nav">'
                '<a href="/login">Sign in</a><a class="btn sm" href="/signup">Start free trial</a></div>')
@@ -349,11 +356,42 @@ def _trial_banner(plan: dict, trial: dict) -> str:
     if plan.get("plan") == "paid":
         return ""
     if trial["active"]:
-        return (f'<div class="note">You\'re on the free trial — <b>{trial["days_left"]} day(s) left</b>. '
+        d = trial["days_left"]
+        if d <= 2:
+            return (f'<div class="note warn">⏳ Only <b>{d} day{"" if d == 1 else "s"} left</b> in your free '
+                    f'trial. <a href="/app/billing">Activate billing</a> now to keep your savings — you only '
+                    f'pay 20% of what we save you.</div>')
+        return (f'<div class="note">You\'re on the free trial — <b>{d} days left</b>. '
                 f'<a href="/app/billing">Add billing</a> to keep optimizing after that '
                 f'(you only pay 20% of what we save you).</div>')
-    return ('<div class="note bad">Your free trial has ended — routing is paused (traffic still flows, '
-            'just unoptimized). <a href="/app/billing">Activate billing</a> to resume savings.</div>')
+    return ('<div class="note bad">Your free trial has ended — optimization is <b>paused</b> and your traffic '
+            'is passing through unrouted. <a href="/app/billing">Activate billing</a> to resume saving.</div>')
+
+
+def _trial_meta(account: dict | None):
+    """(plan, trial) for an account; (None, None) for vendor admins / on error."""
+    if not account or account.get("role") == "admin":
+        return None, None
+    try:
+        return store.get_plan(account["id"]), store.trial_status(account["id"])
+    except Exception:  # noqa: BLE001
+        return None, None
+
+
+def _account_trial_banner(account: dict | None) -> str:
+    plan, trial = _trial_meta(account)
+    return _trial_banner(plan, trial) if plan else ""
+
+
+def _trial_pill(account: dict | None) -> str:
+    plan, trial = _trial_meta(account)
+    if not plan or plan.get("plan") == "paid":
+        return ""
+    if trial["active"]:
+        d = trial["days_left"]
+        cls = "warn" if d <= 2 else ""
+        return f'<a class="trialpill {cls}" href="/app/billing">Trial · {d} day{"" if d == 1 else "s"} left</a>'
+    return '<a class="trialpill bad" href="/app/billing">Trial ended · reactivate</a>'
 
 
 def _budget_card(budget: dict | None) -> str:
@@ -382,7 +420,6 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
     pct_cycle = round(100 * cycle["savings"] / cycle["baseline"]) if cycle.get("baseline") else 0
     pct_life = round(100 * lifetime["savings"] / lifetime["baseline"]) if lifetime.get("baseline") else 0
     body = f"""
-    {_trial_banner(plan, trial)}
     <div class=row><h1>Dashboard</h1><div class=spacer></div>
       {metric_toggle_control()}
       <span class="badge {mode_badge}">{_e(mode)} mode</span></div>
@@ -859,6 +896,10 @@ def billing_page(account: dict, plan: dict, trial: dict, bill: dict,
         flash_html = '<div class="note warn">Checkout canceled — no changes made.</div>'
     elif flash == "converted":
         flash_html = '<div class="note">Plan activated.</div>'
+    if not is_paid and not trial["active"]:
+        flash_html = ('<div class="note bad"><b>Your free trial has ended.</b> Optimization is paused — '
+                      'activate billing below to resume saving on your Claude bill. You only pay 20% of '
+                      'what we save you.</div>' + flash_html)
 
     if is_paid:
         action = f"""
