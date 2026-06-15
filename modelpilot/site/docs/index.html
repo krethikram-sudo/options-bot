@@ -11,8 +11,8 @@
   <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
   <span class="tag">Docs</span><span class="sp"></span>
   <a class="lnk" href="/">Home</a>
-  <a class="lnk" href="https://app.modelpilot.app/login">Sign in</a>
-  <a class="cta" href="https://app.modelpilot.app/signup">Start free trial</a>
+  <a class="lnk" href="https://modelpilot-console-prod.fly.dev/login">Sign in</a>
+  <a class="cta" href="https://modelpilot-console-prod.fly.dev/signup">Start free trial</a>
 </div></div>
 
 <div class="layout">
@@ -24,7 +24,7 @@
     <div class="grp">Reference</div>
     <a href="/docs/architecture.html">Architecture &amp; privacy</a>
     <a href="/security.html">Security &amp; trust</a>
-    <a href="https://app.modelpilot.app/app">Open dashboard ↗</a>
+    <a href="https://modelpilot-console-prod.fly.dev/app">Open dashboard ↗</a>
   </aside>
 
   <main>
@@ -33,11 +33,11 @@
       and prompts never leave your machine.</p>
 
     <div class="note">You'll need a ModelPilot account (free 7-day trial, no card) and your Anthropic
-      API key. <a href="https://app.modelpilot.app/signup">Create an account →</a></div>
+      API key. <a href="https://modelpilot-console-prod.fly.dev/signup">Create an account →</a></div>
 
     <ol class="steps-n">
       <li><h3 style="margin-top:0">Get your deployment id and an API key</h3>
-        After signing up, open <a href="https://app.modelpilot.app/app/connect">Connect</a> in the
+        After signing up, open <a href="https://modelpilot-console-prod.fly.dev/app/connect">Connect</a> in the
         console. Copy your <code>deployment id</code> and click <b>Create API key</b> (it's shown once).</li>
 
       <li><h3 style="margin-top:0">Install the proxy</h3>
@@ -48,7 +48,7 @@ pip install modelpilot-client</pre></li>
         <pre><span class="b">export</span> ANTHROPIC_API_KEY=sk-ant-…        <span class="c"># stays on your machine</span>
 <span class="b">export</span> MODELPILOT_API_KEY=mp_live_…       <span class="c"># from the Connect page</span>
 <span class="b">export</span> MODELPILOT_BRAIN_URL=https://brain.modelpilot.app
-<span class="b">export</span> MODELPILOT_CONSOLE_URL=https://app.modelpilot.app
+<span class="b">export</span> MODELPILOT_CONSOLE_URL=https://modelpilot-console-prod.fly.dev
 <span class="b">export</span> MODELPILOT_DEPLOYMENT_ID=dep_…
 
 modelpilot-client            <span class="c"># listens on http://127.0.0.1:8400</span></pre>
@@ -62,7 +62,7 @@ client = Anthropic(base_url=<span class="y">"http://127.0.0.1:8400"</span>)   <s
         <p class="small muted">Or one line with our helper — see <a href="/docs/sdks.html">SDKs</a>.</p></li>
 
       <li><h3 style="margin-top:0">Watch the savings</h3>
-        Send some traffic, then open your <a href="https://app.modelpilot.app/app">dashboard</a> — realized
+        Send some traffic, then open your <a href="https://modelpilot-console-prod.fly.dev/app">dashboard</a> — realized
         savings by task type, baseline-vs-actual, and a non-inferiority proof rate, recomputed from real tokens.</li>
     </ol>
 

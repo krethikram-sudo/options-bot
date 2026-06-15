@@ -17,7 +17,7 @@ primary_region = "iad"
 
 [env]
   CONSOLE_PORT = "8700"
-  CONSOLE_BASE_URL = "https://app.modelpilot.app"
+  CONSOLE_BASE_URL = "https://modelpilot-console-prod.fly.dev"
   MODELPILOT_BRAIN_URL = "https://brain.modelpilot.app"
   CONSOLE_SECURE_COOKIES = "1"
 
