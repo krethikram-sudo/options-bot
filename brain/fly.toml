@@ -25,9 +25,12 @@ primary_region = "iad"
 [http_service]
   internal_port = 8600
   force_https = true
-  auto_stop_machines = false
+  # Scale to zero to cut cost (cold start on first request after idle). The
+  # gateway fails open if the brain is briefly waking, so traffic is never blocked
+  # — that one request just passes through unrouted. Set min back to 1 for always-on.
+  auto_stop_machines = "stop"
   auto_start_machines = true
-  min_machines_running = 1
+  min_machines_running = 0
 
   [[http_service.checks]]
     method = "GET"

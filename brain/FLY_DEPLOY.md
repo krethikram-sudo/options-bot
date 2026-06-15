@@ -57,8 +57,10 @@ console for entitlement + mode (autopilot applies; guidance/shadow recommend onl
 → savings get metered back to the console.
 
 ## Notes
-- **Single machine only** (SQLite trial clock on the `braindata` volume) — never
-  scale past one.
+- **One machine only** (SQLite trial clock on the `braindata` volume). It's set to
+  **scale to zero** to save cost; the gateway fails open during a cold start, so a
+  request that arrives while the brain is waking just passes through unrouted. Set
+  `min_machines_running = 1` for always-on / no cold start.
 - **Fails open:** if the brain is unreachable, the gateway still sends traffic to
   Claude (unrouted). You degrade savings, never uptime.
 - **ingest/** (opt-in aggregate telemetry) is optional — skip it unless you want

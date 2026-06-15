@@ -73,8 +73,11 @@ After the cert is issued, update `CONSOLE_BASE_URL` in `fly.toml` to
 `https://app.modelpilot.app` and `fly deploy` again so reset/login links use it.
 
 ## Notes
-- **Never scale past one machine.** SQLite is single-writer; this app expects one
-  always-on instance (`min_machines_running = 1`, `auto_stop_machines = false`).
+- **Never run more than one machine.** SQLite is single-writer. The app is set to
+  **scale to zero** (`auto_stop_machines = "stop"`, `min_machines_running = 0`) to
+  save cost — Fly stops it when idle and starts the same machine (with its volume)
+  on the next request, with a brief cold start. Set `min_machines_running = 1` for
+  always-on / no cold start.
 - **Backups:** `fly volumes` snapshots the disk; take a snapshot before migrations.
   To pull a copy of the DB: `fly ssh sftp get /data/console.db ./console-backup.db`.
 - **Customers** don't need any of this — they self-serve at `/signup` (7-day trial).
