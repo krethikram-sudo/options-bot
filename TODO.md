@@ -108,10 +108,11 @@ Live URLs:
       `STRIPE_MANAGED_PRICE_ID` and replace "coming soon" on the Managed card.
 
 ## 🏛️ Legal / corporate
-- [ ] **Form the entity — S-corp.** Note: "S-corp" is a *tax election*, not an entity type — usually
-      an LLC (or C-corp) that elects S-corp tax treatment. Confirm with a CPA: LLC + S-election for a
-      bootstrapped solo founder, **or** Delaware C-corp if raising VC (S-corp can't take VC/foreign
-      owners). Then: EIN → business bank account → keep finances separate.
+- [ ] **Form the entity — DECISION: Delaware C-corp via Stripe Atlas** ("might raise later" → C-corp
+      avoids a costly conversion). Full step-by-step in `modelpilot/ENTITY_FORMATION.md`. Atlas bundles
+      C-corp + EIN + business bank + live Stripe in one flow (clears most of launch #2). ⏰ **Watch the
+      83(b) election — hard 30-day deadline after stock issuance.** Confirm equity/tax specifics with a CPA.
+      Trademark knockout "ModelPilot" BEFORE locking the entity name.
 - [ ] Counsel review of legal templates (Terms / Privacy / AUP / MSA / DPA); set governing law + venue.
 - [ ] Trademark knockout-search "ModelPilot"; file a word mark if clear.
 - [ ] Get written Anthropic confirmation of the BYOK-proxy model (enterprise comfort; optional).
