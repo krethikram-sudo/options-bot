@@ -35,7 +35,8 @@ the unlock; pay-for-savings removes the last objection.
 - **Do you have the team to build & maintain your own routing + eval pipeline?** (No = our value; Yes = sell convenience/Managed.)
 
 ## Anti-ICP (de-prioritize)
-- Hobbyists / <$2k-mo spend (savings too small under % billing; low revenue).
+- Hobbyists / <$2k-mo spend (savings too small under % billing; low revenue). **Exception:** small
+  *future-ICP* startups belong in the self-serve PLG funnel, not the trash — see "PLG / long-tail" below.
 - Teams wanting multi-provider breadth (OpenRouter's game).
 - Teams indifferent to data egress (privacy card face-down; weaker position).
 
@@ -61,6 +62,30 @@ Pay-only-for-savings + no prompt egress is the combination that gets through pro
    cross-customer data collection — it would put an asterisk on the privacy promise and make us a
    data processor with breach/re-id/consent liability. Cold-start comes from an expanded
    *self-owned* eval corpus instead. See `FLEET_LEARNING.md` → Decision.)
+
+## PLG / long-tail: land small, grow into the ICP
+Small startups are a **funnel, not a target segment.** The premise "they can't afford competitors"
+is mostly false — routing has cheap/free floors (OpenRouter BYOK ~1M free req/mo then 5%; LiteLLM
+free OSS; Cloudflare AI Gateway free tier). We don't win the small/privacy-indifferent dev on price,
+and our moat is face-down for them. So don't chase them as a discount segment.
+
+**But two real advantages let us serve the long tail profitably where sales-led rivals won't:**
+1. **Risk-free, aligned billing** — no card, free trial, then *only a cut of realized savings* (no
+   savings, no bill). A stronger *land* hook than any free tier: we pay for ourselves or you owe $0.
+2. **Low marginal cost to serve** — BYOK (their key/compute), the brain is a cheap decision service,
+   fail-open. A $500/mo account costs a sales-led competitor too much to bother with; it costs us ~$0
+   if acquisition + support stay automated.
+
+**The motion:** use $0-to-start, pay-on-savings as a **self-serve, product-led top-of-funnel to land
+startups *on the path* to the ICP** — AI-native, already handling sensitive data, growing Claude spend.
+Land tiny and risk-free now; when they hit their first enterprise security review and the bill grows,
+**the privacy moat activates and they convert to the subscription tiers.** Land small → grow into the ICP.
+
+**Guardrails (so the tail stays net-positive):**
+- **100% self-serve under ~$5k/mo** — no human sales/support in the loop; the free trial + dashboard do the work.
+- **Let the pre-sale estimator qualify** — walk away from zero-headroom accounts; don't burn effort.
+- **Don't acquire the generic privacy-indifferent small dev** — no edge vs OpenRouter's free tier there.
+- Watch that automated support cost (not infra) stays near zero; % billing on tiny spend only works hands-off.
 
 ## Bottom line
 Win the regulated + security-conscious, Claude-heavy beachhead. Lead every conversation with
