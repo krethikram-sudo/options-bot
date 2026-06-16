@@ -215,3 +215,78 @@ and the client falls back to the direct API base URL on connection failure
 | Company | Contact | Status | Monthly Claude spend | Next step |
 |---|---|---|---|---|
 | | | | | |
+
+---
+
+## How to run outreach (2026-06-16 — playbook)
+
+**Posture:** warm-first, value-first, **learn-before-you-sell.** You're a no-name asking
+people to touch their API traffic — trust is the gate, and the first ~10 conversations are
+for *validation*, not revenue.
+
+**Channel order (work warmest → coldest):**
+1. **Your network + 1 intro away** — cross the prospect list against everyone you know. A warm
+   intro converts ~10× a cold email and clears the trust barrier. Start here.
+2. **Bill-shock threads** (HN / r/LLMDevs / r/ClaudeAI / X) — **be helpful first** ("you don't
+   have to leave Claude, route the cheap 60–80%; free estimator → {link}"), then DM. Warmest cold
+   audience that exists — they have the pain today.
+3. **Personalized cold** to Tier-1 buyers (LinkedIn DM + email). Low volume, high personalization.
+4. **Communities** — Anthropic Discord / Claude dev forums (same value-first posture).
+
+**Find the buyer:** LinkedIn (CTO / Head of AI / platform lead; for small cos the founder/CTO) ·
+the GitHub committer of the `@anthropic-ai/sdk` integration · infer + **verify** the email pattern
+(Hunter/Apollo) — verify, don't spray.
+
+**The ask ladder (lowest friction first):** estimator (2 min, self-serve) → 15-min call → 2-week
+free pilot (Guidance → measure → Autopilot).
+
+**Disarm the trust objection up front:** "your API key and prompts never leave your environment,"
+and offer to **start in Guidance mode (recommend-only — nothing changes).** Makes "yes" nearly free.
+
+**Mom-Test call script (the first 10 are validation):** ask about reality before you pitch —
+1. "How big is your Claude bill now — and is it growing?"
+2. "Who owns that cost? Has anyone been told to cut it?"
+3. "Have you tried to optimize it? What happened / why not?"
+4. "What would 'too risky to try' look like for you?"
+5. *Only then:* show the estimator + offer the pilot.
+Let them tell you whether the pain is real. That's the whole point of the sprint.
+
+**Cadence:** 8–12 *personalized* touches/day; 1–2 gentle follow-ups, then drop; log every touch in
+`pilot_tracker.csv`. Target: 5–10 real conversations → 2–3 pilots.
+
+## Personalized first-message drafts (copy, then verify the person on LinkedIn)
+*Honest + specific; reference Claude only where confirmed. Swap {name}; insert the estimator/one-pager.*
+
+**Chatbase — DM/email to Yasser Elsaid (founder; lean team = he's the buyer):**
+> Yasser — Chatbase running support chatbots on Claude at your volume almost certainly has a big
+> chunk of traffic (intent classification, FAQ, summarization) that a cheaper model handles just as
+> well. I built ModelPilot: it routes those to the cheapest good-enough model, **proves** the savings
+> on your own traffic (held-out control arm), and you pay only a cut of what we save — key/prompts
+> never leave your box. 2-min estimate: {estimator}. Worth 15 min?
+
+**Augment Code — LinkedIn to the Head of AI / infra lead:**
+> Hi {name} — long agent loops on Claude Sonnet burn a lot of tokens, and a real share of the
+> sub-steps (planning, file reads, simple edits) don't need a frontier model. ModelPilot routes the
+> cheap ones down with a quality floor + control-arm proof, so you keep Devin-grade quality on the
+> hard stuff and stop overpaying on the rest. You pay only 20% of what we actually save. Quick
+> estimate: {estimator}. Open to a 15-min look?
+
+**Robin AI — email to James Clough (CTO) [regulated → lead with privacy]:**
+> James — contract review on Claude means a lot of high-volume first-pass work (clause
+> classification, extraction) running on a top model. ModelPilot routes that to the cheapest
+> good-enough model and **proves quality held** on your own traffic — and because classification
+> happens locally, **prompts and your key never leave your environment** (built for exactly your
+> privilege/confidentiality bar). Pay only a share of realized savings. 15 min?
+
+**Casey (Tier 3 — Claude UNCONFIRMED → pitch routing on merits, do NOT assert Claude):**
+> {name} — for an insurance-submission product, a lot of the LLM work (field extraction,
+> normalization) is routine enough for a cheaper model. ModelPilot routes each request to the
+> cheapest model that's *provably* good enough, measured on your own traffic, and you pay only a cut
+> of the savings — no savings, no bill. One-line setup, your data never leaves your environment.
+> Worth a quick look? Free estimate: {estimator}.
+
+**Bill-shock thread reply (value-first, then DM):**
+> You don't have to rip Claude out to fix this — most of the spend is the cheap 60–80% of calls
+> going to the flagship model. Route those to a good-enough cheaper model with a quality floor and
+> you keep the hard stuff on top. (I'm building a tool that does this + proves the savings on your
+> own traffic; free estimator if useful: {estimator} — happy to share more.)
