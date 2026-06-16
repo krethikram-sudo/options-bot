@@ -4,7 +4,39 @@ Drafted 2026-06-16. The second moat (pairs with ICP.md hardening #4). How we get
 **exponentially better at routing for every customer — existing and new — using
 cross-customer signal, without ever collecting prompt content.**
 
-## The idea
+## DECISION (2026-06-16): NOT pursued — zero-collection by default
+After weighing it, the founder's call is **do not build cross-customer collection.** Even
+bucketed / k-anonymous / DP'd aggregates derived from customer activity would: (1) put an
+asterisk on the absolute "we collect nothing" promise that the regulated ICP buys on; and
+(2) make us a **data processor** with breach, re-identification, consent, and DPA/regulatory
+liability ("anonymized" is a high legal bar — theoretically re-identifiable aggregates can be
+personal data under GDPR/HIPAA). The upside (cold-start for new customers) is an *accelerator*,
+not the product, and we can get most of it **without collecting anything**:
+
+- **Cold-start prior is built from data we OWN** — an expanded golden set + synthetic and public,
+  ICP-representative prompts per vertical (healthcare/legal/fintech). No customer data, no
+  liability. (See "No-collection alternative" below.)
+- **Per-customer tuning stays 100% local** (`floorlearn` on the customer's box, their own
+  validated outcomes) — already the case; nothing egresses.
+- **The moat is the opposite of the data-network-effect:** *"the router that never collects
+  anything — intelligence from architecture + our own eval corpus, not from harvesting you."*
+  Stronger for our ICP than a fleet model, not weaker.
+
+The design below is retained as reference **only** if we ever revisit — and if so it would be
+strictly **explicit opt-in, consented, and counsel-reviewed**, never default-on.
+
+## No-collection alternative (what we actually do)
+1. **Expand the eval corpus** (`goldenset_data/` + synthetic/public per-vertical prompts we own)
+   so the *global default floors* are calibrated against a rich, ICP-shaped set — a real
+   cold-start prior with zero customer data.
+2. **Per-customer local tuning** (`floorlearn`) personalizes from there, on their box.
+3. That's it. No `ingest/` cross-customer collection in the product path.
+
+---
+
+## (Reference only — NOT being built) Original cross-customer design
+
+The idea, retained for the record:
 Two streams of **derived, non-invertible** signal per request (never text):
 1. **Request-shape cells** — granular attributes of the session, computed locally.
 2. **Tuning outcomes** — what routing change was tried for that shape, and whether it held up.

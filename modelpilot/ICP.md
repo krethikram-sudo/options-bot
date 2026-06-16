@@ -56,7 +56,11 @@ Pay-only-for-savings + no prompt egress is the combination that gets through pro
    pen-test summary, security questionnaire. (Today: not yet certified — gating for #1/#2/#3.)
 2. **On-prem / VPC brain deploy** for the most paranoid enterprises (max privacy = max moat).
 3. **Switching cost** via per-customer tuning embedded in their request path.
-4. **Privacy-safe cross-customer calibration** → routing quality others can't match.
+4. **Zero collection as the moat** → "the router that never collects anything; intelligence from
+   architecture + our own eval corpus, not from harvesting you." (We explicitly do NOT build
+   cross-customer data collection — it would put an asterisk on the privacy promise and make us a
+   data processor with breach/re-id/consent liability. Cold-start comes from an expanded
+   *self-owned* eval corpus instead. See `FLEET_LEARNING.md` → Decision.)
 
 ## Bottom line
 Win the regulated + security-conscious, Claude-heavy beachhead. Lead every conversation with
