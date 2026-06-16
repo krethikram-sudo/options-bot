@@ -10,11 +10,12 @@ which also clears the downstream launch-#2 items in one flow.
 a startup attorney.
 
 ## Before you start
-- [ ] **Trademark knockout-search "ModelPilot"** first (USPTO TESS + a web/domain check) — the
-      legal entity name is sticky. If "ModelPilot, Inc." is risky/taken, form under a clear name and
-      run "ModelPilot" as the brand/DBA. (This is also a standalone launch TODO.)
+- [x] **Trademark knockout "ModelPilot"** — checked, **not taken / clear** (founder, 2026-06-16). Safe to
+      use as the entity name. (Optional next: file a word mark to lock it in.)
 - [ ] Have ready: legal name + address, your SSN/ITIN (US founder). **Non-US founder?** Atlas still
       gets an EIN without an SSN — it just takes longer; start early.
+
+> **Scheduled:** founder running steps 1–6 (Stripe Atlas onward) **Thursday 2026-06-18**.
 
 ## Step 1 — File via Stripe Atlas (atlas.stripe.com, ~$500 + DE fees)
 - [ ] Choose **C Corporation**, Delaware.

@@ -109,12 +109,14 @@ Live URLs:
 
 ## 🏛️ Legal / corporate
 - [ ] **Form the entity — DECISION: Delaware C-corp via Stripe Atlas** ("might raise later" → C-corp
-      avoids a costly conversion). Full step-by-step in `modelpilot/ENTITY_FORMATION.md`. Atlas bundles
-      C-corp + EIN + business bank + live Stripe in one flow (clears most of launch #2). ⏰ **Watch the
-      83(b) election — hard 30-day deadline after stock issuance.** Confirm equity/tax specifics with a CPA.
-      Trademark knockout "ModelPilot" BEFORE locking the entity name.
+      avoids a costly conversion). **Scheduled for Thu 2026-06-18.** Full step-by-step in
+      `modelpilot/ENTITY_FORMATION.md`. Atlas bundles C-corp + EIN + business bank + live Stripe in one
+      flow (clears most of launch #2). ⏰ **Watch the 83(b) election — hard 30-day deadline after stock
+      issuance.** Confirm equity/tax specifics with a CPA. **Trademark "ModelPilot" already checked —
+      clear/not taken.**
 - [ ] Counsel review of legal templates (Terms / Privacy / AUP / MSA / DPA); set governing law + venue.
-- [ ] Trademark knockout-search "ModelPilot"; file a word mark if clear.
+- [x] Trademark knockout "ModelPilot" — checked, clear/not taken (2026-06-16). Optional next: file the
+      USPTO word mark to lock it in (https://www.uspto.gov/trademarks).
 - [ ] Get written Anthropic confirmation of the BYOK-proxy model (enterprise comfort; optional).
 
 ## 💳 Finance / ops
