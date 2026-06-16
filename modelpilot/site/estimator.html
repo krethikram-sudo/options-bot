@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude bill savings estimator — ModelPilot</title>
+<meta name="description" content="Estimate how much you could cut your Claude/Anthropic API bill by routing each request to the cheapest good-enough model. Free, no signup — runs entirely in your browser, nothing you type is sent anywhere.">
+<link rel="canonical" href="https://modelpilot.pages.dev/estimator.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/docs/docs.css">
+<style>
+  .est{max-width:760px;margin:0 auto;padding:30px 22px 80px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:620px){.grid2{grid-template-columns:1fr}}
+  .fld{margin:14px 0}
+  .fld label{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
+  .fld input,.fld select{width:100%;padding:10px 12px;border:1px solid #d7d7dc;border-radius:9px;font-size:15px;background:#fff}
+  .profiles{display:grid;gap:8px}
+  .profiles label{display:flex;gap:10px;align-items:flex-start;border:1px solid #e3e3e7;border-radius:10px;padding:11px 13px;cursor:pointer;font-weight:400}
+  .profiles label:hover{border-color:#7c3aed}
+  .profiles input{width:auto;margin-top:3px}
+  .profiles b{display:block;font-size:14.5px}
+  .profiles span{font-size:12.5px;color:#6b6b72}
+  .result{margin-top:8px;border:1px solid #e3e3e7;border-radius:14px;padding:24px;background:#fafafa}
+  .bignum{font-size:40px;font-weight:800;letter-spacing:-.02em;color:#16a34a;line-height:1.05}
+  .sub{color:#6b6b72;font-size:14px}
+  .line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #ededf0;font-size:14.5px}
+  .line:last-child{border-bottom:none}
+  .warn{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 14px;font-size:14px;margin-top:12px}
+  .assum{font-size:12.5px;color:#8a8a90;margin-top:14px;line-height:1.5}
+  .cta.big{display:inline-block;margin-top:8px;font-size:16px;padding:12px 22px}
+</style>
+</head><body>
+<div class="top"><div class="row">
+  <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
+  <span class="tag">Savings estimator</span><span class="sp"></span>
+  <a class="lnk" href="/compare.html">Compare</a>
+  <a class="cta" href="https://modelpilot-console-prod.fly.dev/signup">Start free trial</a>
+</div></div>
+
+<main class="est">
+  <h1>What could you cut off your Claude bill?</h1>
+  <p class="lead">A rough estimate from routing each request to the cheapest model that's good
+    enough. Free, no signup — and <b>everything you type stays in your browser</b>; nothing is sent
+    anywhere.</p>
+
+  <div class="grid2">
+    <div class="fld">
+      <label for="spend">Your monthly Claude API spend (USD)</label>
+      <input id="spend" type="number" min="0" step="50" value="5000" inputmode="numeric">
+    </div>
+    <div class="fld">
+      <label for="model">The model you mostly use today</label>
+      <select id="model">
+        <option value="claude-fable-5">Claude Fable 5 (most expensive)</option>
+        <option value="claude-opus-4-8" selected>Claude Opus 4.8</option>
+        <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+        <option value="claude-haiku-4-5">Claude Haiku 4.5 (cheapest)</option>
+        <option value="unsure">Not sure / a mix</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="fld">
+    <label>What does most of your traffic look like?</label>
+    <div class="profiles">
+      <label><input type="radio" name="profile" value="routine">
+        <span><b>Mostly routine work</b><span>Classification, extraction, summarization, short Q&amp;A, drafting, simple SQL</span></span></label>
+      <label><input type="radio" name="profile" value="mixed" checked>
+        <span><b>A mix</b><span>Some routine, some genuinely hard reasoning/coding</span></span></label>
+      <label><input type="radio" name="profile" value="complex">
+        <span><b>Mostly complex</b><span>Hard reasoning, multi-file coding, agents, analysis</span></span></label>
+    </div>
+  </div>
+
+  <div class="result" id="result" aria-live="polite"></div>
+
+  <p style="margin-top:18px"><a class="cta big" href="https://modelpilot-console-prod.fly.dev/signup">Measure it for real on your own traffic →</a></p>
+
+  <p class="assum" id="assum"></p>
+  <p class="foot" style="margin-top:18px"><a href="/">ModelPilot home</a> · <a href="/compare.html">vs gateways &amp; routers</a></p>
+</main>
+
+<script>
+(function(){
+  // Blended $/Mtok index = (input + output) / 2. Public list prices.
+  var BLENDED = {"claude-haiku-4-5":3, "claude-sonnet-4-6":9, "claude-opus-4-8":15, "claude-fable-5":30};
+  var R = {routine:0.65, mixed:0.45, complex:0.25};   // routable share by profile
+  var CONSERV = 0.7;                                    // real routers leave some on the table
+  var FLOOR = "claude-haiku-4-5";                       // routable bulk floors to Haiku
+  var FEE = 0.20;                                       // PAYG: 20% of realized savings
+
+  function money(x){ return "$" + Math.round(x).toLocaleString(); }
+
+  function render(){
+    var spend = Math.max(0, parseFloat(document.getElementById("spend").value)||0);
+    var model = document.getElementById("model").value;
+    if(model==="unsure") model="claude-opus-4-8";  // conservative default
+    var profile = (document.querySelector('input[name=profile]:checked')||{}).value || "mixed";
+    var base = BLENDED[model], target = BLENDED[FLOOR];
+    var r = R[profile];
+    var el = document.getElementById("result");
+
+    // Already on the cheapest tier — be honest.
+    if(model==="claude-haiku-4-5" || base<=target){
+      el.innerHTML = '<div class="bignum" style="color:#101014">~$0</div>'+
+        '<p class="sub">You\'re already on the cheapest tier, so model-routing won\'t cut much. '+
+        'You may still save with <b>prompt caching</b> and the <b>Batch API</b> — we can capture and '+
+        'measure those too, but this estimator only models model-routing.</p>';
+      return;
+    }
+    var redu = 1 - target/base;                  // per-request reduction on routed share
+    var pctHigh = r*redu, pctLow = r*redu*CONSERV;
+    var sHigh = spend*pctHigh, sLow = spend*pctLow;
+    var feeMid = (sLow+sHigh)/2*FEE, netMid = (sLow+sHigh)/2 - feeMid;
+
+    var warn = "";
+    if(spend>0 && spend<1000){
+      warn = '<div class="warn"><b>Heads up:</b> at this spend the dollars are small — it may not be '+
+             'worth your time yet. There\'s no risk to try (you only pay a share of realized savings), '+
+             'but come back when your bill grows.</div>';
+    }
+    el.innerHTML =
+      '<div class="bignum">'+money(sLow)+'–'+money(sHigh)+'<span style="font-size:18px;color:#6b6b72;font-weight:600">/mo</span></div>'+
+      '<div class="sub">estimated savings — about '+Math.round(pctLow*100)+'–'+Math.round(pctHigh*100)+'% of your bill</div>'+
+      '<div style="margin-top:14px">'+
+        '<div class="line"><span>Your bill today</span><span>'+money(spend)+'/mo</span></div>'+
+        '<div class="line"><span>Estimated savings</span><span>'+money(sLow)+'–'+money(sHigh)+'/mo</span></div>'+
+        '<div class="line"><span>ModelPilot fee (20% of savings)</span><span>~'+money(feeMid)+'/mo</span></div>'+
+        '<div class="line"><span><b>You keep (net)</b></span><span><b>~'+money(netMid)+'/mo</b></span></div>'+
+      '</div>'+ warn;
+  }
+
+  document.addEventListener("input", render);
+  document.addEventListener("change", render);
+  document.getElementById("assum").innerHTML =
+    "How this is figured: routable traffic (the share that's simple enough for a cheaper model) is "+
+    "moved to Claude Haiku 4.5 and priced at public list rates (blended input+output). The low end "+
+    "assumes a real router captures ~70% of the theoretical headroom — quality floors keep your hard "+
+    "tasks on the top model. <b>This is a rough estimate, not a quote.</b> The real number is measured "+
+    "on your own traffic with a held-out control arm once you connect — and caching/Batch can add more "+
+    "on top. We'd rather under-promise here.";
+  render();
+})();
+</script>
+</body></html>
