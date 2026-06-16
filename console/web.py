@@ -537,9 +537,91 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
       <p class="small muted">Point your gateway at ModelPilot with this deployment id:</p>
       <p><code>{_e(deployment['deployment_id'])}</code></p>
       <div class=row><a class="btn sec sm" href="/app/connect">Configuration &amp; deployments</a>
-        <a class="btn sec sm" href="/app/logs">View request logs</a></div></div>
+        <a class="btn sec sm" href="/app/logs">View request logs</a>
+        <a class="btn sec sm" href="/app/estimate">Savings projection</a></div></div>
     {metric_toggle_assets()}"""
     return page("Home", body, account, "/app")
+
+
+# Projector JS (plain string — NOT an f-string — to avoid brace escaping). Mirrors
+# the public /estimator.html logic; seeded with the customer's real baseline spend.
+_PROJECTOR_JS = """<script>(function(){
+  var B={"claude-haiku-4-5":3,"claude-sonnet-4-6":9,"claude-opus-4-8":15,"claude-fable-5":30};
+  var R={routine:0.65,mixed:0.45,complex:0.25}, CONSERV=0.7, FLOOR="claude-haiku-4-5", FEE=0.20;
+  function money(x){return "$"+Math.round(x).toLocaleString();}
+  function go(){
+    var spend=Math.max(0,parseFloat((document.getElementById("pspend")||{}).value)||0);
+    var model=(document.getElementById("pmodel")||{}).value||"claude-opus-4-8";
+    if(model==="unsure")model="claude-opus-4-8";
+    var prof=((document.querySelector('input[name=pprofile]:checked'))||{}).value||"mixed";
+    var el=document.getElementById("presult"); if(!el)return;
+    var base=B[model],target=B[FLOOR],r=R[prof];
+    if(model==="claude-haiku-4-5"||base<=target){el.innerHTML='<div class="small muted">You\\'re already on the cheapest tier — model-routing won\\'t cut much. Prompt caching + the Batch API may still help (we capture those too).</div>';return;}
+    var redu=1-target/base, hi=spend*r*redu, lo=hi*CONSERV;
+    el.innerHTML='<div class="stat green">'+money(lo)+'–'+money(hi)+'<span class="small muted">/mo</span></div>'+
+      '<div class="small muted">projected savings — ~'+Math.round(lo/spend*100||0)+'–'+Math.round(hi/spend*100||0)+'% of bill · you keep ~'+money((lo+hi)/2*(1-FEE))+'/mo after the 20% fee</div>';
+  }
+  document.addEventListener("input",go);document.addEventListener("change",go);go();
+})();</script>"""
+
+
+def estimate_page(account: dict, plan: dict, cycle: dict, lifetime: dict, bill: dict) -> str:
+    """Logged-in savings view: MEASURED savings from the customer's own traffic +
+    an annualized run-rate, plus a what-if projector seeded with their real baseline."""
+    rate = float(bill.get("rate", 0.20))
+    base_m = float(cycle.get("baseline") or 0.0)      # this cycle's baseline spend (~monthly)
+    saved_m = float(cycle.get("savings") or 0.0)
+    reqs = int(cycle.get("requests") or 0)
+    has = reqs > 0 and base_m > 0
+    if has:
+        pct = round(100 * saved_m / base_m)
+        ann_saved = saved_m * 12
+        ann_net = ann_saved * (1 - rate)
+        measured = f"""<div class="grid cols-3">
+      <div class=card><div class=label>Measured savings this cycle</div>
+        <div class="stat green">{money(saved_m)}</div>
+        <div class="small muted">{pct}% off your baseline of {money(base_m)}</div></div>
+      <div class=card><div class=label>Annualized at this run-rate</div>
+        <div class="stat green">{money(ann_saved)}<span class="small muted">/yr</span></div>
+        <div class="small muted">you keep ~{money(ann_net)}/yr after the {int(rate*100)}% fee</div></div>
+      <div class=card><div class=label>Proven on</div>
+        <div class=stat>{reqs:,}</div>
+        <div class="small muted">requests this cycle · measured vs a held-out control arm</div></div>
+    </div>
+    <p class="small muted">These are <b>measured</b>, not estimated — computed from your own traffic.</p>"""
+        seed = int(round(base_m))
+    else:
+        measured = ('<div class="note">No routed traffic yet — connect your gateway to measure real '
+                    'savings. Use the projector below to see the potential, then connect to prove it.</div>')
+        seed = 5000
+    models = [("claude-opus-4-8", "Claude Opus 4.8"), ("claude-fable-5", "Claude Fable 5"),
+              ("claude-sonnet-4-6", "Claude Sonnet 4.6"), ("claude-haiku-4-5", "Claude Haiku 4.5"),
+              ("unsure", "Not sure / a mix")]
+    model_opts = "".join(f'<option value="{v}">{_e(l)}</option>' for v, l in models)
+    body = f"""
+    <h1>Savings projection</h1>
+    {measured}
+    <h2>What-if projector</h2>
+    <div class=card>
+      <p class="small muted">Model a different spend or task mix. {'Seeded with your measured baseline.' if has else 'Estimate only — connect to measure it for real.'}</p>
+      <div class="grid cols-2">
+        <div class=field><label>Monthly Claude spend (USD)</label>
+          <input id=pspend type=number min=0 step=50 value="{seed}"></div>
+        <div class=field><label>Main model today</label>
+          <select id=pmodel>{model_opts}</select></div>
+      </div>
+      <div class=field><label>Traffic profile</label>
+        <label class=row style="font-weight:400"><input type=radio name=pprofile value=routine style="width:auto;margin-right:8px"> Mostly routine (classification, extraction, summaries, simple Q&amp;A)</label>
+        <label class=row style="font-weight:400"><input type=radio name=pprofile value=mixed checked style="width:auto;margin-right:8px"> A mix</label>
+        <label class=row style="font-weight:400"><input type=radio name=pprofile value=complex style="width:auto;margin-right:8px"> Mostly complex reasoning / coding / agents</label>
+      </div>
+      <div id=presult style="margin-top:10px"></div>
+      <p class="small muted" style="margin-top:10px">Routable traffic is priced at Claude Haiku list rates (blended); the low end assumes a real router captures ~70% of the headroom and quality floors keep hard tasks on the top model. A projection — your exact number is measured on your traffic.</p>
+    </div>
+    <div class=row style="margin-top:14px"><a class="btn sec sm" href="/app/connect">Configuration &amp; connect</a>
+      <a class="btn sec sm" href="/app">Back to dashboard</a></div>
+    {_PROJECTOR_JS}"""
+    return page("Savings projection", body, account, "/app")
 
 
 def _quality_card_top(proof: dict, cycle: dict) -> str:
