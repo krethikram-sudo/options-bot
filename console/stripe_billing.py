@@ -2,15 +2,20 @@
 is 20% of the realized savings we deliver.
 
 Model: a Stripe **Meter** (event name e.g. `modelpilot_savings`, aggregation = sum)
-with a metered recurring Price linked to it where 1 unit = $1 of realized savings
-and the per-unit amount is the rate (default $0.20). We report **meter events**
-equal to the dollars of savings delivered, keyed to the customer; Stripe aggregates
-them and invoices rate * savings each cycle. Convert-to-paid runs Stripe Checkout
-(subscription mode) to collect a card and create the subscription.
+with a metered recurring Price linked to it set to **$0.01 per unit (1 cent)**. We
+compute the customer's bill in code — `tier rate × realized savings` (PAYG 20% /
+Self-optimize & Managed 15%) — and report it **in cents** as meter events; Stripe
+sums the cents and the $0.01/unit price invoices that exact amount. Applying the rate
+in code means ONE Price bills every tier correctly. Subscription tiers also add a
+flat monthly Price ($99 Self-optimize, etc.) as a second line item. Convert-to-paid
+runs Stripe Checkout (subscription mode) to collect a card and create the subscription.
 
 Configuration (env):
   STRIPE_SECRET_KEY      sk_live_... / sk_test_...   (required to enable Stripe)
-  STRIPE_PRICE_ID        price_...  metered recurring price linked to the meter, $0.20/unit
+  STRIPE_PRICE_ID        price_...  metered recurring price linked to the meter, **$0.01/unit**
+                                    (we report the bill in cents; tier rate applied in code)
+  STRIPE_SELFOPT_PRICE_ID price_... flat $99/mo recurring price for the Self-optimize tier
+  STRIPE_MANAGED_PRICE_ID price_... flat recurring price for the Managed tier
   STRIPE_METER_EVENT     the meter's event name (default "modelpilot_savings")
   STRIPE_WEBHOOK_SECRET  whsec_...  (optional, for webhook verification)
   CONSOLE_BASE_URL       https://...  (Checkout redirect base)
@@ -119,21 +124,26 @@ def _meter_event_name() -> str:
 
 
 def report_usage(account_id: int, savings_dollars: float) -> bool:
-    """Report a meter event (= dollars of savings) for the account's customer.
-    Stripe's meter aggregates these and the linked price invoices rate * total
-    each cycle. No-op if not paid/configured."""
+    """Report the customer's BILL (their tier rate × realized savings) as a Stripe
+    meter event, in CENTS. The tier rate (PAYG 20% / Self-optimize & Managed 15%)
+    is applied HERE, so a single metered Price set to **$0.01 per unit** invoices
+    the correct percentage for every tier — Stripe sums the cents and the $0.01/unit
+    price bills that exact dollar amount. No-op if not paid/configured."""
     if not enabled() or savings_dollars <= 0:
         return False
     plan = store.get_plan(account_id)
     customer = plan.get("stripe_customer_id")
     if plan.get("plan") != "paid" or not customer:
         return False
+    rate = plan.get("rate", store.TIER_RATES["payg"])
+    bill_cents = int(round(savings_dollars * rate * 100))
+    if bill_cents <= 0:  # sub-cent bill this report — nothing to meter yet
+        return False
     import time
     stripe = _client()
     stripe.billing.MeterEvent.create(
         event_name=_meter_event_name(),
-        payload={"stripe_customer_id": customer,
-                 "value": str(int(round(savings_dollars)))},
+        payload={"stripe_customer_id": customer, "value": str(bill_cents)},
         timestamp=int(time.time()))
     return True
 
@@ -163,10 +173,15 @@ def sync_unreported_usage(path: str | None = None) -> dict:
     conn = store.connect(path)
     reported = 0
     try:
+        # Only bill PAID accounts' POST-conversion savings: never the free-trial
+        # period, never a row the inline /api/meter push already marked reported.
         rows = conn.execute(
             "SELECT m.id, m.realized_savings, d.account_id FROM meter m"
             " JOIN deployments d ON d.deployment_id=m.deployment_id"
-            " WHERE m.stripe_reported=0 AND m.realized_savings>0").fetchall()
+            " JOIN plans p ON p.account_id=d.account_id"
+            " WHERE m.stripe_reported=0 AND m.realized_savings>0"
+            " AND p.plan='paid' AND p.converted_at IS NOT NULL"
+            " AND m.ts >= p.converted_at").fetchall()
         by_account: dict[int, list[int]] = {}
         sums: dict[int, float] = {}
         for r in rows:

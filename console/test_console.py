@@ -194,6 +194,75 @@ def test_caching_savings_shown_but_not_billed(env, client):
     assert "Caching savings captured" in body
 
 
+class _FakeStripe:
+    class billing:
+        class MeterEvent:
+            events = []
+            @classmethod
+            def create(cls, **kw):
+                cls.events.append(kw)
+                return type("E", (), {"id": "evt_test"})()
+
+
+def _fake_stripe(monkeypatch):
+    from console import stripe_billing
+    _FakeStripe.billing.MeterEvent.events.clear()
+    monkeypatch.setattr(stripe_billing, "enabled", lambda: True)
+    monkeypatch.setattr(stripe_billing, "_client", lambda: _FakeStripe)
+    return _FakeStripe.billing.MeterEvent.events
+
+
+def test_report_usage_bills_the_tier_rate_not_a_flat_20pct(env, monkeypatch):
+    _, store = env
+    from console import stripe_billing
+    events = _fake_stripe(monkeypatch)
+    a = store.create_account("rate@y.com", "password123")
+    store.convert_to_paid(a["id"], stripe_customer_id="cus_1")
+    # Self-optimize = 15% -> $100 savings bills $15 = 1500 cents (NOT 2000)
+    store.set_tier(a["id"], "self_optimize")
+    assert stripe_billing.report_usage(a["id"], 100.0) is True
+    assert events[-1]["payload"]["value"] == "1500"
+    # Pay-as-you-go = 20% -> 2000 cents
+    store.set_tier(a["id"], "payg")
+    assert stripe_billing.report_usage(a["id"], 100.0) is True
+    assert events[-1]["payload"]["value"] == "2000"
+
+
+def test_api_meter_marks_row_so_sync_never_double_bills(env, client, monkeypatch):
+    _, store = env
+    from console import stripe_billing
+    events = _fake_stripe(monkeypatch)
+    a = store.create_account("nodbl@y.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    store.convert_to_paid(a["id"], stripe_customer_id="cus_2", now=1000.0)
+    store.set_tier(a["id"], "self_optimize")
+    # realized savings 60 -> 15% = $9 = 900 cents, pushed inline
+    r = client.post("/api/meter", json={"deployment_id": dep, "baseline_cost": 100.0,
+                                         "actual_cost": 40.0})
+    assert r.status_code == 200
+    assert events[-1]["payload"]["value"] == "900"
+    # the inline push marked the row reported -> the sync backstop bills nothing more
+    before = len(events)
+    res = stripe_billing.sync_unreported_usage()
+    assert res["reported"] == 0 and len(events) == before
+
+
+def test_sync_excludes_trial_period_savings(env, monkeypatch):
+    _, store = env
+    from console import stripe_billing
+    events = _fake_stripe(monkeypatch)
+    a = store.create_account("trial@y.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    store.record_meter(dep, baseline_cost=50.0, actual_cost=20.0, ts=1000.0)   # during trial
+    store.convert_to_paid(a["id"], stripe_customer_id="cus_3", now=2000.0)
+    store.set_tier(a["id"], "self_optimize")
+    store.record_meter(dep, baseline_cost=80.0, actual_cost=20.0, ts=3000.0)   # after conversion
+    res = stripe_billing.sync_unreported_usage()
+    # only the post-conversion $60 savings is billed (15% = 900 cents); trial $30 excluded
+    assert res["reported"] == 1
+    assert events[-1]["payload"]["value"] == "900"
+
+
 def test_delete_account_cascade(env):
     _, store = env
     a = store.create_account("del@y.com", "password123")

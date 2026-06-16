@@ -100,10 +100,13 @@ Live URLs:
       liability veil and complicates taxes. So: form entity → EIN → business bank → activate Stripe
       live (redo the 3 keys with `sk_live_…`). Do this only after the entity exists.
 - [ ] **Rotate the leaked Anthropic API key** (pasted in an earlier session — treat as compromised).
-- [ ] **Self-optimize priced at $99/mo + 15%** (live on the site/console). To actually CHARGE the $99:
-      create a **$99/mo recurring price in Stripe** and set the `STRIPE_SELFOPT_PRICE_ID` Fly secret —
-      checkout then bills $99/mo + the metered 15%. (Until then, upgrading records the tier + bills the
-      15% metered piece; the $99 isn't collected.)
+- [ ] **Self-optimize $99/mo + 15% — Stripe price setup (Thursday).** Two prices:
+      (1) the **metered price @ $0.01/unit** → `STRIPE_PRICE_ID` (we report the bill in cents with the
+      tier rate applied in code, so one price bills 20% PAYG / 15% subscription tiers — do NOT use
+      $0.20); (2) the **flat $99/mo** price → `STRIPE_SELFOPT_PRICE_ID` (else only the metered 15% is
+      charged, not the $99). Billing code audited + fixed 2026-06-16: tier rate now actually charged
+      (was 20% flat), inline meter push marks rows so the sync backstop can't double-bill, and sync
+      only bills post-conversion (no trial-period over-billing). Tests cover all three.
 - [ ] **Managed pricing still TBD** (research suggests ~$499/mo + 15%). Decide, then set
       `STRIPE_MANAGED_PRICE_ID` and replace "coming soon" on the Managed card.
 

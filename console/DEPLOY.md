@@ -51,21 +51,25 @@ modelpilot-client
 The gateway reports realized savings to the console every minute (aggregate `$` +
 counts only; `modelpilot meter --watch` is the standalone equivalent for cron).
 
-## 4. Billing (Stripe, usage-based: 20% of realized savings)
+## 4. Billing (Stripe, usage-based: 20% PAYG / 15% on subscription tiers)
 
-Create a **metered** recurring Price where 1 unit = $1 of savings and the unit
-amount is your rate (default $0.20). Then set:
+Create a **metered** recurring Price set to **$0.01 per unit (1 cent)**, linked to a
+Meter. We compute the bill in code (`tier rate × realized savings`) and report it
+**in cents**, so the $0.01/unit price bills the right percentage for every tier —
+one Price covers PAYG (20%) and the 15% subscription tiers. Then set:
 ```bash
 export STRIPE_SECRET_KEY=sk_live_...
-export STRIPE_PRICE_ID=price_...           # the metered price above
-export STRIPE_WEBHOOK_SECRET=whsec_...      # optional, for /api/stripe/webhook
+export STRIPE_PRICE_ID=price_...            # the metered $0.01/unit price above
+export STRIPE_SELFOPT_PRICE_ID=price_...    # flat $99/mo Self-optimize price
+# export STRIPE_MANAGED_PRICE_ID=price_...  # flat Managed price (when set)
+export STRIPE_WEBHOOK_SECRET=whsec_...       # optional, for /api/stripe/webhook
 ```
 Convert-to-paid runs Stripe Checkout (subscription mode) to collect a card; as
-savings are metered we push usage records (= dollars of savings) onto the
-subscription item, so Stripe invoices `rate × savings` each cycle. Schedule
-`console.stripe_billing.sync_unreported_usage` (or rely on per-report pushes) to
-reconcile. **Without** Stripe keys the console still runs end-to-end: convert
-records the plan and metering accrues, to be reconciled once Stripe is connected.
+savings are metered, `/api/meter` pushes the bill (cents) to the meter **and marks
+the row reported** so the `sync_unreported_usage` backstop never double-bills.
+`sync_unreported_usage` only bills paid accounts' **post-conversion** savings.
+**Without** Stripe keys the console still runs end-to-end: convert records the plan
+and metering accrues, to be reconciled once Stripe is connected.
 
 ## Security / privacy
 

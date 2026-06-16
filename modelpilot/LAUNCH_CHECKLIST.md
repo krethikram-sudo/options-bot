@@ -108,7 +108,9 @@ Not legal/tax advice — run the legal + financial items past a startup attorney
 ## Finance / ops — YOURS TO DO
 - [ ] **Sales tax / VAT** on SaaS (turn on Stripe Tax; confirm nexus with your CPA).
 - [ ] **Tech E&O + cyber-liability insurance** before prod traffic routes through you.
-- [ ] **Stripe** live keys + a metered price (1 unit = $1 savings @ $0.20); webhook secret.
+- [ ] **Stripe** live keys + a metered price **@ $0.01/unit** (we report the bill in cents with the
+      tier rate applied in code — one price bills 20% PAYG and 15% subscription tiers); + the flat
+      $99/mo Self-optimize price (`STRIPE_SELFOPT_PRICE_ID`); webhook secret.
 
 ## Security / go-live — YOURS TO DO
 - [ ] **Rotate the Anthropic API key** pasted in chat earlier (treat as compromised).

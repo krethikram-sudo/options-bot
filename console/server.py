@@ -936,7 +936,11 @@ async def api_meter(request: Request):
     try:
         acct = store.account_for_deployment(dep)
         if acct:
-            stripe_billing.report_usage(acct["id"], res["realized_savings"])
+            # Report inline AND mark the row reported, so the sync backstop never
+            # double-bills the same savings. If the push didn't happen (not paid /
+            # Stripe off / sub-cent), the row stays unreported for sync to retry.
+            if stripe_billing.report_usage(acct["id"], res["realized_savings"]):
+                store.mark_meter_reported(res["meter_id"])
             alert = store.budget_alert_pending(acct["id"])
             if alert:
                 try:

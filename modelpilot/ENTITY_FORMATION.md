@@ -43,10 +43,13 @@ a startup attorney.
 
 ## Step 5 — Live Stripe (this is launch blocker #2's payoff)
 - [ ] Activate the **live Stripe account** Atlas links to the new entity (swap `sk_live_…`).
-- [ ] In Stripe: create the **$99/mo recurring price** for Self-optimize → set the
-      `STRIPE_SELFOPT_PRICE_ID` Fly secret (otherwise Self-optimize bills only the 15% metered piece).
+- [ ] Create a **Meter** + a **metered recurring price @ $0.01/unit** linked to it → `STRIPE_PRICE_ID`.
+      (We report the bill in cents with the tier rate applied in code, so this one price bills 20%
+      PAYG and 15% on subscription tiers — do NOT set it to $0.20.)
+- [ ] Create the **$99/mo recurring price** for Self-optimize → `STRIPE_SELFOPT_PRICE_ID`
+      (otherwise Self-optimize bills only the metered 15% and not the $99 subscription).
 - [ ] (Later) decide Managed price (~$499/mo) → `STRIPE_MANAGED_PRICE_ID`.
-- [ ] Re-do the 3 Stripe keys with live values; set the live webhook secret.
+- [ ] Set the 3 live values + the live webhook secret as Fly secrets; ping Claude to verify the flow.
 
 ## Step 6 — Move billing onto the business card
 - [ ] Move **Fly.io billing** and the **vendor Anthropic account** onto the business card/bank.

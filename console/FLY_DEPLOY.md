@@ -44,7 +44,9 @@ fly secrets set \
 # Optional — subscription tiers (flat monthly Stripe prices; set when pricing is decided):
 # fly secrets set STRIPE_SELFOPT_PRICE_ID=price_...   # Self-optimize monthly subscription
 # fly secrets set STRIPE_MANAGED_PRICE_ID=price_...   # Managed monthly subscription
-#   (STRIPE_PRICE_ID = the metered 20%/15%-of-savings price, added to every checkout)
+#   (STRIPE_PRICE_ID = the metered price @ **$0.01/unit**, added to every checkout;
+#    we report the bill in cents with the tier rate applied in code, so one price
+#    bills 20% PAYG and 15% on subscription tiers correctly.)
 ```
 
 > **Verify email works** after deploy: trigger a password reset (or enable 2FA in

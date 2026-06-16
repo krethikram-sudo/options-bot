@@ -990,17 +990,28 @@ def record_meter(deployment_id: str, *, requests: int = 0, routed: int = 0,
     ts = ts or time.time()
     conn = connect(path)
     try:
-        conn.execute(
+        cur = conn.execute(
             "INSERT INTO meter(deployment_id, ts, category, requests, routed, escalations,"
             " baseline_cost, actual_cost, realized_savings, opportunity_saved, caching_saved)"
             " VALUES(?,?,?,?,?,?,?,?,?,?,?)",
             (deployment_id, ts, category, int(requests), int(routed), int(escalations),
              float(baseline_cost), float(actual_cost), float(realized_savings),
              max(0.0, float(opportunity_saved)), max(0.0, float(caching_saved))))
+        meter_id = cur.lastrowid
         conn.commit()
     finally:
         conn.close()
-    return {"ok": True, "realized_savings": realized_savings}
+    return {"ok": True, "realized_savings": realized_savings, "meter_id": meter_id}
+
+
+def mark_meter_reported(meter_id: int, path: str | None = None) -> None:
+    """Mark a meter row as pushed to Stripe so the sync backstop never re-bills it."""
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE meter SET stripe_reported=1 WHERE id=?", (int(meter_id),))
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def _account_savings(conn, account_id: int, since: float | None, until: float | None) -> dict:
