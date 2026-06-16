@@ -1,4 +1,26 @@
 company,segment,contact,role,warm_path,est_claude_spend,stage,last_touch,next_action,notes
-,support_ai,,,,,target,,,
-,legal_doc_ai,,,,,target,,,
-,embedded_assistant,,,,,target,,,
+Augment Code,coding_agent,,CTO / AI-infra lead,,,target,,find buyer on LinkedIn; send opener+estimator,T1 confirmed Claude (Sonnet primary). src claude.com/customers/augment-code
+Warp,coding_agent,,Head of AI / VP Eng,,,target,,find buyer; opener+estimator,T1 confirmed Claude default. src claude.com/customers/warp
+Chatbase,support_ai,Yasser Elsaid (CEO),CEO+eng (lean ~18 ppl),,,target,,DM founder; opener+estimator,T1 confirmed; lean=no FinOps (ideal). src claude.com/customers/chatbase
+Greptile,code_review,,Founding eng / CTO,,,target,,find buyer; opener+estimator,T1 confirmed (Claude Agent SDK); Series A. src siliconangle 2025/09/23
+Inscribe,fintech_doc_ai,,CTO / Head of AI,,,target,,find buyer; opener+estimator,T1 confirmed; fintech/privacy fit. src claude.com/customers/inscribe
+Robin AI,legal_contracts,James Clough (CTO); Richard Robinson (CEO),CTO,,,target,,email/LinkedIn Clough; opener+one-pager,T1 confirmed; legal/privilege fit. src robinai.com Claude post
+Solve Intelligence,legal_patent,,CTO / founding eng,,,target,,find buyer; opener+estimator,T1 confirmed 'Powered by Claude'; ~$12M lean; trade-secret fit. src solveintelligence.com
+Lindy,agent_platform,,Founder / CTO,,,target,,find buyer; opener+estimator,T1 confirmed Claude default. src claude.com/customers/lindy
+Gamma,content_gen,,CTO,,,target,,find buyer; opener+estimator,T1 confirmed; already frames Claude in cost terms. src anthropic.com/customers/gamma
+Carta Healthcare,health_doc_ai,Brent Dover (CEO),Head of AI / CTO,,,target,,find buyer; opener+one-pager,T1 confirmed; BEDROCK; PHI/privacy fit. src claude.com/customers/carta-healthcare
+Elation Health,health_ehr,,Head of AI / VP Eng,,,target,,find buyer; one-pager,T2 confirmed (Claude incl Haiku); PHI. src claude.com/customers/elation-health
+Commure,health_scribe,,CTO / Head of AI,,,target,,find buyer; one-pager,T2 confirmed; PHI. src anthropic.com/news/healthcare-life-sciences
+Equisoft,insurance_tech,,CTO,,,target,,find buyer; one-pager,T2 confirmed; policyholder PII/privacy. src equisoft.com
+Legora,legal_ai,Max Junestrand (CEO),CTO / Head of Eng,,,target,,find buyer; one-pager,T2 confirmed 'mostly Claude'; SIZE (Series D). src claude.com/customers/legora
+Eve,legal_ai,Jay Madheswaran (CEO),CTO / Head of AI,,,target,,find buyer; one-pager,T2 confirmed; SIZE (~$1B). src lawnext.com 2026/06
+CodeRabbit,code_review,,CTO,,,target,,find buyer; opener+estimator,T2 confirmed; MULTI-MODEL; Series B. src innovationopenlab
+Copy.ai,content_gen,Paul Yacoubian (CEO); Chris Lu (CTO),CTO,,,target,,LinkedIn Chris Lu; opener+estimator,T2 confirmed. src claude.com/customers/copy-ai
+Gorgias,ecommerce_support,,CTO / platform lead,,,target,,find buyer; opener+estimator,T2 confirmed; MULTI-MODEL (already routes). src gorgias.com/ai-agent
+Sendbird,support_ai,John S. Kim (CEO),CTO / VP Eng,,,target,,find buyer; one-pager,T2 confirmed; SIZE. src anthropic.com/customers/sendbird
+Decagon,support_ai,Jesse Zhang (CEO),CTO / Head of AI,,,target,,strategic; find buyer,T2 confirmed; MULTI-MODEL; SIZE ($4.5B). src anthropic.com/customers/decagon
+11x,sdr_agent,,CTO / Head of AI,,,target,,find buyer; opener+estimator,T2 confirmed (personalization); MULTI-MODEL. src zenml llmops
+Brex,fintech_spend,,VP Eng / Head of AI,,,target,,strategic; find buyer,T2 confirmed; BEDROCK; SIZE. src anthropic.com/customers/brex
+Casey,insurance_ai,Pascal Kung (VP Eng),VP Eng,,,target,,verify Claude; opener (routing on merits),T3 best-stage (YC F25); Claude UNCONFIRMED. src ycombinator.com/companies/casey
+Leaping AI,voice_support,,CTO co-founder,,,target,,verify Claude; opener,"T3 (YC W25, >100k calls/yr); Claude UNCONFIRMED. src ycombinator.com/companies/leaping-ai"
+Ambral,account_mgmt,,Founder / CTO,,,target,,find buyer; opener,T3 (YC W25); Claude confirmed in build tooling. src claude.com/blog/building-companies-with-claude-code
