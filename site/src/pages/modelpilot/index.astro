@@ -268,16 +268,17 @@ realized savings × <span class="g">20%</span></code></div>
 
     <section class="soft"><div class="wrap">
       <div class="sec-head"><div class="eyebrow">How we compare</div>
-        <h2>The only cost router that never sees your prompts.</h2>
-        <p>Routing to a cheaper model isn't new — Martian, OpenRouter and others do it. The difference is
-          <b style="color:var(--ink)">how</b>: everyone else routes on your prompt (so it leaves your
-          environment), bills when your spend rises, and asks you to trust the savings. We don't.</p></div>
+        <h2>Different tool for a different job.</h2>
+        <p>Routing to a cheaper model isn't new — Martian and OpenRouter do it well, and they beat us on
+          breadth and maturity. We're built for a narrower job: cut your <b style="color:var(--ink)">Claude</b>
+          bill <b style="color:var(--ink)">without prompts ever leaving your environment</b>, paid only on
+          savings, proven on your own traffic. Here's the honest split.</p></div>
       <div class="cmp-wrap"><table class="cmp">
         <thead><tr><th class="feat">&nbsp;</th><th class="us">ModelPilot</th><th>OpenRouter</th><th>Martian</th><th>Build it yourself</th></tr></thead>
         <tbody>
-          <tr><td class="feat">Cuts your bill by routing to a cheaper good-enough model</td>
+          <tr><td class="feat">Cuts your Claude bill (routes to a cheaper good-enough model)</td>
             <td class="us"><span class="y">✓</span></td>
-            <td><span class="n">✗</span><span class="sub">marketplace/gateway; Fusion <i>ensemble</i> costs more</span></td>
+            <td><span class="n">~</span><span class="sub">possible (pick a cheaper model / auto-router), not its focus</span></td>
             <td><span class="y">✓</span></td>
             <td><span class="n">~</span><span class="sub">if you build it</span></td></tr>
           <tr><td class="feat">Prompts never leave your environment</td>
@@ -290,27 +291,37 @@ realized savings × <span class="g">20%</span></code></div>
             <td><span class="n">✗</span><span class="sub">~5% of spend</span></td>
             <td><span class="n">✗</span><span class="sub">metered usage</span></td>
             <td><span class="y">✓</span><span class="sub">no fee, but you build + maintain it</span></td></tr>
-          <tr><td class="feat">Quality proven on <i>your</i> traffic (held-out control arm)</td>
+          <tr><td class="feat">Quality proven on your own traffic (held-out control arm)</td>
             <td class="us"><span class="y">✓</span><span class="sub">non-inferiority RCT, per customer</span></td>
             <td><span class="n">✗</span></td>
             <td><span class="n">✗</span><span class="sub">headline % claims, no per-customer control arm</span></td>
             <td><span class="n">✗</span><span class="sub">you'd build the evals</span></td></tr>
-          <tr><td class="feat">Keep your own Anthropic account (BYOK)</td>
+          <tr><td class="feat">Keep your own provider account (BYOK)</td>
             <td class="us"><span class="y">✓</span></td>
-            <td><span class="n">Partial</span><span class="sub">BYOK mode, then a fee</span></td>
-            <td><span class="n">—</span></td>
+            <td><span class="y">✓</span><span class="sub">supported; fee above the free tier</span></td>
+            <td><span class="n">~</span></td>
             <td><span class="y">✓</span></td></tr>
-          <tr><td class="feat">Fails open — never blocks your traffic</td>
-            <td class="us"><span class="y">✓</span><span class="sub">unreachable ⇒ straight through to Anthropic</span></td>
-            <td><span class="n">✗</span><span class="sub">sits in your request path</span></td>
-            <td><span class="n">✗</span><span class="sub">sits in your request path</span></td>
+          <tr><td class="feat">Fails open if the optimizer is unreachable</td>
+            <td class="us"><span class="y">✓</span><span class="sub">straight through to Anthropic</span></td>
+            <td><span class="n">✗</span><span class="sub">it's in your request path</span></td>
+            <td><span class="n">✗</span><span class="sub">it's in your request path</span></td>
             <td><span class="n">~</span><span class="sub">depends on your build</span></td></tr>
+          <tr><td class="feat">Model breadth across providers</td>
+            <td class="us"><span class="n">✗</span><span class="sub">Claude-focused by design</span></td>
+            <td><span class="y">✓</span><span class="sub">600+ models, many providers</span></td>
+            <td><span class="y">✓</span><span class="sub">broad multi-provider routing</span></td>
+            <td><span class="n">~</span><span class="sub">whatever you integrate</span></td></tr>
+          <tr><td class="feat">Mature &amp; battle-tested at scale</td>
+            <td class="us"><span class="n">✗</span><span class="sub">early-stage</span></td>
+            <td><span class="y">✓</span><span class="sub">large, established</span></td>
+            <td><span class="y">✓</span><span class="sub">well-funded (~$1.3B)</span></td>
+            <td><span class="n">—</span></td></tr>
         </tbody>
       </table></div>
-      <p class="cmp-foot">Being fair: <b>OpenRouter</b> wins on model breadth (600+ models) and <b>Martian</b>
-        is well-funded with broad multi-provider routing — if you need a many-model marketplace, they may
-        fit better. Our wedge is the combination: route without ever seeing your prompts, pay only for
-        savings, proven on your own traffic. <a href="/compare.html">See the full, honest comparison →</a></p>
+      <p class="cmp-foot"><b>How to choose:</b> pick <b>OpenRouter</b> or <b>Martian</b> if you need many
+        models across providers or a battle-tested vendor at scale. Pick <b>ModelPilot</b> if prompt
+        privacy, pay-only-for-savings, and quality proven on your own traffic matter most — that
+        combination is our wedge. <a href="/compare.html">See the full, honest comparison →</a></p>
     </div></section>
 
     <section id="pricing"><div class="wrap">
