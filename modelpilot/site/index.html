@@ -205,6 +205,20 @@
   footer .sep{flex:1}
   /* scroll reveals — staggered (--rd), re-trigger both directions; bar fills; hover lift.
      opacity/transform carry the stagger delay; hover uses `translate` (0 delay) so it stays snappy. */
+  /* comparison table */
+  .cmp-wrap{max-width:1000px;margin:0 auto;overflow-x:auto}
+  .cmp{width:100%;border-collapse:collapse;font-size:14.5px;min-width:720px}
+  .cmp th,.cmp td{padding:13px 15px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  .cmp thead th{font-family:var(--disp);font-size:13.5px;font-weight:700;color:var(--mut);border-bottom:2px solid var(--line)}
+  .cmp thead th.us{color:var(--vio)}
+  .cmp th.feat{width:32%}
+  .cmp td.feat{font-weight:600;color:var(--ink)}
+  .cmp .us{background:rgba(124,58,237,.05)}
+  .cmp tbody tr:last-child td{border-bottom:none}
+  .cmp .y{color:#16a34a;font-weight:700}
+  .cmp .n{color:var(--mut);font-weight:700}
+  .cmp .sub{display:block;font-size:12px;color:var(--mut);font-weight:400;margin-top:3px;line-height:1.35}
+  .cmp-foot{max-width:1000px;margin:16px auto 0;font-size:13.5px;color:var(--mut)}
   .reveal{opacity:0;transform:translateY(26px);
     transition:opacity .9s var(--ease) var(--rd,0ms),transform .9s var(--ease) var(--rd,0ms),
                translate .3s var(--ease),box-shadow .35s ease;
@@ -393,6 +407,76 @@ realized savings × <span class="g">20%</span></code>
     <div class="guard"><span class="ck">✓</span><div>The thin client is publishable and inspectable — the routing IP stays server-side, your data stays with you.</div></div>
     <div class="guard"><span class="ck">✓</span><div>Self-serve, per-deployment isolation, and you can leave anytime — your key, your traffic.</div></div>
   </div>
+</div></section>
+
+<!-- COMPARE -->
+<section class="soft"><div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">// How we compare</div>
+    <h2>The only cost router that never sees your prompts.</h2>
+    <p>Routing to a cheaper model isn't new — Martian, OpenRouter and others do it. The difference is
+       <b style="color:var(--ink)">how</b>: everyone else routes on your prompt (so it leaves your
+       environment), bills when your spend rises, and asks you to trust the savings. We don't.</p>
+  </div>
+  <div class="cmp-wrap">
+    <table class="cmp">
+      <thead><tr>
+        <th class="feat">&nbsp;</th>
+        <th class="us">ModelPilot</th>
+        <th>OpenRouter</th>
+        <th>Martian</th>
+        <th>Build it yourself</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="feat">Cuts your bill by routing to a cheaper good-enough model</td>
+          <td class="us"><span class="y">✓</span></td>
+          <td><span class="n">✗</span><span class="sub">marketplace/gateway; Fusion <i>ensemble</i> costs more</span></td>
+          <td><span class="y">✓</span></td>
+          <td><span class="n">~</span><span class="sub">if you build it</span></td>
+        </tr>
+        <tr>
+          <td class="feat">Prompts never leave your environment</td>
+          <td class="us"><span class="y">✓</span><span class="sub">classifies locally; your key, your prompt</span></td>
+          <td><span class="n">✗</span><span class="sub">proxies your traffic</span></td>
+          <td><span class="n">✗</span><span class="sub">routes on the prompt</span></td>
+          <td><span class="y">✓</span><span class="sub">your infra</span></td>
+        </tr>
+        <tr>
+          <td class="feat">You pay only on realized savings</td>
+          <td class="us"><span class="y">✓</span><span class="sub">20% PAYG · 15% on subscription tiers</span></td>
+          <td><span class="n">✗</span><span class="sub">~5% of spend</span></td>
+          <td><span class="n">✗</span><span class="sub">metered usage</span></td>
+          <td><span class="y">✓</span><span class="sub">no fee, but you build + maintain it</span></td>
+        </tr>
+        <tr>
+          <td class="feat">Quality proven on <i>your</i> traffic (held-out control arm)</td>
+          <td class="us"><span class="y">✓</span><span class="sub">non-inferiority RCT, per customer</span></td>
+          <td><span class="n">✗</span></td>
+          <td><span class="n">✗</span><span class="sub">headline % claims, no per-customer control arm</span></td>
+          <td><span class="n">✗</span><span class="sub">you'd build the evals</span></td>
+        </tr>
+        <tr>
+          <td class="feat">Keep your own Anthropic account (BYOK)</td>
+          <td class="us"><span class="y">✓</span></td>
+          <td><span class="n">Partial</span><span class="sub">BYOK mode, then a fee</span></td>
+          <td><span class="n">—</span></td>
+          <td><span class="y">✓</span></td>
+        </tr>
+        <tr>
+          <td class="feat">Fails open — never blocks your traffic</td>
+          <td class="us"><span class="y">✓</span><span class="sub">unreachable ⇒ straight through to Anthropic</span></td>
+          <td><span class="n">✗</span><span class="sub">sits in your request path</span></td>
+          <td><span class="n">✗</span><span class="sub">sits in your request path</span></td>
+          <td><span class="n">~</span><span class="sub">depends on your build</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cmp-foot">Being fair: <b>OpenRouter</b> wins on model breadth (600+ models) and <b>Martian</b>
+    is well-funded with broad multi-provider routing — if you need a many-model marketplace, they may fit
+    better. Our wedge is the combination: route without ever seeing your prompts, pay only for savings,
+    proven on your own traffic. <a href="/compare.html">See the full, honest comparison →</a></p>
 </div></section>
 
 <!-- PRICING -->
