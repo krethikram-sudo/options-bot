@@ -9,10 +9,10 @@ Live URLs:
 - Console (admin + customer): https://modelpilot-console-prod.fly.dev/  (admin → `/admin`)
 - Brain: https://modelpilot-brain-prod.fly.dev/  (health: `/health`)
 
-> **▶️ RESUME HERE next session:** Core loop is proven end-to-end (gateway → brain routed 57% →
-> metered to console → dashboard shows baseline-vs-actual). Remaining: confirm the leaked Anthropic
-> key is rotated, deploy the account-deletion feature, and (founder track) form the entity to unlock
-> live Stripe. Everything is committed/pushed.
+> **▶️ RESUME HERE next session:** Launch blocker #1 (deploy) DONE — console + brain deployed,
+> Fly billing card added (2026-06-16, per founder). Remaining launch path: **(2) founder track —
+> form entity → live Stripe → $99 price**, **(3) security — rotate leaked key, SMTP, admin password**,
+> **(4) counsel review**. Everything is committed/pushed.
 
 ---
 
@@ -89,8 +89,9 @@ Live URLs:
       is on actual output, not the cap, so trimming it doesn't cut normal cost.)
 
 ## 🔜 Next (in progress)
-- [ ] **Deploy the account-deletion feature** — `cd ~/options-bot && git pull && fly deploy`
-      (then delete the stuck "bypass-paid" test account).
+- [x] **Deployed the latest console + brain** (2026-06-16) — account deletion, quality dashboard,
+      autopilot ramp, savings/caching cards, billing decision panel, `/api/policy` tier gate, loading
+      bar, always-on console all now live. (Delete the stuck "bypass-paid" test account if still present.)
 - [ ] **Confirm the leaked Anthropic API key is rotated** — if the smoke test used a fresh key and
       the old one was deleted in the Anthropic console, this is done; otherwise rotate it.
 - [ ] (Optional) Re-run the smoke test with realistic traffic to see a meaningful savings $ figure.
@@ -126,12 +127,10 @@ Live URLs:
       leaked key + moving billing to the business card once the entity exists.
 
 ## 🔒 Security / go-live
-- [ ] **Fly.io billing** — free trial ended; add a card (fly.io/dashboard → Billing) to keep
-      `modelpilot-console-prod` + `modelpilot-brain-prod` alive. **Console is now always-on**
-      (`min_machines_running = 1`, `auto_stop = off`) so the signed-in UX has no cold-start lag —
-      costs a small always-on shared-cpu-1x/512mb fee. **Brain is still scale-to-zero** (fails open,
-      so a cold brain just means that first request passes through unrouted). `fly deploy` the console
-      to apply. Move Fly billing to the business card once the entity exists.
+- [x] **Fly.io billing** — card added (2026-06-16); console deployed **always-on**
+      (`min_machines_running = 1`, `auto_stop = off`) so the signed-in UX has no cold-start lag.
+      Brain stays scale-to-zero (fails open). TODO: move Fly billing to the business card once the
+      entity exists.
 - [ ] Verify `CONSOLE_SECRET` is a **stable** Fly secret (don't rotate casually — it logs everyone out).
 - [ ] **Configure SMTP** (`SMTP_*` Fly secrets) — REQUIRED for 2FA codes, password resets, and budget
       alerts to actually send (without it they're only logged in dev). See `console/FLY_DEPLOY.md`.
