@@ -13,6 +13,13 @@ Live URLs:
 > Fly billing card added (2026-06-16, per founder). Remaining launch path: **(2) founder track —
 > form entity → live Stripe → $99 price**, **(3) security — rotate leaked key, SMTP, admin password**,
 > **(4) counsel review**. Everything is committed/pushed.
+>
+> **STRATEGY (2026-06-16, after deep competitor + market research):** ICP re-cut to the
+> **"spend-maturity moment"** (Claude-heavy teams with a real, growing, finance-visible bill and no one
+> to fix it) — NOT "small/non-tech startups" (they're on $20 seats, unmonetizable). Lead with
+> **done-for-you + proof + pay-on-savings**; privacy is the trust-unlock, regulated = premium expansion.
+> See revised `ICP.md` + `GTM_PLAN.md` (bill-shock motion) + `COMPETITIVE.md` (2026-06-16). **#1 next
+> business action: validate willingness-to-pay — 5–10 bill-shock pilots before investing further.**
 
 ---
 

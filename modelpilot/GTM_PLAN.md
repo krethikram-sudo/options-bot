@@ -113,3 +113,68 @@ pilots demand, not by what's interesting.
 
 `pilot_tracker.csv` — update every Friday. Stages:
 `target → contacted → call → shadow → pilot → report → paid / lost`.
+
+---
+
+## Bill-shock acquisition motion (2026-06-16 — primary GTM for the spend-maturity beachhead)
+
+Supersedes the "SF startups / small enterprise" framing above as the PRIMARY motion (that note is
+older). Per the 2026-06-16 research + revised `ICP.md`: target the **spend-maturity moment**
+(post-prototype, pre-FinOps — a real, growing, finance-visible metered Claude bill ~$2k–50k/mo, no one
+minding it). The trigger is **bill shock**. The motion must be **self-serve PLG + partner/embedded**
+— paid outbound can't pay back at this ARPU.
+
+### The one job before scaling spend: validate
+Find **5–10 companies at the bill-shock moment** and confirm they (a) turn it on and (b) keep paying
+the 20% once savings are visible. Until that's proven, everything below is hypothesis. Kill/scale
+checkpoint: ~90 days post-launch. If no, fall back to the regulated premium ICP.
+
+### Channel 1 — Intercept bill shock with content/SEO (cheapest, highest-intent)
+People in bill shock search. Own those queries:
+- "why is my Claude / Anthropic API bill so high", "reduce Claude API costs", "Claude vs Haiku cost",
+  "Anthropic prompt caching / batch savings", "LLM cost out of control".
+- Ship a **free, no-signup "Claude bill calculator / savings estimator"** (metadata-only: paste token
+  counts + model mix → projected savings). This is the top-of-funnel magnet AND the pre-sale qualifier
+  (it reveals whether they have routable headroom — disqualify zero-headroom for free).
+- A few honest, genuinely useful posts: "the 5 levers on a Claude bill (routing, caching, batch,
+  max_tokens, model choice) and how much each really saves", "what AWS Bedrock routing does and
+  doesn't do." Be the honest explainer → trust → trial.
+
+### Channel 2 — Zero-config trial that converts in one sitting
+- Setup must be a **one-line base-URL change**, free, no card. Time-to-first-savings-number measured in
+  minutes (the estimator → live dashboard).
+- Onboarding is the whole sales motion at this ARPU — instrument activation; humans only touch accounts
+  above ~$5k/mo savings.
+
+### Channel 3 — Partner / embedded (reach without CAC)
+- **Dev agencies / fractional CTOs / AI consultancies** building on Claude for clients — they feel the
+  bill, can flip it on across clients (rev-share).
+- **Cloud marketplaces** (AWS) + MSPs/SIs — ride existing relationships; marketplaces convert acquisition
+  cost into rev-share.
+- Later: **accountants/FinOps advisors** as an embedded "AI line-item" once there's a track record.
+
+### Messaging (lead with outcome + zero risk, not "routing")
+"Your Claude bill is growing and no one's minding it. ModelPilot cuts it for you, proves the savings on
+your own traffic with a held-out control arm, and you pay only a share of what we save — no savings, no
+bill. One-line setup; your key and prompts never leave your environment."
+
+### Pricing in-market
+Pay-on-savings (20%) is the **acquisition hook**; the **$99/mo Self-optimize** floor is the retention
+layer. Lead the trial with the hook; introduce the floor when savings are proven. (Avoid pure
+contingency — WTP collapses once savings look "easy.")
+
+### Funnel math (bill-shock, plan then correct from reality)
+```
+Intent traffic (SEO + estimator) → free estimator runs → zero-config trials
+  → trials that realize savings → paying (20%) → convert to $99/mo floor
+Disqualify early + free: $20-seat / no real bill / zero routable headroom.
+```
+
+### What to instrument
+Estimator runs, trial activations, time-to-first-savings, realized-savings per account, % of trials
+with meaningful headroom, paid-conversion, retention after savings are visible (the fragility test).
+
+### Guardrails
+- Qualify on the BILL, not the logo. 100% self-serve under ~$5k/mo savings.
+- Honest estimator (no inflated projections) — the estimator's credibility IS the brand.
+- Watch automated-support cost; a single human ticket can erase a thin account's margin.
