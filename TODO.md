@@ -55,6 +55,12 @@ Live URLs:
       Naturalistic (non-telegraphed) phrasings keep it an honest test, not teaching-to-the-test; the one
       issue it surfaced was an over-conservative label on our side, corrected. CALIBRATION v0.3;
       `label_source` provenance added.
+  - [ ] **Upgrade new-prompt labels from `synthetic_heuristic` → `ai_judge`** via the canonical
+        pipeline (`python -m modelpilot.goldenset.build submit/collect/judge/label` on the 78 new
+        prompts). ATTEMPTED 2026-06-16: batch generation succeeded (234 outputs) but the **judge step
+        failed — vendor Anthropic account out of credits**. Corpus kept its honest `synthetic_heuristic`
+        labels (147 rows: 69 seed-judge + 78 synthetic; still 0% false-downgrade). Re-run after topping
+        up credits — it's just `judge` + `label`.
   - [ ] **Human-label the open-ended slice** (the real trust gap): run `scripts/build_label_worksheet.py`
         → fill the 53 open-ended-category rows → `--apply` (sets `label_source: human`). Then the
         open-ended floors can be trusted/lowered. Keep growing toward 300–1000 via this + consented
@@ -112,6 +118,12 @@ Live URLs:
 ## 💳 Finance / ops
 - [ ] Stripe Tax / sales-tax nexus review (with CPA).
 - [ ] Tech E&O + cyber-liability insurance before real production traffic.
+
+## ⚙️ Vendor ops
+- [ ] **Top up the vendor Anthropic API account** (out of credits as of 2026-06-16). Blocks our
+      *internal* model use — golden-set judge labeling, smoke tests, any vendor-side eval. Does NOT
+      block customer routing (that's BYOK — customers use their own key). Tie this to rotating the
+      leaked key + moving billing to the business card once the entity exists.
 
 ## 🔒 Security / go-live
 - [ ] **Fly.io billing** — free trial ended; add a card (fly.io/dashboard → Billing) to keep
