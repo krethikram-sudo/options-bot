@@ -152,3 +152,108 @@ Plus: BYOK (keep your Anthropic account), **fail-open**, and depth on the Claude
 or out-fund Martian. The defensible wedge is the **privacy architecture + pay-for-savings
 + Claude specialization** combo. Lead with privacy ("route without ever seeing your
 prompts") — it's the one claim the rest of the field can't make.
+
+---
+
+## Deep research update — 2026-06-16 (5-stream web research, adversarially verified)
+
+Multi-agent web research (Martian/NotDiamond, OpenRouter, gateways, routing technique,
+privacy/defensibility). Sources prioritized 2025-2026; confidence + UNVERIFIED flags carried.
+This update **corrects earlier claims** and is deliberately un-flattering — truth to act on.
+
+### Corrections to prior assumptions (and to the live landing table)
+- **The ~$1.3B valuation is OpenRouter's, NOT Martian's.** OpenRouter raised a $113M Series B
+  led by CapitalG (Alphabet) at ~$1.3B, May 2026 (TechCrunch/BusinessWire — HIGH). The Martian
+  $1.3B traces to a single retail-investor Medium post — DEBUNKED. **Martian is ~$9M seed-stage**
+  (NEA, Sept 2024; Accenture *Ventures invested*, did not acquire). Fixed on the site.
+- **OpenRouter is ~400+ models / 60+ providers**, not "600+" (their own docs say 400+/300+).
+  Fixed on the site (we had "600+").
+- **"Route without seeing the prompt" is NOT unique.** Earlier docs called it the one claim
+  "the rest of the field can't make" — that's overstated. Not Diamond (client-side routing +
+  fuzzy hashing + VPC/local + SOC2/ISO), and self-hosted LiteLLM/Portkey (no-egress when you run
+  them), already keep prompt data local. **Privacy architecture is closer to table-stakes than a
+  moat; it's copyable in ~1-2 quarters.** Treat it as a *feature in a bundle*, not THE moat.
+
+### Per-competitor (verified highlights)
+- **Martian** — predicted-best-model router that **reads the prompt**; hosted gateway (prompts
+  transit it). $9M seed (NEA), Accenture Ventures partner ("Airlock" compliance suite + enterprise
+  distribution). Claims "20-97%"/"beats GPT-4" — self-referential (own RouterBench). Independent
+  **RouterArena (2025) ranks Martian's published methods mid/low-pack** (#16-19), below Azure's
+  router. No verified self-host/SOC2/HIPAA. Does well: research credibility, Accenture channel.
+- **OpenRouter** — marketplace/gateway, ~400+ models/60+ providers; **at real scale (~25T
+  tokens/wk, ~$1.3B)**. Auto-router is NotDiamond-powered and reads the prompt (privacy-preserving
+  fuzzy-hash claim). **Fusion = multi-model ENSEMBLE, ~4-5x cost-UP** (confirmed; opposite of a
+  cost router). BYOK: **1M free req/mo then 5%** (confirmed). Prompts transit their servers; ZDR
+  mode + EU "Sovereign AI" routing; SOC2/HIPAA/BAA/self-host UNVERIFIED (a third-party profile
+  listing FedRAMP etc. looks overstated). Does well: breadth, failover, DX, scale.
+- **Not Diamond** — **closest privacy peer.** Client-side SDK (completions go direct to provider),
+  fuzzy hashing so "never sees raw query strings," **VPC + local/on-prem, SOC2 + ISO 27001, ZDR**.
+  Nuance: the routing *decision* is hosted by default (input reaches them unless ZDR/local).
+  Predicted-best-model, reads prompt. Strategic distribution: IBM Ventures + SAP.iO + AWS
+  Marketplace. Claims "30%+/up to 10x" (self-referential). RouterArena reportedly ranks it low
+  (#12, "picks expensive models" — MEDIUM). Does well: trainable custom routers, low latency,
+  prompt-adaptation, compliance posture.
+- **LiteLLM** — OSS self-hostable gateway. **Shipped auto cost-down routing in 2025** (Auto-Router
+  stable Jul 2025; Adaptive Router beta, 7 task types, quality-vs-cost weights). Self-host = true
+  no-egress (their existing pitch). **Compliance credibility collapse:** SOC2/ISO issued by "Delve"
+  (fake-compliance-as-a-service, imploded ~2026) + a Mar 2026 PyPI supply-chain compromise. Free
+  OSS; enterprise pricing unpublished (a "$49/mo" figure is UNVERIFIED/likely false).
+- **Portkey** — OSS gateway (**fully open-sourced Mar 2026**) + managed. **Has the full regulated
+  stack: SOC2/ISO/GDPR/HIPAA + custom BAA, air-gap/VPC.** Routing is manual rule config + semantic
+  caching (no auto quality-gated downgrade). Could add cost routing trivially.
+- **Helicone** — **sunsetting** (acquired by Mintlify, Mar 2026, maintenance-only). Observability +
+  caching; OSS self-host. Not a cost-down model router.
+- **Cloudflare AI Gateway** — hosted edge; Dynamic Routing (Aug 2025, by latency/cost/availability),
+  caching, budgets, DLP content inspection. Auto task-based cheapest-model routing = roadmap, not GA.
+  Not self-hostable. Core free.
+- **Vercel AI Gateway** — hosted; **0% token markup** (headline), ZDR by default; routes among
+  providers of the *same* model (not cheaper-substitute). OpenRouter dropped fees in response.
+- **Unify** — **PIVOTED OUT of LLM routing** to GTM/sales agents. Cautionary tale: the standalone
+  pure-router business is commercially fragile.
+- **Requesty** — active hosted cost-routing gateway / OpenRouter alternative; "~40% savings"
+  (vendor marketing, UNVERIFIED); proprietary SaaS, prompts transit.
+- **Provider-native (the structural threat):** **AWS Bedrock Intelligent Prompt Routing is GA and
+  routes WITHIN the Claude family (Sonnet<->Haiku) for ~30% — built-in, free.** GPT-5 ships a
+  built-in real-time router. Databricks AI Gateway routes/combines models. Anthropic's own caching
+  (~90%) + Batch (~95%) capture most savings first-party (our auto-cache even helps customers do it).
+
+### Honest defensibility verdict
+- **Weak/copyable:** the privacy architecture (peers have it), the cost-routing mechanic (LiteLLM
+  shipped it; providers ship it free), Claude-only depth (also a TAM/single-vendor limiter).
+- **Genuinely differentiated:** **pay-on-realized-savings billing — no competitor does it** (all
+  bill seat/usage/subscription/markup). Wins trust when spend FALLS; aligns incentives.
+- **Credibility opening (timing):** vendor savings claims are inflated and **independently
+  debunked** (RouterArena shows routers underdeliver; LLM-judge leniency is a documented hole).
+  LiteLLM's compliance is discredited (Delve); Helicone is sunsetting; Unify exited. An **honest,
+  substantiated (control-arm) savings + clean compliance** story can win *right now*.
+- **Real but narrow openings:** managed, drop-in, zero-config for teams that won't run LiteLLM;
+  buyers who reject ANY egress even with a BAA (narrow — most accept BAA+ZDR from Anthropic).
+
+### Steelman against us (internalize)
+1. Provider-native routing (Bedrock intra-Claude GA ~30%; GPT-5 router) absorbs the core wedge free.
+2. Anthropic caching/batch capture most savings without us or our fee.
+3. Regulated buyers increasingly accept egress under BAA+ZDR (Anthropic signs BAAs, offers ZDR).
+4. Privacy architecture isn't unique (Not Diamond, self-hosted OSS) and rivals have stronger certs.
+5. Claude-only shrinks TAM + single-vendor risk; can't route to a cheaper non-Claude model.
+6. Pay-on-savings depends on a contested counterfactual baseline — procurement may distrust it.
+7. Routing is commoditizing toward zero margin (Vercel 0%, Cloudflare free, OSS).
+
+### So why we can still win (narrowed, honest)
+Not "the only private router." The defensible play = **the combination, aimed narrowly**:
+**incentive-aligned pay-on-realized-savings + honest/audited (control-arm) savings + managed
+drop-in + Claude-family depth + no-egress-by-architecture**, sold to the **regulated, Claude-heavy,
+won't-DIY** buyer — and racing to **harden the real moats**: SOC2/HIPAA/BAA certs (peers already
+have them — this is now table stakes, not optional), per-customer embeddedness/switching cost, and
+defensible savings measurement. De-risk the Bedrock/native-routing threat by being cross-cutting
+(works regardless of where they run Claude) and by competing on *proof + alignment*, not the
+routing mechanic.
+
+### Action items surfaced
+- [x] Fix site: "600+"->"400+/60+"; Martian "$1.3B/✓ mature"-> "~$9M seed / ~ early-stage".
+- [ ] Stop calling "route without seeing prompts" unique anywhere in copy; reframe as a *bundle*.
+- [ ] Make **pay-on-realized-savings** the lead differentiator (it's the genuinely unique one).
+- [ ] Prioritize SOC2/HIPAA/BAA (now competitive table stakes, not a future nicety).
+- [ ] Add a direct **vs. Not Diamond** comparison (closest peer) to /compare.
+- [ ] Address the **AWS Bedrock intra-Claude routing** threat explicitly in positioning.
+- [ ] Re-verify (manual, primary-source) before any external use: Not Diamond no-egress default,
+      Portkey ZDR/BAA, LiteLLM post-incident compliance, Requesty/Martian pricing + compliance.
