@@ -61,3 +61,17 @@ a startup attorney.
 ## What this unblocks
 Entity → EIN → bank → live Stripe → $99 price = **launch blocker #2 done**. Then remaining launch
 path is #3 (rotate leaked key, SMTP, admin pw) and #4 (counsel review).
+
+## Links (official)
+- Trademark search (USPTO): https://tmsearch.uspto.gov/  (old "TESS" is retired)
+- Stripe Atlas (C-corp + EIN + bank + Stripe): https://stripe.com/atlas
+- 83(b): no online filing — Atlas generates the letter; mail certified to the IRS center for your
+  state within 30 days (address per Atlas/CPA). EIN (manual fallback, Atlas does it):
+  https://www.irs.gov/businesses/small-businesses-self-employed/apply-for-an-employer-identification-number-ein-online
+- Business bank (Mercury): https://mercury.com
+- Stripe live: dashboard https://dashboard.stripe.com/ · products/price https://dashboard.stripe.com/products
+  · API keys https://dashboard.stripe.com/apikeys · webhooks https://dashboard.stripe.com/webhooks
+- Fly billing: https://fly.io/dashboard  (→ org → Billing)
+- Anthropic billing / credits: https://console.anthropic.com/  (→ Plans & Billing)
+- Delaware franchise tax + annual report (due Mar 1): https://corp.delaware.gov/ ·
+  https://corp.delaware.gov/paytaxes/
