@@ -47,6 +47,13 @@ Live URLs:
       (All console UI/auth changes need a `fly deploy` to go live.)
 - [x] **ICP/GTM doc** (`modelpilot/ICP.md`) — sharp ICP, target verticals, qualifying questions,
       per-vertical messaging, moat-hardening (SOC-2/HIPAA/on-prem). Internal-only (in migrate list).
+- [x] **Zero-collection moat decision** (`FLEET_LEARNING.md`): do NOT build cross-customer data
+      collection (asterisk on the privacy promise + data-processor liability). Cold-start comes from a
+      self-owned eval corpus instead; per-customer tuning stays 100% local. ICP.md moat #4 reframed.
+- [x] **Cold-start from our own data**: +30 synthetic ICP prompts (healthcare/legal/fintech, no real
+      PII/PHI) added to the golden set (69→99). Result: coverage 56.5%→62.6%, accuracy 68.1%→77.8%,
+      **false-downgrade still 0%** at gate ≥0.6; all 30 classified correctly. CALIBRATION v0.2.
+      Next: grow toward 300–1000 + a human-labeled slice for open-ended categories.
 - [x] **Self-optimize tier: evaluation + decision tooling** (`modelpilot/SELF_OPTIMIZE_EVAL.md`).
       Measured uplift from tuning on own data: ~35% more savings (realistic) / up to ~51% (ceiling),
       i.e. coverage 56%→~77%. Break-even: pays for itself above ~$300–500/mo savings. Personalized

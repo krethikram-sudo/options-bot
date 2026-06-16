@@ -1,1 +1,1 @@
-Migration trigger — 2026-06-16T03:05:00Z (FLEET_LEARNING.md: privacy-safe cross-customer calibration moat design — granular non-invertible request-shape cells + tuning outcomes, k-anon/DP, global-prior warm-start)
+Migration trigger — 2026-06-16T03:40:00Z (Cold-start from our own data: +30 synthetic ICP prompts (healthcare/legal/fintech, no real PII/PHI) to the golden set -> coverage 56.5%->62.6%, accuracy 68.1%->77.8%, false-downgrade still 0% at gate>=0.6; CALIBRATION v0.2)

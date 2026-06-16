@@ -1,3 +1,35 @@
+# Golden-set calibration
+
+## v0.2 ICP corpus expansion (2026-06-16) — own-data cold-start
+
+Added **30 synthetic, ICP-representative prompts** (healthcare / legal / financial
+services), all fully fabricated — **no real PII/PHI** — spanning the routable bulk
+(extraction, classification, summarization, translation, rewrite, simple SQL, short
+QA) *and* genuinely-hard reasoning (clinical differential, legal argument/negotiation,
+option-pricing derivations, investment memos). This is the **no-collection cold-start
+prior**: a richer, ICP-shaped corpus we *own*, so new customers in these verticals get
+a credible calibration without us ever collecting customer data (see
+`FLEET_LEARNING.md` → Decision).
+
+Corpus: **69 → 99 prompts**; labels **75 haiku / 7 sonnet / 17 opus** (less skewed than
+v0's 78% haiku). Measured against the same heuristic router (baseline = opus):
+
+| gate | coverage | accuracy | false-dg | missed |
+|---|---|---|---|---|
+| ≤0.50 | 80.8% | 76.8% | 5.1% | 18.2% |
+| **0.60–0.70** | **62.6%** | **77.8%** | **0.0%** | 22.2% |
+| 0.80 (shipped) | 57.6% | 74.7% | **0.0%** | 25.3% |
+
+**Zero false downgrades at every gate ≥0.60 holds on the expanded corpus.** Coverage
+(56.5%→62.6%) and accuracy (68.1%→77.8%) both rose: the ICP bulk is highly routable and
+the router classified all 30 additions correctly (0 false-down, 0 missed) — the hard
+reasoning prompts stayed on opus via complex-work signals / low-confidence fallback, the
+mechanical ones routed to haiku. Caveat: still synthetic + LLM-judge-grade labels; the
+real per-customer number comes from the holdout RCT. Next: keep growing toward 300–1000,
+add a human-labeled slice for open-ended categories.
+
+---
+
 # Golden-set calibration — v0 (2026-06-10) + router v0.1 retune (2026-06-12)
 
 ## v0.1 retune: content-difficulty features (measured against the same labels)
