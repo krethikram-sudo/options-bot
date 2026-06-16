@@ -1,5 +1,73 @@
 # ModelPilot — design-partner outreach kit
 
+> **2026-06-16 REFRESH (use these — sections further below predate the shadow-mode
+> removal + the hosted console).** Current motion: **estimator-led, hosted-console
+> signup, Guidance→Autopilot (no "shadow"), pay-on-realized-savings.** Target the
+> **spend-maturity moment** (a real, growing, finance-visible Claude bill, no one
+> minding it). See `ICP.md` + `GTM_PLAN.md` (bill-shock motion). Prospect-facing
+> one-pager: `PILOT_ONEPAGER.md`.
+
+## The 30-second opener (warm DM / email — start here)
+> Subject: **cut your Claude bill — only pay if it works**
+>
+> Hey {name} — saw you're building on Claude. I built **ModelPilot**: it routes each
+> request to the cheapest model that's actually good enough, **proves the savings on
+> your own traffic** (held-out control arm), and you **pay only a cut of what we save
+> — no savings, no bill.** Setup is a one-line base-URL change; your API key and
+> prompts never leave your environment.
+>
+> 2-min gut check before anything → {estimator link: https://modelpilot.pages.dev/estimator.html}
+> (paste your spend, see a rough number — nothing's sent anywhere).
+>
+> Worth 15 min to run it on your real traffic for two weeks, free?
+
+## Cold/warm email (fuller)
+> Subject: **proof, not promises: what routing would cut off your Claude bill**
+>
+> Hi {name},
+>
+> Most teams send everything to the flagship Claude model out of caution and overpay —
+> a quality regression gets blamed on the engineer; a 3× bill is invisible. ModelPilot
+> fixes that safely: it routes each request to the cheapest model that's *provably good
+> enough*, keeps your hard tasks on the top model, and **measures the savings against a
+> held-out control arm on your own traffic** — so the number is real, not a marketing %.
+>
+> Honest pitch: I don't know what it saves *you* yet — that's the pilot. Two weeks, a
+> one-line setup, your key/prompts never leave your box. You get a report: savings per
+> task type, baseline-vs-actual, and the quality analysis. **You pay only 20% of the
+> savings we actually deliver — if it's boring, you owe nothing.**
+>
+> Rough estimate in 2 min: {estimator link}. Worth a 15-min call?
+>
+> {you}
+
+## Community / social post
+> Your Claude API bill bigger than you'd like? I built a drop-in that routes each
+> request to the cheapest model that's good enough and **proves** the savings on your
+> own traffic — you pay only a cut of what it saves (no savings, no bill), and your
+> prompts never leave your environment. Free 2-min estimator (no signup, nothing sent):
+> {estimator link}. Happy to run a free 2-week pilot on real traffic — DM me.
+
+## The pilot shape (what you're offering)
+1. **Sign up** (free, no card): {signup: https://modelpilot-console-prod.fly.dev/signup}.
+2. **One-line setup:** install the ModelPilot client, point your service's
+   `ANTHROPIC_BASE_URL` at it. Key never leaves; prompts never leave.
+3. **Guidance mode (default):** we *recommend* the cheaper-but-good-enough model per
+   request — nothing about your traffic changes yet. The dashboard fills with
+   would-be savings + a quality (non-inferiority) read.
+4. **Autopilot when convinced:** flip it on, ramping from a slice of traffic → all,
+   with a confidence gate + held-out control arm so every claimed dollar is measured.
+5. **Kill switch at every step** — revert to the direct API with the same one-line change.
+
+## Success criteria (agree up front)
+- Measured potential savings ≥ ~20% of baseline on piloted traffic.
+- Quality: non-inferiority parity vs the control arm (no detectable regression).
+- Zero gateway-caused incidents; negligible added latency (routing decision is local).
+- The honest test: after seeing real numbers, would they pay the 20%?
+
+---
+
+
 ## ICP (who to pursue, in order)
 
 **Bullseye:** engineering-led product companies (Series A–C), **$5K–$100K/mo
