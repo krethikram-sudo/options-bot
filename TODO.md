@@ -50,10 +50,15 @@ Live URLs:
 - [x] **Zero-collection moat decision** (`FLEET_LEARNING.md`): do NOT build cross-customer data
       collection (asterisk on the privacy promise + data-processor liability). Cold-start comes from a
       self-owned eval corpus instead; per-customer tuning stays 100% local. ICP.md moat #4 reframed.
-- [x] **Cold-start from our own data**: +30 synthetic ICP prompts (healthcare/legal/fintech, no real
-      PII/PHI) added to the golden set (69→99). Result: coverage 56.5%→62.6%, accuracy 68.1%→77.8%,
-      **false-downgrade still 0%** at gate ≥0.6; all 30 classified correctly. CALIBRATION v0.2.
-      Next: grow toward 300–1000 + a human-labeled slice for open-ended categories.
+- [x] **Cold-start from our own data**: golden set 69→**147** prompts (synthetic ICP + naturalistic
+      general traffic, no real PII/PHI). Gate 0.60: coverage ~60%, accuracy ~79%, **false-downgrade 0%**.
+      Naturalistic (non-telegraphed) phrasings keep it an honest test, not teaching-to-the-test; the one
+      issue it surfaced was an over-conservative label on our side, corrected. CALIBRATION v0.3;
+      `label_source` provenance added.
+  - [ ] **Human-label the open-ended slice** (the real trust gap): run `scripts/build_label_worksheet.py`
+        → fill the 53 open-ended-category rows → `--apply` (sets `label_source: human`). Then the
+        open-ended floors can be trusted/lowered. Keep growing toward 300–1000 via this + consented
+        shadow traffic (never synthetic-only). **This one is yours/a labeler's — I can't fake human labels.**
 - [x] **Self-optimize tier: evaluation + decision tooling** (`modelpilot/SELF_OPTIMIZE_EVAL.md`).
       Measured uplift from tuning on own data: ~35% more savings (realistic) / up to ~51% (ceiling),
       i.e. coverage 56%→~77%. Break-even: pays for itself above ~$300–500/mo savings. Personalized

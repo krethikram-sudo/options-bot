@@ -1,1 +1,1 @@
-Migration trigger — 2026-06-16T03:40:00Z (Cold-start from our own data: +30 synthetic ICP prompts (healthcare/legal/fintech, no real PII/PHI) to the golden set -> coverage 56.5%->62.6%, accuracy 68.1%->77.8%, false-downgrade still 0% at gate>=0.6; CALIBRATION v0.2)
+Migration trigger — 2026-06-16T05:20:00Z (Corpus growth toward 300: golden set 99->147 naturalistic prompts (gate 0.60 -> 59.9% coverage, 78.9% accuracy, 0% false-downgrade); label_source provenance; human-review worksheet for open-ended categories; CALIBRATION v0.3)

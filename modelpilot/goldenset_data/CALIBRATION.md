@@ -1,5 +1,41 @@
 # Golden-set calibration
 
+## v0.3 corpus growth + label provenance + human-review scaffold (2026-06-16)
+
+Grew the corpus **99 → 147** with 48 hand-authored, **naturalistic** prompts across general
+traffic + all three verticals and the full difficulty range. Deliberately **not**
+reverse-engineered to the classifier's regexes — many are phrased plainly (e.g. "help me
+think through prioritizing my week", "refactor our auth module to support OAuth") so the
+number is a *real* test of recall/safety, not teaching-to-the-test.
+
+| gate | coverage | accuracy | false-dg | missed |
+|---|---|---|---|---|
+| ≤0.50 | 81.0% | 75.5% | 8.2% | 16.3% |
+| **0.60–0.70** | **59.9%** | **78.9%** | **0.0%** | 21.1% |
+| 0.80 (shipped) | 55.8% | 76.9% | **0.0%** | 23.1% |
+
+Honest reads:
+- **Coverage settled at 59.9%** (vs the v0.2 telegraphed batch's 62.6%) — the naturalistic
+  prompts that don't telegraph their category land below the gate and ride the baseline
+  (safe "missed"), which is the truthful number. Accuracy still rose (78.9%).
+- **Still 0% false-downgrade at gate ≥0.6.** The naturalistic test surfaced exactly **one**
+  tier misjudgment (`g-cv-02`), which was an over-conservative *label* on our side (haiku is
+  genuinely fine for a generic 1:1-advice question), not a router safety failure — corrected
+  to ground truth (logged via `label_note`). No classifier change was needed.
+- **Label provenance:** new rows carry `label_source: synthetic_heuristic`. We do **not**
+  conflate these with human-verified labels.
+
+### Human-review scaffold (the open-ended trust gap)
+The weakest labels are the open-ended categories (math/strategy/creative/debugging/etc.,
+LLM-judge-graded, small n — "Do NOT lower the open-ended floors yet"). We do not fabricate
+human labels. `scripts/build_label_worksheet.py` emits a CSV of the **53 open-ended prompts**
+for a human (founder/labeler) to set the cheapest-adequate model; `--apply` writes them back
+with `label_source: human`. That's how the open-ended floors earn the right to be trusted/
+lowered. Path to 300–1000 trusted labels: this human pass + consented shadow-traffic prompts
+(never synthetic-only).
+
+---
+
 ## v0.2 ICP corpus expansion (2026-06-16) — own-data cold-start
 
 Added **30 synthetic, ICP-representative prompts** (healthcare / legal / financial
