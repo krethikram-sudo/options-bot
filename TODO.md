@@ -14,6 +14,17 @@ Live URLs:
 > form entity → live Stripe → $99 price**, **(3) security — rotate leaked key, SMTP, admin password**,
 > **(4) counsel review**. Everything is committed/pushed.
 >
+> **PROGRESS 2026-06-17:** Nav decluttered. Deep competitor research added
+> (`MARKET_STUDY_2026.md`, `TOKEN_OPTIMIZATION_THESIS.md`, + proof/billing audit): durable
+> angle = the independent **proven-savings referee** with savings-based billing; control-arm
+> measurement is the only uncontested piece (savings-share billing itself is copyable from cloud
+> FinOps — ProsperOps/Zesty/nOps). Shipped router **v0.37.0** (long-document summarization now
+> floors Sonnet — fixes a smoke-test-found false-downgrade; CI green). Ran a full **smoke test,
+> offline + LIVE**: signup→billing lifecycle all pass; **live measured ~40.7% savings, 4/5
+> switches judged non-inferior**, and the control-arm flagged one Haiku extraction as degraded
+> (the measurement working as intended). Vendor Anthropic credits **refilled**; golden-set
+> judge-upgrade batch submitted (81 `synthetic_heuristic` → `ai_judge`, in progress).
+>
 > **STRATEGY (2026-06-16, after deep competitor + market research):** ICP re-cut to the
 > **"spend-maturity moment"** (Claude-heavy teams with a real, growing, finance-visible bill and no one
 > to fix it) — NOT "small/non-tech startups" (they're on $20 seats, unmonetizable). Lead with
@@ -24,6 +35,16 @@ Live URLs:
 ---
 
 ## ✅ Done
+
+### 2026-06-17
+- [x] **Nav UX decluttered** — top nav trimmed 9→6 links, link-text no longer wraps (static + Astro).
+- [x] **Deep competitor + market research** — `MARKET_STUDY_2026.md` (neutral landscape; 5 acquisitions
+      in 12mo; routing/caching commoditizing), `TOKEN_OPTIMIZATION_THESIS.md` (academic review across 5
+      technique families; edge ≠ a token trick), + a competitor proof/billing audit. Net: durable angle is
+      the **independent proven-savings referee** + savings-based billing; control-arm measurement is the
+      only uncontested piece (savings-share billing is copyable from cloud FinOps).
+- [x] **Router v0.37.0** — long-document summarization now floors at Sonnet (context-size promotion);
+      +3 golden long-summary rows; full suite 210 passed; `modelpilot-ci` green.
 - [x] Console deployed to Fly (`modelpilot-console-prod`), admin login working.
 - [x] Brain deployed to Fly (`modelpilot-brain-prod`), healthy, wired to console via `CONSOLE_URL`.
 - [x] Customer landing CTAs repointed to the live console (free `.fly.dev` route).
@@ -66,8 +87,11 @@ Live URLs:
         pipeline (`python -m modelpilot.goldenset.build submit/collect/judge/label` on the 78 new
         prompts). ATTEMPTED 2026-06-16: batch generation succeeded (234 outputs) but the **judge step
         failed — vendor Anthropic account out of credits**. Corpus kept its honest `synthetic_heuristic`
-        labels (147 rows: 69 seed-judge + 78 synthetic; still 0% false-downgrade). Re-run after topping
-        up credits — it's just `judge` + `label`.
+        labels (147 rows: 69 seed-judge + 78 synthetic; still 0% false-downgrade). Credits refilled
+        2026-06-17 — re-run IN PROGRESS: the prior 234 outputs didn't persist, so re-running the full
+        `submit`/`collect`/`judge`/`label` on the 81 `synthetic_heuristic` rows (now incl. 3 new
+        long-summary rows) in a separate workdir, then merging `ai_judge` labels back (keeping the 69
+        seed labels) and re-validating the gate.
   - [ ] **Human-label the open-ended slice** (the real trust gap): run `scripts/build_label_worksheet.py`
         → fill the 53 open-ended-category rows → `--apply` (sets `label_source: human`). Then the
         open-ended floors can be trusted/lowered. Keep growing toward 300–1000 via this + consented
@@ -101,7 +125,12 @@ Live URLs:
       bar, always-on console all now live. (Delete the stuck "bypass-paid" test account if still present.)
 - [ ] **Confirm the leaked Anthropic API key is rotated** — if the smoke test used a fresh key and
       the old one was deleted in the Anthropic console, this is done; otherwise rotate it.
-- [ ] (Optional) Re-run the smoke test with realistic traffic to see a meaningful savings $ figure.
+- [x] **Smoke test (offline + LIVE) PASSED — 2026-06-17.** Offline: real router decisions on a
+      22-prompt ICP basket + full console lifecycle (signup→entitlement→metering→convert) all green;
+      golden eval 0% false-downgrade. **Live (real Claude): ~40.7% MEASURED savings on a real sample,
+      4/5 switches judged non-inferior by Opus; control-arm flagged one Haiku extraction as degraded.**
+      Harnesses: `scripts/smoke_icp.py`, `smoke_console.py`, `smoke_live.py`. Next: a larger real
+      sample (or a customer's traffic) for a statistically solid number.
 - [ ] **Stripe LIVE mode — GATED on the entity.** Set up the *live* Stripe account under the
       **company** (entity + EIN + business bank account), NOT personal/SSN — commingling weakens the
       liability veil and complicates taxes. So: form entity → EIN → business bank → activate Stripe
@@ -134,7 +163,7 @@ Live URLs:
 - [ ] Tech E&O + cyber-liability insurance before real production traffic.
 
 ## ⚙️ Vendor ops
-- [ ] **Top up the vendor Anthropic API account** (out of credits as of 2026-06-16). Blocks our
+- [x] **Vendor Anthropic API account topped up** (refilled 2026-06-17). Was blocking our
       *internal* model use — golden-set judge labeling, smoke tests, any vendor-side eval. Does NOT
       block customer routing (that's BYOK — customers use their own key). Tie this to rotating the
       leaked key + moving billing to the business card once the entity exists.
