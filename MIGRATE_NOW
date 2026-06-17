@@ -1,1 +1,1 @@
-Migration trigger — 2026-06-16T21:35:00Z (Web: where-we-save.html (savings-by-work-type table, linked from nav/footer); reusable PDF generators scripts/md_to_pdf.py + scripts/make_sales_pdfs.py)
+Migration trigger — 2026-06-17T00:00:00Z (Landing page: added "What we optimize" condensed savings-by-work-type section before the comparison table, linking to where-we-save.html — mirrored in modelpilot/site/index.html and site/src/pages/modelpilot/index.astro)
