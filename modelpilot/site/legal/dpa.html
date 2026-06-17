@@ -31,9 +31,13 @@
     agreement between the parties for use of the Service.</p>
 
   <h2 id="2">2. Scope &amp; nature of processing</h2>
-  <p>The Service routes Claude API requests to cost-efficient models. <b>By design, prompt content, model
-    outputs, and Customer's API keys are not transmitted to or processed by ModelPilot</b> — they pass from
-    Customer's infrastructure directly to Anthropic using Customer's key. ModelPilot processes only:</p>
+  <p>The Service routes Claude API requests to cost-efficient models. <b>In the default self-hosted /
+    thin-client deployment, prompt content, model outputs, and Customer's API keys are not transmitted to
+    or processed by ModelPilot</b> — they pass from Customer's infrastructure directly to Anthropic using
+    Customer's key. (In the optional <b>hosted-gateway</b> deployment, Customer's request content and API
+    key transit ModelPilot's systems solely to route the request; ModelPilot acts as processor for that
+    transit and does not store prompt content or model outputs.) Apart from that routing transit,
+    ModelPilot processes only:</p>
   <ul>
     <li>account data (e.g. the email address and company of authorized users);</li>
     <li>operational metadata (task category, token counts, model identifiers, cost/savings figures, status

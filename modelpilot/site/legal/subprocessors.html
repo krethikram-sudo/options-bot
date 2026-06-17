@@ -20,10 +20,12 @@
   <p class="lead">The third-party services ModelPilot relies on to deliver the product. We'll keep this
     page current and give notice of material changes.</p>
 
-  <div class="note"><b>Important:</b> your <b>prompt content goes directly from your infrastructure to
-    Anthropic using your own API key</b> — it does not pass through ModelPilot. Anthropic is therefore your
-    model provider, not ModelPilot's subprocessor for prompt content. The services below process only
-    account data and aggregate/opt-in metadata.</p>
+  <div class="note"><b>Important:</b> in the default self-hosted / thin-client deployment, your <b>prompt
+    content goes directly from your infrastructure to Anthropic using your own API key</b> — it does not
+    pass through ModelPilot, so Anthropic is your model provider, not ModelPilot's subprocessor for prompt
+    content. In the optional <b>hosted-gateway</b> deployment, request content transits ModelPilot only to
+    route it and is not stored. The services below process only account data and aggregate/opt-in
+    metadata.</p>
 
   <table>
     <thead><tr><th>Subprocessor</th><th>Purpose</th><th>Data processed</th></tr></thead>
@@ -35,8 +37,9 @@
     </tbody>
   </table>
 
-  <p class="small muted">This list reflects our current architecture. The exact hosting and email providers
-    depend on the deployment; contact us for the specifics applicable to your account. To be notified of
+  <p class="small muted">This list reflects our current architecture. We will list the specific hosting and
+    email vendors by name here before onboarding any customer that requires a named-subprocessor list
+    (e.g., under GDPR Art. 28); contact us for the specifics applicable to your account. To be notified of
     changes, email <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a>.</p>
 
   <p class="foot" style="margin-top:30px"><a href="/security.html">← Security &amp; trust</a> ·

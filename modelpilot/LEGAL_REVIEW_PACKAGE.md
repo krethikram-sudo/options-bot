@@ -1,22 +1,16 @@
 # ModelPilot — Legal Document Review Package
-*Assembled 2026-06-17 for counsel review. Source: `modelpilot/site/legal/` (the live public documents at modelpilot.pages.dev/legal/). These are working templates — NOT yet counsel-reviewed. This package consolidates the five core agreements plus the open questions our own analysis flagged.*
+*Updated 2026-06-17 after the first structural review. Source: `modelpilot/site/legal/`. Still NOT final/counsel-reviewed — the draft banners stay until an attorney signs off.*
 
-## Documents in this package
-1. **Terms of Service** — `legal/terms.html`
-2. **Privacy Policy** — `legal/privacy.html`
-3. **Acceptable Use Policy (AUP)** — `legal/aup.html`
-4. **Master Services Agreement (MSA)** — `legal/msa.html`
-5. **Data Processing Addendum (DPA)** — `legal/dpa.html`
-   - (supporting) Subprocessors — `legal/subprocessors.html`
+## Revision status (after 2026-06-17 review)
+**Applied in this revision:**
+- Governing law/venue set to **Delaware** (Terms §11, MSA §11) — founder decision; final venue wording to confirm with counsel.
+- **Indemnity disclosure rewritten** (Terms §10): ModelPilot now makes *no representation* about the scope of Anthropic's indemnity (removed the "may fall within those exclusions" admission).
+- **Hosted-gateway carve-outs added** so the absolute "never reaches us" claims are scoped to the default self-hosted deployment (Terms §8/§10, Privacy short-version + collect + sharing, DPA §2, Subprocessors).
+- **Liability-cap split flagged as intentional** (Terms §7 = 3 mo self-serve; MSA §9 = 12 mo enterprise).
+- **Explicit Usage-Policy suspension right** added (AUP).
 
-## Open questions for counsel (please address in review)
-- **Governing law & venue** — none is currently set in the Terms/MSA; please specify (e.g., Delaware, consistent with the planned DE C-corp).
-- **Anthropic IP-indemnity disclosure (§K.3).** Anthropic's copyright indemnity to the customer is *excluded* for (a) customer modifications to the Services and (b) combining Outputs with non-Anthropic tech. Routing to a cheaper model is still 'use of the Services', but caching / fallbacks / semantic dedup could be argued as modification/combination. We added a one-line Terms disclosure that using ModelPilot may affect the scope of Anthropic's IP indemnity and that customers can disable cache/transforms if indemnity coverage matters — please confirm wording is adequate.
-- **ZDR / Covered-Models scoping (Anthropic Service-Specific Terms §F).** Anthropic may retain Inputs/Outputs for safety review even under zero-data-retention. Our privacy claims must be scoped to *our* systems (we never see prompts), not to Anthropic's own retention. Please confirm Privacy Policy wording does not overclaim.
-- **Flow-through Usage-Policy obligations.** Anthropic's Usage Policy imposes High-Risk-Use-Case duties (human-in-the-loop + AI-disclosure for legal/healthcare/finance/etc.) and a 'consumer chatbot must disclose it's AI' rule. We restate these in the AUP/Terms — confirm sufficiency.
-- **Hosted (non-default) gateway mode.** Default deployment is self-hosted/thin-client (key + prompts never leave the customer box). For the optional hosted mode (customer key transits our servers), confirm the MSA/DPA make the customer responsible for use under its key and name us an authorized processor (Anthropic Commercial Terms §D.5 / §E.2).
-- **Billing model accuracy.** We bill a percentage of *realized savings* (not token resale). Confirm the Terms/MSA describe this correctly and that we are not 'reselling the Services' under Anthropic Commercial Terms §D.4.
-- **Entity, signature blocks, effective dates.** Templates use placeholders; finalize once the Delaware C-corp is formed (entity name, address, notice info, effective dates).
+**Still pending — founder:** specific subprocessor vendor names (hosting + email); entity name / signature blocks / effective dates (blocked on the DE C-corp via Stripe Atlas).
+**Still pending — attorney (judgment calls, left as-is + flagged):** SCC module/annexes mechanics (DPA §10); California enforceability of the AUP "competing service" clause; final confirmation of all of the above.
 
 ---
 
@@ -76,13 +70,18 @@ THE MAXIMUM EXTENT PERMITTED BY LAW.
 TO THE MAXIMUM EXTENT PERMITTED BY LAW, WE WILL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL,
 CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR LOST PROFITS/DATA. OUR TOTAL LIABILITY FOR ANY CLAIM IS
 LIMITED TO THE FEES YOU PAID US IN THE THREE (3) MONTHS BEFORE THE EVENT GIVING RISE TO THE
-CLAIM. You are responsible for your own Anthropic/model-provider charges.
+CLAIM. You are responsible for your own Anthropic/model-provider charges. (This three-month cap
+applies to self-serve customers on these Terms; customers under a negotiated
+MSA have a separate, twelve-month cap — the difference is intentional.)
 
 #### 8. Data
 
 Our handling of data is described in the Privacy Policy and, for
-personal data processed on your behalf, the DPA. Prompt content,
-model outputs, and your API key are not transmitted to us by the proxy.
+personal data processed on your behalf, the DPA. In the default
+self-hosted / thin-client deployment, prompt content, model outputs, and your API key are not
+transmitted to us by the proxy. If you opt into a hosted-gateway deployment, your API key
+and request content transit our systems solely to route the request and are handled as your
+processor under the DPA; we do not store prompt content or model outputs.
 
 #### 9. Term & termination
 
@@ -111,17 +110,20 @@ loop and an AI-involvement disclosure to your end users. Any consumer-facing cha
 or interactive agent must disclose to users that they are interacting with AI. You are
 responsible for meeting these requirements.
 
-- Optimization may affect Anthropic's IP indemnity. Anthropic's copyright/IP indemnity to
-you can be narrowed where outputs result from modifications to, or combination of, the Services
-with technology not provided by Anthropic. The Service's optimization features — model
-substitution, response caching, semantic caching, and fallbacks — may fall within those
-exclusions. If full indemnity coverage matters for your use case, you can disable caching and
-transforms in the Service, and you should confirm the scope of your coverage with Anthropic.
-This is a disclosure, not legal advice.
+- Anthropic's IP indemnity is governed solely by your agreement with Anthropic. Your
+agreement with Anthropic — not ModelPilot — determines the scope of any copyright or
+IP indemnity Anthropic provides, including any exclusions (for example, exclusions that can apply
+where outputs result from modifications to, or combination of, the Services with technology not
+provided by Anthropic). ModelPilot makes no representation or warranty as to whether any
+feature of the Service does or does not affect that indemnity. Because the Service offers
+optional features (e.g., model substitution, response caching, semantic caching, fallbacks) that
+you can enable or disable, you are responsible for determining — and confirming directly
+with Anthropic — whether your configuration affects your coverage. This paragraph is a
+disclosure for your awareness; it is not legal advice and is not a statement about your coverage.
 
 - Anthropic's own data handling is outside our control. Our privacy commitments describe
-only what ModelPilot does (the proxy does not transmit your prompts, outputs, or API
-key to us). Anthropic's handling of your data is governed by your Anthropic agreement —
+only what ModelPilot does (in the default self-hosted deployment, the proxy does not
+transmit your prompts, outputs, or API key to us). Anthropic's handling of your data is governed by your Anthropic agreement —
 for example, Anthropic may retain inputs and outputs for safety review on certain models even
 where zero-data-retention would otherwise apply, and Anthropic's Development Partner / data
 opt-in setting permits training on your content if you enable it. Do not enable that setting
@@ -129,9 +131,11 @@ unless you intend that result; we never enable it on your behalf.
 
 #### 11. Changes; governing law
 
-We may update the Service and these terms; material changes will be communicated. Governing law
-and venue: [to be set with counsel]. If any provision is unenforceable, the rest remain
-in effect.
+We may update the Service and these terms; material changes will be communicated. These terms are
+governed by the laws of the State of Delaware, without regard to its conflict-of-laws rules,
+and the parties submit to the exclusive jurisdiction of the state and federal courts located in
+Delaware (final venue language to be confirmed in counsel review). If any provision is
+unenforceable, the rest remain in effect.
 
 Questions: krethikram@gmail.com
 · Privacy · Acceptable Use ·
@@ -149,8 +153,11 @@ Privacy Policy (template) — ModelPilot
 Template / draft. Published for review; not legal advice. Finalize
 with counsel for your jurisdiction (GDPR/CCPA specifics, etc.).
 
-The short version: your prompts, model outputs, and API key never reach
-us. We process account details and aggregate, metadata-only usage figures.
+The short version: in the default self-hosted / thin-client deployment, your
+prompts, model outputs, and API key never reach us — we process only account details and aggregate,
+metadata-only usage figures. If you opt into the hosted-gateway deployment, your request
+content and API key transit our systems solely to route the request (handled as your processor
+under the DPA); we still do not store prompt content or model outputs.
 
 #### What we collect
 
@@ -162,8 +169,10 @@ figures, status and routing flags — and any opt-in per-request metadata you se
 
 - Billing data: handled by our payment processor; we store usage amounts and invoices.
 
-- We do NOT collect prompt text, model outputs, or your Anthropic API key — the proxy
-never transmits them to us, and our endpoints reject payloads that contain them.
+- We do NOT store prompt text or model outputs. In the default self-hosted deployment the
+proxy never transmits them (or your API key) to us, and our endpoints reject payloads that
+contain them. In the optional hosted-gateway deployment they transit our systems only to route
+the request and are not retained.
 
 #### How we use it
 
@@ -175,8 +184,9 @@ not sell personal data.
 
 We share data only with the service providers needed to run the Service (hosting, payments,
 email), listed at /legal/subprocessors, under appropriate
-data-protection terms. Your prompt content goes from your infrastructure directly to Anthropic
-with your key — not via us.
+data-protection terms. In the default self-hosted deployment your prompt content goes from your
+infrastructure directly to Anthropic with your key — not via us; in the hosted-gateway deployment
+it transits our systems only to route the request and is not stored.
 
 #### Retention & your rights
 
@@ -209,8 +219,6 @@ DPA · Subprocessors ·
 
 Acceptable Use Policy (template) — ModelPilot
 
-Acceptable use
-
 ### Acceptable Use Policy
 
 Template / draft. Published for review; not legal advice.
@@ -233,7 +241,8 @@ a competing service;
 - infringe others' rights, or process data you are not authorized to process.
 
 You are responsible for content you send through your own API key to the model provider. We may
-suspend or terminate access for violations, with notice where practicable. Report abuse to
+suspend or terminate access for violation of this Policy — including violations of Anthropic's Usage
+Policy or any model provider's terms — with notice where practicable. Report abuse to
 krethikram@gmail.com.
 
 Terms ·
@@ -308,7 +317,9 @@ in breach of this MSA — each subject to prompt notice, control of defense, and
 NEITHER PARTY IS LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES OR
 LOST PROFITS/DATA. EXCEPT FOR EXCLUDED CLAIMS (e.g., confidentiality breach, indemnity, Customer's
 payment obligations), EACH PARTY'S TOTAL LIABILITY IS CAPPED AT THE FEES PAID OR PAYABLE IN THE
-TWELVE (12) MONTHS BEFORE THE CLAIM.
+TWELVE (12) MONTHS BEFORE THE CLAIM. (This twelve-month cap is for negotiated/enterprise customers
+under this MSA; self-serve customers on the click-through Terms have a
+separate, three-month cap — the difference is intentional.)
 
 #### 10. Term, termination & survival
 
@@ -320,8 +331,10 @@ warranty disclaimers, liability limits) survive.
 #### 11. General
 
 Optional: uptime SLA, support tier, and security commitments (e.g., SOC 2) may be attached as
-exhibits. Insurance, publicity/logo use, assignment, force majeure, governing law and venue:
-[to be completed with counsel].
+exhibits. This MSA is governed by the laws of the State of Delaware, without regard to its
+conflict-of-laws rules, and the parties submit to the exclusive jurisdiction of the state and federal
+courts located in Delaware. Insurance, publicity/logo use, assignment, and force majeure terms
+to be completed with counsel.
 
 Enterprise terms: krethikram@gmail.com
 · Terms · DPA ·
@@ -352,9 +365,13 @@ agreement between the parties for use of the Service.
 
 #### 2. Scope & nature of processing
 
-The Service routes Claude API requests to cost-efficient models. By design, prompt content, model
-outputs, and Customer's API keys are not transmitted to or processed by ModelPilot — they pass from
-Customer's infrastructure directly to Anthropic using Customer's key. ModelPilot processes only:
+The Service routes Claude API requests to cost-efficient models. In the default self-hosted /
+thin-client deployment, prompt content, model outputs, and Customer's API keys are not transmitted to
+or processed by ModelPilot — they pass from Customer's infrastructure directly to Anthropic using
+Customer's key. (In the optional hosted-gateway deployment, Customer's request content and API
+key transit ModelPilot's systems solely to route the request; ModelPilot acts as processor for that
+transit and does not store prompt content or model outputs.) Apart from that routing transit,
+ModelPilot processes only:
 
 account data (e.g. the email address and company of authorized users);
 
@@ -444,10 +461,12 @@ Subprocessors — ModelPilot
 The third-party services ModelPilot relies on to deliver the product. We'll keep this
 page current and give notice of material changes.
 
-Important: your prompt content goes directly from your infrastructure to
-Anthropic using your own API key — it does not pass through ModelPilot. Anthropic is therefore your
-model provider, not ModelPilot's subprocessor for prompt content. The services below process only
-account data and aggregate/opt-in metadata.
+Important: in the default self-hosted / thin-client deployment, your prompt
+content goes directly from your infrastructure to Anthropic using your own API key — it does not
+pass through ModelPilot, so Anthropic is your model provider, not ModelPilot's subprocessor for prompt
+content. In the optional hosted-gateway deployment, request content transits ModelPilot only to
+route it and is not stored. The services below process only account data and aggregate/opt-in
+metadata.
 
 SubprocessorPurposeData processed
 
@@ -461,8 +480,9 @@ StripePayments & subscription billingBilling contact & payment details (held by 
 Email provider
 (transactional email, if configured)Password resets, budget & review alertsEmail address, message content of the notification
 
-This list reflects our current architecture. The exact hosting and email providers
-depend on the deployment; contact us for the specifics applicable to your account. To be notified of
+This list reflects our current architecture. We will list the specific hosting and
+email vendors by name here before onboarding any customer that requires a named-subprocessor list
+(e.g., under GDPR Art. 28); contact us for the specifics applicable to your account. To be notified of
 changes, email krethikram@gmail.com.
 
 ← Security & trust ·
