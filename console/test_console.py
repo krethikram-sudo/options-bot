@@ -100,6 +100,27 @@ def test_entitlement_trial_paid_suspended(env):
     assert store.entitlement("dep_unknown")["reason"] == "unknown deployment"
 
 
+def test_guidance_is_trial_only_and_never_bills(env):
+    _, store = env
+    a = store.create_account("g@y.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    # Trial default is guidance, which never applies switches (so never realizes savings/bills).
+    assert store.get_settings(a["id"])["mode"] == "guidance"
+    assert not store.entitlement(dep)["apply"]
+    # Converting to paid auto-flips to autopilot, and routing then applies (the billable mode).
+    store.convert_to_paid(a["id"])
+    assert store.get_settings(a["id"])["mode"] == "autopilot"
+    ent = store.entitlement(dep)
+    assert ent["apply"] and ent["mode"] == "autopilot"
+    # A paid customer cannot switch back to guidance (it's trial-only).
+    try:
+        store.update_settings(a["id"], mode="guidance")
+        assert False, "guidance should be rejected for a paid plan"
+    except store.StoreError:
+        pass
+    assert store.get_settings(a["id"])["mode"] == "autopilot"
+
+
 def test_autopilot_ramp_in_entitlement(env):
     _, store = env
     a = store.create_account("ramp@y.com", "password123")

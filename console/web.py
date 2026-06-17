@@ -517,7 +517,7 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
     {_opportunity_card(cycle)}
 
     <h2>Routing mode</h2>
-    <div class=card>{mode_toggle(mode)}
+    <div class=card>{mode_toggle(mode, plan.get("plan") == "paid")}
       <p class="small muted" style="margin-top:10px">Guidance recommends switches without changing traffic;
       autopilot applies them automatically. Change takes effect on your gateway within seconds.</p>
       {_autopilot_ramp(int(settings.get('autopilot_pct', 100)), mode)}
@@ -742,16 +742,20 @@ def _compare_bars(baseline: float, actual: float) -> str:
       <div class=bar><span style="width:{aw:.0f}%"></span></div></div>"""
 
 
-def mode_toggle(current: str) -> str:
+def mode_toggle(current: str, paid: bool = False) -> str:
     opts = [
-        ("guidance", "Guidance", "Recommend cheaper models; you stay in control."),
+        ("guidance", "Guidance", "Recommend cheaper models; you stay in control. (Free trial only.)"),
         ("autopilot", "Autopilot", "Auto-route to the cheapest good-enough model."),
     ]
+    if paid:  # paid plans are autopilot-only — guidance is a trial-only "try it first" mode
+        opts = [o for o in opts if o[0] != "guidance"]
     btns = "".join(
         f'<button name=mode value="{v}" class="{"on" if v==current else ""}">'
         f'<b>{_e(lbl)}</b><span class=small>{_e(desc)}</span></button>'
         for v, lbl, desc in opts)
-    return f'<form method=post action="/app/mode"><div class=modes>{btns}</div></form>'
+    note = ('<p class="small muted" style="margin-top:8px">Guidance is available during the free trial; '
+            'paid plans run on autopilot.</p>') if paid else ""
+    return f'<form method=post action="/app/mode"><div class=modes>{btns}</div></form>{note}'
 
 
 # --------------------------------------------------------------------------- #
@@ -773,7 +777,7 @@ def settings_page(account: dict, settings: dict, saved: bool = False,
     <h1>Settings</h1>{saved_note}
     <div class=card>
       <h2 style="margin-top:0">Routing mode</h2>
-      {mode_toggle(settings['mode'])}
+      {mode_toggle(settings['mode'], store.get_plan(account["id"]).get("plan") == "paid")}
       {_autopilot_ramp(int(settings.get('autopilot_pct', 100)), settings['mode'])}
     </div>
     <div class=card style="margin-top:16px">

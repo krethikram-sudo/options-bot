@@ -711,6 +711,8 @@ def update_settings(account_id: int, *, mode: str | None = None,
                     path: str | None = None) -> dict:
     if mode is not None and mode not in MODES:
         raise StoreError(f"mode must be one of {MODES}")
+    if mode == "guidance" and get_plan(account_id, path).get("plan") == "paid":
+        raise StoreError("guidance mode is only available during the free trial; paid plans use autopilot")
     if risk is not None and risk not in RISK_LEVELS:
         raise StoreError(f"risk must be one of {RISK_LEVELS}")
     cur = get_settings(account_id, path)
@@ -905,6 +907,8 @@ def convert_to_paid(account_id: int, *, stripe_customer_id: str | None = None,
             " stripe_item_id=COALESCE(?, stripe_item_id)"
             " WHERE account_id=?",
             (now, stripe_customer_id, stripe_subscription_id, stripe_item_id, account_id))
+        # Paid plans are autopilot-only (guidance is a trial-only "try it first" mode).
+        conn.execute("UPDATE settings SET mode='autopilot' WHERE account_id=?", (account_id,))
         conn.commit()
     finally:
         conn.close()
@@ -955,6 +959,7 @@ def entitlement(deployment_id: str, path: str | None = None, now: float | None =
     if plan.get("plan") == "paid":
         entitled = True
         reason = "paid"
+        mode = "autopilot"  # paid plans are autopilot-only; guidance is trial-only
     else:
         ts = trial_status(acct["id"], path, now)
         entitled = ts["active"]
