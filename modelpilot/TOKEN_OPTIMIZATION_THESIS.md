@@ -15,6 +15,30 @@ Every savings figure from the papers is benchmark-conditional [CLAIM]; only meth
 **Don't compete on "which model." Compete on "how much compute the request actually needs,
 with a guaranteed quality floor and an audited savings number."**
 
+> **Update (2026-06-17) — competitor audit correction.** A direct audit of ~14 competitors +
+> the AI-FinOps category tested the claim "nobody bills on realized savings or proves savings
+> with a control test." Findings, calibrated:
+> - **Confirmed in AI/LLM:** no router/gateway/AI-FinOps vendor bills on a share of realized
+>   savings, and none proves savings with a live control arm — they show cost dashboards and
+>   list-price-delta estimates (Requesty even publishes an *estimate formula*).
+> - **Important walk-back:** savings-share billing is **NOT novel or defensible** — it is
+>   mainstream in adjacent **cloud FinOps** (ProsperOps "we only get paid when you save money";
+>   Zesty / nOps take 10–20% of *verified* savings). The model is proven and importable into AI
+>   in a quarter. We'd be *first in AI*, not *special*.
+> - **The only uncontested piece is the control-arm/counterfactual measurement** — even the
+>   mature cloud gain-share vendors use baselines/ESR, not a randomized holdout. That is genuine
+>   white space across both AI and cloud.
+> - **The risk this exposes:** that *no one* — not even gain-share cloud vendors — runs a control
+>   arm may mean (a) real white space, or (b) **customers don't pay extra for that rigor** (a
+>   baseline estimate is good enough to bill on). We can't tell from research. If (b), the
+>   control arm is over-engineering.
+> - **Recalibrated edge:** not an invention. It is *being first to bring savings-based billing to
+>   AI* (copyable) plus *control-arm proof as a trust-closer* (valuable only if buyers reward it).
+>   The durable moat, if any, is trust + references + data + speed — not the technique. The #1
+>   open question a pilot must answer is **whether a finance buyer pays a premium for *proven*
+>   savings over *estimated* savings.** (Caveat: web search sees only public marketing; private
+>   enterprise contracts / stealth startups could do either.)
+
 Three components, all of which map onto things we already do and competitors/providers
 structurally won't:
 
