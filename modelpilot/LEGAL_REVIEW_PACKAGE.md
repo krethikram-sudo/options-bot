@@ -5,7 +5,7 @@
 **Applied in this revision:**
 - Governing law/venue set to **Delaware** (Terms §11, MSA §11) — founder decision; final venue wording to confirm with counsel.
 - **Indemnity disclosure rewritten** (Terms §10): ModelPilot now makes *no representation* about the scope of Anthropic's indemnity (removed the "may fall within those exclusions" admission).
-- **Hosted-gateway carve-outs added** so the absolute "never reaches us" claims are scoped to the default self-hosted deployment (Terms §8/§10, Privacy short-version + collect + sharing, DPA §2, Subprocessors).
+- **Hosted-gateway carve-outs added** so the absolute "never reaches us" claims are scoped to the default self-hosted deployment (Terms §8/§10, Privacy, DPA §2, MSA §6, Subprocessors).
 - **Liability-cap split flagged as intentional** (Terms §7 = 3 mo self-serve; MSA §9 = 12 mo enterprise).
 - **Explicit Usage-Policy suspension right** added (AUP).
 
@@ -296,8 +296,11 @@ applications. If Customer provides feedback, it grants us a perpetual, royalty-f
 #### 6. Data protection
 
 The DPA and Privacy Policy are
-incorporated by reference. By design, prompt content, model outputs, and Customer's API key are not
-transmitted to us. Security measures are described at /security.
+incorporated by reference. In the default self-hosted / thin-client deployment, prompt content,
+model outputs, and Customer's API key are not transmitted to us; in the optional hosted-gateway
+deployment they transit our systems only to route the request and are handled per the DPA (no
+prompt content or outputs stored). Security measures are described at
+/security.
 
 #### 7. Warranties & disclaimer
 
