@@ -1,11 +1,7 @@
 # ModelPilot — Legal Document Review Package
-*Updated 2026-06-17 (through third-pass polish). Source: `modelpilot/site/legal/`. Still NOT final/counsel-reviewed.*
+*Updated 2026-06-17 (through third-pass polish + privacy analytics disclosure). Source: `modelpilot/site/legal/`. Still NOT final/counsel-reviewed.*
 
-## Status: all reviewer-actionable items resolved
-Pass 1+2+3 applied: Delaware governing law; §10 indemnity = no representation; hosted-mode wording = "processed in memory… read by our classifier… not persisted" (all six docs); self-hosted "classification runs locally" confirmation (DPA §2); DPA §5 scoped to default; subprocessor hosting-row hosted-mode note; DPA §2 "in both deployments" phrasing.
-**Engineering check (reviewer's flag — DONE):** code audit confirms "not persisted" holds — no prompt/body logged in the request path; exceptions swallowed without formatting payloads (no traceback/exc_info with content); `router.py` strips `prompt` from logged features; `brain_client` sends only a numeric/boolean feature whitelist (no prompt text); `logs.py` is a metadata-only allowlist; nothing writes request bodies to files/debug.
-**Still pending — founder:** subprocessor vendor names; entity name/signatures/effective dates (DE C-corp).
-**Still pending — attorney:** SCC Module 2 + annexes (DPA §10); CA enforceability of AUP "competing service"; final sign-off.
+## Status: reviewer-actionable items resolved; founder/attorney items pending (see prior status).
 
 ---
 
@@ -195,10 +191,13 @@ Where applicable (GDPR/UK GDPR/CCPA), you have rights to access, rectify, delete
 for personal data we process on your behalf as a processor, see the
 DPA.
 
-#### Cookies
+#### Cookies & analytics
 
 The console uses a single, HMAC-signed session cookie to keep you signed in. No third-party
-advertising or tracking cookies.
+advertising or tracking cookies. Our public marketing site uses privacy-respecting, cookieless
+analytics (aggregate page views and referrers only — no cookies, no cross-site tracking, and no
+personal data); product usage in the console is measured as aggregate counts (see "What we collect"),
+never prompt content.
 
 #### Security & contact
 

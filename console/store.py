@@ -205,6 +205,14 @@ CREATE TABLE IF NOT EXISTS otp_codes (
     expires_at REAL NOT NULL,
     attempts INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER,            -- intentionally NOT FK-cascaded: cancel reasons survive deletion
+    ts REAL NOT NULL,
+    kind TEXT NOT NULL,            -- 'dashboard' | 'cancel' | 'estimator'
+    rating TEXT,                   -- 'up' | 'down' | NULL
+    comment TEXT
+);
 """
 
 WEBHOOK_EVENTS = ("budget.warn", "budget.over", "proposal.pending", "account.suspended")
@@ -520,6 +528,58 @@ def delete_account(account_id: int, path: str | None = None) -> None:
             conn.execute(f"DELETE FROM {tbl} WHERE account_id=?", (account_id,))
         conn.execute("DELETE FROM accounts WHERE id=?", (account_id,))
         conn.commit()
+    finally:
+        conn.close()
+
+
+# --------------------------------------------------------------------------- #
+# Feedback + activation funnel (first-party, privacy-clean product metrics)
+# --------------------------------------------------------------------------- #
+
+def record_feedback(account_id: int | None, kind: str, rating: str | None = None,
+                    comment: str | None = None, path: str | None = None,
+                    now: float | None = None) -> None:
+    """Store a lightweight feedback signal (dashboard thumbs / cancel reason).
+    No prompt content — just a rating + free-text the user chose to write."""
+    now = now or time.time()
+    conn = connect(path)
+    try:
+        conn.execute("INSERT INTO feedback(account_id, ts, kind, rating, comment) VALUES(?,?,?,?,?)",
+                     (account_id, now, kind, rating, (comment or "").strip()[:2000]))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def list_feedback(limit: int = 50, path: str | None = None) -> list[dict]:
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT f.id, f.account_id, f.ts, f.kind, f.rating, f.comment, a.email"
+            " FROM feedback f LEFT JOIN accounts a ON a.id=f.account_id"
+            " ORDER BY f.ts DESC LIMIT ?", (int(limit),)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def activation_funnel(path: str | None = None) -> dict:
+    """Counts of accounts at each activation stage — the 'are customers reaching
+    value' funnel. signed_up -> set_up (made a key) -> routed (sent traffic) ->
+    proven (got measured savings) -> paid (converted)."""
+    conn = connect(path)
+    try:
+        one = lambda q: conn.execute(q).fetchone()[0]
+        return {
+            "signed_up": one("SELECT COUNT(*) FROM accounts"),
+            "set_up": one("SELECT COUNT(DISTINCT account_id) FROM api_keys"),
+            "routed": one("SELECT COUNT(DISTINCT d.account_id) FROM meter m"
+                          " JOIN deployments d ON d.deployment_id=m.deployment_id WHERE m.routed>0"),
+            "proven": one("SELECT COUNT(DISTINCT d.account_id) FROM meter m"
+                          " JOIN deployments d ON d.deployment_id=m.deployment_id"
+                          " WHERE m.realized_savings>0"),
+            "paid": one("SELECT COUNT(*) FROM plans WHERE plan='paid'"),
+        }
     finally:
         conn.close()
 

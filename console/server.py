@@ -491,11 +491,33 @@ async def account_delete(request: Request):
     # Confirm by typing the account email — guards against accidental deletion.
     if f.get("confirm_email", "").strip().lower() != (acct.get("email") or "").lower():
         return _redirect("/app/settings?delete_error=1")
+    # Capture the why (survives deletion — feedback isn't cascade-deleted). Most valuable signal.
+    reason = (f.get("reason") or "").strip()
+    if reason:
+        try:
+            store.record_feedback(acct["id"], "cancel", comment=reason)
+        except Exception:  # noqa: BLE001 — never block deletion on feedback
+            pass
     stripe_billing.cancel_subscription(acct["id"])  # best-effort; never raises
     store.delete_account(acct["id"])
     resp = _redirect(LANDING_URL)  # account gone -> back to the public landing page
     resp.delete_cookie(COOKIE)
     return resp
+
+
+@app.post("/app/feedback")
+async def app_feedback(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    rating = f.get("rating") if f.get("rating") in ("up", "down") else None
+    try:
+        store.record_feedback(acct["id"], "dashboard", rating=rating, comment=f.get("comment"))
+    except store.StoreError:
+        pass
+    ref = request.headers.get("referer", "")
+    return _redirect("/app/settings?fb=1" if "settings" in ref else "/app?fb=1")
 
 
 @app.post("/app/settings")
@@ -790,7 +812,8 @@ def admin_overview(request: Request):
             "plan_badge": "paid" if paid else ("suspended" if a["status"] != "active" else "trial"),
             "pending_proposals": len(store.list_proposals(a["id"], status="pending")),
         })
-    return _html(web.admin_overview(acct, rev, rows, store.count_pending_proposals()))
+    return _html(web.admin_overview(acct, rev, rows, store.count_pending_proposals(),
+                                    funnel=store.activation_funnel(), feedback=store.list_feedback(30)))
 
 
 @app.get("/admin/proposals", response_class=HTMLResponse)

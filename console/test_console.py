@@ -1147,3 +1147,27 @@ def test_proposal_audit_trail(env, client):
     assert h["decided_by"] == admin["id"] and h["decided_by_email"] == "boss3@b.com"
     # the audit trail renders on the detail page
     assert "Tuning history" in client.get(f"/admin/accounts/{cust['id']}").text
+
+
+def test_activation_funnel_and_feedback(env, client):
+    _, store = env
+    _signup(client)  # creates + authenticates a@b.com
+    a = store.get_account_by_email("a@b.com")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    fn = store.activation_funnel()
+    assert fn["signed_up"] == 1 and fn["set_up"] == 0 and fn["routed"] == 0 and fn["proven"] == 0
+    store.create_api_key(a["id"], dep, "k")
+    store.record_meter(dep, requests=10, routed=6, baseline_cost=1.0, actual_cost=0.6)
+    fn = store.activation_funnel()
+    assert fn["set_up"] == 1 and fn["routed"] == 1 and fn["proven"] == 1 and fn["paid"] == 0
+    store.convert_to_paid(a["id"])
+    assert store.activation_funnel()["paid"] == 1
+    # dashboard feedback via HTTP (authed client)
+    r = client.post("/app/feedback", data={"rating": "up", "comment": "love it"})
+    assert r.status_code == 303
+    assert any(x["kind"] == "dashboard" and x["rating"] == "up" and x["comment"] == "love it"
+               for x in store.list_feedback())
+    # cancel reason survives account deletion (feedback isn't cascade-deleted)
+    store.record_feedback(a["id"], "cancel", comment="too pricey")
+    store.delete_account(a["id"])
+    assert any(x["kind"] == "cancel" and x["comment"] == "too pricey" for x in store.list_feedback())
