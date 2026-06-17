@@ -79,7 +79,8 @@ cp "$SRC"/extension/manifest.json "$SRC"/extension/background.js \
    "$SRC"/extension/content.js "$SRC"/extension/README.md "$WORK/extension/"
 cp "$ROOT"/scripts/publish_modelpilot.sh "$ROOT"/scripts/install_modelpilot_gateway.sh \
    "$ROOT"/scripts/seed_demo_traffic.py "$ROOT"/scripts/validate_local.sh \
-   "$ROOT"/scripts/build_label_worksheet.py "$WORK/scripts/"
+   "$ROOT"/scripts/build_label_worksheet.py \
+   "$ROOT"/scripts/md_to_pdf.py "$ROOT"/scripts/make_sales_pdfs.py "$WORK/scripts/"
 mkdir -p "$WORK/packs"; cp "$ROOT"/packs/*.json "$ROOT"/packs/README.md "$WORK/packs/"
 cp "$ROOT"/launchd/com.modelpilot.gateway.plist.template "$WORK/launchd/"
 cp -R "$SRC"/site/. "$WORK/site/"     # full public site: landing + docs + security + legal

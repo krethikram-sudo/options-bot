@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Where ModelPilot cuts your Claude bill — by work type & team</title>
+<meta name="description" content="The work types ModelPilot routes to a cheaper model (with typical savings vs Opus and Sonnet), and which teams it saves for. Hard reasoning stays on the top model. Measured on your own traffic; pay only for realized savings.">
+<link rel="canonical" href="https://modelpilot.pages.dev/where-we-save.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/docs/docs.css">
+<style>
+  main.ws{max-width:880px;margin:0 auto;padding:30px 22px 80px}
+  table.sv{width:100%;border-collapse:collapse;font-size:14.5px;margin:8px 0 6px}
+  table.sv th,table.sv td{padding:10px 12px;border-bottom:1px solid #ececef;text-align:left;vertical-align:middle}
+  table.sv thead th{background:#6d28d9;color:#fff;font-size:13px}
+  table.sv td.c,table.sv th.c{text-align:center}
+  table.sv .cut{color:#166534;font-weight:700}
+  tr.strong{background:#f3fdf7}tr.mod{background:#fffdf3}
+  .ws h2{margin-top:30px}
+  .legend{font-size:13px;color:#6b6b72;margin:6px 0 0}
+  .note{font-size:13px;color:#6b6b72;background:#f7f7f8;border:1px solid #ececef;border-radius:10px;padding:13px 15px;margin-top:16px}
+  .cta.big{display:inline-block;margin-top:6px;font-size:16px;padding:12px 22px}
+  @media(max-width:620px){main.ws{padding:24px 14px 60px} table.sv{font-size:13px}}
+</style>
+</head><body>
+<div class="top"><div class="row">
+  <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
+  <span class="tag">What we optimize</span><span class="sp"></span>
+  <a class="lnk" href="/estimator.html">Estimate savings</a>
+  <a class="cta" href="https://modelpilot-console-prod.fly.dev/signup">Start free trial</a>
+</div></div>
+
+<main class="ws">
+  <h1>Where ModelPilot cuts your Claude bill</h1>
+  <p class="lead">We route each request to the cheapest model that's good enough — and prove it on
+    your own traffic. Here are the work types we route down, and the teams it saves for. Your hard
+    reasoning stays on the top model, untouched.</p>
+
+  <h2>By work type</h2>
+  <table class="sv">
+    <thead><tr><th>Work type</th><th>Routes to</th><th class="c">Typically routed</th>
+      <th class="c">Cut vs Opus</th><th class="c">Cut vs Sonnet</th></tr></thead>
+    <tbody>
+      <tr class="strong"><td>Short Q&amp;A / lookups</td><td>Haiku</td><td class="c">100%</td><td class="c cut">~80%</td><td class="c cut">~67%</td></tr>
+      <tr class="strong"><td>Simple code / SQL</td><td>Haiku</td><td class="c">100%</td><td class="c cut">~80%</td><td class="c cut">~67%</td></tr>
+      <tr class="strong"><td>Rewrite / reformat</td><td>Haiku</td><td class="c">91%</td><td class="c cut">~73%</td><td class="c cut">~61%</td></tr>
+      <tr class="strong"><td>Data / field extraction</td><td>Haiku</td><td class="c">89%</td><td class="c cut">~71%</td><td class="c cut">~59%</td></tr>
+      <tr class="strong"><td>Translation</td><td>Haiku</td><td class="c">87%</td><td class="c cut">~70%</td><td class="c cut">~58%</td></tr>
+      <tr class="strong"><td>Classification / triage</td><td>Haiku</td><td class="c">85%</td><td class="c cut">~68%</td><td class="c cut">~57%</td></tr>
+      <tr class="strong"><td>Summaries (short)</td><td>Haiku</td><td class="c">75%</td><td class="c cut">~60%</td><td class="c cut">~50%</td></tr>
+      <tr class="mod"><td>Summaries (long / dense)</td><td>Sonnet</td><td class="c">66%</td><td class="c cut">~26%</td><td class="c">—</td></tr>
+      <tr class="mod"><td>Conversation / advice</td><td>Sonnet</td><td class="c">40%</td><td class="c cut">~16%</td><td class="c">—</td></tr>
+    </tbody>
+  </table>
+  <p class="legend">"Cut vs Sonnet" is lower because a Sonnet-baseline workload has less headroom — and the Sonnet-target rows show "—" (you're already at that tier).</p>
+
+  <h2>Who on your team this saves for</h2>
+  <table class="sv">
+    <thead><tr><th>Team / role</th><th>The work we cut costs on</th></tr></thead>
+    <tbody>
+      <tr><td>Customer support / CX</td><td>triage, ticket &amp; thread summaries, draft replies, FAQ answers, translation</td></tr>
+      <tr><td>Operations / back-office</td><td>document &amp; form extraction, routing &amp; tagging</td></tr>
+      <tr><td>Legal / claims / clinical / compliance ops</td><td>contract &amp; record extraction, document summaries, classification</td></tr>
+      <tr><td>Sales / marketing ops</td><td>first-draft emails &amp; copy, lead enrichment, summaries, translation</td></tr>
+      <tr><td>Analysts &amp; engineers (routine work)</td><td>simple SQL &amp; queries, data extraction, snippets, lookups</td></tr>
+    </tbody>
+  </table>
+  <p class="legend">Hard reasoning — complex coding, debugging, math, agents, open-ended analysis, creative long-form — stays on the top model (quality protected, ~no savings). The savings come from the high-volume routine work above.</p>
+
+  <div class="note">Figures are illustrative ranges at public list prices; your savings depend on your
+    traffic mix and current model. We measure the real number on your own traffic with a held-out
+    control arm — and you pay only a share of what we actually save (no savings, no bill).</div>
+
+  <p style="margin-top:20px"><a class="cta big" href="/estimator.html">Estimate your savings →</a>
+    &nbsp; <a class="lnk" href="https://modelpilot-console-prod.fly.dev/signup">or start a free trial</a></p>
+  <p class="foot" style="margin-top:18px"><a href="/">ModelPilot home</a> ·
+    <a href="/cut-claude-costs.html">How to cut your Claude bill</a> · <a href="/compare.html">Compare</a></p>
+</main>
+</body></html>
