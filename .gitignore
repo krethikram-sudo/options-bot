@@ -43,3 +43,6 @@ brain*.db
 ingest*.db
 *.db.secret
 *.meter_marker
+
+# transient golden-set judge-upgrade workdir (scratch; merged results land in modelpilot/goldenset_data/)
+goldenset_data_upgrade/
