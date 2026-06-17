@@ -43,7 +43,7 @@ const LOGIN = "https://modelpilot-console-prod.fly.dev/login";
       nav{position:sticky;top:0;z-index:50;background:rgba(10,15,30,.85);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);height:var(--nav-h)}
       nav .wrap{display:flex;align-items:center;gap:26px;height:var(--nav-h)}
       .brand{font-family:var(--disp);font-weight:700;font-size:19px;color:#fff;letter-spacing:-.03em}.brand .dot{color:#d4d4d4}
-      .navlinks{display:flex;gap:22px;margin-left:6px}.navlinks a{color:#c2cbdb;font-size:14.5px;font-weight:500}.navlinks a:hover{color:#fff;text-decoration:none}
+      .navlinks{display:flex;gap:18px;margin-left:6px;flex-shrink:0}.navlinks a{color:#c2cbdb;font-size:14.5px;font-weight:500;white-space:nowrap}.navlinks a:hover{color:#fff;text-decoration:none}
       .navspace{flex:1}.navcta{display:flex;gap:12px;align-items:center}.navcta a.signin{color:#c2cbdb;font-size:14.5px;font-weight:600}
       @media(max-width:760px){.navlinks{display:none}}
       .hero{background:radial-gradient(900px 480px at 80% -10%,rgba(124,58,237,.22),transparent 60%),radial-gradient(760px 440px at 8% 2%,rgba(37,99,235,.16),transparent 55%),var(--dark);color:#e7ecf5;padding:84px 0 92px;border-bottom:1px solid var(--dl)}
@@ -138,7 +138,7 @@ const LOGIN = "https://modelpilot-console-prod.fly.dev/login";
   <body>
     <nav><div class="wrap">
       <span class="brand">Model<span class="dot">Pilot</span></span>
-      <div class="navlinks"><a href="#how">How it works</a><a href="#proof">Proof</a><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="https://modelpilot.pages.dev/estimator.html">Estimate savings</a><a href="https://modelpilot.pages.dev/where-we-save.html">What we optimize</a><a href="https://modelpilot.pages.dev/playground.html">Playground</a><a href="https://modelpilot.pages.dev/docs/">Docs</a></div>
+      <div class="navlinks"><a href="#how">How it works</a><a href="#proof">Proof</a><a href="#pricing">Pricing</a><a href="https://modelpilot.pages.dev/estimator.html">Estimate savings</a><a href="https://modelpilot.pages.dev/compare.html">Compare</a><a href="https://modelpilot.pages.dev/docs/">Docs</a></div>
       <div class="navspace"></div>
       <div class="navcta"><a class="signin" href={LOGIN}>Sign in</a><a class="btn primary" href={SIGNUP}>Start free trial</a></div>
     </div></nav>
