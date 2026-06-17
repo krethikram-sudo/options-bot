@@ -57,13 +57,16 @@ def test_ambiguous_prompt_does_nothing():
 
 
 def test_cache_trap_vetoes_switch():
-    # Simple task, but a huge cached conversation behind it.
+    # Simple task, but a huge cached conversation behind it. (Use a classification
+    # task: a *summary* of this much context now correctly floors higher, so it's no
+    # longer a "simple task" — classification stays cheap-tier and still exercises
+    # the cache-economics veto.)
     big_turn = {"role": "user", "content": [{"type": "text", "text": "x" * 400_000, "cache_control": {"type": "ephemeral"}}]}
     body = {
         "model": "claude-opus-4-8",
         "max_tokens": 512,
         "messages": [big_turn, {"role": "assistant", "content": "ok"},
-                     {"role": "user", "content": "Summarize the key points of the above."}],
+                     {"role": "user", "content": "Classify the sentiment of the message above as positive or negative."}],
     }
     rec = recommend(body, expected_remaining_turns=1)
     assert rec.action == "stay"
@@ -183,3 +186,36 @@ def test_plain_summarization_unaffected_by_content_features():
                           "twice for the Pro plan and wants a refund."))
     assert rec.recommended_model == "claude-haiku-4-5"
     assert rec.confidence >= 0.85
+
+
+# --- long-document summarization: must floor at Sonnet, never Haiku ---
+_LONG_THREAD = "\n".join(
+    f"[{i:03d}] " + msg for i, msg in enumerate(
+        ["Customer: hi, I'd like to switch my plan from monthly to annual.",
+         "Agent: happy to help — annual saves you about 15% versus monthly.",
+         "Customer: nice. does the new price apply now or on my next renewal?",
+         "Agent: it applies on your next renewal date, the 14th.",
+         "Customer: can I also update the card you have on file?",
+         "Agent: of course — it's under Settings, then Payment methods.",
+         "Customer: the page just keeps spinning on my phone though.",
+         "Agent: try the desktop site for now, or I can update it for you.",
+         "Customer: please go ahead and move me to the annual plan.",
+         "Agent: all set — you'll see the annual plan on your next invoice.",
+         "Customer: thanks. when does the receipt arrive?",
+         "Agent: the receipt emails right after the renewal goes through."] * 40))
+
+
+def test_long_document_summary_floors_sonnet():
+    body = _body("Summarize the key issue and the resolution in this support thread "
+                 "in 3 bullets.\n\n" + _LONG_THREAD)
+    assert extract_features(body)["approx_context_tokens"] >= 6000
+    rec = recommend(body)
+    assert rec.category == "summarization_long"
+    assert rec.recommended_model == "claude-sonnet-4-6"  # floored at sonnet, not haiku
+    assert rec.recommended_model != "claude-haiku-4-5"
+
+
+def test_short_summary_still_routes_to_haiku():
+    rec = recommend(_body("Summarize this in one line: 'The meeting was moved to 3pm Friday.'"))
+    assert rec.category == "summarization_short"
+    assert rec.recommended_model == "claude-haiku-4-5"

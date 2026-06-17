@@ -61,9 +61,13 @@ add(P, "Clause extraction",
          "from this contract section."), 1800, 120)
 add(P, "Classify clause risk",
     body("Label this indemnification clause as low/medium/high risk for the vendor."), 600, 10)
+_CONTRACT = ("This Master Services Agreement governs the provision of services between "
+             "the parties. Payment terms are net-30. Either party may terminate with 30 "
+             "days written notice. The cap is the fees paid in the prior 12 months. "
+             "Ownership of materials created remains with the disclosing party. ") * 90
 add(P, "Summarize contract (long)",
-    body("Summarize this 22-page master services agreement: parties, term, payment, "
-         "termination, liability, IP. One paragraph each."), 14000, 700)
+    body("Summarize this master services agreement: parties, term, payment, "
+         "termination, liability, IP. One paragraph each.\n\n" + _CONTRACT), 14000, 700)
 add(P, "Plain-language rewrite",
     body("Rewrite this clause in plain English for a non-lawyer:\n'The party of the "
          "first part shall indemnify and hold harmless...'"), 260, 160)
