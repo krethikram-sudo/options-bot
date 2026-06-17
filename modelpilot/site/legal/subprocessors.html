@@ -23,15 +23,16 @@
   <div class="note"><b>Important:</b> in the default self-hosted / thin-client deployment, your <b>prompt
     content goes directly from your infrastructure to Anthropic using your own API key</b> — it does not
     pass through ModelPilot, so Anthropic is your model provider, not ModelPilot's subprocessor for prompt
-    content. In the optional <b>hosted-gateway</b> deployment, request content transits ModelPilot only to
-    route it and is not stored. The services below process only account data and aggregate/opt-in
-    metadata.</p>
+    content. In the optional <b>hosted-gateway</b> deployment, request content is processed in memory by
+    ModelPilot only to route it (read by our classifier to select a model) and is not persisted. Except
+    for that transient routing in hosted mode, the services below process only account data and
+    aggregate/opt-in metadata.</p>
 
   <table>
     <thead><tr><th>Subprocessor</th><th>Purpose</th><th>Data processed</th></tr></thead>
     <tbody>
       <tr><td><b>Anthropic</b></td><td>Claude model inference (called directly by your gateway with your key)</td><td>Your prompts &amp; outputs — sent by you, not via ModelPilot</td></tr>
-      <tr><td><b>Cloud hosting provider</b><br><span class="small muted">(our brain / console / ingest)</span></td><td>Runs ModelPilot's backend services</td><td>Account data, aggregate savings, opt-in metadata — no prompt content</td></tr>
+      <tr><td><b>Cloud hosting provider</b><br><span class="small muted">(our brain / console / ingest)</span></td><td>Runs ModelPilot's backend services</td><td>Account data, aggregate savings, opt-in metadata — no prompt content. <b>In hosted-gateway mode</b>, also transiently processes request content in memory for routing (not stored).</td></tr>
       <tr><td><b>Stripe</b></td><td>Payments &amp; subscription billing</td><td>Billing contact &amp; payment details (held by Stripe), usage amounts</td></tr>
       <tr><td><b>Email provider</b><br><span class="small muted">(transactional email, if configured)</span></td><td>Password resets, budget &amp; review alerts</td><td>Email address, message content of the notification</td></tr>
     </tbody>

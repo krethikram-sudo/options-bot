@@ -1,16 +1,12 @@
 # ModelPilot — Legal Document Review Package
-*Updated 2026-06-17 after the first structural review. Source: `modelpilot/site/legal/`. Still NOT final/counsel-reviewed — the draft banners stay until an attorney signs off.*
+*Updated 2026-06-17 (second-pass revisions applied). Source: `modelpilot/site/legal/`. Still NOT final/counsel-reviewed — draft banners stay until an attorney signs off.*
 
-## Revision status (after 2026-06-17 review)
-**Applied in this revision:**
-- Governing law/venue set to **Delaware** (Terms §11, MSA §11) — founder decision; final venue wording to confirm with counsel.
-- **Indemnity disclosure rewritten** (Terms §10): ModelPilot now makes *no representation* about the scope of Anthropic's indemnity (removed the "may fall within those exclusions" admission).
-- **Hosted-gateway carve-outs added** so the absolute "never reaches us" claims are scoped to the default self-hosted deployment (Terms §8/§10, Privacy, DPA §2, MSA §6, Subprocessors).
-- **Liability-cap split flagged as intentional** (Terms §7 = 3 mo self-serve; MSA §9 = 12 mo enterprise).
-- **Explicit Usage-Policy suspension right** added (AUP).
+## Revision status
+**Pass 1 (resolved):** Delaware governing law (Terms §11/MSA §11); §10 indemnity rewritten to make no representation about Anthropic's indemnity; hosted-gateway carve-outs across all six docs; liability-cap split flagged intentional; explicit AUP Usage-Policy suspension right.
+**Pass 2 (this revision):** Tightened hosted-mode wording everywhere from "transits our systems" to **"processed in memory solely to route the request (read by our classifier to select a model) and not persisted"** — accurate to how routing actually inspects the prompt. Added a self-hosted confirmation that classification runs locally and no ModelPilot system inspects prompt content (DPA §2); scoped DPA §5 architecture claim to default deployment; added a hosted-mode note to the cloud-hosting subprocessor row.
 
-**Still pending — founder:** specific subprocessor vendor names (hosting + email); entity name / signature blocks / effective dates (blocked on the DE C-corp via Stripe Atlas).
-**Still pending — attorney (judgment calls, left as-is + flagged):** SCC module/annexes mechanics (DPA §10); California enforceability of the AUP "competing service" clause; final confirmation of all of the above.
+**Still pending — founder:** subprocessor vendor names (hosting + email); entity name / signatures / effective dates (blocked on the DE C-corp).
+**Still pending — attorney:** SCC module/annexes (DPA §10); California enforceability of the AUP "competing service" clause; final sign-off.
 
 ---
 
@@ -80,8 +76,9 @@ Our handling of data is described in the Privacy Policy and, for
 personal data processed on your behalf, the DPA. In the default
 self-hosted / thin-client deployment, prompt content, model outputs, and your API key are not
 transmitted to us by the proxy. If you opt into a hosted-gateway deployment, your API key
-and request content transit our systems solely to route the request and are handled as your
-processor under the DPA; we do not store prompt content or model outputs.
+and request content are processed in memory solely to route the request (read by our classifier to
+select a model) and are not persisted — handled as your processor under the DPA; we do not store
+prompt content or model outputs.
 
 #### 9. Term & termination
 
@@ -156,8 +153,9 @@ with counsel for your jurisdiction (GDPR/CCPA specifics, etc.).
 The short version: in the default self-hosted / thin-client deployment, your
 prompts, model outputs, and API key never reach us — we process only account details and aggregate,
 metadata-only usage figures. If you opt into the hosted-gateway deployment, your request
-content and API key transit our systems solely to route the request (handled as your processor
-under the DPA); we still do not store prompt content or model outputs.
+content and API key are processed in memory solely to route the request (read by our classifier to
+select a model) and are not persisted (handled as your processor under the
+DPA); we do not store prompt content or model outputs.
 
 #### What we collect
 
@@ -171,8 +169,8 @@ figures, status and routing flags — and any opt-in per-request metadata you se
 
 - We do NOT store prompt text or model outputs. In the default self-hosted deployment the
 proxy never transmits them (or your API key) to us, and our endpoints reject payloads that
-contain them. In the optional hosted-gateway deployment they transit our systems only to route
-the request and are not retained.
+contain them. In the optional hosted-gateway deployment they are processed in memory only to route
+the request (read by our classifier to select a model) and are not persisted.
 
 #### How we use it
 
@@ -186,7 +184,8 @@ We share data only with the service providers needed to run the Service (hosting
 email), listed at /legal/subprocessors, under appropriate
 data-protection terms. In the default self-hosted deployment your prompt content goes from your
 infrastructure directly to Anthropic with your key — not via us; in the hosted-gateway deployment
-it transits our systems only to route the request and is not stored.
+it is processed in memory only to route the request (read by our classifier to select a model) and
+is not persisted.
 
 #### Retention & your rights
 
@@ -298,8 +297,8 @@ applications. If Customer provides feedback, it grants us a perpetual, royalty-f
 The DPA and Privacy Policy are
 incorporated by reference. In the default self-hosted / thin-client deployment, prompt content,
 model outputs, and Customer's API key are not transmitted to us; in the optional hosted-gateway
-deployment they transit our systems only to route the request and are handled per the DPA (no
-prompt content or outputs stored). Security measures are described at
+deployment they are processed in memory only to route the request (read by our classifier to select
+a model), are not persisted, and are handled per the DPA. Security measures are described at
 /security.
 
 #### 7. Warranties & disclaimer
@@ -371,10 +370,12 @@ agreement between the parties for use of the Service.
 The Service routes Claude API requests to cost-efficient models. In the default self-hosted /
 thin-client deployment, prompt content, model outputs, and Customer's API keys are not transmitted to
 or processed by ModelPilot — they pass from Customer's infrastructure directly to Anthropic using
-Customer's key. (In the optional hosted-gateway deployment, Customer's request content and API
-key transit ModelPilot's systems solely to route the request; ModelPilot acts as processor for that
-transit and does not store prompt content or model outputs.) Apart from that routing transit,
-ModelPilot processes only:
+Customer's key, and any task classification runs locally on Customer's own infrastructure (no
+ModelPilot system inspects prompt content). (In the optional hosted-gateway deployment,
+Customer's request content and API key are processed in memory solely to route the request — read by
+ModelPilot's classifier to select a model — and are not persisted; ModelPilot acts as processor for
+that processing and does not store prompt content or model outputs.) Apart from that transient
+routing in hosted mode, ModelPilot processes only:
 
 account data (e.g. the email address and company of authorized users);
 
@@ -400,7 +401,7 @@ confidentiality obligations.
 #### 5. Security
 
 ModelPilot implements appropriate technical and organizational measures, including TLS in transit,
-encryption at rest, hashed credentials, scoped/revocable API keys, least-privilege access, and an
+encryption at rest, hashed credentials, scoped/revocable API keys, least-privilege access, and (in the default self-hosted deployment) an
 architecture in which prompt content never reaches ModelPilot. Current measures are described at
 /security.
 
@@ -467,16 +468,17 @@ page current and give notice of material changes.
 Important: in the default self-hosted / thin-client deployment, your prompt
 content goes directly from your infrastructure to Anthropic using your own API key — it does not
 pass through ModelPilot, so Anthropic is your model provider, not ModelPilot's subprocessor for prompt
-content. In the optional hosted-gateway deployment, request content transits ModelPilot only to
-route it and is not stored. The services below process only account data and aggregate/opt-in
-metadata.
+content. In the optional hosted-gateway deployment, request content is processed in memory by
+ModelPilot only to route it (read by our classifier to select a model) and is not persisted. Except
+for that transient routing in hosted mode, the services below process only account data and
+aggregate/opt-in metadata.
 
 SubprocessorPurposeData processed
 
 AnthropicClaude model inference (called directly by your gateway with your key)Your prompts & outputs — sent by you, not via ModelPilot
 
 Cloud hosting provider
-(our brain / console / ingest)Runs ModelPilot's backend servicesAccount data, aggregate savings, opt-in metadata — no prompt content
+(our brain / console / ingest)Runs ModelPilot's backend servicesAccount data, aggregate savings, opt-in metadata — no prompt content. In hosted-gateway mode, also transiently processes request content in memory for routing (not stored).
 
 StripePayments & subscription billingBilling contact & payment details (held by Stripe), usage amounts
 

@@ -34,10 +34,12 @@
   <p>The Service routes Claude API requests to cost-efficient models. <b>In the default self-hosted /
     thin-client deployment, prompt content, model outputs, and Customer's API keys are not transmitted to
     or processed by ModelPilot</b> — they pass from Customer's infrastructure directly to Anthropic using
-    Customer's key. (In the optional <b>hosted-gateway</b> deployment, Customer's request content and API
-    key transit ModelPilot's systems solely to route the request; ModelPilot acts as processor for that
-    transit and does not store prompt content or model outputs.) Apart from that routing transit,
-    ModelPilot processes only:</p>
+    Customer's key, and any task classification runs locally on Customer's own infrastructure (no
+    ModelPilot system inspects prompt content). (In the optional <b>hosted-gateway</b> deployment,
+    Customer's request content and API key are processed in memory solely to route the request — read by
+    ModelPilot's classifier to select a model — and are not persisted; ModelPilot acts as processor for
+    that processing and does not store prompt content or model outputs.) Apart from that transient
+    routing in hosted mode, ModelPilot processes only:</p>
   <ul>
     <li>account data (e.g. the email address and company of authorized users);</li>
     <li>operational metadata (task category, token counts, model identifiers, cost/savings figures, status
@@ -58,7 +60,7 @@
 
   <h2 id="5">5. Security</h2>
   <p>ModelPilot implements appropriate technical and organizational measures, including TLS in transit,
-    encryption at rest, hashed credentials, scoped/revocable API keys, least-privilege access, and an
+    encryption at rest, hashed credentials, scoped/revocable API keys, least-privilege access, and (in the default self-hosted deployment) an
     architecture in which prompt content never reaches ModelPilot. Current measures are described at
     <a href="/security.html">/security</a>.</p>
 

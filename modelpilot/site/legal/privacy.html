@@ -23,8 +23,9 @@
   <div class="note"><b>The short version:</b> in the default self-hosted / thin-client deployment, your
     prompts, model outputs, and API key never reach us — we process only account details and aggregate,
     metadata-only usage figures. If you opt into the <b>hosted-gateway</b> deployment, your request
-    content and API key transit our systems solely to route the request (handled as your processor
-    under the <a href="/legal/dpa.html">DPA</a>); we still do not store prompt content or model outputs.</div>
+    content and API key are processed in memory solely to route the request (read by our classifier to
+    select a model) and are not persisted (handled as your processor under the
+    <a href="/legal/dpa.html">DPA</a>); we do not store prompt content or model outputs.</div>
 
   <h2 id="collect">What we collect</h2>
   <ul>
@@ -35,8 +36,8 @@
     <li><b>Billing data:</b> handled by our payment processor; we store usage amounts and invoices.</li>
     <li><b>We do NOT store</b> prompt text or model outputs. In the default self-hosted deployment the
       proxy never transmits them (or your API key) to us, and our endpoints reject payloads that
-      contain them. In the optional hosted-gateway deployment they transit our systems only to route
-      the request and are not retained.</li>
+      contain them. In the optional hosted-gateway deployment they are processed in memory only to route
+      the request (read by our classifier to select a model) and are not persisted.</li>
   </ul>
 
   <h2 id="use">How we use it</h2>
@@ -49,7 +50,8 @@
     email), listed at <a href="/legal/subprocessors.html">/legal/subprocessors</a>, under appropriate
     data-protection terms. In the default self-hosted deployment your prompt content goes from your
     infrastructure directly to Anthropic with your key — not via us; in the hosted-gateway deployment
-    it transits our systems only to route the request and is not stored.</p>
+    it is processed in memory only to route the request (read by our classifier to select a model) and
+    is not persisted.</p>
 
   <h2 id="retention">Retention &amp; your rights</h2>
   <p>We retain account and aggregate billing data for as long as your account is active and as needed
