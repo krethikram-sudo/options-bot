@@ -1,12 +1,11 @@
 # ModelPilot — Legal Document Review Package
-*Updated 2026-06-17 (second-pass revisions applied). Source: `modelpilot/site/legal/`. Still NOT final/counsel-reviewed — draft banners stay until an attorney signs off.*
+*Updated 2026-06-17 (through third-pass polish). Source: `modelpilot/site/legal/`. Still NOT final/counsel-reviewed.*
 
-## Revision status
-**Pass 1 (resolved):** Delaware governing law (Terms §11/MSA §11); §10 indemnity rewritten to make no representation about Anthropic's indemnity; hosted-gateway carve-outs across all six docs; liability-cap split flagged intentional; explicit AUP Usage-Policy suspension right.
-**Pass 2 (this revision):** Tightened hosted-mode wording everywhere from "transits our systems" to **"processed in memory solely to route the request (read by our classifier to select a model) and not persisted"** — accurate to how routing actually inspects the prompt. Added a self-hosted confirmation that classification runs locally and no ModelPilot system inspects prompt content (DPA §2); scoped DPA §5 architecture claim to default deployment; added a hosted-mode note to the cloud-hosting subprocessor row.
-
-**Still pending — founder:** subprocessor vendor names (hosting + email); entity name / signatures / effective dates (blocked on the DE C-corp).
-**Still pending — attorney:** SCC module/annexes (DPA §10); California enforceability of the AUP "competing service" clause; final sign-off.
+## Status: all reviewer-actionable items resolved
+Pass 1+2+3 applied: Delaware governing law; §10 indemnity = no representation; hosted-mode wording = "processed in memory… read by our classifier… not persisted" (all six docs); self-hosted "classification runs locally" confirmation (DPA §2); DPA §5 scoped to default; subprocessor hosting-row hosted-mode note; DPA §2 "in both deployments" phrasing.
+**Engineering check (reviewer's flag — DONE):** code audit confirms "not persisted" holds — no prompt/body logged in the request path; exceptions swallowed without formatting payloads (no traceback/exc_info with content); `router.py` strips `prompt` from logged features; `brain_client` sends only a numeric/boolean feature whitelist (no prompt text); `logs.py` is a metadata-only allowlist; nothing writes request bodies to files/debug.
+**Still pending — founder:** subprocessor vendor names; entity name/signatures/effective dates (DE C-corp).
+**Still pending — attorney:** SCC Module 2 + annexes (DPA §10); CA enforceability of AUP "competing service"; final sign-off.
 
 ---
 
@@ -374,8 +373,8 @@ Customer's key, and any task classification runs locally on Customer's own infra
 ModelPilot system inspects prompt content). (In the optional hosted-gateway deployment,
 Customer's request content and API key are processed in memory solely to route the request — read by
 ModelPilot's classifier to select a model — and are not persisted; ModelPilot acts as processor for
-that processing and does not store prompt content or model outputs.) Apart from that transient
-routing in hosted mode, ModelPilot processes only:
+that processing and does not store prompt content or model outputs.) In both deployments,
+ModelPilot additionally processes only:
 
 account data (e.g. the email address and company of authorized users);
 

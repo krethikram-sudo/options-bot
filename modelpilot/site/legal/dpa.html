@@ -38,8 +38,8 @@
     ModelPilot system inspects prompt content). (In the optional <b>hosted-gateway</b> deployment,
     Customer's request content and API key are processed in memory solely to route the request — read by
     ModelPilot's classifier to select a model — and are not persisted; ModelPilot acts as processor for
-    that processing and does not store prompt content or model outputs.) Apart from that transient
-    routing in hosted mode, ModelPilot processes only:</p>
+    that processing and does not store prompt content or model outputs.) In both deployments,
+    ModelPilot additionally processes only:</p>
   <ul>
     <li>account data (e.g. the email address and company of authorized users);</li>
     <li>operational metadata (task category, token counts, model identifiers, cost/savings figures, status
