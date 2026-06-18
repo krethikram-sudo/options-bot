@@ -1,6 +1,26 @@
 """Live planner pullers — pagination + auth, exercised with canned transports."""
 
-from scopepilot.ingest import JiraClient, LinearClient
+from scopepilot.ingest import GitHubIssuesClient, JiraClient, LinearClient
+
+
+def test_github_client_pagination_filters_prs_and_auths():
+    pages = [
+        [{"number": 1, "title": "a", "state": "open", "labels": []},
+         {"number": 2, "title": "pr", "state": "open", "pull_request": {"url": "x"}}],  # PR -> dropped
+        [{"number": 3, "title": "c", "state": "closed", "labels": [],
+          "merged_at": "2026-06-01T00:00:00Z"}],
+    ]
+    seen = {"n": 0, "auth": None}
+
+    def transport(method, url, headers, body):
+        seen["auth"] = headers.get("authorization")
+        i = seen["n"]; seen["n"] += 1
+        return pages[i] if i < len(pages) else []
+
+    client = GitHubIssuesClient(token="ghp_x", transport=transport)
+    items = client.pull("acme", "repo", page_size=2)
+    assert seen["auth"] == "Bearer ghp_x"
+    assert [w.ticket_id for w in items] == ["GH-1", "GH-3"]   # PR #2 filtered out
 
 
 def test_jira_client_classic_offset_pagination_and_auth():

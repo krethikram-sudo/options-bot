@@ -1,15 +1,20 @@
 # ScopePilot — roadmap-anchored AI spend governance (Phase 0)
 
-Sibling product to ModelPilot. ModelPilot answers *"cheapest model that's good
-enough, per request."* **ScopePilot answers *"how much should this body of
-planned engineering work cost in AI compute, and are we on track."***
+**ScopePilot is the platform and the primary value proposition:** *"budget and
+govern AI compute against the work you actually plan — and are you on track."* It
+joins LLM/coding-agent spend to the **work-breakdown units a team already plans
+around** — Jira/Linear/GitHub tickets → epics → sprints → roadmap — rather than
+to infrastructure tags (API keys, spans, model names) the way every existing
+gateway / observability / FinOps tool does. That join is the moat: the incumbent
+market lives at the infra layer and structurally can't see the planning system.
 
-It joins LLM/coding-agent spend to the **work-breakdown units a team already
-plans around** — Jira/Linear/GitHub tickets → epics → sprints → roadmap — rather
-than to infrastructure tags (API keys, spans, model names) the way every
-existing gateway / observability / FinOps tool does. That join is the moat: the
-incumbent market lives at the infra layer and structurally can't see the
-planning system.
+**ModelPilot's per-request routing is an optimization *service within*
+ScopePilot, not a separate product.** ScopePilot owns the full loop — attribution
+→ forecast → per-task-class policy → shadow/graduation — and *drives* ModelPilot
+as the downstream actuator that executes an approved downgrade on live traffic.
+The gateway integration in this package is exactly that: ScopePilot decides
+*which classes* may run cheaper and *when they've earned it*; ModelPilot is the
+engine that carries it out. (Pricing/packaging of the two is a later decision.)
 
 ## Why this is differentiated (competitive landscape)
 
@@ -84,9 +89,15 @@ classes SHADOW. `shadow.py` is the live half:
    task-class and appends a delta to the shadow log: *what this request cost on
    the model it ran, vs. what the candidate would have cost.*
 3. `graduation_report()` aggregates the log; once a class has enough live
-   counterfactuals it's `ready_for_canary`. Promotion to ENFORCE still requires
-   an independent quality check — `promote()` only flips classes you've
-   validated. **Cost evidence accrues automatically; quality is never assumed.**
+   counterfactuals it's `ready_for_canary` — the **cost** gate.
+4. `canary.py` is the **quality** gate: it runs the candidate model on a sample
+   of the class's real prompts and judges non-inferiority against the incumbent
+   (`run_fn`/`judge_fn` injected — in production these are ModelPilot's
+   `compare.api_run_fn` / `api_judge_fn`, i.e. the routing product executing the
+   test the governance product ordered). `ready_classes()` is the **two-gate**:
+   a class graduates to ENFORCE only when it is *both* cost-ready (shadow) *and*
+   quality-passed (canary). **Cost evidence accrues automatically; quality is
+   measured, never assumed.**
 
 ```
 export MODELPILOT_REQUEST_OBSERVER=scopepilot.shadow:make_observer
@@ -151,16 +162,41 @@ has no history, and one `validated` + several `needs_validation` routing recs.
 | `forecast.py` | per-class distributions, roadmap forecast, anomaly flags |
 | `recommend.py` | per-class routing recs, scored net of rework |
 | `policy.py` | **enforcement** — gated routing policy for the ModelPilot proxy |
-| `shadow.py` | **live loop** — gateway observer, shadow ledger, graduation |
+| `shadow.py` | **live loop** — gateway observer, shadow ledger, cost graduation |
+| `canary.py` | **quality gate** — non-inferiority trial + two-gate graduation |
 | `report.py` / `cli.py` | the 30-second VP-readable report + `--emit-policy` |
+
+## Dogfood it (real-data validation — run on your machine)
+
+The cheapest test of the whole bet is the real ticket-coverage %. Run it against
+your own Claude Code transcripts (which carry `gitBranch`) and your repo's live
+issues — no exports, no proxy:
+
+```python
+from scopepilot.ingest import GitHubIssuesClient, parse_claude_code_dir
+from scopepilot.cli import _FIXTURES  # or build the report parts directly
+# 1. pull real issues:   GitHubIssuesClient(token=...).pull("you", "your-repo")
+# 2. parse real usage:   parse_claude_code_dir("~/.claude/projects")
+# 3. attribute + report  (see scopepilot.cli.run)
+```
+
+or via the CLI once you've exported issues to JSON:
+
+```bash
+GITHUB_TOKEN=… python -m scopepilot.cli \
+    --planner github --issues my_issues.json \
+    --claude-code ~/.claude/projects --window-days 30
+```
+
+The headline number to watch is **ticket coverage** — if real branches resolve
+to real tickets, the product works; if they don't, that's the thing to fix first.
 
 ## Deferred to later phases (deliberately not in P0)
 
 SSO/SCIM-fed identity graph; a learned task-class model; budget-vs-actual
-burndown per epic; an automated canary harness that runs the candidate model on
-a sampled fraction (the quality half of graduation); non-Anthropic provider rate
-tables (GPT/Gemini). The integration surface (N providers × M planners) is the
-treadmill *and* the moat — prioritized by what design partners actually use.
+burndown per epic; non-Anthropic provider rate tables (GPT/Gemini). The
+integration surface (N providers × M planners) is the treadmill *and* the moat —
+prioritized by what design partners actually use.
 
 ## Settled decisions
 
@@ -174,3 +210,9 @@ treadmill *and* the moat — prioritized by what design partners actually use.
    policy; only `validated` classes enforce, `needs_validation` runs in shadow.
 5. **Live shadow loop — shipped.** Gateway observer seam + `shadow.py` log
    real-traffic counterfactuals and report graduation readiness.
+6. **Product framing — ScopePilot is the platform / primary value prop;**
+   ModelPilot's routing is an embedded optimization *service within* it (the
+   actuator ScopePilot drives). Pricing/packaging of the two is a later decision.
+7. **Graduation loop — shipped, two-gate.** `canary.py` adds the quality gate;
+   a class enforces only when cost-ready (shadow) *and* quality-passed (canary).
+8. **Planner pullers — all three live** (GitHub, Jira, Linear API clients).

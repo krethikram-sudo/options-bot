@@ -11,11 +11,14 @@ done), the linked branch/PR head ref (for the BRANCH join), diff size
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Union
+from urllib.parse import urlencode
 
 from ..models import WorkItem
+from ._http import Transport, get_json
 
 
 def _ts(value: Optional[str]) -> Optional[datetime]:
@@ -82,3 +85,51 @@ def parse_github_issues(data: Union[str, Path, list, dict]) -> list[WorkItem]:
             )
         )
     return items
+
+
+class GitHubIssuesClient:
+    """GitHub REST issues client (live puller).
+
+    `GET /repos/{owner}/{repo}/issues?state=all` with token auth and page
+    pagination. Pull requests (which the issues endpoint also returns) are
+    filtered out. The issues endpoint doesn't carry a branch — that's fine: the
+    branch comes from the coding-tool telemetry (Claude Code `gitBranch`), and
+    the join resolves it to `GH-<number>`.
+    """
+
+    def __init__(
+        self,
+        token: Optional[str] = None,
+        base_url: str = "https://api.github.com",
+        transport: Optional[Transport] = None,
+    ) -> None:
+        self.token = token or os.environ.get("GITHUB_TOKEN", "")
+        self.base_url = base_url.rstrip("/")
+        self._transport = transport
+
+    def _headers(self) -> dict:
+        h = {"accept": "application/vnd.github+json",
+             "user-agent": "scopepilot"}
+        if self.token:
+            h["authorization"] = f"Bearer {self.token}"
+        return h
+
+    def fetch(self, owner: str, repo: str, state: str = "all",
+              page_size: int = 100) -> dict:
+        merged: list[dict] = []
+        page = 1
+        while True:
+            params = {"state": state, "per_page": page_size, "page": page}
+            url = f"{self.base_url}/repos/{owner}/{repo}/issues?{urlencode(params)}"
+            rows = get_json(url, self._headers(), self._transport)
+            if isinstance(rows, dict):  # error envelope or wrapped
+                rows = rows.get("issues") or rows.get("data") or []
+            # Drop PRs; the issues endpoint returns them with a pull_request key.
+            merged.extend(r for r in rows if "pull_request" not in r)
+            if len(rows) < page_size:
+                break
+            page += 1
+        return {"issues": merged}
+
+    def pull(self, owner: str, repo: str, **kw) -> list[WorkItem]:
+        return parse_github_issues(self.fetch(owner, repo, **kw))

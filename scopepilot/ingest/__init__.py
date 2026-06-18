@@ -24,7 +24,7 @@ from .anthropic_admin import (
 from .anthropic_usage import parse_anthropic_usage
 from .claude_code import parse_claude_code_dir, parse_claude_code_transcript
 from .cursor import CursorAdminClient, parse_cursor_events
-from .github_issues import parse_github_issues
+from .github_issues import GitHubIssuesClient, parse_github_issues
 from .jira import JiraClient, parse_jira_issues
 from .linear import LinearClient, parse_linear_issues
 
@@ -40,6 +40,7 @@ __all__ = [
     "parse_github_issues",
     "parse_jira_issues",
     "parse_linear_issues",
+    "GitHubIssuesClient",
     "JiraClient",
     "LinearClient",
     "PLANNERS",
