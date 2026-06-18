@@ -87,7 +87,8 @@ def render(
     add("  Roadmap forecast (open work items × class cost)")
     add("  " + "-" * 56)
     add(f"   Expected: {_usd(forecast.expected_usd)}    "
-        f"Upper (p90): {_usd(forecast.p90_usd)}")
+        f"Likely range (p10–p90): {_usd(forecast.low_usd)}–{_usd(forecast.high_usd)}")
+    add(f"   Conservative upper bound (Σ p90, fully correlated): {_usd(forecast.p90_usd)}")
     add(f"   Costed {forecast.items_costed} open items; "
         f"{forecast.items_unclassified} had no class history (not costed).")
     for tc, amt in sorted(forecast.by_class.items(), key=lambda kv: kv[1], reverse=True):

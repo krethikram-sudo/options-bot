@@ -156,7 +156,11 @@ has no history, and one `validated` + several `needs_validation` routing recs.
   nothing. We flag tickets ≥N× their class median instead.
 - **Forecasting is per task-class, never per ticket.** A single unseen ticket
   is as unpredictable to cost as it is to estimate in hours; the distribution
-  over a *class* is stable and useful.
+  over a *class* is stable and useful. Each open item gets a p10..p90 band
+  around its class mean, and the roadmap total carries a **variance-pooled**
+  interval — independent per-item over/under-shoots partially cancel, so the
+  realistic band is tighter than naively summing per-item p90s, while staying
+  nested inside that fully-correlated `[Σp10, Σp90]` worst case.
 - **The forecast's accuracy is measured, not asserted.** `backtest.py` runs a
   leave-one-out cross-validation over realized spend — predict each closed
   ticket from the *others* in its class, compare to actual — and reports MdAPE,
