@@ -1,122 +1,114 @@
 <!doctype html>
 <html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Security &amp; trust — Outlay</title>
-<meta name="description" content="How Outlay keeps your data safe: prompts never leave your system, encryption in transit, least-privilege access, fail-open availability, and our compliance posture.">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security &amp; privacy — Outlay</title>
+<meta name="description" content="Outlay is built so your sensitive data physically can't reach us. Attribution and routing run on metadata — categories, token counts, ticket IDs. Prompt content, model outputs, and API keys never leave your environment.">
 <link rel="canonical" href="https://modelpilot.pages.dev/security.html">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="stylesheet" href="/docs/docs.css">
-</head><body>
-<div class="top"><div class="row">
-  <a class="brand" href="/">Out<span class="dot">lay</span></a>
-  <span class="tag">Security &amp; trust</span><span class="sp"></span>
-  <a class="lnk" href="/docs/">Docs</a>
-  <a class="lnk" href="https://modelpilot-console-prod.fly.dev/login">Sign in</a>
-  <a class="cta" href="https://modelpilot-console-prod.fly.dev/signup">Start free trial</a>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<meta property="og:title" content="Security &amp; privacy — Outlay">
+<meta property="og:description" content="Built so your sensitive data physically can't reach us. Metadata only — prompts, outputs, and keys never leave your environment.">
+<link rel="stylesheet" href="/outlay.css">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Out<span class="dot">lay</span></a>
+  <div class="navlinks">
+    <a href="/#how">How it works</a>
+    <a href="/#owners">For eng &amp; finance</a>
+    <a href="/#optimize">Optimization engine</a>
+    <a href="/#compare">Compare</a>
+    <a href="/pilot.html">Pilot</a>
+  </div>
+  <div class="navsp"></div>
+  <div class="navcta">
+    <a class="signin" href="https://modelpilot-console-prod.fly.dev/login">Sign in</a>
+    <a class="btn primary" href="mailto:krethikram@gmail.com?subject=Outlay%20design-partner%20pilot">Book a pilot</a>
+  </div>
+</div></nav>
+
+<div class="page"><div class="wrap">
+  <div class="eyebrow">Security &amp; privacy</div>
+  <h1>Governance without shipping us your prompts.</h1>
+  <p class="lede">Most spend and observability tools see everything you send. Outlay is built so the
+    sensitive data <b>physically can't reach us</b> — purpose-built for teams that can't let prompts
+    leave their environment.</p>
 </div></div>
 
-<main style="max-width:760px;margin:0 auto;padding:34px 22px 80px">
-  <h1>Security &amp; trust</h1>
-  <p class="lead">Outlay is built so the sensitive data physically can't reach us. This page
-    describes exactly how your data is handled, our security practices, and our compliance posture —
-    stated plainly, without overclaiming.</p>
+<section style="padding-top:24px"><div class="wrap">
+  <div class="flow">
+    <span class="node">Your app<small>prompt + API key</small></span>
+    <span class="arrow">→</span>
+    <span class="node">Local agent<small>classifies on your system</small></span>
+    <span class="arrow">→</span>
+    <span class="node">Outlay<small>category + token counts + ticket id</small></span>
+    <span class="arrow">→</span>
+    <span class="node">Anthropic<small>your key, your prompt</small></span>
+  </div>
 
-  <div class="note"><b>The core guarantee:</b> your prompts, your model outputs, and your Anthropic API
-    key never transit Outlay's servers. Classification happens locally in the client; only a task
-    category and numeric features (token estimates, flags) are sent to our routing brain.</div>
+  <div class="prose">
+    <h2>What never leaves your environment</h2>
+    <ul>
+      <li><span class="ck">✓</span><div><b>Prompt text and model outputs.</b> Classification and routing happen locally; we never receive request or response bodies.</div></li>
+      <li><span class="ck">✓</span><div><b>Your API keys.</b> Your provider key stays on your side and is used to call Anthropic directly.</div></li>
+      <li><span class="ck">✓</span><div><b>Customer / PII data.</b> Anything inside a prompt stays inside your boundary.</div></li>
+    </ul>
+    <div class="note">Our ingestion endpoints <b>reject any payload</b> that contains prompt text, outputs,
+      or secret-looking keys (HTTP 422). The boundary is enforced, not just promised.</div>
 
-  <h2 id="data">What we receive — and what we never do</h2>
-  <table>
-    <thead><tr><th>Never sent to Outlay</th><th>Sent to Outlay</th></tr></thead>
-    <tbody>
-      <tr><td>Prompt text &amp; system prompts</td><td>Task category (e.g. <code>classification</code>)</td></tr>
-      <tr><td>Model outputs / completions</td><td>Numeric features (token estimates, boolean flags)</td></tr>
-      <tr><td>Your Anthropic API key</td><td>Requested model + your deployment id / API key</td></tr>
-      <tr><td>Any of your customers' data</td><td>Aggregate savings dollars &amp; counts (billing)</td></tr>
-    </tbody>
-  </table>
-  <p>Your application calls a local proxy that forwards requests to Anthropic <b>with your key, directly</b>.
-    Outlay is not in the path of your prompt content. See the
-    <a href="/docs/architecture.html">architecture page</a> for the full request flow.</p>
-  <p><b>Defense in depth.</b> Our routing, metering, telemetry, and logging endpoints <b>reject any payload</b>
-    that contains prompt/output/secret-looking fields (HTTP 422) — even though the client already guarantees
-    aggregates only.</p>
+    <h2>What we do see — metadata only</h2>
+    <p>To attribute spend to work and to route safely, Outlay receives a small, non-sensitive set of
+      metadata:</p>
+    <ul>
+      <li><span class="ck">·</span><div>A <b>task category</b> and numeric features (token counts, flags).</div></li>
+      <li><span class="ck">·</span><div>The <b>ticket / branch identifier</b> the work belongs to (e.g. <code>PROJ-123</code>).</div></li>
+      <li><span class="ck">·</span><div>Per-request <b>cost and savings</b> figures, as dollars and counts — never content.</div></li>
+    </ul>
 
-  <h2 id="optimize">How we optimize without seeing your data</h2>
-  <p>Outlay gets better for you the more you use it — driven by <b>outcomes and metadata, never your
-    content</b>:</p>
-  <ul>
-    <li><b>Learns from your own traffic.</b> Per-category quality floors and classification rules are tuned
-      to your workload from the category labels, token counts, and routing outcomes above — so routing gets
-      safely cheaper where <em>your</em> traffic proves it can.</li>
-    <li><b>Proven before it's applied.</b> A floor is only lowered when the cheaper model passes a
-      <b>side-by-side non-inferiority check</b> on your prompts, and savings are measured against a held-out
-      <b>control group</b> running the baseline — so improvements are real, not self-serving.</li>
-    <li><b>You stay in control.</b> Tuning changes are proposals you review and approve (auto-approval is
-      off by default), and every change is auditable.</li>
-    <li><b>Metadata-only, by design.</b> Per-customer tuning is driven entirely by the metadata we
-      already see — category labels, token counts, and routing outcomes — <b>never your prompt content</b>.
-      There's nothing to install and nothing extra to send; your content never leaves your system.</li>
-    <li><b>Fails open.</b> If our routing brain is unreachable, traffic passes straight through to Anthropic
-      unrouted — we can degrade savings, never block or alter your requests.</li>
-  </ul>
+    <h2>Architecture: the IP is server-side, your data is client-side</h2>
+    <p>The piece that runs in your environment is a <b>thin, inspectable client</b> — it does local
+      classification and tagging and carries no proprietary routing logic. The decision engine and the
+      attribution model run on our side and only ever see metadata. You can read exactly what the client
+      sends; you never have to trust a black box with your prompts.</p>
 
-  <h2 id="logs">Optional request logs</h2>
-  <p>Per-request logging is <b>opt-in and metadata-only</b> (timestamps, models, category, token counts,
-    cost, status, routed/escalated flags) — never content. You can also export this telemetry to your own
-    OTLP collector so it never reaches us at all. Logging is off until you enable it.</p>
+    <h2>The optimization engine fails open</h2>
+    <p>When you turn on the optional optimization engine, it sits in your request path — and it is built
+      to <b>never block a request</b>. If our routing service is unreachable, traffic passes straight
+      through to Anthropic, unrouted. We can degrade your savings; we can't degrade your uptime. A model
+      downgrade only ever happens after it's been proven non-inferior on your own work (shadow → quality
+      canary).</p>
 
-  <h2 id="encryption">Encryption</h2>
-  <ul>
-    <li><b>In transit:</b> all traffic to Outlay services is over TLS (HTTPS).</li>
-    <li><b>At rest:</b> our datastores (accounts, aggregates, opt-in metadata) are encrypted at rest by our
-      cloud provider.</li>
-    <li><b>Your API key:</b> stays on your machine and is used by the local proxy to call Anthropic; we never
-      store or transmit it.</li>
-  </ul>
+    <h2>Data handling, isolation &amp; exit</h2>
+    <ul>
+      <li><span class="ck">·</span><div><b>Per-deployment isolation</b> — your metadata is scoped to your deployment.</div></li>
+      <li><span class="ck">·</span><div><b>Deletion on request</b> — during a design-partner pilot, your data is deleted at the end on request.</div></li>
+      <li><span class="ck">·</span><div><b>Leave anytime</b> — it's your key and your traffic; removing Outlay restores the unrouted path.</div></li>
+    </ul>
 
-  <h2 id="access">Access &amp; account security</h2>
-  <ul>
-    <li>Passwords are hashed with <b>PBKDF2-SHA256</b> (200k iterations); we never store plaintext.</li>
-    <li>API keys are shown once and stored only as a <b>SHA-256 hash</b>; they're scoped to a deployment,
-      revocable, and track last use.</li>
-    <li>Sessions are HMAC-signed; suspended accounts lose access immediately.</li>
-    <li>Per-deployment isolation; least-privilege internal access to production systems.</li>
-  </ul>
+    <div class="note">Outlay is early and onboarding design partners. We're happy to walk a security
+      reviewer through the data-flow boundary in detail and to support a mutual NDA — just
+      <a href="mailto:krethikram@gmail.com?subject=Outlay%20security%20review">reach out</a>.</div>
 
-  <h2 id="availability">Availability</h2>
-  <p>The proxy <b>fails open</b>: if Outlay is ever unreachable, your request is forwarded straight to the
-    Claude API, unrouted. We can degrade your savings, never your uptime. Live service status:
-    <a href="https://modelpilot-console-prod.fly.dev/status">modelpilot-console-prod.fly.dev/status</a>.</p>
+    <p class="backlink" style="margin-top:28px"><a href="/">← Back to Outlay</a> · <a href="/legal/privacy.html">Privacy policy</a></p>
+  </div>
+</div></section>
 
-  <h2 id="retention">Data retention &amp; deletion</h2>
-  <p>We retain account data while your account is active, aggregate savings data for billing history, and any
-    opt-in metadata logs you choose to send. You can export your data (CSV) from the console and request
-    deletion at any time by emailing <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a>.</p>
+<footer><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Out<span class="dot">lay</span></a>
+  <span class="sep"></span>
+  <a href="/pilot.html">Book a pilot</a>
+  <a href="/#owners">For eng &amp; finance</a>
+  <a href="/#compare">Compare</a>
+  <a href="/docs/">Docs</a>
+  <a href="/legal/privacy.html">Privacy</a>
+  <a href="/legal/terms.html">Terms</a>
+  <a href="mailto:krethikram@gmail.com">Contact</a>
+</div>
+<div class="wrap" style="margin-top:14px;font-size:12.5px;color:#6c7790">© 2026 Outlay · Budget by scope of work, stay within guardrails, capture the savings automatically.</div>
+</footer>
 
-  <h2 id="compliance">Compliance posture <span class="muted" style="font-size:15px">— stated honestly</span></h2>
-  <p>We believe in being precise about what is and isn't true today:</p>
-  <ul>
-    <li><b>Architectural guarantees (today):</b> prompts/outputs/keys never reach us; aggregates-only metering;
-      opt-in metadata logging; fail-open routing; inspectable thin client. These are properties of the
-      design, verifiable in the client.</li>
-    <li><b>Data Processing Addendum:</b> we will sign a <a href="/legal/dpa.html">DPA</a> with customers (a
-      template is published for review).</li>
-    <li><b>Subprocessors:</b> a current list is published <a href="/legal/subprocessors.html">here</a>.</li>
-    <li><b>Formal certifications (SOC 2 Type II, etc.):</b> we are <b>not yet certified</b>. If your
-      procurement requires SOC 2, HIPAA/BAA, penetration-test summaries, or a security questionnaire, email
-      us — we'll share our current posture and roadmap. We will not claim certifications we don't hold.</li>
-  </ul>
-
-  <h2 id="vuln">Reporting a vulnerability</h2>
-  <p>Found a security issue? Please email <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a> with
-    details and steps to reproduce. We'll acknowledge promptly, keep you updated, and credit you if you'd
-    like once it's resolved. Please don't disclose publicly until we've had a chance to fix it.</p>
-
-  <p class="foot" style="margin-top:40px">Questions about security or procurement?
-    <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a> ·
-    <a href="/legal/dpa.html">DPA</a> · <a href="/legal/subprocessors.html">Subprocessors</a> ·
-    <a href="https://modelpilot-console-prod.fly.dev/status">Status</a> ·
-    <a href="/docs/architecture.html">Architecture</a></p>
-</main>
 </body></html>
