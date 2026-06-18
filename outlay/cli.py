@@ -45,6 +45,7 @@ from .models import UsageEvent
 from .policy import build_policy
 from .recommend import recommend
 from .report import render
+from .size import fit_size_models
 
 _FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -117,9 +118,10 @@ def run(
 
     result = attribute(events, work_items, engine=engine)
     stats = class_stats(result)
+    size_models = fit_size_models(result, work_items)
 
     open_items = [wi for wi in work_items if wi.is_open]
-    fc = forecast_roadmap(open_items, stats)
+    fc = forecast_roadmap(open_items, stats, size_models)
     anomalies = find_anomalies(result, stats, threshold=3.0)
 
     horizon = (30.0 / window_days) if window_days else 1.0
@@ -138,7 +140,7 @@ def run(
                  budgets=budgets, window_days=window_days)
 
     if calibrate:
-        out += "\n" + format_calibration(backtest(result))
+        out += "\n" + format_calibration(backtest(result, work_items))
 
     return out
 

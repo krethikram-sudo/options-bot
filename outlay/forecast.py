@@ -74,14 +74,15 @@ _Z_P90 = 1.2815515594
 
 @dataclass
 class ItemForecast:
-    """Per-item point estimate with a confidence band, costed at its class."""
+    """Per-item point estimate with a confidence band."""
 
     ticket_id: str
     task_class: TaskClass
     expected_usd: float
-    low_usd: float      # class p10 (empirical, robust to skew)
-    high_usd: float     # class p90
+    low_usd: float      # lower band (p10)
+    high_usd: float     # upper band (p90)
     costable: bool
+    basis: str = "class"  # "size" when conditioned on size, else "class" mean
 
 
 @dataclass
@@ -99,10 +100,16 @@ class RoadmapForecast:
 def forecast_roadmap(
     open_items: list[WorkItem],
     stats: dict[TaskClass, ClassStats],
+    size_models: "dict[TaskClass, object] | None" = None,
 ) -> RoadmapForecast:
     """Bottom-up forecast: each open work item costed at its class's mean, with a
     per-item p10..p90 band. Items whose class has no history can't be costed — we
     count them rather than guessing, so the forecast states its own coverage.
+
+    When `size_models` is supplied and an item carries the size feature that
+    class's model was fit on, the point estimate and band are conditioned on the
+    item's size instead of the flat class mean — a tighter estimate where size
+    predicts cost. Items without a usable size signal fall back to the class mean.
 
     The aggregate band is **variance-pooled**, not a sum of per-item p90s: across
     many items the over- and under-shoots partially cancel (Var of a sum = Σ of
@@ -115,7 +122,9 @@ def forecast_roadmap(
     realistic interval.
     """
     from .classify import classify
+    from .size import size_feature
 
+    size_models = size_models or {}
     expected = 0.0
     p10 = 0.0
     p90 = 0.0
@@ -132,13 +141,27 @@ def forecast_roadmap(
             unclassified += 1
             items.append(ItemForecast(item.ticket_id, tc, 0.0, 0.0, 0.0, costable=False))
             continue
-        expected += st.mean
-        p10 += st.p10
-        p90 += st.p90
-        var_sum += st.std ** 2
-        by_class[tc] += st.mean
+
+        sm = size_models.get(tc)
+        sf = size_feature(item) if sm is not None else None
+        if sm is not None and sf is not None and sf[0] == sm.feature:
+            # Size-conditioned estimate: cost-per-unit × this item's size.
+            exp = sm.predict(sf[1])
+            lo = exp * sm.lo_mult
+            hi = exp * sm.hi_mult
+            basis = "size"
+        else:
+            exp, lo, hi, basis = st.mean, st.p10, st.p90, "class"
+
+        # Per-item std implied by the band, for variance pooling of the total.
+        item_std = max(0.0, (hi - lo) / (2 * _Z_P90))
+        expected += exp
+        p10 += lo
+        p90 += hi
+        var_sum += item_std ** 2
+        by_class[tc] += exp
         costed += 1
-        items.append(ItemForecast(item.ticket_id, tc, st.mean, st.p10, st.p90, costable=True))
+        items.append(ItemForecast(item.ticket_id, tc, exp, lo, hi, costable=True, basis=basis))
 
     agg_std = var_sum ** 0.5
     # Nest the independence band inside the fully-correlated [Σp10, Σp90] envelope.

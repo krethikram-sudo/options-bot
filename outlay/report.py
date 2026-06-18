@@ -100,13 +100,16 @@ def render(
         add("")
         add("   Top open items (expected, with p10–p90 band)")
         top = sorted(costable, key=lambda it: it.expected_usd, reverse=True)[:8]
-        add(f"     {'item':<9}{'class':<10}{'expected':>10}   {'p10–p90 range':>18}")
+        add(f"     {'item':<9}{'class':<10}{'basis':<6}{'expected':>10}   {'p10–p90 range':>18}")
         for it in top:
             band = f"{_usd(it.low_usd)}–{_usd(it.high_usd)}"
-            add(f"     {it.ticket_id:<9}{it.task_class.value:<10}"
+            add(f"     {it.ticket_id:<9}{it.task_class.value:<10}{it.basis:<6}"
                 f"{_usd(it.expected_usd):>10}   {band:>18}")
         if len(costable) > len(top):
             add(f"     …and {len(costable) - len(top)} more costed open item(s).")
+        if any(it.basis == "size" for it in costable):
+            add("     basis: 'size' = conditioned on story points / diff size; "
+                "'class' = class mean.")
 
     # --- Anomalies ---
     add("")
