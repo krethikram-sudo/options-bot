@@ -19,12 +19,40 @@ import argparse
 import os
 
 from .attribute import attribute
+from .backtest import backtest, format_calibration
 from .forecast import class_stats, find_anomalies, forecast_roadmap
 from .ingest import GitHubIssuesClient, parse_claude_code_dir
 from .join import JoinEngine
 from .policy import build_policy
 from .recommend import recommend
 from .report import render
+from .size import fit_size_models
+
+
+def build_report(events, work, window_days: int = 30) -> str:
+    """Assemble the full dogfood report from already-ingested events + work items.
+
+    Pure (no network) so it's unit-testable: runs attribution, the size-aware
+    forecast, the recommendations, and appends the measured calibration backtest
+    plus the make-or-break ticket-coverage line.
+    """
+    result = attribute(events, work, engine=JoinEngine(work))
+    stats = class_stats(result)
+    size_models = fit_size_models(result, work)
+    fc = forecast_roadmap([w for w in work if w.is_open], stats, size_models)
+    recs = recommend(result, horizon_scale=30.0 / max(window_days, 1))
+
+    parts = [
+        render(result, stats, fc, find_anomalies(result, stats), recs,
+               policy=build_policy(recs), window_days=window_days),
+        # Measured forecast accuracy on *your* history — class-mean vs size-conditioned.
+        "\n" + format_calibration(backtest(result, work)),
+        f">>> TICKET COVERAGE: {result.ticket_coverage:.0%}   "
+        f"(events={len(result.rows)}, tickets touched={len(result.rollups)}, "
+        f"issues={len(work)})",
+        ">>> This is the make-or-break number. High = the join works on real data.",
+    ]
+    return "\n".join(parts)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -47,17 +75,7 @@ def main(argv: list[str] | None = None) -> int:
     if not work:
         print(f"(no issues returned for {args.repo} — check GITHUB_TOKEN/scope)")
 
-    result = attribute(events, work, engine=JoinEngine(work))
-    stats = class_stats(result)
-    fc = forecast_roadmap([w for w in work if w.is_open], stats)
-    recs = recommend(result, horizon_scale=30.0 / max(args.window_days, 1))
-
-    print(render(result, stats, fc, find_anomalies(result, stats), recs,
-                 policy=build_policy(recs), window_days=args.window_days))
-    print(f"\n>>> TICKET COVERAGE: {result.ticket_coverage:.0%}   "
-          f"(events={len(result.rows)}, tickets touched={len(result.rollups)}, "
-          f"issues={len(work)})")
-    print(">>> This is the make-or-break number. High = the join works on real data.")
+    print(build_report(events, work, window_days=args.window_days))
     return 0
 
 
