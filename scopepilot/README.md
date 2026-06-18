@@ -31,14 +31,33 @@ an escalation would cost more than one capable run).
 
 ## Phase 0 scope (this package)
 
-- **Provider:** Anthropic usage (per-call `usage` object + admin export shape).
+- **Sources:** Anthropic per-call usage, **Anthropic Admin API** (live puller),
+  **Cursor Admin API** (live puller), **Claude Code transcripts** — additive.
 - **Planner:** GitHub Issues (issues/PRs + branch links).
 - **Pipeline:** ingest → cost-normalize → branch→ticket join (fidelity-tiered)
   → task-class classify → attribute → forecast + anomaly guardrails → advisory
   model-routing recommendation.
-- **Read-only.** No proxy/enforcement dependency — a flat-SaaS-friendly land
-  motion. Enforcement (reuse the ModelPilot proxy) is a later tier.
-- **Stdlib-only.** No new dependencies; runs anywhere Python 3.11 does.
+- **Billing: flat SaaS** (decided). Lead with zero-install, read-only
+  attribution; enforcement (reuse the ModelPilot proxy) is a later, optional
+  tier — not required to bill.
+- **Stdlib-only.** No new dependencies; the live pullers use `urllib` behind a
+  transport seam so they're testable offline with no credentials.
+
+## Ingestion sources & fidelity ceiling
+
+Different sources can reach different join fidelity — surfaced honestly so a
+number is never trusted beyond what produced it:
+
+| Source | Carries git branch? | Fidelity ceiling | Role |
+|---|---|---|---|
+| Claude Code transcripts (`gitBranch`) | yes | `branch` (ticket-level) | primary join |
+| ScopePilot proxy metadata (tagged) | yes | `call` (ticket-level) | primary join |
+| Anthropic Admin API (aggregated) | no | `team` (key→user→team) | invoice reconciliation |
+| Cursor Admin API (per-user) | no | `team` (user→team) | per-engineer rollup |
+
+Live pulls (need `ANTHROPIC_ADMIN_KEY` / `CURSOR_ADMIN_KEY`) via
+`AnthropicAdminClient` / `CursorAdminClient` in `scopepilot.ingest`; the CLI
+consumes their JSON so it stays offline-friendly.
 
 ## Run it
 
@@ -79,7 +98,10 @@ has no history, and one `validated` + several `needs_validation` routing recs.
 |---|---|
 | `models.py` | `UsageEvent`, `WorkItem`, `Attribution`, `FidelityTier`, `TaskClass` |
 | `pricing.py` | model rate table (incl. cache economics) → `cost_usd()` |
-| `ingest/anthropic_usage.py` | Anthropic usage JSON → `UsageEvent`s |
+| `ingest/anthropic_usage.py` | Anthropic per-call usage JSON → `UsageEvent`s |
+| `ingest/anthropic_admin.py` | live Admin Usage API puller + report parser |
+| `ingest/cursor.py` | live Cursor Admin API puller + events parser |
+| `ingest/claude_code.py` | Claude Code `.jsonl` transcript parser (branch-level) |
 | `ingest/github_issues.py` | GitHub issues/PR JSON → `WorkItem`s |
 | `join.py` | **the IP** — branch→ticket join + identity graph + fidelity tiers |
 | `classify.py` | task-class heuristics (labels → branch verbs → diff size) |
@@ -90,15 +112,16 @@ has no history, and one `validated` + several `needs_validation` routing recs.
 
 ## Deferred to later phases (deliberately not in P0)
 
-Cursor / Claude-Code ingestion adapters; SSO/SCIM-fed identity graph; a learned
-task-class model; budget-vs-actual burndown per epic; proxy-based **enforcement**
-of routing policy; multi-provider rate tables. The integration surface
-(N providers × M planners) is the treadmill *and* the moat — it's prioritized by
-what design partners actually use, not built generically up front.
+SSO/SCIM-fed identity graph; a learned task-class model; budget-vs-actual
+burndown per epic; proxy-based **enforcement** of routing policy; Jira/Linear
+planner adapters; non-Anthropic provider rate tables (GPT/Gemini). The
+integration surface (N providers × M planners) is the treadmill *and* the moat —
+prioritized by what design partners actually use.
 
-## Open product decisions (need founder input)
+## Settled decisions
 
-1. **Billing model** — flat SaaS (lead with zero-install read-only attribution)
-   vs. %-of-savings like ModelPilot (needs the enforcement proxy to be core).
-2. **First real integration pair** — confirm Anthropic + GitHub Issues is where
-   the earliest design partners live, or repoint P0 (e.g. Cursor + Jira).
+1. **Billing model — flat SaaS.** Land with zero-install read-only attribution;
+   the enforcement proxy is an optional later tier, not a billing prerequisite.
+2. **Ingestion sources — all four shipped** (Anthropic per-call + Admin API,
+   Cursor, Claude Code). Claude Code is the branch-bearing primary join; the
+   admin APIs reconcile to invoice. Jira/Linear planners are the next adapters.

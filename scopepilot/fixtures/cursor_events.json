@@ -1,0 +1,8 @@
+{
+  "usageEvents": [
+    {"id": "cur1", "timestamp": "1749639600000", "model": "claude-opus-4-8", "userEmail": "alice@acme.dev", "kindLabel": "composer", "tokenUsage": {"inputTokens": 12000, "outputTokens": 5000, "cacheReadTokens": 80000, "cacheWriteTokens": 9000}},
+    {"id": "cur2", "timestamp": "1749643200000", "model": "claude-sonnet-4-6", "userEmail": "bob@acme.dev", "kindLabel": "chat", "tokenUsage": {"inputTokens": 8000, "outputTokens": 3000, "cacheReadTokens": 40000, "cacheWriteTokens": 5000}},
+    {"id": "cur3", "timestamp": "1749646800000", "model": "claude-opus-4-8", "userEmail": "bob@acme.dev", "kindLabel": "composer", "tokenUsage": {"inputTokens": 20000, "outputTokens": 9000, "cacheReadTokens": 150000, "cacheWriteTokens": 18000}}
+  ],
+  "pagination": {"hasNextPage": false}
+}
