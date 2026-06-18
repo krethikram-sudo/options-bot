@@ -164,7 +164,26 @@ has no history, and one `validated` + several `needs_validation` routing recs.
 | `policy.py` | **enforcement** — gated routing policy for the ModelPilot proxy |
 | `shadow.py` | **live loop** — gateway observer, shadow ledger, cost graduation |
 | `canary.py` | **quality gate** — non-inferiority trial + two-gate graduation |
-| `report.py` / `cli.py` | the 30-second VP-readable report + `--emit-policy` |
+| `budget.py` | **burndown** — actual vs scope-based budget, pace-projected |
+| `dogfood.py` | `python -m scopepilot.dogfood` — one-command real-data run |
+| `report.py` / `cli.py` | the VP report + `--emit-policy` / `--budgets` |
+
+## Budgets & guardrails (the original value prop)
+
+*Build budgets from the scope of work, then hold spend within guardrails.*
+`budget.py` tracks actual spend against a per-scope budget (epic / team / sprint
+/ total) and **projects the end-of-period total at the current burn rate**, so a
+lead sees a scope trending over *before* it blows through — not after. Guardrails
+are pace-based (`ok` / `warn` / `over`), never hard mid-period caps that just stop
+work. Budgets can be set by hand (`--budgets budgets.json`) or derived straight
+from the roadmap forecast (`budget_from_forecast`).
+
+```
+[WARN ] June AI compute (whole team)   spent $13.01/$45.00 (29%) at 29% of period
+                                        projected end: $45.06 (over by $0.06)
+[OVER ] Epic: Q3 stability             spent $6.43/$5.00 (129%) → projected $22.27
+[OK   ] Team: platform                 spent $4.39/$20.00 (22%) → $15.61 headroom
+```
 
 ## Dogfood it (real-data validation — run on your machine)
 
@@ -216,3 +235,7 @@ prioritized by what design partners actually use.
 7. **Graduation loop — shipped, two-gate.** `canary.py` adds the quality gate;
    a class enforces only when cost-ready (shadow) *and* quality-passed (canary).
 8. **Planner pullers — all three live** (GitHub, Jira, Linear API clients).
+9. **Budget burndown — shipped.** `budget.py` tracks actual vs scope-based budget
+   with pace projection (`--budgets`) — the founding value prop, end-to-end.
+10. **CI — ScopePilot has its own gate.** `.github/workflows/scopepilot-ci.yml`
+    runs the test suite on every change to `scopepilot/` (the primary product).

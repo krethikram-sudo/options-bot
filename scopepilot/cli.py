@@ -29,6 +29,7 @@ import json
 from pathlib import Path
 
 from .attribute import attribute
+from .budget import parse_budgets, track_budgets
 from .forecast import class_stats, find_anomalies, forecast_roadmap
 from .ingest import (
     PLANNERS,
@@ -86,6 +87,7 @@ def run(
     claude_code: Path | None = None,
     claude_code_user: str | None = None,
     emit_policy: Path | None = None,
+    budgets_path: Path | None = None,
 ) -> str:
     events = gather_events(
         usage=usage_path,
@@ -125,8 +127,13 @@ def run(
     if emit_policy:
         Path(emit_policy).write_text(json.dumps(policy.to_dict(), indent=2))
 
+    budgets = None
+    if budgets_path:
+        budgets = track_budgets(result, work_items,
+                                parse_budgets(_load_json(budgets_path)))
+
     return render(result, stats, fc, anomalies, recs, policy=policy,
-                  window_days=window_days)
+                  budgets=budgets, window_days=window_days)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -146,6 +153,8 @@ def main(argv: list[str] | None = None) -> int:
                    help="planning system the --issues export came from")
     p.add_argument("--emit-policy", type=Path, default=None,
                    help="write the proxy-consumable routing policy JSON to this path")
+    p.add_argument("--budgets", type=Path, default=None,
+                   help="budgets JSON (scope_type/scope_id/limit_usd/period_*) for burndown")
     p.add_argument("--window-days", type=int, default=None,
                    help="observed window length, used to project a monthly figure")
     args = p.parse_args(argv)
@@ -162,6 +171,7 @@ def main(argv: list[str] | None = None) -> int:
         claude_code=args.claude_code,
         claude_code_user=args.claude_code_user,
         emit_policy=args.emit_policy,
+        budgets_path=args.budgets,
     ))
     return 0
 

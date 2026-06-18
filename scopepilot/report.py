@@ -8,6 +8,7 @@ and advisory routing recommendations. Stdlib-only; no table deps.
 from __future__ import annotations
 
 from .attribute import AttributionResult
+from .budget import BudgetStatus
 from .forecast import Anomaly, ClassStats, RoadmapForecast
 from .models import FidelityTier, TaskClass
 from .policy import PolicyMode, RoutingPolicy
@@ -35,6 +36,7 @@ def render(
     recs: list[Recommendation],
     *,
     policy: RoutingPolicy | None = None,
+    budgets: list[BudgetStatus] | None = None,
     window_days: int | None = None,
 ) -> str:
     L: list[str] = []
@@ -128,6 +130,22 @@ def render(
             mark = "ENFORCE" if e.mode == PolicyMode.ENFORCE else e.mode.value.upper()
             add(f"   [{mark:<7}] {e.task_class.value:<10} floor→{e.model} "
                 f"(tier {e.floor_tier})  ~{_usd(e.projected_savings_usd)}")
+
+    # --- Budget burndown ---
+    if budgets:
+        add("")
+        add("  Budget burndown (actual vs scope-based budget, pace-projected)")
+        add("  " + "-" * 56)
+        for s in budgets:
+            name = s.budget.label or f"{s.budget.scope_type}:{s.budget.scope_id}"
+            flag = {"ok": "OK   ", "warn": "WARN ", "over": "OVER "}[s.status]
+            add(f"   [{flag}] {name}")
+            add(f"      spent {_usd(s.spent_usd)} / {_usd(s.limit_usd)} "
+                f"({s.pct_used:.0%}) at {s.fraction_elapsed:.0%} of period")
+            add(f"      projected end: {_usd(s.projected_end_usd)}"
+                + (f"  (over by {_usd(s.projected_end_usd - s.limit_usd)})"
+                   if s.projected_end_usd > s.limit_usd else
+                   f"  ({_usd(s.remaining_usd)} headroom)"))
 
     add("")
     add("=" * 64)
