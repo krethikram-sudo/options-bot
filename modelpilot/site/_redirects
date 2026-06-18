@@ -1,3 +1,10 @@
+# Canonicalize the old Pages host → the outlay-ai.com brand domain.
+# Host-scoped source: matches only requests served on modelpilot.pages.dev, so it
+# never loops outlay-ai.com onto itself. (If Cloudflare treats the source as a
+# path it simply no-ops; the per-page <link rel=canonical> carries the SEO signal
+# either way.)
+https://modelpilot.pages.dev/* https://outlay-ai.com/:splat 301
+
 # Deprecated ModelPilot-era marketing pages → relevant Outlay sections
 /cut-claude-costs.html      /#optimize       301
 /where-we-save.html         /#optimize       301
