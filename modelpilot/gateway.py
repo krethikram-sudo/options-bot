@@ -169,7 +169,7 @@ def _load_observer(spec: str | None):
     returning a `callable(payload: dict) -> None`. It's called after each request
     is ledgered, with a small decision/usage payload (plus any work-context
     headers), and may never alter or block the request path. This is the seam the
-    ScopePilot shadow-logger plugs into (`scopepilot.shadow:make_observer`)
+    Outlay shadow-logger plugs into (`outlay.shadow:make_observer`)
     without the published gateway taking any dependency on it. Fail-open: a bad
     spec or construction error disables the observer rather than breaking boot.
     """
@@ -218,7 +218,7 @@ async def _lifespan(app):
                                if (app.state.brain_url or os.environ.get("MODELPILOT_CONSOLE_URL"))
                                else "")
     app.state.autotune_n = 0
-    # Optional per-request observer (e.g. ScopePilot shadow-logger). No-op unless
+    # Optional per-request observer (e.g. Outlay shadow-logger). No-op unless
     # MODELPILOT_REQUEST_OBSERVER is set; never touches the request path.
     app.state.request_observer = _load_observer(
         os.environ.get("MODELPILOT_REQUEST_OBSERVER"))
@@ -728,7 +728,7 @@ async def messages(request: Request):
     request_id = uuid.uuid4().hex
     # Work context for the optional observer: the branch/ticket the calling agent
     # is running on, declared via headers (never forwarded upstream). This is the
-    # signal ScopePilot resolves to a task-class for shadow/enforce accounting.
+    # signal Outlay resolves to a task-class for shadow/enforce accounting.
     work_meta = {
         "branch": request.headers.get("x-modelpilot-work-branch"),
         "ticket": request.headers.get("x-modelpilot-work-ticket"),

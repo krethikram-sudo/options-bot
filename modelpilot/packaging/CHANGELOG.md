@@ -4,6 +4,13 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.38.1 — 2026-06-18
+
+- **Docs: rename the request-observer example to `outlay.shadow:make_observer`.**
+  The optional observer consumer was renamed from `scopepilot` to `outlay` (brand
+  change); the gateway docstring example now reflects it. No behavior change — the
+  observer still loads any `module.path:factory` from `MODELPILOT_REQUEST_OBSERVER`.
+
 ## 0.38.0 — 2026-06-18
 
 - **Optional, product-agnostic per-request observer seam.** The gateway can now

@@ -1,0 +1,27 @@
+name: outlay-ci
+
+# Outlay is the primary product; its tests must gate changes to it.
+# Path-filtered so it only runs when outlay/ (or this workflow) changes.
+on:
+  push:
+    paths:
+      - "outlay/**"
+      - ".github/workflows/outlay-ci.yml"
+  pull_request:
+    paths:
+      - "outlay/**"
+      - ".github/workflows/outlay-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # modelpilot/requirements pulls in pytest + httpx + fastapi + anthropic, so
+      # the gateway-observer-seam test exercises the real gateway rather than
+      # self-skipping. Outlay itself has no third-party deps.
+      - run: pip install -r modelpilot/requirements.txt
+      - run: python -m pytest outlay/tests/ -q
