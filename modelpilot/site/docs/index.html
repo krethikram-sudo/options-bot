@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quickstart — ModelPilot docs</title>
-<meta name="description" content="Get ModelPilot routing your Claude traffic in five minutes: install the proxy, configure it, point your SDK at it, and watch the savings.">
+<title>Quickstart — Outlay docs</title>
+<meta name="description" content="Get Outlay routing your Claude traffic in five minutes: install the proxy, configure it, point your SDK at it, and watch the savings.">
 <link rel="canonical" href="https://modelpilot.pages.dev/docs/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="/docs/docs.css">
 </head><body>
 <div class="top"><div class="row">
-  <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
+  <a class="brand" href="/">Out<span class="dot">lay</span></a>
   <span class="tag">Docs</span><span class="sp"></span>
   <a class="lnk" href="/">Home</a>
   <a class="lnk" href="https://modelpilot-console-prod.fly.dev/login">Sign in</a>
@@ -29,10 +29,10 @@
 
   <main>
     <h1>Quickstart</h1>
-    <p class="lead">Route your Claude traffic through ModelPilot in about five minutes. Your API key
+    <p class="lead">Route your Claude traffic through Outlay in about five minutes. Your API key
       and prompts never leave your machine.</p>
 
-    <div class="note">You'll need a ModelPilot account (free 7-day trial, no card) and your Anthropic
+    <div class="note">You'll need a Outlay account (free 7-day trial, no card) and your Anthropic
       API key. <a href="https://modelpilot-console-prod.fly.dev/signup">Create an account →</a></div>
 
     <ol class="steps-n">
@@ -76,24 +76,24 @@ client = Anthropic(base_url=<span class="y">"http://127.0.0.1:8400"</span>)   <s
       </tbody>
     </table>
 
-    <div class="note warn"><b>It always fails open.</b> If ModelPilot is ever unreachable, your request is
+    <div class="note warn"><b>It always fails open.</b> If Outlay is ever unreachable, your request is
       forwarded straight to the Claude API, unrouted. We can degrade your savings, never your uptime.</div>
 
     <h2 id="compliance">One compliance note before you go live</h2>
     <p>You're using your own Anthropic key, so <b>Anthropic's Usage Policy still applies to your
-      traffic</b> when it routes through ModelPilot. Two things to check for your use case:</p>
+      traffic</b> when it routes through Outlay. Two things to check for your use case:</p>
     <ul>
       <li><b>High-risk domains</b> — legal, healthcare, insurance, finance, employment or housing,
         academic testing, and journalism — need a qualified <b>human reviewing outputs</b> and an
         <b>"AI was involved" disclosure</b> to your end users.</li>
       <li><b>Any user-facing chatbot or agent</b> should tell users they're talking to AI.</li>
     </ul>
-    <p class="small muted">These are Anthropic's requirements, not ModelPilot's — we just don't want
+    <p class="small muted">These are Anthropic's requirements, not Outlay's — we just don't want
       routing to put you offside. Full detail and a couple of other disclosures (IP-indemnity scope,
       Anthropic's own data handling) are in <a href="/legal/terms.html#10">Terms §10</a>.</p>
 
     <div class="pager"><span></span><a href="/docs/configuration.html">Configuration →</a></div>
-    <p class="foot">© 2026 ModelPilot · <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a></p>
+    <p class="foot">© 2026 Outlay · <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a></p>
   </main>
 </div>
 </body></html>

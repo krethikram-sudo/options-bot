@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ModelPilot for healthcare — cut Claude costs, PHI never leaves your environment</title>
-<meta name="description" content="ModelPilot cuts your Claude bill without your PHI ever leaving your environment. Classification runs locally; prompts, outputs, and your API key never reach us. Built for HIPAA-conscious health-tech teams.">
+<title>Outlay for healthcare — cut Claude costs, PHI never leaves your environment</title>
+<meta name="description" content="Outlay cuts your Claude bill without your PHI ever leaving your environment. Classification runs locally; prompts, outputs, and your API key never reach us. Built for HIPAA-conscious health-tech teams.">
 <link rel="canonical" href="https://modelpilot.pages.dev/healthcare.html">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="/docs/docs.css">
 </head><body>
 <div class="top"><div class="row">
-  <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
+  <a class="brand" href="/">Out<span class="dot">lay</span></a>
   <span class="tag">Healthcare</span><span class="sp"></span>
   <a class="lnk" href="/security.html">Security</a>
   <a class="lnk" href="/compare.html">Compare</a>
@@ -17,22 +17,22 @@
 
 <main style="max-width:820px;margin:0 auto;padding:34px 22px 80px">
   <h1>Cut your Claude bill — without PHI ever leaving your environment.</h1>
-  <p class="lead">Health-tech teams can't route patient data through a third-party gateway. ModelPilot
+  <p class="lead">Health-tech teams can't route patient data through a third-party gateway. Outlay
     is built so it never has to: prompts, model outputs, and your API key <b>never reach us</b>.</p>
 
-  <div class="note"><b>Why this works for healthcare:</b> ModelPilot classifies each request
+  <div class="note"><b>Why this works for healthcare:</b> Outlay classifies each request
     <b>locally, on your own system</b>, and only a task category + numeric features are used to choose the
     cheapest model that's good enough. Prompt text and completions — where PHI lives — stay entirely inside
     your environment and go directly to Anthropic with your own key.</p>
 
   <h2>What that means for your security & compliance review</h2>
   <ul>
-    <li><b>No PHI egress to ModelPilot.</b> The sensitive data physically can't reach us — our endpoints
+    <li><b>No PHI egress to Outlay.</b> The sensitive data physically can't reach us — our endpoints
       even reject any payload that contains prompt/output/key fields (HTTP 422), as defense in depth.</li>
     <li><b>You keep your own Anthropic relationship.</b> Requests go to Anthropic directly with your key;
       we're not in the path of your prompt content. Configure Anthropic's data terms (e.g. zero-retention)
       with them as you do today.</li>
-    <li><b>Fail-open.</b> If ModelPilot is ever unreachable, traffic passes straight through to Claude,
+    <li><b>Fail-open.</b> If Outlay is ever unreachable, traffic passes straight through to Claude,
       unrouted — we can degrade savings, never your uptime or your data path.</li>
     <li><b>Auditable savings.</b> Realized savings are measured against a held-out control arm with
       non-inferiority checks on your own traffic — a number you can defend internally.</li>
@@ -51,8 +51,8 @@
     clinical-grade work on a capable model.</p>
 
   <p style="margin-top:28px"><a class="cta" href="https://modelpilot-console-prod.fly.dev/signup">Start a free 7-day trial</a>
-    &nbsp; <a class="lnk" href="mailto:krethikram@gmail.com?subject=ModelPilot%20for%20healthcare%20(BAA)">Talk to us about a BAA</a></p>
-  <p class="foot" style="margin-top:22px"><a href="/">ModelPilot home</a> ·
+    &nbsp; <a class="lnk" href="mailto:krethikram@gmail.com?subject=Outlay%20for%20healthcare%20(BAA)">Talk to us about a BAA</a></p>
+  <p class="foot" style="margin-top:22px"><a href="/">Outlay home</a> ·
     <a href="/security.html">Security</a> · <a href="/compare.html">vs gateways &amp; routers</a></p>
 </main>
 </body></html>

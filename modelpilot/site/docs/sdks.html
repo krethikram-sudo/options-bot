@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SDKs — ModelPilot docs</title>
-<meta name="description" content="Use ModelPilot from Python and TypeScript — it's the Claude SDK with one changed line (the base URL).">
+<title>SDKs — Outlay docs</title>
+<meta name="description" content="Use Outlay from Python and TypeScript — it's the Claude SDK with one changed line (the base URL).">
 <link rel="canonical" href="https://modelpilot.pages.dev/docs/sdks.html">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="/docs/docs.css">
 </head><body>
 <div class="top"><div class="row">
-  <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
+  <a class="brand" href="/">Out<span class="dot">lay</span></a>
   <span class="tag">Docs</span><span class="sp"></span>
   <a class="lnk" href="/">Home</a>
   <a class="lnk" href="https://modelpilot-console-prod.fly.dev/login">Sign in</a>
@@ -29,11 +29,11 @@
 
   <main>
     <h1>SDKs</h1>
-    <p class="lead">ModelPilot is a drop-in proxy, so there's no new client library to learn — you use the
+    <p class="lead">Outlay is a drop-in proxy, so there's no new client library to learn — you use the
       official Claude SDK and change one line: the base URL. We ship a tiny helper to make that a one-liner.</p>
 
     <div class="note">The proxy must be running (<code>modelpilot-client</code> on <code>:8400</code>). Your
-      Anthropic key stays local; only a task category + token counts ever reach ModelPilot.</div>
+      Anthropic key stays local; only a task category + token counts ever reach Outlay.</div>
 
     <h2 id="python">Python</h2>
     <p>Use the official <code>anthropic</code> SDK with the base URL pointed at the proxy:</p>
@@ -93,7 +93,7 @@ export const modelpilot = (opts: ConstructorParameters&lt;typeof Anthropic&gt;[0
       <code>x-modelpilot-routed</code> headers so you can see what was routed.</p>
 
     <div class="pager"><a href="/docs/configuration.html">← Configuration</a><a href="/docs/architecture.html">Architecture &amp; privacy →</a></div>
-    <p class="foot">© 2026 ModelPilot · <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a></p>
+    <p class="foot">© 2026 Outlay · <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a></p>
   </main>
 </div>
 </body></html>

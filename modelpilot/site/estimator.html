@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Claude bill savings estimator — ModelPilot</title>
+<title>Claude bill savings estimator — Outlay</title>
 <meta name="description" content="Estimate how much you could cut your Claude/Anthropic API bill by routing each request to the cheapest good-enough model. Free, no signup — runs entirely in your browser, nothing you type is sent anywhere.">
 <link rel="canonical" href="https://modelpilot.pages.dev/estimator.html">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -30,7 +30,7 @@
 </style>
 </head><body>
 <div class="top"><div class="row">
-  <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
+  <a class="brand" href="/">Out<span class="dot">lay</span></a>
   <span class="tag">Savings estimator</span><span class="sp"></span>
   <a class="lnk" href="/compare.html">Compare</a>
   <a class="cta" href="https://modelpilot-console-prod.fly.dev/signup">Start free trial</a>
@@ -76,7 +76,7 @@
   <p style="margin-top:18px"><a class="cta big" href="https://modelpilot-console-prod.fly.dev/signup">Measure it for real on your own traffic →</a></p>
 
   <p class="assum" id="assum"></p>
-  <p class="foot" style="margin-top:18px"><a href="/">ModelPilot home</a> · <a href="/cut-claude-costs.html">How to cut your Claude bill (guide)</a> · <a href="/where-we-save.html">What we optimize</a> · <a href="/compare.html">vs gateways &amp; routers</a></p>
+  <p class="foot" style="margin-top:18px"><a href="/">Outlay home</a> · <a href="/cut-claude-costs.html">How to cut your Claude bill (guide)</a> · <a href="/where-we-save.html">What we optimize</a> · <a href="/compare.html">vs gateways &amp; routers</a></p>
 </main>
 
 <script>
@@ -124,7 +124,7 @@
       '<div style="margin-top:14px">'+
         '<div class="line"><span>Your bill today</span><span>'+money(spend)+'/mo</span></div>'+
         '<div class="line"><span>Estimated savings</span><span>'+money(sLow)+'–'+money(sHigh)+'/mo</span></div>'+
-        '<div class="line"><span>ModelPilot fee (20% of savings)</span><span>~'+money(feeMid)+'/mo</span></div>'+
+        '<div class="line"><span>Outlay fee (20% of savings)</span><span>~'+money(feeMid)+'/mo</span></div>'+
         '<div class="line"><span><b>You keep (net)</b></span><span><b>~'+money(netMid)+'/mo</b></span></div>'+
       '</div>'+ warn;
   }

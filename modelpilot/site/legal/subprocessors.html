@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Subprocessors — ModelPilot</title>
-<meta name="description" content="The third-party services ModelPilot uses, what they process, and why.">
+<title>Subprocessors — Outlay</title>
+<meta name="description" content="The third-party services Outlay uses, what they process, and why.">
 <link rel="canonical" href="https://modelpilot.pages.dev/legal/subprocessors.html">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="/docs/docs.css">
 </head><body>
 <div class="top"><div class="row">
-  <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
+  <a class="brand" href="/">Out<span class="dot">lay</span></a>
   <span class="tag">Subprocessors</span><span class="sp"></span>
   <a class="lnk" href="/security.html">Security</a>
   <a class="lnk" href="/legal/dpa.html">DPA</a>
@@ -17,22 +17,22 @@
 
 <main style="max-width:820px;margin:0 auto;padding:34px 22px 80px">
   <h1>Subprocessors</h1>
-  <p class="lead">The third-party services ModelPilot relies on to deliver the product. We'll keep this
+  <p class="lead">The third-party services Outlay relies on to deliver the product. We'll keep this
     page current and give notice of material changes.</p>
 
   <div class="note"><b>Important:</b> in the default self-hosted / thin-client deployment, your <b>prompt
     content goes directly from your infrastructure to Anthropic using your own API key</b> — it does not
-    pass through ModelPilot, so Anthropic is your model provider, not ModelPilot's subprocessor for prompt
+    pass through Outlay, so Anthropic is your model provider, not Outlay's subprocessor for prompt
     content. In the optional <b>hosted-gateway</b> deployment, request content is processed in memory by
-    ModelPilot only to route it (read by our classifier to select a model) and is not persisted. Except
+    Outlay only to route it (read by our classifier to select a model) and is not persisted. Except
     for that transient routing in hosted mode, the services below process only account data and
     aggregate/opt-in metadata.</p>
 
   <table>
     <thead><tr><th>Subprocessor</th><th>Purpose</th><th>Data processed</th></tr></thead>
     <tbody>
-      <tr><td><b>Anthropic</b></td><td>Claude model inference (called directly by your gateway with your key)</td><td>Your prompts &amp; outputs — sent by you, not via ModelPilot</td></tr>
-      <tr><td><b>Cloud hosting provider</b><br><span class="small muted">(our brain / console / ingest)</span></td><td>Runs ModelPilot's backend services</td><td>Account data, aggregate savings, opt-in metadata — no prompt content. <b>In hosted-gateway mode</b>, also transiently processes request content in memory for routing (not stored).</td></tr>
+      <tr><td><b>Anthropic</b></td><td>Claude model inference (called directly by your gateway with your key)</td><td>Your prompts &amp; outputs — sent by you, not via Outlay</td></tr>
+      <tr><td><b>Cloud hosting provider</b><br><span class="small muted">(our brain / console / ingest)</span></td><td>Runs Outlay's backend services</td><td>Account data, aggregate savings, opt-in metadata — no prompt content. <b>In hosted-gateway mode</b>, also transiently processes request content in memory for routing (not stored).</td></tr>
       <tr><td><b>Stripe</b></td><td>Payments &amp; subscription billing</td><td>Billing contact &amp; payment details (held by Stripe), usage amounts</td></tr>
       <tr><td><b>Email provider</b><br><span class="small muted">(transactional email, if configured)</span></td><td>Password resets, budget &amp; review alerts</td><td>Email address, message content of the notification</td></tr>
     </tbody>

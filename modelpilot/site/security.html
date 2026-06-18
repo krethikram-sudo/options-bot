@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Security &amp; trust — ModelPilot</title>
-<meta name="description" content="How ModelPilot keeps your data safe: prompts never leave your system, encryption in transit, least-privilege access, fail-open availability, and our compliance posture.">
+<title>Security &amp; trust — Outlay</title>
+<meta name="description" content="How Outlay keeps your data safe: prompts never leave your system, encryption in transit, least-privilege access, fail-open availability, and our compliance posture.">
 <link rel="canonical" href="https://modelpilot.pages.dev/security.html">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="/docs/docs.css">
 </head><body>
 <div class="top"><div class="row">
-  <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
+  <a class="brand" href="/">Out<span class="dot">lay</span></a>
   <span class="tag">Security &amp; trust</span><span class="sp"></span>
   <a class="lnk" href="/docs/">Docs</a>
   <a class="lnk" href="https://modelpilot-console-prod.fly.dev/login">Sign in</a>
@@ -17,17 +17,17 @@
 
 <main style="max-width:760px;margin:0 auto;padding:34px 22px 80px">
   <h1>Security &amp; trust</h1>
-  <p class="lead">ModelPilot is built so the sensitive data physically can't reach us. This page
+  <p class="lead">Outlay is built so the sensitive data physically can't reach us. This page
     describes exactly how your data is handled, our security practices, and our compliance posture —
     stated plainly, without overclaiming.</p>
 
   <div class="note"><b>The core guarantee:</b> your prompts, your model outputs, and your Anthropic API
-    key never transit ModelPilot's servers. Classification happens locally in the client; only a task
+    key never transit Outlay's servers. Classification happens locally in the client; only a task
     category and numeric features (token estimates, flags) are sent to our routing brain.</div>
 
   <h2 id="data">What we receive — and what we never do</h2>
   <table>
-    <thead><tr><th>Never sent to ModelPilot</th><th>Sent to ModelPilot</th></tr></thead>
+    <thead><tr><th>Never sent to Outlay</th><th>Sent to Outlay</th></tr></thead>
     <tbody>
       <tr><td>Prompt text &amp; system prompts</td><td>Task category (e.g. <code>classification</code>)</td></tr>
       <tr><td>Model outputs / completions</td><td>Numeric features (token estimates, boolean flags)</td></tr>
@@ -36,14 +36,14 @@
     </tbody>
   </table>
   <p>Your application calls a local proxy that forwards requests to Anthropic <b>with your key, directly</b>.
-    ModelPilot is not in the path of your prompt content. See the
+    Outlay is not in the path of your prompt content. See the
     <a href="/docs/architecture.html">architecture page</a> for the full request flow.</p>
   <p><b>Defense in depth.</b> Our routing, metering, telemetry, and logging endpoints <b>reject any payload</b>
     that contains prompt/output/secret-looking fields (HTTP 422) — even though the client already guarantees
     aggregates only.</p>
 
   <h2 id="optimize">How we optimize without seeing your data</h2>
-  <p>ModelPilot gets better for you the more you use it — driven by <b>outcomes and metadata, never your
+  <p>Outlay gets better for you the more you use it — driven by <b>outcomes and metadata, never your
     content</b>:</p>
   <ul>
     <li><b>Learns from your own traffic.</b> Per-category quality floors and classification rules are tuned
@@ -68,7 +68,7 @@
 
   <h2 id="encryption">Encryption</h2>
   <ul>
-    <li><b>In transit:</b> all traffic to ModelPilot services is over TLS (HTTPS).</li>
+    <li><b>In transit:</b> all traffic to Outlay services is over TLS (HTTPS).</li>
     <li><b>At rest:</b> our datastores (accounts, aggregates, opt-in metadata) are encrypted at rest by our
       cloud provider.</li>
     <li><b>Your API key:</b> stays on your machine and is used by the local proxy to call Anthropic; we never
@@ -85,7 +85,7 @@
   </ul>
 
   <h2 id="availability">Availability</h2>
-  <p>The proxy <b>fails open</b>: if ModelPilot is ever unreachable, your request is forwarded straight to the
+  <p>The proxy <b>fails open</b>: if Outlay is ever unreachable, your request is forwarded straight to the
     Claude API, unrouted. We can degrade your savings, never your uptime. Live service status:
     <a href="https://modelpilot-console-prod.fly.dev/status">modelpilot-console-prod.fly.dev/status</a>.</p>
 
