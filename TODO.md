@@ -171,6 +171,16 @@ Live URLs:
       only bills post-conversion (no trial-period over-billing). Tests cover all three.
 - [ ] **Managed pricing still TBD** (research suggests ~$499/mo + 15%). Decide, then set
       `STRIPE_MANAGED_PRICE_ID` and replace "coming soon" on the Managed card.
+- [ ] **Guardrail "compare" mode against trial overspend + keep its compute on the customer's box.**
+      `modelpilot compare [--judge]` runs each prompt **~2–3× on the customer's own Anthropic key**
+      (baseline arm + routed arm + judge ≈ a few $ per 20 prompts), so unbounded use during the free
+      trial runs up *their* bill and sours the trial.
+      (a) **Restrict during trial:** cap prompts-per-run + runs-per-day (or require explicit confirmation
+          of the estimated spend before it runs), surfaced honestly in the CLI/console.
+      (b) **Keep compute + cost on the customer's system with THEIR key:** `compare.api_run_fn` already
+          uses the customer key and the judge pins to the real API via env `ANTHROPIC_API_KEY` — confirm/
+          enforce that env is always the customer's key on their own box, never our hosted infra/vendor
+          key (consistent with BYOK + prompts-never-leave-the-box).
 
 ## 🏛️ Legal / corporate
 - [ ] **Form the entity — DECISION: Delaware C-corp via Stripe Atlas** ("might raise later" → C-corp
