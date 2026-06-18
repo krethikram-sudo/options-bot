@@ -13,11 +13,13 @@ Status maps from Linear's workflow state `type`
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Union
 
 from ..models import WorkItem
+from ._http import Transport, post_json
 
 _STATE_TYPE = {
     "backlog": "open",
@@ -76,3 +78,62 @@ def parse_linear_issues(data: Union[str, Path, list, dict]) -> list[WorkItem]:
             )
         )
     return items
+
+
+_ISSUES_QUERY = """
+query Issues($first: Int!, $after: String, $filter: IssueFilter) {
+  issues(first: $first, after: $after, filter: $filter) {
+    nodes {
+      identifier title estimate branchName createdAt completedAt
+      state { name type }
+      labels { nodes { name } }
+      project { name }
+      team { key }
+    }
+    pageInfo { hasNextPage endCursor }
+  }
+}
+"""
+
+
+class LinearClient:
+    """Linear GraphQL client (live puller).
+
+    Personal API keys go in the `Authorization` header verbatim (no `Bearer`
+    prefix). Cursor pagination via `pageInfo.hasNextPage` / `endCursor`.
+    """
+
+    URL = "https://api.linear.app/graphql"
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        url: str = URL,
+        transport: Optional[Transport] = None,
+    ) -> None:
+        self.api_key = api_key or os.environ.get("LINEAR_API_KEY", "")
+        self.url = url
+        self._transport = transport
+
+    def _headers(self) -> dict:
+        return {"authorization": self.api_key}
+
+    def fetch(self, filter: Optional[dict] = None, page_size: int = 100) -> dict:
+        nodes: list[dict] = []
+        after: Optional[str] = None
+        while True:
+            variables = {"first": page_size, "after": after, "filter": filter or {}}
+            resp = post_json(self.url, self._headers(),
+                             {"query": _ISSUES_QUERY, "variables": variables},
+                             self._transport)
+            block = (resp.get("data") or {}).get("issues") or {}
+            nodes.extend(block.get("nodes", []))
+            info = block.get("pageInfo") or {}
+            if info.get("hasNextPage") and info.get("endCursor"):
+                after = info["endCursor"]
+                continue
+            break
+        return {"issues": {"nodes": nodes}}
+
+    def pull(self, filter: Optional[dict] = None, **kw) -> list[WorkItem]:
+        return parse_linear_issues(self.fetch(filter, **kw))

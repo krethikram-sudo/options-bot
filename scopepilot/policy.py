@@ -108,6 +108,24 @@ class RoutingPolicy:
         return {e.task_class.value: e.floor_tier
                 for e in self.entries.values() if e.mode == PolicyMode.ENFORCE}
 
+    @classmethod
+    def from_dict(cls, doc: dict) -> "RoutingPolicy":
+        """Rehydrate a policy emitted by `to_dict()` (e.g. read back by the
+        live shadow observer from `--emit-policy` output)."""
+        entries: dict[TaskClass, PolicyEntry] = {}
+        for e in doc.get("entries", []):
+            tc = TaskClass(e["task_class"])
+            entries[tc] = PolicyEntry(
+                task_class=tc,
+                model=e["model"],
+                floor_tier=int(e["floor_tier"]),
+                mode=PolicyMode(e["mode"]),
+                confidence=e.get("confidence", ""),
+                projected_savings_usd=float(e.get("projected_savings_usd", 0.0)),
+                rationale=e.get("rationale", ""),
+            )
+        return cls(entries=entries)
+
 
 def build_policy(
     recommendations: list[Recommendation],

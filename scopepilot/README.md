@@ -38,6 +38,10 @@ an escalation would cost more than one capable run).
   agent's git branch.
 - **Enforcement:** advisory recs compile to a proxy-consumable routing policy
   (`policy.py`, `--emit-policy`) that the ModelPilot gateway can apply.
+- **Live shadow loop:** the gateway calls a generic request-observer
+  (`scopepilot.shadow:make_observer`) that logs, on real traffic, what each
+  `needs_validation` class *would* have cost on the cheaper model — the evidence
+  that graduates a class from shadow → enforce.
 - **Pipeline:** ingest → cost-normalize → branch→ticket join (fidelity-tiered)
   → task-class classify → attribute → forecast + anomaly guardrails → advisory
   model-routing recommendation.
@@ -59,9 +63,36 @@ number is never trusted beyond what produced it:
 | Anthropic Admin API (aggregated) | no | `team` (key→user→team) | invoice reconciliation |
 | Cursor Admin API (per-user) | no | `team` (user→team) | per-engineer rollup |
 
-Live pulls (need `ANTHROPIC_ADMIN_KEY` / `CURSOR_ADMIN_KEY`) via
-`AnthropicAdminClient` / `CursorAdminClient` in `scopepilot.ingest`; the CLI
-consumes their JSON so it stays offline-friendly.
+Live pulls via clients in `scopepilot.ingest`, all behind a `urllib` transport
+seam (offline-testable, no new deps): `AnthropicAdminClient` /
+`CursorAdminClient` (usage), `JiraClient` / `LinearClient` (planners, env-keyed
+`JIRA_*` / `LINEAR_API_KEY`). The CLI consumes their JSON so it stays
+offline-friendly.
+
+## Enforcement & the graduation loop
+
+`policy.py` compiles recommendations into a gated routing policy
+(`--emit-policy policy.json`); `validated` classes ENFORCE, `needs_validation`
+classes SHADOW. `shadow.py` is the live half:
+
+1. The ModelPilot gateway exposes a **generic, product-agnostic** request-
+   observer seam (`MODELPILOT_REQUEST_OBSERVER="module:factory"`) — it takes no
+   dependency on ScopePilot and can never alter or block a request.
+2. ScopePilot registers `scopepilot.shadow:make_observer`. On each request the
+   gateway hands it a small payload (decision + token usage + the work
+   branch/ticket from `x-modelpilot-work-*` headers); the observer resolves the
+   task-class and appends a delta to the shadow log: *what this request cost on
+   the model it ran, vs. what the candidate would have cost.*
+3. `graduation_report()` aggregates the log; once a class has enough live
+   counterfactuals it's `ready_for_canary`. Promotion to ENFORCE still requires
+   an independent quality check — `promote()` only flips classes you've
+   validated. **Cost evidence accrues automatically; quality is never assumed.**
+
+```
+export MODELPILOT_REQUEST_OBSERVER=scopepilot.shadow:make_observer
+export SCOPEPILOT_POLICY=policy.json SCOPEPILOT_ISSUES=issues.json
+export SCOPEPILOT_PLANNER=github SCOPEPILOT_SHADOW_LOG=shadow.jsonl
+```
 
 ## Run it
 
@@ -120,15 +151,16 @@ has no history, and one `validated` + several `needs_validation` routing recs.
 | `forecast.py` | per-class distributions, roadmap forecast, anomaly flags |
 | `recommend.py` | per-class routing recs, scored net of rework |
 | `policy.py` | **enforcement** — gated routing policy for the ModelPilot proxy |
+| `shadow.py` | **live loop** — gateway observer, shadow ledger, graduation |
 | `report.py` / `cli.py` | the 30-second VP-readable report + `--emit-policy` |
 
 ## Deferred to later phases (deliberately not in P0)
 
 SSO/SCIM-fed identity graph; a learned task-class model; budget-vs-actual
-burndown per epic; live shadow-mode delta logging wired into the proxy;
-non-Anthropic provider rate tables (GPT/Gemini). The integration surface
-(N providers × M planners) is the treadmill *and* the moat — prioritized by
-what design partners actually use.
+burndown per epic; an automated canary harness that runs the candidate model on
+a sampled fraction (the quality half of graduation); non-Anthropic provider rate
+tables (GPT/Gemini). The integration surface (N providers × M planners) is the
+treadmill *and* the moat — prioritized by what design partners actually use.
 
 ## Settled decisions
 
@@ -137,6 +169,8 @@ what design partners actually use.
 2. **Ingestion sources — all four shipped** (Anthropic per-call + Admin API,
    Cursor, Claude Code). Claude Code is the branch-bearing primary join; the
    admin APIs reconcile to invoice.
-3. **Planners — GitHub, Jira, Linear shipped** (`--planner`).
+3. **Planners — GitHub, Jira, Linear shipped** (parsers + live API pullers).
 4. **Enforcement — shipped, gated.** `policy.py` compiles recs into a proxy
    policy; only `validated` classes enforce, `needs_validation` runs in shadow.
+5. **Live shadow loop — shipped.** Gateway observer seam + `shadow.py` log
+   real-traffic counterfactuals and report graduation readiness.

@@ -13,12 +13,16 @@ configurable (defaults to the common `customfield_10016`).
 
 from __future__ import annotations
 
+import base64
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Union
+from urllib.parse import urlencode
 
 from ..models import WorkItem
+from ._http import Transport, get_json
 
 # Jira status categories → our status vocabulary.
 _STATUS_CATEGORY = {"new": "open", "indeterminate": "in_progress", "done": "done"}
@@ -92,3 +96,61 @@ def _sprint(fields: dict) -> Optional[str]:
     if isinstance(sprint, dict):
         return sprint.get("name")
     return sprint if isinstance(sprint, str) else None
+
+
+_DEFAULT_FIELDS = (
+    "summary,status,labels,issuetype,parent,project,created,resolutiondate")
+
+
+class JiraClient:
+    """Jira Cloud search client (live puller).
+
+    Basic auth with `email:api_token`. Tolerates both the classic
+    `/rest/api/3/search` (offset pagination via `startAt`/`total`) and the newer
+    `/rest/api/3/search/jql` (token pagination via `nextPageToken`/`isLast`).
+    """
+
+    def __init__(
+        self,
+        base_url: Optional[str] = None,
+        email: Optional[str] = None,
+        api_token: Optional[str] = None,
+        transport: Optional[Transport] = None,
+    ) -> None:
+        self.base_url = (base_url or os.environ.get("JIRA_BASE_URL", "")).rstrip("/")
+        self.email = email or os.environ.get("JIRA_EMAIL", "")
+        self.api_token = api_token or os.environ.get("JIRA_API_TOKEN", "")
+        self._transport = transport
+
+    def _headers(self) -> dict:
+        token = base64.b64encode(f"{self.email}:{self.api_token}".encode()).decode()
+        return {"authorization": f"Basic {token}", "accept": "application/json"}
+
+    def fetch(self, jql: str, fields: str = _DEFAULT_FIELDS, page_size: int = 100) -> dict:
+        merged: list[dict] = []
+        start_at = 0
+        next_token: Optional[str] = None
+        while True:
+            params = {"jql": jql, "fields": fields, "maxResults": page_size}
+            if next_token is not None:
+                params["nextPageToken"] = next_token
+            else:
+                params["startAt"] = start_at
+            url = f"{self.base_url}/rest/api/3/search?{urlencode(params)}"
+            resp = get_json(url, self._headers(), self._transport)
+            issues = resp.get("issues", [])
+            merged.extend(issues)
+            # Newer token pagination.
+            if resp.get("nextPageToken") and not resp.get("isLast", False):
+                next_token = resp["nextPageToken"]
+                continue
+            # Classic offset pagination.
+            total = resp.get("total")
+            if total is not None and issues and start_at + len(issues) < total:
+                start_at += len(issues)
+                continue
+            break
+        return {"issues": merged}
+
+    def pull(self, jql: str, **kw) -> list[WorkItem]:
+        return parse_jira_issues(self.fetch(jql, **kw))
