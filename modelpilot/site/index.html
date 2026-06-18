@@ -2,8 +2,8 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ModelPilot — cut your Claude bill through model optimization</title>
-<meta name="description" content="A drop-in proxy that routes each Claude request to the cheapest model that's provably good enough — measured on your own traffic. You pay only for the savings we deliver. Prompts never leave your system.">
+<title>ScopePilot — budget and govern AI compute by scope of work</title>
+<meta name="description" content="ScopePilot attributes every dollar of LLM and coding-agent spend to the work you already plan — Jira/Linear/GitHub tickets, epics, roadmap — then forecasts cost by scope, holds it to budget with pace-based guardrails, and safely drives it down. Prompts never leave your environment.">
 <link rel="canonical" href="https://modelpilot.pages.dev/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,12 +12,12 @@
 <meta name="robots" content="index, follow">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://modelpilot.pages.dev/">
-<meta property="og:title" content="ModelPilot — cut your Claude bill through model optimization">
-<meta property="og:description" content="A drop-in proxy that routes each Claude request to the cheapest model that's provably good enough — measured on your own traffic. Pay only for the savings we deliver. Prompts never leave your system.">
+<meta property="og:title" content="ScopePilot — budget and govern AI compute by scope of work">
+<meta property="og:description" content="Attribute every dollar of LLM and coding-agent spend to the tickets, epics, and roadmap you already plan. Forecast by scope, hold to budget with pace-based guardrails, and capture savings automatically. Prompts never leave your environment.">
 <meta property="og:image" content="https://modelpilot.pages.dev/favicon.svg">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="ModelPilot — cut your Claude bill through model optimization">
-<meta name="twitter:description" content="Routes each Claude request to the cheapest model that's provably good enough — measured on your own traffic. Pay only for savings delivered. Free 7-day trial.">
+<meta name="twitter:title" content="ScopePilot — budget and govern AI compute by scope of work">
+<meta name="twitter:description" content="Attribute AI spend to the work you plan, forecast by scope, and hold to budget with guardrails that flag before you blow through. Prompts never leave your environment.">
 <style>
   :root{
     --ink:#0a0a0a; --body:#232326; --mut:#71717a; --line:#e6e6e8; --bg:#ffffff;
@@ -239,59 +239,59 @@
 <body>
 
 <nav><div class="wrap">
-  <span class="brand">Model<span class="dot">Pilot</span></span>
+  <span class="brand">Scope<span class="dot">Pilot</span></span>
   <div class="navlinks">
     <a href="#how">How it works</a>
     <a href="#proof">Proof</a>
+    <a href="#optimize">Optimization engine</a>
     <a href="#pricing">Pricing</a>
-    <a href="/estimator.html">Estimate savings</a>
-    <a href="/compare.html">Compare</a>
     <a href="/docs/">Docs</a>
   </div>
   <div class="navspace"></div>
   <div class="navcta">
     <a class="signin" href="https://modelpilot-console-prod.fly.dev/login">Sign in</a>
-    <a class="btn primary" href="https://modelpilot-console-prod.fly.dev/signup">Start free trial</a>
+    <a class="btn primary" href="mailto:krethikram@gmail.com?subject=ScopePilot%20early%20access">Get early access</a>
   </div>
 </div></nav>
 
 <!-- HERO -->
 <header class="hero"><div class="wrap herogrid">
   <div>
-    <div class="eyebrow">For teams building on the Claude API</div>
-    <h1>Cut your Claude bill — pay only for savings we prove.</h1>
-    <p class="sub">A drop-in proxy routes each request to the cheapest model that's good enough and
-      <b style="color:#e7e7ea">proves it on your own traffic</b> with a held-out control arm. You pay
-      only a share of the savings we actually deliver — and your
-      <b style="color:#e7e7ea">prompts never leave your environment</b>.</p>
+    <div class="eyebrow">For engineering leaders & FinOps</div>
+    <h1>Put AI compute back on a budget.</h1>
+    <p class="sub">AI spend is an unpredictable, runaway line item. ScopePilot attributes every dollar of
+      LLM and coding-agent spend to <b style="color:#e7e7ea">the work you already plan</b> — Jira/Linear/GitHub
+      tickets, epics, roadmap — then forecasts cost by scope, holds it to budget with
+      <b style="color:#e7e7ea">pace-based guardrails</b>, and safely drives it down through an embedded
+      optimization engine.</p>
     <div class="ctarow">
-      <a class="btn primary lg" href="https://modelpilot-console-prod.fly.dev/signup">Start your 7-day free trial →</a>
-      <a class="btn ghost lg" href="/estimator.html">Estimate your savings</a>
+      <a class="btn primary lg" href="mailto:krethikram@gmail.com?subject=ScopePilot%20early%20access">Get early access →</a>
+      <a class="btn ghost lg" href="#how">See how it works</a>
     </div>
-    <div class="trustline">No card to start · <b>pay only for realized savings</b> · quality proven on your own traffic · prompts stay in your environment</div>
+    <div class="trustline">Maps spend to tickets, epics &amp; roadmap · <b>forecasts by scope of work</b> · guardrails before you blow the budget · prompts never leave your environment</div>
   </div>
 
   <div class="demo">
     <div class="term">
       <div class="bar"><i></i><i></i><i></i></div>
-<pre><span class="c"># 1. drop the proxy in front of the Claude API</span>
-$ pip install modelpilot-client
-$ <span class="b">export</span> MODELPILOT_DEPLOYMENT_ID=dep_…
-$ modelpilot-client            <span class="c"># your key stays local</span>
+<pre><span class="c"># attribute AI spend to the work you planned</span>
+$ scopepilot report --window 30d
+<span class="g">✓ 87% of spend mapped to a ticket</span>
 
-<span class="c"># 2. point your SDK at it — that's the whole change</span>
-client = Anthropic(base_url=<span class="y">"http://127.0.0.1:8400"</span>)
-<span class="g">✓ routing live — guidance mode</span></pre>
+<span class="c"># budget burndown, by scope</span>
+epic <span class="y">Q3-stability</span>   $6.4k / $5.0k   <span class="b">⚠ OVER</span>
+team <span class="y">platform</span>      $4.4k / $20k    <span class="g">✓ ok</span>
+<span class="c"># on-pace projection flags it before quarter-end</span></pre>
     </div>
     <div class="resultcard">
-      <div class="lbl">Saved this month <span class="ex">example</span></div>
-      <div class="big"><span data-count="1240" data-prefix="$">$1,240</span> <span style="font-size:18px;color:#9aa6bc;font-weight:600">· <span data-count="31" data-suffix="%">31%</span></span></div>
-      <div class="meta">48,210 requests · 27,905 routed · 0 quality regressions</div>
+      <div class="lbl">This quarter vs budget <span class="ex">example</span></div>
+      <div class="big"><span data-count="45" data-prefix="$" data-suffix="k">$45k</span> <span style="font-size:18px;color:#9aa6bc;font-weight:600">/ $50k budget</span></div>
+      <div class="meta">on pace to land ~$61k — 22% over · flagged with 6 weeks left to act</div>
       <div class="barwrap">
-        <div class="barrow"><span>Baseline (all top-model)</span><span>$4,000</span></div>
+        <div class="barrow"><span>Budget (this quarter)</span><span>$50k</span></div>
         <div class="bar"><span style="width:100%;background:#5b6b8c"></span></div>
-        <div class="barrow"><span>With ModelPilot</span><span>$2,760</span></div>
-        <div class="bar"><span style="width:69%;background:#e5e5e5"></span></div>
+        <div class="barrow"><span>Projected at current pace</span><span>$61k</span></div>
+        <div class="bar"><span style="width:100%;background:#e5e5e5"></span></div>
       </div>
     </div>
   </div>
@@ -299,44 +299,44 @@ client = Anthropic(base_url=<span class="y">"http://127.0.0.1:8400"</span>)
 
 <!-- TRUST STRIP -->
 <div class="strip"><div class="wrap">
-  <span class="lead">Works with the Claude API — no app rewrite</span>
-  <span class="chip"><b>20–40%</b> typical savings</span>
-  <span class="chip"><b>0%</b> false-downgrades on our golden set</span>
-  <span class="chip"><b>0</b> prompts stored by us</span>
+  <span class="lead">Works with your tracker, your AI tools — no app rewrite</span>
+  <span class="chip"><b>Tickets</b> spend mapped to epics &amp; roadmap</span>
+  <span class="chip"><b>Forecast</b> a quarter's cost from its scope</span>
+  <span class="chip"><b>Guardrails</b> that flag before overspend</span>
 </div></div>
 
 <!-- HOW IT WORKS -->
 <section id="how"><div class="wrap">
   <div class="sec-head">
     <div class="eyebrow">How it works</div>
-    <h2>Live in five minutes. Savings on day one.</h2>
-    <p>A drop-in proxy plus a hosted dashboard. Start in guidance mode to see recommendations, then
-       flip to autopilot when you trust the numbers — all from the console, no redeploy.</p>
+    <h2>Attribute → forecast → guardrail → optimize.</h2>
+    <p>Connect the tracker and AI tools you already use. ScopePilot maps the spend to the work,
+       budgets it by scope, and drives it down — read-only to start, no app rewrite.</p>
   </div>
   <div class="steps">
     <div class="step">
       <div class="n">1</div>
-      <h3>Drop in the proxy</h3>
-      <p>Install the client and point your SDK's base URL at it. Your Anthropic key never leaves
-         your machine — we only ever see a task category and token counts.</p>
-      <code class="codeblock"><span class="c"># one line in your app</span>
-base_url=<span class="g">"127.0.0.1:8400"</span></code>
+      <h3>Map spend to the work</h3>
+      <p>Connect Jira/Linear/GitHub and your AI tools (Claude Code, Cursor, the API). Every dollar
+         of agent &amp; LLM spend is attributed to the ticket, epic, and roadmap it belongs to.</p>
+      <code class="codeblock"><span class="c"># branch / tag → ticket → epic</span>
+fix/PROJ-123 → <span class="g">PROJ-123</span> → Q3-stability</code>
     </div>
     <div class="step">
       <div class="n">2</div>
-      <h3>It routes, you stay in control</h3>
-      <p>Each request is classified and sent to the cheapest model that's good enough. Choose
-         <b>guidance</b> (recommend, you stay in control) or <b>autopilot</b> (auto-route) — toggle anytime.</p>
-      <code class="codeblock"><span class="c"># classify → floor → economics</span>
-opus → <span class="g">haiku</span>  <span class="c">(non-inferior)</span></code>
+      <h3>Forecast &amp; guardrail by scope</h3>
+      <p>Forecast a quarter's cost from its scope of work and track actuals against budget.
+         Pace-based guardrails flag a team <b>before</b> it blows through — not after.</p>
+      <code class="codeblock"><span class="c"># pace-projected, not a hard cap</span>
+epic Q3-stability  $6.4k/$5k  <span class="g">⚠ on pace $22k</span></code>
     </div>
     <div class="step">
       <div class="n">3</div>
-      <h3>See the savings</h3>
-      <p>Your dashboard shows realized savings by task type, baseline-vs-actual, and a
-         non-inferiority proof rate — recalculated from the actual tokens each request used.</p>
-      <code class="codeblock"><span class="c"># billed only on this</span>
-realized savings × <span class="g">20%</span></code>
+      <h3>Drive spend down, safely</h3>
+      <p>Per work-type, it learns which cheaper model is provably good enough — proven in shadow,
+         then a quality canary — and enforces it through the embedded optimization engine.</p>
+      <code class="codeblock"><span class="c"># earned, never on faith</span>
+feature → <span class="g">sonnet</span>  ✓ validated  −$5.5k/mo</code>
     </div>
   </div>
 </div></section>
@@ -344,25 +344,25 @@ realized savings × <span class="g">20%</span></code>
 <!-- PROOF -->
 <section id="proof" class="soft"><div class="wrap">
   <div class="sec-head">
-    <div class="eyebrow">Proof, not promises</div>
-    <h2>Savings you can audit — measured on your own traffic.</h2>
-    <p>We don't ask you to trust a marketing number. Every dollar is recomputed from the real
-       tokens each request consumed, with quality checked side-by-side.</p>
+    <div class="eyebrow">Budget by scope, not vibes</div>
+    <h2>Spend you can govern — mapped to the work, projected on pace.</h2>
+    <p>Not another dashboard that meters API keys. Every dollar ties to a ticket, epic, and team,
+       and guardrails project the end-of-period total at the current burn rate — so you act early.</p>
   </div>
   <div class="proofgrid">
     <div class="proofcard">
-      <div class="lbl">Baseline vs. actual — last 30 days</div>
-      <div style="margin:14px 0 4px;display:flex;justify-content:space-between;font-size:13px;color:var(--mut)"><span>Baseline (all top-model)</span><b style="color:var(--ink)" data-count="4000" data-prefix="$">$4,000</b></div>
-      <div class="lbar"><span style="width:100%;background:#94a3b8"></span></div>
-      <div style="margin:14px 0 4px;display:flex;justify-content:space-between;font-size:13px;color:var(--mut)"><span>With ModelPilot</span><b style="color:var(--green-d)" data-count="2760" data-prefix="$">$2,760</b></div>
-      <div class="lbar"><span style="width:69%;background:var(--green)"></span></div>
-      <p class="muted" style="font-size:13px;margin:16px 0 0">Illustrative. Your dashboard shows your numbers, per prompt and per session.</p>
+      <div class="lbl">Budget burndown — epic: Q3 stability <span class="ex" style="font-size:10px;border:1px solid var(--line);border-radius:999px;padding:2px 7px;margin-left:6px;color:var(--mut)">example</span></div>
+      <div style="margin:14px 0 4px;display:flex;justify-content:space-between;font-size:13px;color:var(--mut)"><span>Budget (this quarter)</span><b style="color:var(--ink)" data-count="5000" data-prefix="$">$5,000</b></div>
+      <div class="lbar"><span style="width:62%;background:#94a3b8"></span></div>
+      <div style="margin:14px 0 4px;display:flex;justify-content:space-between;font-size:13px;color:var(--mut)"><span>Projected at current pace</span><b style="color:var(--ink)" data-count="22000" data-prefix="$">$22,000</b></div>
+      <div class="lbar"><span style="width:100%;background:#0a0a0a"></span></div>
+      <p class="muted" style="font-size:13px;margin:16px 0 0">Illustrative. Flagged <b>OVER</b> early — driven by one outlier ticket at 11× its class median.</p>
     </div>
     <div class="statlist">
-      <div class="s"><div class="v">20–40%</div><div class="d">Typical bill reduction, measured on real customer traffic — not a best-case headline.</div></div>
-      <div class="s"><div class="v">0%</div><div class="d">False-downgrades on our golden set. Hard work (debugging, refactors, analysis) stays on the top model.</div></div>
-      <div class="s"><div class="v">RCT holdout</div><div class="d">A held-out control arm runs the baseline so savings are measured against a real counterfactual.</div></div>
-      <div class="s"><div class="v">Side-by-side</div><div class="d">A non-inferiority rate shows how often the cheaper model held up, judged on your own prompts.</div></div>
+      <div class="s"><div class="v">By ticket</div><div class="d">Every dollar attributed to the work it belongs to — ticket, epic, team, sprint, roadmap.</div></div>
+      <div class="s"><div class="v">Pace-projected</div><div class="d">Guardrails project end-of-period spend at the current burn rate, so you act before overspend, not after.</div></div>
+      <div class="s"><div class="v">Shadow → canary</div><div class="d">A cheaper model is proven non-inferior on your own work — logged in shadow, then a quality canary — before it ever routes traffic.</div></div>
+      <div class="s"><div class="v">Metadata only</div><div class="d">Attribution and routing run on metadata; prompt content and keys never leave your environment.</div></div>
     </div>
   </div>
 </div></section>
@@ -370,16 +370,16 @@ realized savings × <span class="g">20%</span></code>
 <!-- FEATURES -->
 <section id="features"><div class="wrap">
   <div class="sec-head">
-    <div class="eyebrow">Everything in one console</div>
-    <h2>Built to earn a place in your request path.</h2>
+    <div class="eyebrow">The platform</div>
+    <h2>The predictability of a salaried engineer, with the leverage of AI.</h2>
   </div>
   <div class="feat">
-    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></div><h3>Guidance → autopilot</h3><p>Adopt at your own pace. Start in guidance — we recommend the cheaper-but-good-enough model — then flip to autopilot when you're convinced, ramping from a slice of traffic to all of it. Switched server-side, no redeploy.</p></div>
-    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><h3>Live savings dashboard</h3><p>Realized savings by task type, baseline-vs-actual, lifetime totals, and your projected bill — recomputed from real tokens.</p></div>
-    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h3>Prompts never leave your system</h3><p>Classification happens locally. Only a category label and numeric features reach us — never prompt text, outputs, or your API key.</p></div>
-    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><h3>Quality, proven</h3><p>Per-category floors, a universal guard that never downgrades structured-output or tool calls, and side-by-side non-inferiority checks.</p></div>
-    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div><h3>Adapts to your traffic</h3><p>It learns per-customer floors and rules from your own usage (judge-validated) and gets cheaper-safe over time — with your approval.</p></div>
-    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3>Fails open, always</h3><p>If our brain is ever unreachable, traffic passes straight through to Anthropic, unrouted. We can never block your requests.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></div><h3>Spend mapped to your roadmap</h3><p>Every dollar of LLM and coding-agent spend attributed to the ticket, epic, sprint, and team it belongs to — the question your finance team actually asks, finally answerable.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><h3>Forecast by scope of work</h3><p>Predict a quarter's AI cost from its open scope, the way you already estimate engineering effort — then watch budget-vs-actual burn down in real time.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3>Pace-based guardrails</h3><p>Not hard caps that stop work — projections. A team trending over budget is flagged <b>ok → warn → over</b> with time left to act, and outlier tickets are caught automatically.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><h3>Savings that earn their place</h3><p>Per work-type, a cheaper model is logged in shadow (cost) and proven by a quality canary (non-inferiority) before it ever enforces. It never downgrades on faith.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div><h3>Works with your stack</h3><p>Jira, Linear, and GitHub Issues; Claude Code, Cursor, and the API. Reliable attribution even for remote/CI agents via explicit task-tagging — no branch-naming discipline required.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h3>Privacy by architecture</h3><p>Attribution and routing run on metadata — categories, token counts, ticket IDs. Prompt content, model outputs, and your API key never leave your environment.</p></div>
   </div>
 </div></section>
 
@@ -387,8 +387,8 @@ realized savings × <span class="g">20%</span></code>
 <section class="soft"><div class="wrap">
   <div class="sec-head">
     <div class="eyebrow">Privacy by architecture</div>
-    <h2>Observability without shipping us your prompts.</h2>
-    <p>Most gateways see everything you send. ModelPilot is built so the sensitive data
+    <h2>Governance without shipping us your prompts.</h2>
+    <p>Most spend tools see everything you send. ScopePilot is built so the sensitive data
        physically can't reach us — purpose-built for teams that <b style="color:var(--ink)">can't let prompts
        leave their environment</b>: <a href="/healthcare.html">healthcare</a>, legal, and financial services.</p>
   </div>
@@ -397,7 +397,7 @@ realized savings × <span class="g">20%</span></code>
     <span class="arrow">→</span>
     <span class="node">Local proxy<small>classifies on your system</small></span>
     <span class="arrow">→</span>
-    <span class="node">ModelPilot<small>category + token counts only</small></span>
+    <span class="node">ScopePilot<small>category + token counts only</small></span>
     <span class="arrow">→</span>
     <span class="node">Anthropic<small>your key, your prompt</small></span>
   </div>
@@ -409,12 +409,13 @@ realized savings × <span class="g">20%</span></code>
   </div>
 </div></section>
 
-<!-- WHAT WE OPTIMIZE -->
-<section><div class="wrap">
-  <div class="sec-head"><div class="eyebrow">What we optimize</div>
-    <h2>Where we cut your bill — by work type.</h2>
-    <p>We route the high-volume routine work to a cheaper model and keep your hard reasoning on the
-       top model. Measured on your own traffic; you pay only on what we save.</p></div>
+<!-- EMBEDDED OPTIMIZATION ENGINE -->
+<section id="optimize"><div class="wrap">
+  <div class="sec-head"><div class="eyebrow">The embedded optimization engine</div>
+    <h2>Once you can see the spend, ScopePilot drives it down.</h2>
+    <p>Budgeting tells you where the money goes; the optimization engine moves the cheap, high-volume
+       work to a cheaper model that's <b style="color:var(--ink)">provably good enough</b> — proven per
+       work-type before it ever enforces — and keeps hard reasoning on the top model.</p></div>
   <div style="max-width:720px;margin:0 auto;overflow-x:auto">
     <table style="width:100%;border-collapse:collapse;font-size:15px;min-width:540px">
       <thead><tr style="background:var(--vio);color:#fff">
@@ -441,18 +442,18 @@ realized savings × <span class="g">20%</span></code>
 <!-- COMPARE -->
 <section class="soft"><div class="wrap">
   <div class="sec-head">
-    <div class="eyebrow">// How we compare</div>
+    <div class="eyebrow">// The optimization engine vs other routers</div>
     <h2>Different tool for a different job.</h2>
-    <p>Routing to a cheaper model isn't new — Martian and OpenRouter do it well, and they beat us on
-       breadth and maturity. We're built for a narrower job: cut your <b style="color:var(--ink)">Claude</b>
-       bill, <b style="color:var(--ink)">prove the savings on your own traffic</b>, and bill you only for
-       what we actually deliver — with prompts that never leave your environment. Here's the honest split.</p>
+    <p>ScopePilot's job is budgeting and governance; <b style="color:var(--ink)">no FinOps or observability
+       tool attributes AI spend to your tickets and roadmap</b>, which is the whole point. The embedded
+       optimization engine then drives spend down — and on that narrower routing job, here's the honest
+       split vs standalone routers like Martian and OpenRouter.</p>
   </div>
   <div class="cmp-wrap">
     <table class="cmp">
       <thead><tr>
         <th class="feat">&nbsp;</th>
-        <th class="us">ModelPilot</th>
+        <th class="us">ScopePilot engine</th>
         <th>OpenRouter</th>
         <th>Martian</th>
         <th>Build it yourself</th>
@@ -517,20 +518,21 @@ realized savings × <span class="g">20%</span></code>
       </tbody>
     </table>
   </div>
-  <p class="cmp-foot"><b>How to choose:</b> pick <b>OpenRouter</b> or <b>Martian</b> if you need many
-    models across providers or a battle-tested vendor at scale. Pick <b>ModelPilot</b> if prompt privacy,
-    pay-only-for-savings, and quality proven on your own traffic matter most — that combination is our
-    wedge. <a href="/compare.html">See the full, honest comparison →</a></p>
+  <p class="cmp-foot"><b>How to choose:</b> pick <b>OpenRouter</b> or <b>Martian</b> if you just need many
+    models across providers or a battle-tested router at scale. Pick <b>ScopePilot</b> if you want AI spend
+    governed against the work you plan — with an optimization engine whose savings are proven on your own
+    work and prompts that never leave your environment. <a href="/compare.html">See the full, honest comparison →</a></p>
 </div></section>
 
 <!-- PRICING -->
 <section id="pricing"><div class="wrap">
   <div class="sec-head">
     <div class="eyebrow">Pricing</div>
-    <h2>Pay for savings, not your data.</h2>
-    <p>You only pay for the savings we deliver — <b>20% on Pay-as-you-go</b>, or a subscription +
-       <b>15%</b> on the optimization tiers — and your prompt data <b>never leaves your system</b>,
-       even on those tiers. Three ways to go:</p>
+    <h2>Pay for outcomes, not your data.</h2>
+    <p>The <b>budgeting &amp; governance platform</b> is in early access — pricing is being set with our
+       first design partners (<a href="mailto:krethikram@gmail.com?subject=ScopePilot%20early%20access">get in</a>).
+       The embedded <b>optimization engine</b> already bills the simplest possible way — only on the savings it
+       delivers — and your prompt data <b>never leaves your system</b> on any tier:</p>
   </div>
   <div class="tiers">
     <div class="tier">
@@ -570,7 +572,7 @@ realized savings × <span class="g">20%</span></code>
         <li><span class="ck">✓</span> Maximum safe savings, judge-validated</li>
         <li><span class="ck">✓</span> Priority support</li>
       </ul>
-      <a class="btn lite lg" style="width:100%" href="mailto:krethikram@gmail.com?subject=ModelPilot%20Managed">Talk to us</a>
+      <a class="btn lite lg" style="width:100%" href="mailto:krethikram@gmail.com?subject=ScopePilot%20Managed">Talk to us</a>
     </div>
   </div>
   <div style="max-width:760px;margin:26px auto 0;background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 24px">
@@ -590,48 +592,50 @@ realized savings × <span class="g">20%</span></code>
 <section class="soft"><div class="wrap">
   <div class="sec-head"><div class="eyebrow">FAQ</div><h2>Questions, answered.</h2></div>
   <div class="faq">
-    <details open><summary>Do you see my prompts or my customers' data?</summary>
-      <p>No. Classification runs locally in the client; only a task category and numeric features
-        (token estimates, flags) are sent to ModelPilot. Prompt text, model outputs, and your API
-        key never reach our servers — and our endpoints reject any payload that contains them.</p></details>
-    <details><summary>What happens if ModelPilot goes down?</summary>
-      <p>The proxy fails open: if our routing brain is unreachable, your request is forwarded
-        straight to the Claude API, unrouted. We can degrade your savings, never your uptime.</p></details>
+    <details open><summary>How does ScopePilot attribute spend to a ticket?</summary>
+      <p>It resolves the work context of each AI call from the most reliable signal available — an
+        explicit task tag from your agent launcher or CI, the git branch, the PR's closing-issue link,
+        or a commit trailer — and maps it to the ticket, epic, and roadmap in Jira/Linear/GitHub. Where
+        a team already links work to tickets, it's automatic; where they don't, a one-line explicit tag
+        makes it reliable — even for remote/CI agents where the branch is detached.</p></details>
+    <details><summary>Do you see my prompts or my customers' data?</summary>
+      <p>No. Attribution and routing run on metadata — task category, token counts, ticket IDs. Prompt
+        text, model outputs, and your API key never reach our servers, and our endpoints reject any
+        payload that contains them.</p></details>
+    <details><summary>Are these guardrails hard caps that block work?</summary>
+      <p>No. They're pace-based projections, not caps. A scope on track to exceed its budget is flagged
+        <b>warn</b> (and <b>over</b> once it crosses), with the projected end-of-period total at the current
+        burn rate — so a lead acts while there's time. A hard cap that binds mid-task just stops work; we
+        flag the trend instead, plus outlier tickets running far above their class.</p></details>
+    <details><summary>How does the optimization engine avoid breaking quality?</summary>
+      <p>Per work-type, a cheaper model is first logged in <b>shadow</b> (what it would have cost) and then
+        validated by a <b>quality canary</b> (proven non-inferior on your own work) before it's ever allowed
+        to enforce. It only moves <em>down</em> the capability ladder when proven good enough, and keeps
+        hard reasoning and structured-output/tool calls on a capable model.</p></details>
+    <details><summary>What does it work with?</summary>
+      <p>Trackers: Jira, Linear, GitHub Issues. AI tools: Claude Code, Cursor, and the Anthropic API
+        (per-call usage + the org admin API for reconciliation). Read-only to start — no app rewrite —
+        with the optimization engine as an optional, drop-in layer when you're ready to act on the spend.</p></details>
     <details><summary>How does pricing work?</summary>
-      <p>You pay a share of realized savings, metered from the real tokens each request used (baseline
-        minus actual), with a line-item breakdown in the console — <b>20%</b> on Pay-as-you-go, or a
-        <b>subscription + 15%</b> on the optimization tiers (Self-optimize <b>$99/mo</b>; Managed pricing coming soon),
-        which let us tune routing to your own traffic (metadata only — your content never leaves your
-        system). No savings, no bill.</p></details>
-    <details><summary>Will it downgrade my hard or quality-sensitive requests?</summary>
-      <p>No. Routing only ever moves <em>down</em> to a model that's provably good enough for the
-        task, with per-category floors and a universal guard that keeps structured-output and
-        tool-using calls on a capable model. Our golden set shows 0% false-downgrades, and you can
-        run side-by-side non-inferiority checks on your own prompts.</p></details>
-    <details><summary>Which models does it route between?</summary>
-      <p>The current Claude family — it moves a request down the capability ladder (e.g. Opus →
-        Sonnet → Haiku) only when the cheaper model is good enough and the economics pay off after
-        cache effects.</p></details>
-    <details><summary>Can I keep full control?</summary>
-      <p>Yes. Start in guidance mode (recommendations only, traffic unchanged), and flip to
-        autopilot when you're ready — all from the dashboard, no redeploy. Set a
-        minimum model and risk tolerance per deployment.</p></details>
+      <p>The budgeting &amp; governance platform is in early access; pricing is being set with our first
+        design partners. The embedded optimization engine bills only on realized savings (metered from
+        real tokens, baseline minus actual) — no savings, no bill. <a href="mailto:krethikram@gmail.com?subject=ScopePilot%20early%20access">Talk to us</a> to join.</p></details>
   </div>
 </div></section>
 
 <!-- FINAL CTA -->
 <section class="final"><div class="wrap">
-  <h2>See what you'd save this week.</h2>
-  <p>Start in guidance mode, watch the savings add up on real traffic, and only pay when we
-     actually cut your bill.</p>
+  <h2>Put your AI spend back on a budget.</h2>
+  <p>See what your AI compute is costing per ticket, epic, and team — and where it's about to go over.
+     We're onboarding a first cohort of design partners now.</p>
   <div class="center">
-    <a class="btn primary lg" href="https://modelpilot-console-prod.fly.dev/signup">Start your 7-day free trial →</a>
+    <a class="btn primary lg" href="mailto:krethikram@gmail.com?subject=ScopePilot%20early%20access">Get early access →</a>
   </div>
-  <p style="font-size:13px;color:#8b97ad;margin-top:18px">No card to start · prompts never leave your system · cancel anytime</p>
+  <p style="font-size:13px;color:#8b97ad;margin-top:18px">Read-only to start · prompts never leave your environment · no app rewrite</p>
 </div></section>
 
 <footer><div class="wrap">
-  <span class="brand">Model<span class="dot">Pilot</span></span>
+  <span class="brand">Scope<span class="dot">Pilot</span></span>
   <span class="sep"></span>
   <a href="https://modelpilot-console-prod.fly.dev/signup">Start free trial</a>
   <a href="https://modelpilot-console-prod.fly.dev/login">Sign in</a>
@@ -648,7 +652,7 @@ realized savings × <span class="g">20%</span></code>
   <a href="#pricing">Pricing</a>
   <a href="mailto:krethikram@gmail.com">Contact</a>
 </div>
-<div class="wrap" style="margin-top:14px;font-size:12.5px;color:#5b6676">© 2026 ModelPilot · Cut your Claude bill, proven on your own traffic.</div>
+<div class="wrap" style="margin-top:14px;font-size:12.5px;color:#5b6676">© 2026 ScopePilot · Budget by scope of work, stay within guardrails, capture the savings automatically.</div>
 </footer>
 
 <script>
