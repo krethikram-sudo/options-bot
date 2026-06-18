@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Data Processing Addendum (template) — ModelPilot</title>
-<meta name="description" content="ModelPilot's Data Processing Addendum template — roles, scope (metadata only), security, subprocessors, breach notification, deletion, and transfers.">
+<title>Data Processing Addendum (template) — Outlay</title>
+<meta name="description" content="Outlay's Data Processing Addendum template — roles, scope (metadata only), security, subprocessors, breach notification, deletion, and transfers.">
 <link rel="canonical" href="https://modelpilot.pages.dev/legal/dpa.html">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="/docs/docs.css">
 </head><body>
 <div class="top"><div class="row">
-  <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
+  <a class="brand" href="/">Out<span class="dot">lay</span></a>
   <span class="tag">DPA</span><span class="sp"></span>
   <a class="lnk" href="/security.html">Security</a>
   <a class="lnk" href="/legal/subprocessors.html">Subprocessors</a>
@@ -17,14 +17,14 @@
 
 <main style="max-width:800px;margin:0 auto;padding:34px 22px 80px">
   <h1>Data Processing Addendum</h1>
-  <p class="lead">This DPA governs ModelPilot's processing of personal data on your behalf.</p>
+  <p class="lead">This DPA governs Outlay's processing of personal data on your behalf.</p>
 
   <div class="note warn"><b>Template / draft.</b> This is a starting point published for your review — it
     is not legal advice and is not yet a counsel-reviewed, executable contract. For a signed DPA (or to
     redline this one), email <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a>.</div>
 
   <h2 id="1">1. Roles &amp; definitions</h2>
-  <p>"Customer" is the controller of the personal data; "ModelPilot" (the provider of the ModelPilot
+  <p>"Customer" is the controller of the personal data; "Outlay" (the provider of the Outlay
     service, the "Service") acts as processor on Customer's documented instructions. "Personal data,"
     "processing," "controller," "processor," and "data subject" have the meanings given under applicable
     data-protection law (incl. the GDPR/UK GDPR and CCPA where relevant). This DPA forms part of the
@@ -33,13 +33,13 @@
   <h2 id="2">2. Scope &amp; nature of processing</h2>
   <p>The Service routes Claude API requests to cost-efficient models. <b>In the default self-hosted /
     thin-client deployment, prompt content, model outputs, and Customer's API keys are not transmitted to
-    or processed by ModelPilot</b> — they pass from Customer's infrastructure directly to Anthropic using
+    or processed by Outlay</b> — they pass from Customer's infrastructure directly to Anthropic using
     Customer's key, and any task classification runs locally on Customer's own infrastructure (no
-    ModelPilot system inspects prompt content). (In the optional <b>hosted-gateway</b> deployment,
+    Outlay system inspects prompt content). (In the optional <b>hosted-gateway</b> deployment,
     Customer's request content and API key are processed in memory solely to route the request — read by
-    ModelPilot's classifier to select a model — and are not persisted; ModelPilot acts as processor for
+    Outlay's classifier to select a model — and are not persisted; Outlay acts as processor for
     that processing and does not store prompt content or model outputs.) In both deployments,
-    ModelPilot additionally processes only:</p>
+    Outlay additionally processes only:</p>
   <ul>
     <li>account data (e.g. the email address and company of authorized users);</li>
     <li>operational metadata (task category, token counts, model identifiers, cost/savings figures, status
@@ -50,38 +50,38 @@
     categories of data subjects are Customer's authorized users.</p>
 
   <h2 id="3">3. Customer instructions</h2>
-  <p>ModelPilot processes personal data only on Customer's documented instructions (including via the
-    Service's configuration), unless required by law, in which case ModelPilot will inform Customer where
+  <p>Outlay processes personal data only on Customer's documented instructions (including via the
+    Service's configuration), unless required by law, in which case Outlay will inform Customer where
     legally permitted.</p>
 
   <h2 id="4">4. Confidentiality</h2>
-  <p>ModelPilot ensures persons authorized to process the personal data are bound by appropriate
+  <p>Outlay ensures persons authorized to process the personal data are bound by appropriate
     confidentiality obligations.</p>
 
   <h2 id="5">5. Security</h2>
-  <p>ModelPilot implements appropriate technical and organizational measures, including TLS in transit,
+  <p>Outlay implements appropriate technical and organizational measures, including TLS in transit,
     encryption at rest, hashed credentials, scoped/revocable API keys, least-privilege access, and (in the default self-hosted deployment) an
-    architecture in which prompt content never reaches ModelPilot. Current measures are described at
+    architecture in which prompt content never reaches Outlay. Current measures are described at
     <a href="/security.html">/security</a>.</p>
 
   <h2 id="6">6. Subprocessors</h2>
-  <p>Customer authorizes ModelPilot to engage the subprocessors listed at
-    <a href="/legal/subprocessors.html">/legal/subprocessors</a>. ModelPilot imposes data-protection
+  <p>Customer authorizes Outlay to engage the subprocessors listed at
+    <a href="/legal/subprocessors.html">/legal/subprocessors</a>. Outlay imposes data-protection
     obligations on subprocessors no less protective than this DPA, remains responsible for their
     performance, and will give Customer notice of intended changes with a reasonable opportunity to object.</p>
 
   <h2 id="7">7. Data subject rights</h2>
-  <p>Taking into account the nature of the processing, ModelPilot assists Customer with appropriate
+  <p>Taking into account the nature of the processing, Outlay assists Customer with appropriate
     technical and organizational measures, insofar as possible, to respond to data-subject requests
     (access, rectification, erasure, portability, objection).</p>
 
   <h2 id="8">8. Personal data breach</h2>
-  <p>ModelPilot notifies Customer without undue delay after becoming aware of a personal data breach
+  <p>Outlay notifies Customer without undue delay after becoming aware of a personal data breach
     affecting Customer's personal data, with information reasonably available to assist Customer's own
     obligations.</p>
 
   <h2 id="9">9. Deletion &amp; return</h2>
-  <p>On termination, and at Customer's choice, ModelPilot deletes or returns the personal data it processes
+  <p>On termination, and at Customer's choice, Outlay deletes or returns the personal data it processes
     on Customer's behalf, except where retention is required by law. Customer may also export data and
     request deletion during the term.</p>
 
@@ -92,7 +92,7 @@
     subprocessors page.</p>
 
   <h2 id="11">11. Audit &amp; information</h2>
-  <p>ModelPilot makes available information reasonably necessary to demonstrate compliance with this DPA
+  <p>Outlay makes available information reasonably necessary to demonstrate compliance with this DPA
     and, on reasonable request and subject to confidentiality, supports audits consistent with applicable
     law.</p>
 

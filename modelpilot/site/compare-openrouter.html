@@ -1,48 +1,48 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ModelPilot vs. OpenRouter (incl. Fusion) — honest comparison</title>
-<meta name="description" content="ModelPilot vs OpenRouter and OpenRouter Fusion: OpenRouter is a hosted gateway that routes your traffic through its servers; ModelPilot is a privacy-preserving cost layer on your own Claude key — prompts never leave your system, and you pay only for realized savings.">
+<title>Outlay vs. OpenRouter (incl. Fusion) — honest comparison</title>
+<meta name="description" content="Outlay vs OpenRouter and OpenRouter Fusion: OpenRouter is a hosted gateway that routes your traffic through its servers; Outlay is a privacy-preserving cost layer on your own Claude key — prompts never leave your system, and you pay only for realized savings.">
 <link rel="canonical" href="https://modelpilot.pages.dev/compare-openrouter.html">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="/docs/docs.css">
 </head><body>
 <div class="top"><div class="row">
-  <a class="brand" href="/">Model<span class="dot">Pilot</span></a>
+  <a class="brand" href="/">Out<span class="dot">lay</span></a>
   <span class="tag">vs OpenRouter</span><span class="sp"></span>
   <a class="lnk" href="/compare.html">All comparisons</a>
   <a class="cta" href="https://modelpilot-console-prod.fly.dev/signup">Start free trial</a>
 </div></div>
 
 <main style="max-width:820px;margin:0 auto;padding:34px 22px 80px">
-  <h1>ModelPilot vs. OpenRouter</h1>
+  <h1>Outlay vs. OpenRouter</h1>
   <p class="lead">OpenRouter is a great <b>unified gateway</b> — one API to hundreds of models. It solves
-    a different problem from ModelPilot, and (with Fusion) optimizes in the opposite direction.</p>
+    a different problem from Outlay, and (with Fusion) optimizes in the opposite direction.</p>
 
   <div class="note"><b>In one line:</b> OpenRouter routes <b>your traffic through its servers</b> to reach
-    many providers, billed on usage. ModelPilot is a <b>cost layer on your own Claude key</b> that routes
+    many providers, billed on usage. Outlay is a <b>cost layer on your own Claude key</b> that routes
     each request <b>down</b> to the cheapest good-enough model — your prompts never touch our servers, and
     you pay only a slice of what we save.</p>
 
   <h2>The differences that matter</h2>
   <ul>
     <li><b>Data path.</b> Every OpenRouter request crosses your client → OpenRouter → provider; OpenRouter
-      sees the prompt to route and meter it (a subset is sampled for categorization). ModelPilot classifies
+      sees the prompt to route and meter it (a subset is sampled for categorization). Outlay classifies
       <b>locally</b> — only a task category + numeric features ever reach us; prompt text, outputs, and your
       API key never leave your system.</li>
     <li><b>Direction.</b> OpenRouter <b>Fusion</b> turns a prompt into a multi-model panel + judge for
-      higher quality — priced at roughly <b>4–5× a single completion</b>. ModelPilot does the reverse:
+      higher quality — priced at roughly <b>4–5× a single completion</b>. Outlay does the reverse:
       route down to one cheaper model that's provably good enough, to <b>cut</b> the bill.</li>
     <li><b>Billing.</b> OpenRouter passes through provider pricing with a credit fee; BYOK is free to ~1M
-      requests/mo, then a 5% fee. ModelPilot charges a <b>% of realized savings</b> — no savings, no bill.</li>
-    <li><b>Relationship.</b> With OpenRouter, it becomes your API + billing layer. With ModelPilot you keep
+      requests/mo, then a 5% fee. Outlay charges a <b>% of realized savings</b> — no savings, no bill.</li>
+    <li><b>Relationship.</b> With OpenRouter, it becomes your API + billing layer. With Outlay you keep
       your <b>direct Anthropic account</b>, and we <b>fail open</b> straight to Anthropic if we're ever down.</li>
     <li><b>Proof.</b> We measure savings against a held-out control arm and check the cheaper model
       side-by-side for non-inferiority on your traffic — an audited number, not a quoted range.</li>
   </ul>
 
   <table>
-    <thead><tr><th></th><th>OpenRouter (incl. Fusion)</th><th>ModelPilot</th></tr></thead>
+    <thead><tr><th></th><th>OpenRouter (incl. Fusion)</th><th>Outlay</th></tr></thead>
     <tbody>
       <tr><td><b>Type</b></td><td>Hosted multi-provider gateway</td><td>Drop-in proxy on your Claude account</td></tr>
       <tr><td><b>Prompts</b></td><td>Flow through OpenRouter</td><td>Never leave your system</td></tr>
@@ -55,9 +55,9 @@
   <h2>When OpenRouter is the better fit</h2>
   <p>If you want one API across many providers, cross-vendor fallbacks, or Fusion's ensemble for maximum
     answer quality, OpenRouter is the right tool — we're not trying to replace it. Some teams run both:
-    OpenRouter for breadth, ModelPilot to stop overspending on the easy requests.</p>
+    OpenRouter for breadth, Outlay to stop overspending on the easy requests.</p>
 
-  <p style="margin-top:28px"><a class="cta" href="https://modelpilot-console-prod.fly.dev/signup">Try ModelPilot free</a></p>
+  <p style="margin-top:28px"><a class="cta" href="https://modelpilot-console-prod.fly.dev/signup">Try Outlay free</a></p>
   <p class="foot" style="margin-top:22px">See also: <a href="/compare-martian.html">vs Martian</a> ·
     <a href="/compare.html">all comparisons</a> · <a href="/security.html">how we never see your prompts</a></p>
 </main>
