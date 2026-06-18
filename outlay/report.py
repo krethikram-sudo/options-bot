@@ -87,11 +87,26 @@ def render(
     add("  Roadmap forecast (open work items × class cost)")
     add("  " + "-" * 56)
     add(f"   Expected: {_usd(forecast.expected_usd)}    "
-        f"Upper (p90): {_usd(forecast.p90_usd)}")
+        f"Likely range (p10–p90): {_usd(forecast.low_usd)}–{_usd(forecast.high_usd)}")
+    add(f"   Conservative upper bound (Σ p90, fully correlated): {_usd(forecast.p90_usd)}")
     add(f"   Costed {forecast.items_costed} open items; "
         f"{forecast.items_unclassified} had no class history (not costed).")
     for tc, amt in sorted(forecast.by_class.items(), key=lambda kv: kv[1], reverse=True):
         add(f"     {tc.value:<10} {_usd(amt)}")
+
+    # Per-item bands: the most expensive open items, each with its p10–p90 range.
+    costable = [it for it in forecast.items if it.costable]
+    if costable:
+        add("")
+        add("   Top open items (expected, with p10–p90 band)")
+        top = sorted(costable, key=lambda it: it.expected_usd, reverse=True)[:8]
+        add(f"     {'item':<9}{'class':<10}{'expected':>10}   {'p10–p90 range':>18}")
+        for it in top:
+            band = f"{_usd(it.low_usd)}–{_usd(it.high_usd)}"
+            add(f"     {it.ticket_id:<9}{it.task_class.value:<10}"
+                f"{_usd(it.expected_usd):>10}   {band:>18}")
+        if len(costable) > len(top):
+            add(f"     …and {len(costable) - len(top)} more costed open item(s).")
 
     # --- Anomalies ---
     add("")

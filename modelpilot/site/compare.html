@@ -1,82 +1,165 @@
 <!doctype html>
 <html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Outlay vs. AI gateways (OpenRouter, Portkey, Helicone)</title>
-<meta name="description" content="How Outlay differs from AI gateways like OpenRouter (incl. Fusion), Portkey, and Helicone: prompts never leave your system, pay only for realized savings, and proven cost reduction within Claude.">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compare — Outlay vs. FinOps suites, LLM observability &amp; AI gateways</title>
+<meta name="description" content="How Outlay differs from cloud FinOps suites, LLM observability tools, native provider consoles, AI gateways, and building it yourself: spend mapped to your roadmap, metadata-only privacy, and routing that bills only on realized savings.">
 <link rel="canonical" href="https://modelpilot.pages.dev/compare.html">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="stylesheet" href="/docs/docs.css">
-</head><body>
-<div class="top"><div class="row">
-  <a class="brand" href="/">Out<span class="dot">lay</span></a>
-  <span class="tag">Compare</span><span class="sp"></span>
-  <a class="lnk" href="/security.html">Security</a>
-  <a class="lnk" href="/docs/">Docs</a>
-  <a class="cta" href="https://modelpilot-console-prod.fly.dev/signup">Start free trial</a>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<meta property="og:title" content="Compare — Outlay vs. the alternatives">
+<meta property="og:description" content="Spend mapped to your roadmap, metadata-only privacy, and routing that bills only on realized savings.">
+<link rel="stylesheet" href="/outlay.css">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Out<span class="dot">lay</span></a>
+  <div class="navlinks">
+    <a href="/#how">How it works</a>
+    <a href="/#owners">For eng &amp; finance</a>
+    <a href="/#optimize">Optimization engine</a>
+    <a href="/#compare">Compare</a>
+    <a href="/pilot.html">Pilot</a>
+  </div>
+  <div class="navsp"></div>
+  <div class="navcta">
+    <a class="signin" href="https://modelpilot-console-prod.fly.dev/login">Sign in</a>
+    <a class="btn primary" href="mailto:krethikram@gmail.com?subject=Outlay%20design-partner%20pilot">Book a pilot</a>
+  </div>
+</div></nav>
+
+<div class="page"><div class="wrap">
+  <div class="eyebrow">Compare</div>
+  <h1>Where Outlay fits — and where it doesn't.</h1>
+  <p class="lede">Teams usually weigh Outlay against four other things: a cloud <b>FinOps suite</b>, an
+    <b>LLM observability</b> tool, the <b>native provider console</b>, or <b>building it themselves</b>.
+    Here's the honest version of each.</p>
 </div></div>
 
-<main style="max-width:820px;margin:0 auto;padding:34px 22px 80px">
-  <h1>Outlay vs. AI gateways &amp; routers</h1>
-  <p class="lead">If you're comparing us to AI <b>gateways</b> (OpenRouter incl. Fusion, Portkey,
-    Helicone, LiteLLM, Cloudflare AI Gateway) or LLM <b>routers</b> (Martian, Not Diamond, Unify,
-    Requesty, RouteLLM) — here's the honest version. We're not a gateway, and we optimize differently
-    from the routers too.</p>
+<section style="padding-top:18px"><div class="wrap">
+  <div class="note" style="max-width:760px;margin:0 auto 36px">
+    <b>The short answer:</b> none of these map AI spend to the <b>work that drove it</b> — tickets, epics,
+    roadmap — forecast a quarter from open scope, and then route spend <b>down</b> with proof, all without
+    your prompts ever leaving your environment. Outlay is built around that one job.
+  </div>
 
-  <div class="note"><b>The short answer:</b> gateways are a <b>hosted layer your traffic flows through</b>
-    to reach many models. Outlay is a <b>privacy-preserving cost layer on your own Claude key</b> that
-    routes each request <b>down</b> to the cheapest model that's provably good enough — and bills you only a
-    slice of what it saves. Your prompts never touch our servers.</p>
+  <div class="cmp-wrap">
+    <table class="cmp">
+      <thead><tr>
+        <th class="feat"></th>
+        <th>FinOps suite</th>
+        <th>LLM observability</th>
+        <th>Native console</th>
+        <th class="us">Outlay</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="feat">Spend mapped to tickets / epics / roadmap</td>
+          <td><span class="n">✕</span><span class="sub">cloud resources, not eng work</span></td>
+          <td><span class="n">✕</span><span class="sub">traces &amp; tokens, not scope</span></td>
+          <td><span class="n">✕</span><span class="sub">per-key, per-model totals</span></td>
+          <td class="us"><span class="y">✓</span><span class="sub">attributed to the work you plan</span></td>
+        </tr>
+        <tr>
+          <td class="feat">Forecast by open scope + budget guardrails</td>
+          <td><span class="y">✓</span><span class="sub">for cloud, not AI-by-scope</span></td>
+          <td><span class="n">✕</span></td>
+          <td><span class="n">✕</span></td>
+          <td class="us"><span class="y">✓</span><span class="sub">quarter forecast + pace alerts</span></td>
+        </tr>
+        <tr>
+          <td class="feat">Prompts never leave your environment</td>
+          <td><span class="y">✓</span><span class="sub">doesn't see prompts at all</span></td>
+          <td><span class="n">✕</span><span class="sub">ingests prompts/outputs to trace</span></td>
+          <td><span class="y">✓</span></td>
+          <td class="us"><span class="y">✓</span><span class="sub">metadata-only, classified locally</span></td>
+        </tr>
+        <tr>
+          <td class="feat">Cuts spend (routes down) with proof</td>
+          <td><span class="n">✕</span><span class="sub">reports, doesn't act</span></td>
+          <td><span class="n">✕</span><span class="sub">observes, doesn't act</span></td>
+          <td><span class="n">✕</span></td>
+          <td class="us"><span class="y">✓</span><span class="sub">shadow → non-inferiority → autopilot</span></td>
+        </tr>
+        <tr>
+          <td class="feat">Pricing aligned to your bill going down</td>
+          <td><span class="n">✕</span><span class="sub">seat / % of cloud spend</span></td>
+          <td><span class="n">✕</span><span class="sub">seat / event volume</span></td>
+          <td><span class="n">✕</span></td>
+          <td class="us"><span class="y">✓</span><span class="sub">share of realized savings</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cmp-foot">Generalizations across categories — individual products vary. The point isn't that
+    these tools are bad; it's that they answer a different question than "what is each epic costing us in
+    AI, and what do we do about it?"</p>
+</div></section>
 
-  <h2>The three things gateways structurally don't do</h2>
-  <ul>
-    <li><b>Your prompts never leave your system.</b> A gateway sits in your data path — it has to see your
-      prompt to route and meter it. Outlay classifies <em>locally</em>; only a task category and numeric
-      features ever reach us. Never prompt text, model outputs, or your API key.</li>
-    <li><b>You pay only for realized savings.</b> Gateways bill on usage (token markup, a credit fee, or a
-      % of spend / BYOK fee) — they make money when your spend goes <em>up</em>. We charge a share of the
-      savings we actually deliver. No savings, no bill — our incentive is your bill going <em>down</em>.</li>
-    <li><b>Proven cost reduction, not just access.</b> We measure savings against a held-out control arm and
-      check the cheaper model side-by-side for non-inferiority on your own traffic (0% false-downgrades on
-      our golden set). The number on your dashboard is audited, not a marketing figure.</li>
-  </ul>
+<section class="paper"><div class="wrap"><div class="prose">
+  <h2>FinOps suites (Cloudability, CloudHealth, Vantage, Kubecost…)</h2>
+  <p>Excellent at cloud cost — compute, storage, Kubernetes — allocated to teams and cost centers. But AI
+    coding-agent spend lives in <em>SaaS invoices and provider APIs</em>, not your cloud bill, and these
+    suites allocate by <b>cloud resource</b>, not by <b>ticket or epic</b>. They'll tell you the line
+    item is growing; they won't tell you which sprint drove it or which model to use instead. Outlay is
+    the AI-native complement: same FinOps discipline, applied to LLM spend by scope of work.</p>
 
-  <h2>Side by side</h2>
-  <table>
-    <thead><tr><th></th><th>Typical AI gateway</th><th>Outlay</th></tr></thead>
-    <tbody>
-      <tr><td><b>What it is</b></td><td>Hosted API in front of many providers/models</td><td>Drop-in proxy on your own Claude account</td></tr>
-      <tr><td><b>Goal</b></td><td>Access &amp; breadth (and, for OpenRouter Fusion, <em>higher</em> quality via a multi-model panel — ~4–5× the cost of one call)</td><td>Cut cost — route down to the cheapest good-enough model</td></tr>
-      <tr><td><b>Your prompts</b></td><td>Flow through their servers (routed, sometimes sampled/logged)</td><td>Never leave your system — classified locally</td></tr>
-      <tr><td><b>Billing</b></td><td>Token pass-through + fee, or % of spend / BYOK fee</td><td>% of <em>realized savings</em> (20% PAYG / 15% on subscription tiers)</td></tr>
-      <tr><td><b>Relationship</b></td><td>They become your API + billing layer</td><td>You keep your direct Anthropic account; we fail open to it</td></tr>
-      <tr><td><b>Proof</b></td><td>Quality/latency optimization</td><td>RCT control arm + non-inferiority judging, per-category floors</td></tr>
-      <tr><td><b>Scope</b></td><td>Broad — many providers</td><td>Deep on the Claude family</td></tr>
-    </tbody>
-  </table>
+  <h2>LLM observability (Langfuse, Helicone, Datadog LLM, Arize…)</h2>
+  <p>Great for debugging quality, latency, and traces — and several show cost per call. The structural
+    trade-off: to trace, they <b>ingest your prompts and outputs</b>, so your content sits in their data
+    path. They also stop at <em>observation</em> — they surface cost, they don't forecast by roadmap
+    scope or route spend down. Outlay classifies <b>locally</b> (only a category + token counts + ticket
+    id ever reach us) and is built to <b>act</b> on the number, not just chart it.</p>
 
-  <h2>What about LLM routers (Martian, Not Diamond, RouteLLM)?</h2>
-  <p>Routers also pick a cheaper/better model per request — and several are excellent. But to decide,
-    a router has to <b>read your prompt</b>: it routes <em>on the prompt</em>, so your content is in its
-    data path. Outlay routes on a <b>local classification</b> instead — the decision is made on your
-    box from a task category + numeric features, so the prompt itself never reaches us. We also bill on
-    <b>realized savings</b> (routers bill usage or enterprise contracts) and prove it with a held-out
-    control arm and non-inferiority checks on your own traffic, rather than quoting a savings range.</p>
+  <h2>Native provider consoles (Anthropic, OpenAI, Cursor admin…)</h2>
+  <p>Free, accurate, and already there — totals by API key, model, and workspace. The gap is the join:
+    a key or workspace isn't an epic, and there's no forecast, no pace guardrail, and no cross-tool view
+    (Claude Code + Cursor + direct API in one place). Outlay reads these consoles read-only and does the
+    attribution, forecasting, and routing on top.</p>
 
-  <h2>When a gateway or router is the better fit</h2>
-  <p>We'd rather be straight with you: if you need <b>one API across many providers</b> (OpenAI, Google,
-    open-weight models), built-in fallbacks across vendors, or — with OpenRouter Fusion — a
-    <b>multi-model ensemble for maximum answer quality</b>, a gateway is the right tool, and we're not
-    trying to replace it. Some teams even run both: a gateway for breadth, Outlay to stop overspending
-    on the easy requests.</p>
-  <p>Outlay is the better fit when you're <b>Claude-heavy</b>, your <b>prompts are sensitive</b> (they
-    can't leave your environment), and you want <b>cost cut with proof</b> — paying only when it works.</p>
+  <h2>Build it yourself</h2>
+  <p>Entirely doable — a script that pulls the Anthropic admin API, joins PRs to tickets, and charts it.
+    Most teams who try it find the <b>join is the hard part</b> (detached-HEAD CI agents, tracker teams,
+    branches not named after tickets), and that a one-off dashboard rots. Outlay ships the attribution
+    join with fidelity tiers, the cache-aware cost model, the forecast, and the proven routing as a
+    product — read-only, metadata-only, free during the pilot. If it's not worth more than a weekend to
+    you, build it; if AI is a real and growing line item, don't maintain it yourself.</p>
 
-  <h2>Head-to-head</h2>
-  <p>Detailed comparisons: <a href="/compare-openrouter.html">Outlay vs OpenRouter</a> ·
-    <a href="/compare-martian.html">Outlay vs Martian</a>.</p>
+  <h2>What about AI gateways &amp; routers? (OpenRouter, Portkey, Martian…)</h2>
+  <p>Different category: gateways are a <b>hosted layer your traffic flows through</b> to reach many
+    models, and routers pick a model <em>by reading your prompt</em>. Outlay's optional optimization
+    engine sits on your own Claude key, decides from a <b>local classification</b> (so the prompt never
+    reaches us), bills only a share of <b>realized savings</b>, and fails open to your direct Anthropic
+    account. If you need one API across many providers or a multi-model ensemble for maximum quality, a
+    gateway is the right tool — some teams run both: a gateway for breadth, Outlay to stop overspending
+    on the easy requests and to map it all to the roadmap.</p>
 
-  <p style="margin-top:30px"><a class="cta" href="https://modelpilot-console-prod.fly.dev/signup">Start a free 7-day trial</a></p>
-  <p class="foot" style="margin-top:24px">Questions? <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a>
-    · <a href="/security.html">How we optimize without seeing your data</a></p>
-</main>
+  <p class="backlink" style="margin-top:28px"><a href="/">← Back to Outlay</a> · <a href="/security.html">How we optimize without seeing your data</a></p>
+</div></div></section>
+
+<section class="final"><div class="wrap">
+  <h2>See it on your own numbers.</h2>
+  <p>Two weeks, read-only, prompts never leave your environment. We'll map your real AI spend to your
+    roadmap and show you where it's about to go over.</p>
+  <div class="center">
+    <a class="btn onnavy lg" href="mailto:krethikram@gmail.com?subject=Outlay%20design-partner%20pilot">Book a design-partner pilot →</a>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Out<span class="dot">lay</span></a>
+  <span class="sep"></span>
+  <a href="/pilot.html">Book a pilot</a>
+  <a href="/#owners">For eng &amp; finance</a>
+  <a href="/security.html">Security</a>
+  <a href="/docs/">Docs</a>
+  <a href="/legal/privacy.html">Privacy</a>
+  <a href="mailto:krethikram@gmail.com">Contact</a>
+</div>
+<div class="wrap" style="margin-top:14px;font-size:12.5px;color:#6c7790">© 2026 Outlay · Budget by scope of work, stay within guardrails, capture the savings automatically.</div>
+</footer>
+
 </body></html>

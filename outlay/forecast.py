@@ -25,7 +25,9 @@ class ClassStats:
     n: int
     mean: float
     median: float
+    p10: float
     p90: float
+    std: float          # sample stdev of class cost; 0 when n < 2
     mean_rework: float
 
 
@@ -45,7 +47,9 @@ def class_stats(result: AttributionResult) -> dict[TaskClass, ClassStats]:
             n=len(costs),
             mean=statistics.fmean(costs),
             median=statistics.median(costs),
+            p10=_percentile(costs, 0.10),
             p90=_percentile(costs, 0.90),
+            std=statistics.stdev(costs) if len(costs) >= 2 else 0.0,
             mean_rework=statistics.fmean(rework),
         )
     return stats
@@ -63,41 +67,84 @@ def _percentile(sorted_vals: list[float], q: float) -> float:
     return sorted_vals[lo] * (1 - frac) + sorted_vals[hi] * frac
 
 
+# 80% central interval ≈ ±1.2816σ (the z-score of the 10th/90th percentile),
+# so the aggregate band lines up with the per-item p10..p90 framing.
+_Z_P90 = 1.2815515594
+
+
+@dataclass
+class ItemForecast:
+    """Per-item point estimate with a confidence band, costed at its class."""
+
+    ticket_id: str
+    task_class: TaskClass
+    expected_usd: float
+    low_usd: float      # class p10 (empirical, robust to skew)
+    high_usd: float     # class p90
+    costable: bool
+
+
 @dataclass
 class RoadmapForecast:
     expected_usd: float
-    p90_usd: float
+    p90_usd: float          # naive upper bound: Σ per-item p90 (assumes perfect correlation)
     items_costed: int
     items_unclassified: int
     by_class: dict[TaskClass, float] = field(default_factory=dict)
+    low_usd: float = 0.0    # aggregate lower band, variance-pooled (errors de-correlate)
+    high_usd: float = 0.0   # aggregate upper band, variance-pooled — tighter & more honest than p90_usd
+    items: list[ItemForecast] = field(default_factory=list)
 
 
 def forecast_roadmap(
     open_items: list[WorkItem],
     stats: dict[TaskClass, ClassStats],
 ) -> RoadmapForecast:
-    """Bottom-up forecast: each open work item costed at its class's mean (and
-    p90 for the upper band). Items whose class has no history can't be costed —
-    we count them rather than guessing, so the forecast states its own coverage.
+    """Bottom-up forecast: each open work item costed at its class's mean, with a
+    per-item p10..p90 band. Items whose class has no history can't be costed — we
+    count them rather than guessing, so the forecast states its own coverage.
+
+    The aggregate band is **variance-pooled**, not a sum of per-item p90s: across
+    many items the over- and under-shoots partially cancel (Var of a sum = Σ of
+    variances for independent items), so the honest total band is tighter than
+    the perfectly-correlated `p90_usd`. The realistic interval is always kept
+    *nested inside* the conservative `[Σp10, Σp90]` envelope — perfect positive
+    correlation is the genuine worst case, so the independence band can never sit
+    outside it (and won't overshoot it on small, heavy-tailed samples). We keep
+    `p90_usd` as the conservative upper bound and add `low_usd`/`high_usd` as the
+    realistic interval.
     """
     from .classify import classify
 
     expected = 0.0
+    p10 = 0.0
     p90 = 0.0
+    var_sum = 0.0
     costed = 0
     unclassified = 0
     by_class: dict[TaskClass, float] = defaultdict(float)
+    items: list[ItemForecast] = []
 
     for item in open_items:
         tc = classify(item)
         st = stats.get(tc)
         if st is None or st.n == 0:
             unclassified += 1
+            items.append(ItemForecast(item.ticket_id, tc, 0.0, 0.0, 0.0, costable=False))
             continue
         expected += st.mean
+        p10 += st.p10
         p90 += st.p90
+        var_sum += st.std ** 2
         by_class[tc] += st.mean
         costed += 1
+        items.append(ItemForecast(item.ticket_id, tc, st.mean, st.p10, st.p90, costable=True))
+
+    agg_std = var_sum ** 0.5
+    # Nest the independence band inside the fully-correlated [Σp10, Σp90] envelope.
+    high = min(p90, expected + _Z_P90 * agg_std)
+    low = max(p10, expected - _Z_P90 * agg_std)
+    low = max(0.0, low)
 
     return RoadmapForecast(
         expected_usd=expected,
@@ -105,6 +152,9 @@ def forecast_roadmap(
         items_costed=costed,
         items_unclassified=unclassified,
         by_class=dict(by_class),
+        low_usd=low,
+        high_usd=high,
+        items=items,
     )
 
 

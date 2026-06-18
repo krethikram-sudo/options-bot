@@ -70,6 +70,47 @@ def test_forecast_costs_open_items_and_flags_uncosted():
     assert fc.expected_usd > 0
 
 
+def test_forecast_per_item_intervals_and_pooled_band():
+    # History: 4 bugfixes with spread-out costs so the class has real variance.
+    work = [WorkItem(f"GH-{n}", "github", labels=["bug"], branch=f"fix/{n}", status="done")
+            for n in (50, 51, 52, 53)]
+    events = [
+        _ev("a", "claude-opus-4-8", branch="fix/50", session="s50", input_tokens=100_000),
+        _ev("b", "claude-opus-4-8", branch="fix/51", session="s51", input_tokens=200_000),
+        _ev("c", "claude-opus-4-8", branch="fix/52", session="s52", input_tokens=300_000),
+        _ev("d", "claude-opus-4-8", branch="fix/53", session="s53", input_tokens=400_000),
+    ]
+    res = attribute(events, work)
+    stats = class_stats(res)
+    # Six open bugfixes — enough that pooled sqrt(N) growth clearly beats the
+    # linear Σp90 growth, so the independence band is strictly tighter.
+    open_items = [WorkItem(f"GH-{n}", "github", labels=["bug"], status="open")
+                  for n in range(60, 66)]
+    fc = forecast_roadmap(open_items, stats)
+
+    assert fc.items_costed == 6
+    # Each item carries a p10..p90 band around its class mean.
+    assert len(fc.items) == 6
+    it = fc.items[0]
+    assert it.costable and it.low_usd <= it.expected_usd <= it.high_usd
+    # The variance-pooled aggregate band brackets the expected total...
+    assert fc.low_usd < fc.expected_usd < fc.high_usd
+    # ...stays nested inside the fully-correlated [Σp10, Σp90] envelope...
+    assert fc.high_usd <= fc.p90_usd
+    # ...and is strictly tighter than naively summing per-item p90s, because
+    # independent per-item errors partially cancel.
+    assert fc.high_usd < fc.p90_usd
+
+
+def test_forecast_uncostable_item_recorded():
+    work = [WorkItem("GH-70", "github", labels=["bug"], branch="fix/70", status="done")]
+    events = [_ev("a", "claude-opus-4-8", branch="fix/70", session="s", input_tokens=100_000)]
+    stats = class_stats(attribute(events, work))
+    fc = forecast_roadmap([WorkItem("GH-71", "github", labels=["chore"], status="open")], stats)
+    assert fc.items_costed == 0 and fc.items_unclassified == 1
+    assert fc.items[0].costable is False and fc.items[0].expected_usd == 0.0
+
+
 def test_anomaly_flags_outlier():
     work = [WorkItem(f"GH-{n}", "github", labels=["bug"], branch=f"fix/{n}", status="done")
             for n in (30, 31, 32, 33)]
@@ -127,3 +168,7 @@ def test_end_to_end_fixture_report():
     assert "GH-106" in out          # the anomaly ticket appears
     assert "needs validation" in out
     assert "validated" in out
+    # Forecast surfaces the realistic interval and the per-item bands.
+    assert "Likely range (p10–p90)" in out
+    assert "Top open items" in out
+    assert "p10–p90 range" in out
