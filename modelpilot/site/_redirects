@@ -8,9 +8,9 @@ https://modelpilot.pages.dev/* https://outlay-ai.com/:splat 301
 # Deprecated ModelPilot-era marketing pages → relevant Outlay sections
 /cut-claude-costs.html      /#optimize       301
 /where-we-save.html         /#optimize       301
-/compare-martian.html       /compare.html    301
-/compare-openrouter.html    /compare.html    301
-/estimator.html             /pilot.html      301
+/compare-martian.html       /compare         301
+/compare-openrouter.html    /compare         301
+/estimator.html             /pilot           301
 /playground.html            /                301
 # Docs consolidated into a single page in the new design system
 /docs/configuration.html    /docs/#configuration  301
