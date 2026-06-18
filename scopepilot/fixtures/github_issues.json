@@ -1,0 +1,17 @@
+{
+  "issues": [
+    {"number": 101, "title": "NullPointer in order parser", "state": "closed", "merged_at": "2026-06-02T10:00:00Z", "created_at": "2026-06-01T09:00:00Z", "labels": ["bug"], "head_ref": "fix/101-null-pointer", "team": "platform", "milestone": {"title": "Q3 stability"}, "additions": 30, "deletions": 10},
+    {"number": 102, "title": "Add OAuth login", "state": "closed", "merged_at": "2026-06-05T16:00:00Z", "created_at": "2026-06-02T09:00:00Z", "labels": ["feature"], "head_ref": "feature/102-add-auth", "team": "platform", "milestone": {"title": "Q3 auth"}, "additions": 600, "deletions": 50},
+    {"number": 103, "title": "Billing settings UI", "state": "open", "created_at": "2026-06-08T09:00:00Z", "labels": ["feature", "in progress"], "head_ref": "feat/103-billing-ui", "team": "growth", "milestone": {"title": "Q3 billing"}, "additions": 200, "deletions": 20},
+    {"number": 104, "title": "Extract pricing into a service", "state": "closed", "merged_at": "2026-06-06T12:00:00Z", "created_at": "2026-06-03T09:00:00Z", "labels": ["refactor", "tech-debt"], "head_ref": "refactor/104-extract-service", "team": "platform", "additions": 350, "deletions": 300},
+    {"number": 105, "title": "Coverage for retry path", "state": "closed", "merged_at": "2026-06-07T11:00:00Z", "created_at": "2026-06-06T09:00:00Z", "labels": ["test"], "head_ref": "test/105-coverage", "team": "growth", "additions": 250, "deletions": 5},
+    {"number": 106, "title": "Flaky retry under load", "state": "closed", "merged_at": "2026-06-09T18:00:00Z", "created_at": "2026-06-04T09:00:00Z", "labels": ["bug"], "head_ref": "fix/106-flaky-retry", "team": "growth", "milestone": {"title": "Q3 stability"}, "additions": 40, "deletions": 15},
+    {"number": 112, "title": "Typo in invoice email", "state": "closed", "merged_at": "2026-06-03T14:00:00Z", "created_at": "2026-06-03T09:00:00Z", "labels": ["bug"], "head_ref": "fix/112-typo", "team": "platform", "additions": 4, "deletions": 4},
+    {"number": 113, "title": "Off-by-one in pagination", "state": "closed", "merged_at": "2026-06-04T15:00:00Z", "created_at": "2026-06-04T09:00:00Z", "labels": ["bug"], "head_ref": "fix/113-off-by-one", "team": "growth", "additions": 12, "deletions": 8},
+
+    {"number": 107, "title": "Webhook signature mismatch", "state": "open", "created_at": "2026-06-10T09:00:00Z", "labels": ["bug"], "head_ref": "fix/107-webhook-sig", "team": "platform"},
+    {"number": 108, "title": "Usage export to CSV", "state": "open", "created_at": "2026-06-10T09:00:00Z", "labels": ["feature"], "head_ref": "feature/108-usage-export", "team": "growth"},
+    {"number": 109, "title": "Update API docs and bump deps", "state": "open", "created_at": "2026-06-10T09:00:00Z", "labels": ["chore", "docs"], "team": "platform"},
+    {"number": 110, "title": "SSO/SCIM provisioning", "state": "open", "created_at": "2026-06-10T09:00:00Z", "labels": ["feature"], "head_ref": "feature/110-scim", "team": "growth"}
+  ]
+}
