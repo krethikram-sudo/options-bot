@@ -29,24 +29,32 @@ from .report import render
 from .size import fit_size_models
 
 
-def build_report(events, work, window_days: int = 30) -> str:
+def build_report(events, work, window_days: int = 30, *, as_json: bool = False) -> str:
     """Assemble the full dogfood report from already-ingested events + work items.
 
     Pure (no network) so it's unit-testable: runs attribution, the size-aware
     forecast, the recommendations, and appends the measured calibration backtest
-    plus the make-or-break ticket-coverage line.
+    plus the make-or-break ticket-coverage line. With `as_json`, returns the same
+    content as a machine-readable JSON string instead of the text report.
     """
     result = attribute(events, work, engine=JoinEngine(work))
     stats = class_stats(result)
     size_models = fit_size_models(result, work)
     fc = forecast_roadmap([w for w in work if w.is_open], stats, size_models)
     recs = recommend(result, horizon_scale=30.0 / max(window_days, 1))
+    calibration = backtest(result, work)
+
+    if as_json:
+        from .serialize import to_json
+        return to_json(result, stats, fc, find_anomalies(result, stats), recs,
+                       calibration=calibration, policy=build_policy(recs),
+                       window_days=window_days)
 
     parts = [
         render(result, stats, fc, find_anomalies(result, stats), recs,
                policy=build_policy(recs), window_days=window_days),
         # Measured forecast accuracy on *your* history — class-mean vs size-conditioned.
-        "\n" + format_calibration(backtest(result, work)),
+        "\n" + format_calibration(calibration),
         f">>> TICKET COVERAGE: {result.ticket_coverage:.0%}   "
         f"(events={len(result.rows)}, tickets touched={len(result.rollups)}, "
         f"issues={len(work)})",
@@ -62,6 +70,8 @@ def main(argv: list[str] | None = None) -> int:
                    help="path to Claude Code transcripts (default ~/.claude/projects)")
     p.add_argument("--state", default="all", choices=["all", "open", "closed"])
     p.add_argument("--window-days", type=int, default=30)
+    p.add_argument("--json", action="store_true", dest="as_json",
+                   help="emit the report as machine-readable JSON")
     args = p.parse_args(argv)
 
     owner, _, repo = args.repo.partition("/")
@@ -70,12 +80,15 @@ def main(argv: list[str] | None = None) -> int:
 
     work = GitHubIssuesClient().pull(owner, repo, state=args.state)
     events = parse_claude_code_dir(args.claude_code)
+    # On JSON output keep stdout clean (parseable); send diagnostics to stderr.
+    import sys
+    diag = sys.stderr if args.as_json else sys.stdout
     if not events:
-        print(f"(no Claude Code transcripts found under {args.claude_code})")
+        print(f"(no Claude Code transcripts found under {args.claude_code})", file=diag)
     if not work:
-        print(f"(no issues returned for {args.repo} — check GITHUB_TOKEN/scope)")
+        print(f"(no issues returned for {args.repo} — check GITHUB_TOKEN/scope)", file=diag)
 
-    print(build_report(events, work, window_days=args.window_days))
+    print(build_report(events, work, window_days=args.window_days, as_json=args.as_json))
     return 0
 
 

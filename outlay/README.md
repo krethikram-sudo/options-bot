@@ -131,7 +131,15 @@ python -m outlay.cli                 # demo report over bundled fixtures
 python -m outlay.cli --window-days 9 # project observed spend to a monthly figure
 python -m outlay.cli --usage usage.json --issues issues.json   # real exports
 python -m outlay.cli --calibrate     # append a measured forecast-accuracy backtest
+python -m outlay.cli --json          # machine-readable output (coverage/forecast/accuracy/savings)
 ```
+
+The `--json` output is a single versioned object (`schema_version`) covering spend
++ coverage, per-ticket rollups, class distributions, the forecast with per-item
+bands, the calibration backtest (incl. the size-vs-class verdict), anomalies,
+recommendations, and projected savings — for a console dashboard, a CI gate, or
+piping a number somewhere. `python -m outlay.dogfood --json` emits the same schema
+for a real-repo run (diagnostics go to stderr so stdout stays parseable).
 
 ## What it proves (Phase 0 exit bar)
 
