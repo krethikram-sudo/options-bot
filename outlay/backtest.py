@@ -24,10 +24,12 @@ from __future__ import annotations
 import statistics
 from collections import defaultdict
 from dataclasses import dataclass, field
+from typing import Optional
 
 from .attribute import AttributionResult, TicketRollup
 from .forecast import _percentile
-from .models import TaskClass
+from .models import TaskClass, WorkItem
+from .size import size_feature
 
 
 @dataclass
@@ -41,6 +43,29 @@ class ClassCalibration:
 
 
 @dataclass
+class SizeComparison:
+    """Apples-to-apples LOO of size-conditioned vs class-mean estimates, on the
+    subset of tickets that carry a size signal and share identical training folds."""
+
+    n: int
+    mdape_class: float   # class-mean baseline MdAPE on these tickets
+    mdape_size: float    # size-conditioned MdAPE on the same tickets
+    mape_class: float
+    mape_size: float
+
+    @property
+    def improves(self) -> bool:
+        return self.n > 0 and self.mdape_size < self.mdape_class
+
+    @property
+    def error_reduction(self) -> float:
+        """Fractional MdAPE cut from conditioning on size (negative = it hurt)."""
+        if self.mdape_class <= 0:
+            return 0.0
+        return (self.mdape_class - self.mdape_size) / self.mdape_class
+
+
+@dataclass
 class CalibrationReport:
     n_evaluated: int
     n_skipped: int      # tickets whose class had < min_history → not predictable
@@ -48,6 +73,7 @@ class CalibrationReport:
     overall_mdape: float
     overall_within_p90: float
     by_class: dict[TaskClass, ClassCalibration] = field(default_factory=dict)
+    size: Optional[SizeComparison] = None  # set when work items (size signals) supplied
 
     @property
     def coverage(self) -> float:
@@ -61,13 +87,22 @@ class CalibrationReport:
         return max(0.0, 1.0 - self.overall_mdape)
 
 
-def backtest(result: AttributionResult, *, min_history: int = 2) -> CalibrationReport:
+def backtest(
+    result: AttributionResult,
+    work_items: Optional[list[WorkItem]] = None,
+    *,
+    min_history: int = 2,
+) -> CalibrationReport:
     """Leave-one-out calibration of the class-mean forecast over realized spend.
 
     Only costed (cost > 0), classified (non-UNKNOWN) tickets are evaluated — those
     are the ones the forecast would actually estimate. A class needs at least
     `min_history` tickets to leave one out and still have something to predict
     from; tickets in thinner classes are reported as skipped, not guessed.
+
+    When `work_items` are supplied, also runs an apples-to-apples comparison of
+    size-conditioned vs class-mean estimates (see `_size_comparison`) so the
+    "does size help?" question is answered with a measured number, not asserted.
     """
     by_class: dict[TaskClass, list[TicketRollup]] = defaultdict(list)
     for ru in result.rollups.values():
@@ -107,8 +142,10 @@ def backtest(result: AttributionResult, *, min_history: int = 2) -> CalibrationR
         all_ape += ape
         all_hits += hits
 
+    size_cmp = _size_comparison(result, work_items) if work_items else None
+
     if not all_ape:
-        return CalibrationReport(0, n_skipped, 0.0, 0.0, 0.0, {})
+        return CalibrationReport(0, n_skipped, 0.0, 0.0, 0.0, {}, size=size_cmp)
 
     return CalibrationReport(
         n_evaluated=len(all_ape),
@@ -117,6 +154,63 @@ def backtest(result: AttributionResult, *, min_history: int = 2) -> CalibrationR
         overall_mdape=statistics.median(all_ape),
         overall_within_p90=statistics.fmean(all_hits),
         by_class=per_class,
+        size=size_cmp,
+    )
+
+
+def _size_comparison(
+    result: AttributionResult,
+    work_items: list[WorkItem],
+    *,
+    min_fit: int = 3,
+) -> Optional[SizeComparison]:
+    """Leave-one-out: for each ticket with a size signal, predict it two ways from
+    the *same* held-out training fold — the class mean, and a size ratio fit on
+    the others — and compare errors. Holding the training set fixed isolates the
+    effect of conditioning on size. Needs ≥ `min_fit` sized tickets in a class."""
+    wi_by_id = {w.ticket_id: w for w in work_items}
+    # class -> majority feature kind -> list[(size, cost)]
+    by_class: dict[TaskClass, dict[str, list[tuple[float, float]]]] = defaultdict(
+        lambda: defaultdict(list)
+    )
+    for ru in result.rollups.values():
+        if ru.cost_usd <= 0 or ru.task_class == TaskClass.UNKNOWN:
+            continue
+        wi = wi_by_id.get(ru.ticket_id)
+        if wi is None:
+            continue
+        sf = size_feature(wi)
+        if sf is None:
+            continue
+        by_class[ru.task_class][sf[0]].append((sf[1], ru.cost_usd))
+
+    ape_class: list[float] = []
+    ape_size: list[float] = []
+    for _tc, by_kind in by_class.items():
+        kind = max(by_kind, key=lambda k: len(by_kind[k]))
+        pairs = by_kind[kind]
+        if len(pairs) < min_fit:
+            continue
+        for i, (size_i, actual) in enumerate(pairs):
+            others = pairs[:i] + pairs[i + 1:]
+            costs = [c for _, c in others]
+            size_sum = sum(s for s, _ in others)
+            cost_sum = sum(costs)
+            if size_i <= 0 or size_sum <= 0 or cost_sum <= 0:
+                continue
+            class_pred = statistics.fmean(costs)
+            size_pred = size_i * (cost_sum / size_sum)
+            ape_class.append(abs(class_pred - actual) / actual)
+            ape_size.append(abs(size_pred - actual) / actual)
+
+    if not ape_class:
+        return None
+    return SizeComparison(
+        n=len(ape_class),
+        mdape_class=statistics.median(ape_class),
+        mdape_size=statistics.median(ape_size),
+        mape_class=statistics.fmean(ape_class),
+        mape_size=statistics.fmean(ape_size),
     )
 
 
@@ -148,4 +242,19 @@ def format_calibration(report: CalibrationReport) -> str:
             f"MAPE {c.mape:>4.0%}  bias {abs(c.bias):>4.0%} {direction}  "
             f"p90-held {c.within_p90:>4.0%}"
         )
+
+    s = report.size
+    if s is not None:
+        lines.append("")
+        lines.append(f"  Size conditioning (on {s.n} tickets with a size signal):")
+        verdict = (
+            f"cuts median error {s.error_reduction:.0%} → use it"
+            if s.improves else
+            "no improvement on this data → stay on the class mean"
+        )
+        lines.append(
+            f"    class-mean MdAPE {s.mdape_class:.0%} vs size-conditioned "
+            f"{s.mdape_size:.0%} — {verdict}"
+        )
+
     return "\n".join(lines) + "\n"

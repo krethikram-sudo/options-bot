@@ -161,6 +161,15 @@ has no history, and one `validated` + several `needs_validation` routing recs.
   interval — independent per-item over/under-shoots partially cancel, so the
   realistic band is tighter than naively summing per-item p90s, while staying
   nested inside that fully-correlated `[Σp10, Σp90]` worst case.
+- **Size conditioning is opt-in and earns its place.** Within a class, cost
+  often scales with size (`est_points` at plan time, or diff size retrospectively).
+  `size.py` fits a per-class cost-per-unit ratio and the forecast uses it for any
+  item carrying that signal — a tighter estimate than the flat class mean. But we
+  don't assert it helps: the backtest runs an apples-to-apples leave-one-out of
+  size-conditioned vs class-mean on the *same* tickets and reports the error
+  reduction, so the model is used only where the data shows it works. On the
+  bundled fixtures it cuts bugfix median error 346%→116%; items with no size
+  signal fall back to the class mean.
 - **The forecast's accuracy is measured, not asserted.** `backtest.py` runs a
   leave-one-out cross-validation over realized spend — predict each closed
   ticket from the *others* in its class, compare to actual — and reports MdAPE,
@@ -193,7 +202,8 @@ has no history, and one `validated` + several `needs_validation` routing recs.
 | `classify.py` | task-class heuristics (labels → branch verbs → diff size) |
 | `attribute.py` | orchestrates join+cost; per-ticket rollups + coverage |
 | `forecast.py` | per-class distributions, roadmap forecast, anomaly flags |
-| `backtest.py` | **calibration** — leave-one-out backtest of forecast accuracy on realized spend |
+| `backtest.py` | **calibration** — leave-one-out backtest of forecast accuracy + size-vs-class proof |
+| `size.py` | **size conditioning** — per-class cost-per-point/diff ratio model |
 | `recommend.py` | per-class routing recs, scored net of rework |
 | `policy.py` | **enforcement** — gated routing policy for the ModelPilot proxy |
 | `shadow.py` | **live loop** — gateway observer, shadow ledger, cost graduation |
