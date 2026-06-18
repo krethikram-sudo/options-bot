@@ -130,6 +130,7 @@ export SCOPEPILOT_PLANNER=github SCOPEPILOT_SHADOW_LOG=shadow.jsonl
 python -m outlay.cli                 # demo report over bundled fixtures
 python -m outlay.cli --window-days 9 # project observed spend to a monthly figure
 python -m outlay.cli --usage usage.json --issues issues.json   # real exports
+python -m outlay.cli --calibrate     # append a measured forecast-accuracy backtest
 ```
 
 ## What it proves (Phase 0 exit bar)
@@ -156,6 +157,14 @@ has no history, and one `validated` + several `needs_validation` routing recs.
 - **Forecasting is per task-class, never per ticket.** A single unseen ticket
   is as unpredictable to cost as it is to estimate in hours; the distribution
   over a *class* is stable and useful.
+- **The forecast's accuracy is measured, not asserted.** `backtest.py` runs a
+  leave-one-out cross-validation over realized spend — predict each closed
+  ticket from the *others* in its class, compare to actual — and reports MdAPE,
+  MAPE, signed bias, and how often the p90 band held. `--calibrate` appends it
+  to the report. The number is honest by construction: thin classes are skipped
+  (counted, not guessed), and the demo fixtures deliberately score poorly
+  because six synthetic tickets are not a calibrated distribution. A real
+  accuracy figure comes from a design partner's own history.
 - **You never enforce a downgrade you haven't proven.** `validated` recs
   (cheaper tier seen in history) compile to `ENFORCE`; `needs_validation` recs
   run in `SHADOW` — logged, traffic unchanged — until their own data graduates
@@ -180,6 +189,7 @@ has no history, and one `validated` + several `needs_validation` routing recs.
 | `classify.py` | task-class heuristics (labels → branch verbs → diff size) |
 | `attribute.py` | orchestrates join+cost; per-ticket rollups + coverage |
 | `forecast.py` | per-class distributions, roadmap forecast, anomaly flags |
+| `backtest.py` | **calibration** — leave-one-out backtest of forecast accuracy on realized spend |
 | `recommend.py` | per-class routing recs, scored net of rework |
 | `policy.py` | **enforcement** — gated routing policy for the ModelPilot proxy |
 | `shadow.py` | **live loop** — gateway observer, shadow ledger, cost graduation |

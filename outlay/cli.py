@@ -29,6 +29,7 @@ import json
 from pathlib import Path
 
 from .attribute import attribute
+from .backtest import backtest, format_calibration
 from .budget import parse_budgets, track_budgets
 from .forecast import class_stats, find_anomalies, forecast_roadmap
 from .ingest import (
@@ -88,6 +89,7 @@ def run(
     claude_code_user: str | None = None,
     emit_policy: Path | None = None,
     budgets_path: Path | None = None,
+    calibrate: bool = False,
 ) -> str:
     events = gather_events(
         usage=usage_path,
@@ -132,8 +134,13 @@ def run(
         budgets = track_budgets(result, work_items,
                                 parse_budgets(_load_json(budgets_path)))
 
-    return render(result, stats, fc, anomalies, recs, policy=policy,
-                  budgets=budgets, window_days=window_days)
+    out = render(result, stats, fc, anomalies, recs, policy=policy,
+                 budgets=budgets, window_days=window_days)
+
+    if calibrate:
+        out += "\n" + format_calibration(backtest(result))
+
+    return out
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -157,6 +164,8 @@ def main(argv: list[str] | None = None) -> int:
                    help="budgets JSON (scope_type/scope_id/limit_usd/period_*) for burndown")
     p.add_argument("--window-days", type=int, default=None,
                    help="observed window length, used to project a monthly figure")
+    p.add_argument("--calibrate", action="store_true",
+                   help="append a leave-one-out backtest of forecast accuracy on realized spend")
     args = p.parse_args(argv)
 
     # Default to the bundled demo when no usage source is given.
@@ -172,6 +181,7 @@ def main(argv: list[str] | None = None) -> int:
         claude_code_user=args.claude_code_user,
         emit_policy=args.emit_policy,
         budgets_path=args.budgets,
+        calibrate=args.calibrate,
     ))
     return 0
 
