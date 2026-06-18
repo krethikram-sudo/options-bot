@@ -4,7 +4,7 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
-## 0.37.0 — 2026-06-18
+## 0.38.0 — 2026-06-18
 
 - **Optional, product-agnostic per-request observer seam.** The gateway can now
   call an external observer after each request is ledgered, set via
@@ -14,8 +14,19 @@ retunes, and fixes that are safe to take.
   branch/ticket headers, which are never forwarded upstream) and is wrapped so it
   can never alter or block the request path; load/runtime errors fail open and
   disable it. Off by default — no behavior change unless the env var is set. This
-  is a generic extension point (used by the ScopePilot shadow-logger, but the
+  is a generic extension point (used by the Outlay shadow-logger, but the
   gateway takes no dependency on any consumer).
+
+## 0.37.0 — 2026-06-17
+
+- **Long-document summarization now floors at Sonnet (safer).** A "summarize…"
+  instruction over a large source used to be read as `summarization_short` and could
+  route to Haiku — a smoke test caught a 22-page contract summary doing exactly that,
+  at a confidence above the autopilot gate. The classifier now promotes
+  `summarization_short -> summarization_long` when the actual context exceeds ~6k
+  tokens (the work scales with the source, not the instruction), so long/dense
+  summaries floor at Sonnet. Short summaries are unchanged (still Haiku). Golden set
+  +3 long-summary prompts; false-downgrade stays 0% at the recommended gate.
 
 ## 0.36.0 — 2026-06-16
 

@@ -42,9 +42,12 @@ def test_continuation_changes_routing_economics():
     # conversation is expected to keep going.
     big_turn = {"role": "user", "content": [
         {"type": "text", "text": "x" * 400_000, "cache_control": {"type": "ephemeral"}}]}
+    # Classification stays a cheap-tier task even behind a huge cache (a *summary*
+    # of this much context now correctly floors higher), so the turns-economics
+    # flip (stay at 1 turn, switch at 40) is still demonstrable.
     body = {"model": "claude-opus-4-8", "max_tokens": 512,
             "messages": [big_turn, {"role": "assistant", "content": "ok"},
-                         {"role": "user", "content": "Summarize the key points of the above."}]}
+                         {"role": "user", "content": "Classify the sentiment of the message above as positive or negative."}]}
     short = recommend(body, expected_remaining_turns=1)
     long = recommend(body, expected_remaining_turns=40)
     assert short.action == "stay"

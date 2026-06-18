@@ -100,6 +100,27 @@ def test_entitlement_trial_paid_suspended(env):
     assert store.entitlement("dep_unknown")["reason"] == "unknown deployment"
 
 
+def test_guidance_is_trial_only_and_never_bills(env):
+    _, store = env
+    a = store.create_account("g@y.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    # Trial default is guidance, which never applies switches (so never realizes savings/bills).
+    assert store.get_settings(a["id"])["mode"] == "guidance"
+    assert not store.entitlement(dep)["apply"]
+    # Converting to paid auto-flips to autopilot, and routing then applies (the billable mode).
+    store.convert_to_paid(a["id"])
+    assert store.get_settings(a["id"])["mode"] == "autopilot"
+    ent = store.entitlement(dep)
+    assert ent["apply"] and ent["mode"] == "autopilot"
+    # A paid customer cannot switch back to guidance (it's trial-only).
+    try:
+        store.update_settings(a["id"], mode="guidance")
+        assert False, "guidance should be rejected for a paid plan"
+    except store.StoreError:
+        pass
+    assert store.get_settings(a["id"])["mode"] == "autopilot"
+
+
 def test_autopilot_ramp_in_entitlement(env):
     _, store = env
     a = store.create_account("ramp@y.com", "password123")
@@ -1126,3 +1147,27 @@ def test_proposal_audit_trail(env, client):
     assert h["decided_by"] == admin["id"] and h["decided_by_email"] == "boss3@b.com"
     # the audit trail renders on the detail page
     assert "Tuning history" in client.get(f"/admin/accounts/{cust['id']}").text
+
+
+def test_activation_funnel_and_feedback(env, client):
+    _, store = env
+    _signup(client)  # creates + authenticates a@b.com
+    a = store.get_account_by_email("a@b.com")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    fn = store.activation_funnel()
+    assert fn["signed_up"] == 1 and fn["set_up"] == 0 and fn["routed"] == 0 and fn["proven"] == 0
+    store.create_api_key(a["id"], dep, "k")
+    store.record_meter(dep, requests=10, routed=6, baseline_cost=1.0, actual_cost=0.6)
+    fn = store.activation_funnel()
+    assert fn["set_up"] == 1 and fn["routed"] == 1 and fn["proven"] == 1 and fn["paid"] == 0
+    store.convert_to_paid(a["id"])
+    assert store.activation_funnel()["paid"] == 1
+    # dashboard feedback via HTTP (authed client)
+    r = client.post("/app/feedback", data={"rating": "up", "comment": "love it"})
+    assert r.status_code == 303
+    assert any(x["kind"] == "dashboard" and x["rating"] == "up" and x["comment"] == "love it"
+               for x in store.list_feedback())
+    # cancel reason survives account deletion (feedback isn't cascade-deleted)
+    store.record_feedback(a["id"], "cancel", comment="too pricey")
+    store.delete_account(a["id"])
+    assert any(x["kind"] == "cancel" and x["comment"] == "too pricey" for x in store.list_feedback())

@@ -12,7 +12,20 @@ Live URLs:
 > **▶️ RESUME HERE next session:** Launch blocker #1 (deploy) DONE — console + brain deployed,
 > Fly billing card added (2026-06-16, per founder). Remaining launch path: **(2) founder track —
 > form entity → live Stripe → $99 price**, **(3) security — rotate leaked key, SMTP, admin password**,
-> **(4) counsel review**. Everything is committed/pushed.
+> **(4) counsel review**. Everything is committed/pushed. **Two quick ops steps now queued (see Security):
+> `fly deploy` the console (to ship the 2026-06-18 guidance-billing + funnel + feedback changes) and flip
+> on Cloudflare Web Analytics.**
+>
+> **PROGRESS 2026-06-17:** Nav decluttered. Deep competitor research added
+> (`MARKET_STUDY_2026.md`, `TOKEN_OPTIMIZATION_THESIS.md`, + proof/billing audit): durable
+> angle = the independent **proven-savings referee** with savings-based billing; control-arm
+> measurement is the only uncontested piece (savings-share billing itself is copyable from cloud
+> FinOps — ProsperOps/Zesty/nOps). Shipped router **v0.37.0** (long-document summarization now
+> floors Sonnet — fixes a smoke-test-found false-downgrade; CI green). Ran a full **smoke test,
+> offline + LIVE**: signup→billing lifecycle all pass; **live measured ~40.7% savings, 4/5
+> switches judged non-inferior**, and the control-arm flagged one Haiku extraction as degraded
+> (the measurement working as intended). Vendor Anthropic credits **refilled**; golden-set
+> judge-upgrade batch submitted (81 `synthetic_heuristic` → `ai_judge`, in progress).
 >
 > **STRATEGY (2026-06-16, after deep competitor + market research):** ICP re-cut to the
 > **"spend-maturity moment"** (Claude-heavy teams with a real, growing, finance-visible bill and no one
@@ -24,6 +37,44 @@ Live URLs:
 ---
 
 ## ✅ Done
+
+### 2026-06-18
+- [x] **Guidance is now trial-only; paid = autopilot (billable) only.** Verified guidance/free-tier can
+      never bill (three guards: guidance never applies switches → 0 realized savings; `report_usage`
+      refuses non-paid plans; refuses savings≤0). Enforced: `update_settings` rejects guidance when paid,
+      `convert_to_paid` flips to autopilot, `entitlement` treats paid as autopilot, UI hides guidance for
+      paid. +test.
+- [x] **Legal docs revised (3 passes) + Google-Doc'd for counsel.** Delaware governing law; §10 indemnity =
+      no representation about Anthropic's indemnity; hosted-gateway carve-outs ("processed in memory… not
+      persisted") across all six docs; liability-cap split flagged; AUP Usage-Policy suspension right.
+      Code audit confirmed "not persisted" holds (no prompt/body logging in the request path). Pending:
+      founder (subprocessor vendor names, entity/signatures) + attorney (SCC Module 2 annexes, CA
+      enforceability). Package: `LEGAL_REVIEW_PACKAGE.md`.
+- [x] **Removed proprietary "Routes to" / "Typically routed" columns** from the public savings tables
+      (landing + where-we-save); kept Work type + Cut vs Opus. Full detail stays internal.
+- [x] **Launch-post drafts** — `LAUNCH_POSTS.md` (Show HN / r/LocalLLaMA / r/SaaS), honest + value-first,
+      lead with the free no-signup estimator.
+- [x] **Golden-set judge upgrade (safe partial merge).** Batch (243) succeeded; AI judge wanted to
+      downgrade 24 protected/hard prompts to Haiku/Sonnet on single-output grades → **held those for human
+      review** (`needs_human_review` + `ai_judge_suggested` in `labels.jsonl`), upgraded 57 rows to
+      `ai_judge`. Gate still 0% false-downgrade (cov 60.7%, acc 77.3%). *The 24 held rows are the worklist
+      for the human-label pass below.*
+- [x] **Product metrics + feedback (console).** `activation_funnel()` (signed-up → set-up → routed →
+      proven savings → paid) on the admin overview; dashboard thumbs/comment widget + `/app/feedback`;
+      cancel-reason captured on delete (feedback NOT cascade-deleted → churn reasons survive); admin
+      "Recent feedback" panel. +test; console suite 79 passed. **Needs `fly deploy` to go live.**
+- [x] **Privacy-clean marketing analytics — disclosed.** Privacy Policy now covers cookieless, no-PII
+      analytics. **Enable via Cloudflare Pages → Web Analytics toggle** (zero code/token). ⬇️ see ops.
+
+### 2026-06-17
+- [x] **Nav UX decluttered** — top nav trimmed 9→6 links, link-text no longer wraps (static + Astro).
+- [x] **Deep competitor + market research** — `MARKET_STUDY_2026.md` (neutral landscape; 5 acquisitions
+      in 12mo; routing/caching commoditizing), `TOKEN_OPTIMIZATION_THESIS.md` (academic review across 5
+      technique families; edge ≠ a token trick), + a competitor proof/billing audit. Net: durable angle is
+      the **independent proven-savings referee** + savings-based billing; control-arm measurement is the
+      only uncontested piece (savings-share billing is copyable from cloud FinOps).
+- [x] **Router v0.37.0** — long-document summarization now floors at Sonnet (context-size promotion);
+      +3 golden long-summary rows; full suite 210 passed; `modelpilot-ci` green.
 - [x] Console deployed to Fly (`modelpilot-console-prod`), admin login working.
 - [x] Brain deployed to Fly (`modelpilot-brain-prod`), healthy, wired to console via `CONSOLE_URL`.
 - [x] Customer landing CTAs repointed to the live console (free `.fly.dev` route).
@@ -62,12 +113,11 @@ Live URLs:
       Naturalistic (non-telegraphed) phrasings keep it an honest test, not teaching-to-the-test; the one
       issue it surfaced was an over-conservative label on our side, corrected. CALIBRATION v0.3;
       `label_source` provenance added.
-  - [ ] **Upgrade new-prompt labels from `synthetic_heuristic` → `ai_judge`** via the canonical
-        pipeline (`python -m modelpilot.goldenset.build submit/collect/judge/label` on the 78 new
-        prompts). ATTEMPTED 2026-06-16: batch generation succeeded (234 outputs) but the **judge step
-        failed — vendor Anthropic account out of credits**. Corpus kept its honest `synthetic_heuristic`
-        labels (147 rows: 69 seed-judge + 78 synthetic; still 0% false-downgrade). Re-run after topping
-        up credits — it's just `judge` + `label`.
+  - [x] **Upgrade new-prompt labels `synthetic_heuristic` → `ai_judge`** — DONE 2026-06-18 (safe partial
+        merge). Batch of 243 succeeded; the AI judge wanted to downgrade 24 protected/hard prompts to
+        Haiku/Sonnet on single-output grades, so those were HELD on conservative labels and flagged
+        `needs_human_review` + `ai_judge_suggested`; 57 rows upgraded to `ai_judge`. Gate still 0%
+        false-downgrade (150 rows; cov 60.7%, acc 77.3%). **The 24 held rows feed the human-label pass ↓.**
   - [ ] **Human-label the open-ended slice** (the real trust gap): run `scripts/build_label_worksheet.py`
         → fill the 53 open-ended-category rows → `--apply` (sets `label_source: human`). Then the
         open-ended floors can be trusted/lowered. Keep growing toward 300–1000 via this + consented
@@ -101,7 +151,12 @@ Live URLs:
       bar, always-on console all now live. (Delete the stuck "bypass-paid" test account if still present.)
 - [ ] **Confirm the leaked Anthropic API key is rotated** — if the smoke test used a fresh key and
       the old one was deleted in the Anthropic console, this is done; otherwise rotate it.
-- [ ] (Optional) Re-run the smoke test with realistic traffic to see a meaningful savings $ figure.
+- [x] **Smoke test (offline + LIVE) PASSED — 2026-06-17.** Offline: real router decisions on a
+      22-prompt ICP basket + full console lifecycle (signup→entitlement→metering→convert) all green;
+      golden eval 0% false-downgrade. **Live (real Claude): ~40.7% MEASURED savings on a real sample,
+      4/5 switches judged non-inferior by Opus; control-arm flagged one Haiku extraction as degraded.**
+      Harnesses: `scripts/smoke_icp.py`, `smoke_console.py`, `smoke_live.py`. Next: a larger real
+      sample (or a customer's traffic) for a statistically solid number.
 - [ ] **Stripe LIVE mode — GATED on the entity.** Set up the *live* Stripe account under the
       **company** (entity + EIN + business bank account), NOT personal/SSN — commingling weakens the
       liability veil and complicates taxes. So: form entity → EIN → business bank → activate Stripe
@@ -116,6 +171,16 @@ Live URLs:
       only bills post-conversion (no trial-period over-billing). Tests cover all three.
 - [ ] **Managed pricing still TBD** (research suggests ~$499/mo + 15%). Decide, then set
       `STRIPE_MANAGED_PRICE_ID` and replace "coming soon" on the Managed card.
+- [ ] **Guardrail "compare" mode against trial overspend + keep its compute on the customer's box.**
+      `modelpilot compare [--judge]` runs each prompt **~2–3× on the customer's own Anthropic key**
+      (baseline arm + routed arm + judge ≈ a few $ per 20 prompts), so unbounded use during the free
+      trial runs up *their* bill and sours the trial.
+      (a) **Restrict during trial:** cap prompts-per-run + runs-per-day (or require explicit confirmation
+          of the estimated spend before it runs), surfaced honestly in the CLI/console.
+      (b) **Keep compute + cost on the customer's system with THEIR key:** `compare.api_run_fn` already
+          uses the customer key and the judge pins to the real API via env `ANTHROPIC_API_KEY` — confirm/
+          enforce that env is always the customer's key on their own box, never our hosted infra/vendor
+          key (consistent with BYOK + prompts-never-leave-the-box).
 
 ## 🏛️ Legal / corporate
 - [ ] **Form the entity — DECISION: Delaware C-corp via Stripe Atlas** ("might raise later" → C-corp
@@ -134,7 +199,7 @@ Live URLs:
 - [ ] Tech E&O + cyber-liability insurance before real production traffic.
 
 ## ⚙️ Vendor ops
-- [ ] **Top up the vendor Anthropic API account** (out of credits as of 2026-06-16). Blocks our
+- [x] **Vendor Anthropic API account topped up** (refilled 2026-06-17). Was blocking our
       *internal* model use — golden-set judge labeling, smoke tests, any vendor-side eval. Does NOT
       block customer routing (that's BYOK — customers use their own key). Tie this to rotating the
       leaked key + moving billing to the business card once the entity exists.
@@ -149,6 +214,11 @@ Live URLs:
       alerts to actually send (without it they're only logged in dev). See `console/FLY_DEPLOY.md`.
       Optional: `TWILIO_*` for SMS 2FA.
 - [ ] Change any seeded/default admin password; confirm strong admin credentials.
+- [ ] **`fly deploy` the console** to ship the 2026-06-18 changes (guidance-trial-only billing policy,
+      activation funnel + feedback widget + cancel-reason, hidden-guidance-for-paid UI). They're committed
+      but not live until deployed.
+- [ ] **Enable Cloudflare Web Analytics** on the Pages project (Dashboard → Web Analytics → add the site).
+      Cookieless, no token in repo; the Privacy Policy disclosure is already in place.
 - [ ] (Optional) Custom domain `app.modelpilot.app` via `fly certs add` — currently on free `.fly.dev`.
 
 ## 🧩 Product (optional / later)

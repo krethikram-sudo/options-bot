@@ -517,7 +517,7 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
     {_opportunity_card(cycle)}
 
     <h2>Routing mode</h2>
-    <div class=card>{mode_toggle(mode)}
+    <div class=card>{mode_toggle(mode, plan.get("plan") == "paid")}
       <p class="small muted" style="margin-top:10px">Guidance recommends switches without changing traffic;
       autopilot applies them automatically. Change takes effect on your gateway within seconds.</p>
       {_autopilot_ramp(int(settings.get('autopilot_pct', 100)), mode)}
@@ -532,6 +532,7 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
 
     <h2>Savings by task type <span class="small muted">— where the money comes from</span></h2>
     {_category_savings(cats)}
+    {_feedback_widget()}
 
     <div class=card style="margin-top:16px"><div class=label>Your connection</div>
       <p class="small muted">Point your gateway at ModelPilot with this deployment id:</p>
@@ -742,16 +743,20 @@ def _compare_bars(baseline: float, actual: float) -> str:
       <div class=bar><span style="width:{aw:.0f}%"></span></div></div>"""
 
 
-def mode_toggle(current: str) -> str:
+def mode_toggle(current: str, paid: bool = False) -> str:
     opts = [
-        ("guidance", "Guidance", "Recommend cheaper models; you stay in control."),
+        ("guidance", "Guidance", "Recommend cheaper models; you stay in control. (Free trial only.)"),
         ("autopilot", "Autopilot", "Auto-route to the cheapest good-enough model."),
     ]
+    if paid:  # paid plans are autopilot-only — guidance is a trial-only "try it first" mode
+        opts = [o for o in opts if o[0] != "guidance"]
     btns = "".join(
         f'<button name=mode value="{v}" class="{"on" if v==current else ""}">'
         f'<b>{_e(lbl)}</b><span class=small>{_e(desc)}</span></button>'
         for v, lbl, desc in opts)
-    return f'<form method=post action="/app/mode"><div class=modes>{btns}</div></form>'
+    note = ('<p class="small muted" style="margin-top:8px">Guidance is available during the free trial; '
+            'paid plans run on autopilot.</p>') if paid else ""
+    return f'<form method=post action="/app/mode"><div class=modes>{btns}</div></form>{note}'
 
 
 # --------------------------------------------------------------------------- #
@@ -773,7 +778,7 @@ def settings_page(account: dict, settings: dict, saved: bool = False,
     <h1>Settings</h1>{saved_note}
     <div class=card>
       <h2 style="margin-top:0">Routing mode</h2>
-      {mode_toggle(settings['mode'])}
+      {mode_toggle(settings['mode'], store.get_plan(account["id"]).get("plan") == "paid")}
       {_autopilot_ramp(int(settings.get('autopilot_pct', 100)), settings['mode'])}
     </div>
     <div class=card style="margin-top:16px">
@@ -828,6 +833,8 @@ def _danger_zone(account: dict, delete_error: bool = False) -> str:
             onsubmit="return confirm('Permanently delete your account and all data? This cannot be undone.')">
         <div class=field><label>Type your email (<b>{email}</b>) to confirm</label>
           <input name=confirm_email type=email autocomplete=off placeholder="{email}" required></div>
+        <div class=field><label>What made you leave? <span class="small muted">(optional, helps us a lot)</span></label>
+          <textarea name=reason rows=2 placeholder="e.g. savings weren't enough / too hard to set up / quality concern"></textarea></div>
         <button class=btn style="background:#b00020;border-color:#b00020">Delete my account</button>
       </form>
     </div>"""
@@ -1280,7 +1287,53 @@ def _tier_options(plan: dict, stripe_on: bool) -> str:
 # Admin
 # --------------------------------------------------------------------------- #
 
-def admin_overview(account: dict, rev: dict, rows: list[dict], pending: int = 0) -> str:
+def _feedback_widget() -> str:
+    return ('<div class=card style="margin-top:16px"><div class=label>How\'s ModelPilot working for you?</div>'
+            '<form method=post action="/app/feedback" class=row '
+            'style="gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">'
+            '<button name=rating value=up class="btn sm sec" title="Going well">&#128077;</button>'
+            '<button name=rating value=down class="btn sm sec" title="Not great">&#128078;</button>'
+            '<input name=comment placeholder="Anything we should know? (optional)" '
+            'style="flex:1;min-width:220px;padding:8px 10px;border:1px solid var(--line);border-radius:8px">'
+            '<button class="btn sm">Send</button></form>'
+            '<p class="small muted" style="margin-top:6px">Goes straight to the founder — just your note, '
+            'never any prompt content.</p></div>')
+
+
+def _funnel_panel(funnel: dict | None) -> str:
+    if not funnel:
+        return ""
+    su = funnel["signed_up"] or 1
+    stages = [("Signed up", funnel["signed_up"]), ("Set up (key)", funnel["set_up"]),
+              ("Routed traffic", funnel["routed"]), ("Proven savings", funnel["proven"]),
+              ("Paid", funnel["paid"])]
+    cells = "".join(
+        f'<div style="text-align:center;min-width:96px"><div class=stat>{n}</div>'
+        f'<div class="small muted">{_e(lbl)}<br>{round(100*n/su)}%</div></div>'
+        for lbl, n in stages)
+    return ('<h2>Activation funnel</h2><div class=card>'
+            f'<div class=row style="gap:24px;flex-wrap:wrap;align-items:flex-end">{cells}</div>'
+            '<p class="small muted" style="margin-top:10px">% of signups. The gap into '
+            '<b>Proven savings</b> is the activation (aha) moment; the gap into <b>Paid</b> is the '
+            'willingness-to-pay signal — the question our whole model rests on.</p></div>')
+
+
+def _feedback_panel(feedback: list[dict] | None) -> str:
+    if not feedback:
+        return '<h2>Recent feedback</h2><div class=card><p class=muted>No feedback yet.</p></div>'
+    trs = ""
+    for r in feedback:
+        rate = {"up": "&#128077;", "down": "&#128078;"}.get(r.get("rating") or "", "")
+        trs += (f'<tr><td class="small muted">{_fmt_date(r["ts"])}</td>'
+                f'<td>{_e(r.get("email") or "—")}</td><td class="small">{_e(r["kind"])}</td>'
+                f'<td>{rate}</td><td>{_e(r.get("comment") or "")}</td></tr>')
+    return ('<h2>Recent feedback</h2><div class=card style="padding:0"><table>'
+            '<thead><tr><th>When</th><th>Account</th><th>Kind</th><th>Rating</th><th>Comment</th></tr></thead>'
+            f'<tbody>{trs}</tbody></table></div>')
+
+
+def admin_overview(account: dict, rev: dict, rows: list[dict], pending: int = 0,
+                   funnel: dict | None = None, feedback: list[dict] | None = None) -> str:
     trs = ""
     for r in rows:
         badge = (f'<span class="badge {r["plan_badge"]}">{_e(r["plan_label"])}</span>')
@@ -1318,12 +1371,14 @@ def admin_overview(account: dict, rev: dict, rows: list[dict], pending: int = 0)
         <div class="small muted">{rev['n_paid']} paid · {rev['n_trial']} trial · {rev['n_suspended']} suspended</div></div>
       {pending_card}
     </div>
+    {_funnel_panel(funnel)}
     <h2>Customers</h2>
     <div class=card style="padding:0">
       <table><thead><tr><th>Account</th><th>Plan</th><th>Lifetime savings</th>
         <th>Savings (cycle)</th><th>Cut (cycle)</th><th>Revenue (cycle)</th><th>Joined</th></tr></thead>
         <tbody>{trs or '<tr><td colspan=7 class="muted">No accounts yet.</td></tr>'}</tbody></table>
     </div>
+    {_feedback_panel(feedback)}
     {metric_toggle_assets()}"""
     return page("Admin", body, account, "/admin")
 

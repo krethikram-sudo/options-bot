@@ -36,18 +36,18 @@
 
   <h2>By work type</h2>
   <table class="sv">
-    <thead><tr><th>Work type</th><th>Routes to</th><th class="c">Typically routed</th>
+    <thead><tr><th>Work type</th>
       <th class="c">Cut vs Opus</th><th class="c">Cut vs Sonnet</th></tr></thead>
     <tbody>
-      <tr class="strong"><td>Short Q&amp;A / lookups</td><td>Haiku</td><td class="c">100%</td><td class="c cut">~80%</td><td class="c cut">~67%</td></tr>
-      <tr class="strong"><td>Simple code / SQL</td><td>Haiku</td><td class="c">100%</td><td class="c cut">~80%</td><td class="c cut">~67%</td></tr>
-      <tr class="strong"><td>Rewrite / reformat</td><td>Haiku</td><td class="c">91%</td><td class="c cut">~73%</td><td class="c cut">~61%</td></tr>
-      <tr class="strong"><td>Data / field extraction</td><td>Haiku</td><td class="c">89%</td><td class="c cut">~71%</td><td class="c cut">~59%</td></tr>
-      <tr class="strong"><td>Translation</td><td>Haiku</td><td class="c">87%</td><td class="c cut">~70%</td><td class="c cut">~58%</td></tr>
-      <tr class="strong"><td>Classification / triage</td><td>Haiku</td><td class="c">85%</td><td class="c cut">~68%</td><td class="c cut">~57%</td></tr>
-      <tr class="strong"><td>Summaries (short)</td><td>Haiku</td><td class="c">75%</td><td class="c cut">~60%</td><td class="c cut">~50%</td></tr>
-      <tr class="mod"><td>Summaries (long / dense)</td><td>Sonnet</td><td class="c">66%</td><td class="c cut">~26%</td><td class="c">—</td></tr>
-      <tr class="mod"><td>Conversation / advice</td><td>Sonnet</td><td class="c">40%</td><td class="c cut">~16%</td><td class="c">—</td></tr>
+      <tr class="strong"><td>Short Q&amp;A / lookups</td><td class="c cut">~80%</td><td class="c cut">~67%</td></tr>
+      <tr class="strong"><td>Simple code / SQL</td><td class="c cut">~80%</td><td class="c cut">~67%</td></tr>
+      <tr class="strong"><td>Rewrite / reformat</td><td class="c cut">~73%</td><td class="c cut">~61%</td></tr>
+      <tr class="strong"><td>Data / field extraction</td><td class="c cut">~71%</td><td class="c cut">~59%</td></tr>
+      <tr class="strong"><td>Translation</td><td class="c cut">~70%</td><td class="c cut">~58%</td></tr>
+      <tr class="strong"><td>Classification / triage</td><td class="c cut">~68%</td><td class="c cut">~57%</td></tr>
+      <tr class="strong"><td>Summaries (short)</td><td class="c cut">~60%</td><td class="c cut">~50%</td></tr>
+      <tr class="mod"><td>Summaries (long / dense)</td><td class="c cut">~26%</td><td class="c">—</td></tr>
+      <tr class="mod"><td>Conversation / advice</td><td class="c cut">~16%</td><td class="c">—</td></tr>
     </tbody>
   </table>
   <p class="legend">"Cut vs Sonnet" is lower because a Sonnet-baseline workload has less headroom — and the Sonnet-target rows show "—" (you're already at that tier).</p>

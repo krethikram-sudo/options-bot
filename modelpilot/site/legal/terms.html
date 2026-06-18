@@ -58,12 +58,18 @@
   <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, WE WILL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL,
     CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR LOST PROFITS/DATA. OUR TOTAL LIABILITY FOR ANY CLAIM IS
     LIMITED TO THE FEES YOU PAID US IN THE THREE (3) MONTHS BEFORE THE EVENT GIVING RISE TO THE
-    CLAIM. You are responsible for your own Anthropic/model-provider charges.</p>
+    CLAIM. You are responsible for your own Anthropic/model-provider charges. (This three-month cap
+    applies to self-serve customers on these Terms; customers under a negotiated
+    <a href="/legal/msa.html">MSA</a> have a separate, twelve-month cap — the difference is intentional.)</p>
 
   <h2 id="8">8. Data</h2>
   <p>Our handling of data is described in the <a href="/legal/privacy.html">Privacy Policy</a> and, for
-    personal data processed on your behalf, the <a href="/legal/dpa.html">DPA</a>. Prompt content,
-    model outputs, and your API key are not transmitted to us by the proxy.</p>
+    personal data processed on your behalf, the <a href="/legal/dpa.html">DPA</a>. In the default
+    self-hosted / thin-client deployment, prompt content, model outputs, and your API key are not
+    transmitted to us by the proxy. If you opt into a <b>hosted-gateway</b> deployment, your API key
+    and request content are processed in memory solely to route the request (read by our classifier to
+    select a model) and are not persisted — handled as your processor under the DPA; we do not store
+    prompt content or model outputs.</p>
 
   <h2 id="9">9. Term &amp; termination</h2>
   <p>You may stop using and cancel at any time. We may suspend or terminate for breach (including AUP
@@ -88,16 +94,19 @@
       loop</b> and an <b>AI-involvement disclosure</b> to your end users. Any consumer-facing chatbot
       or interactive agent must disclose to users that they are interacting with AI. You are
       responsible for meeting these requirements.</li>
-    <li><b>Optimization may affect Anthropic's IP indemnity.</b> Anthropic's copyright/IP indemnity to
-      you can be narrowed where outputs result from modifications to, or combination of, the Services
-      with technology not provided by Anthropic. The Service's optimization features &mdash; model
-      substitution, response caching, semantic caching, and fallbacks &mdash; may fall within those
-      exclusions. If full indemnity coverage matters for your use case, you can disable caching and
-      transforms in the Service, and you should confirm the scope of your coverage with Anthropic.
-      This is a disclosure, not legal advice.</li>
+    <li><b>Anthropic's IP indemnity is governed solely by your agreement with Anthropic.</b> Your
+      agreement with Anthropic &mdash; not ModelPilot &mdash; determines the scope of any copyright or
+      IP indemnity Anthropic provides, including any exclusions (for example, exclusions that can apply
+      where outputs result from modifications to, or combination of, the Services with technology not
+      provided by Anthropic). <b>ModelPilot makes no representation or warranty as to whether any
+      feature of the Service does or does not affect that indemnity.</b> Because the Service offers
+      optional features (e.g., model substitution, response caching, semantic caching, fallbacks) that
+      you can enable or disable, you are responsible for determining &mdash; and confirming directly
+      with Anthropic &mdash; whether your configuration affects your coverage. This paragraph is a
+      disclosure for your awareness; it is not legal advice and is not a statement about your coverage.</li>
     <li><b>Anthropic's own data handling is outside our control.</b> Our privacy commitments describe
-      only what <em>ModelPilot</em> does (the proxy does not transmit your prompts, outputs, or API
-      key to us). Anthropic's handling of your data is governed by your Anthropic agreement &mdash;
+      only what <em>ModelPilot</em> does (in the default self-hosted deployment, the proxy does not
+      transmit your prompts, outputs, or API key to us). Anthropic's handling of your data is governed by your Anthropic agreement &mdash;
       for example, Anthropic may retain inputs and outputs for safety review on certain models even
       where zero-data-retention would otherwise apply, and Anthropic's Development Partner / data
       opt-in setting permits training on your content if you enable it. Do not enable that setting
@@ -105,9 +114,11 @@
   </ul>
 
   <h2 id="11">11. Changes; governing law</h2>
-  <p>We may update the Service and these terms; material changes will be communicated. Governing law
-    and venue: <em>[to be set with counsel]</em>. If any provision is unenforceable, the rest remain
-    in effect.</p>
+  <p>We may update the Service and these terms; material changes will be communicated. These terms are
+    governed by the laws of the <b>State of Delaware</b>, without regard to its conflict-of-laws rules,
+    and the parties submit to the exclusive jurisdiction of the state and federal courts located in
+    Delaware (final venue language to be confirmed in counsel review). If any provision is
+    unenforceable, the rest remain in effect.</p>
 
   <p class="foot" style="margin-top:36px">Questions: <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a>
     · <a href="/legal/privacy.html">Privacy</a> · <a href="/legal/aup.html">Acceptable Use</a> ·

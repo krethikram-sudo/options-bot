@@ -111,6 +111,10 @@ _SESSION_SIGNAL_WINDOW = 30_000  # chars of recent history scanned for signals
 # these categories near-perfect on haiku. They keep their own tier even when
 # the session is hard ("leverage existing contents" savings).
 _MECHANICAL = frozenset({"extraction", "rewrite_format", "translation", "classification"})
+# A "summarize…" instruction reads as simple, but summarizing a long/dense source
+# is not cheap-tier-safe — the work scales with the source. Above this context size
+# we treat it as summarization_long (floor sonnet), not summarization_short.
+_LONG_SUMMARY_TOKENS = 6_000
 
 
 @dataclass
@@ -296,9 +300,18 @@ def _classify_standalone(features: dict, floor_tier=None, floors: dict | None = 
     simple_hits = [c for c, p in _SIMPLE_PATTERNS.items() if re.search(p, prompt)]
     if simple_hits:
         category = simple_hits[0]
+        # Promote short->long summarization by the actual source size: a summary of a
+        # long/dense document needs more than the cheapest tier even though the
+        # instruction looks simple. (The work scales with the source, not the prompt.)
+        long_summary = (category == "summarization_short"
+                        and features["approx_context_tokens"] >= _LONG_SUMMARY_TOKENS)
+        if long_summary:
+            category = "summarization_long"
         tier = base_tier(category)
         confidence = 0.85
         rationale = f"simple-task signal ({category})"
+        if long_summary:
+            rationale += "; long/dense source -> summarization_long (floor sonnet)"
         # Size and shape penalties: big context, tools, or heavy code lower
         # our certainty that the floor tier suffices.
         if features["approx_context_tokens"] > 50_000:

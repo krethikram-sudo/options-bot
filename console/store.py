@@ -205,6 +205,14 @@ CREATE TABLE IF NOT EXISTS otp_codes (
     expires_at REAL NOT NULL,
     attempts INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER,            -- intentionally NOT FK-cascaded: cancel reasons survive deletion
+    ts REAL NOT NULL,
+    kind TEXT NOT NULL,            -- 'dashboard' | 'cancel' | 'estimator'
+    rating TEXT,                   -- 'up' | 'down' | NULL
+    comment TEXT
+);
 """
 
 WEBHOOK_EVENTS = ("budget.warn", "budget.over", "proposal.pending", "account.suspended")
@@ -525,6 +533,58 @@ def delete_account(account_id: int, path: str | None = None) -> None:
 
 
 # --------------------------------------------------------------------------- #
+# Feedback + activation funnel (first-party, privacy-clean product metrics)
+# --------------------------------------------------------------------------- #
+
+def record_feedback(account_id: int | None, kind: str, rating: str | None = None,
+                    comment: str | None = None, path: str | None = None,
+                    now: float | None = None) -> None:
+    """Store a lightweight feedback signal (dashboard thumbs / cancel reason).
+    No prompt content — just a rating + free-text the user chose to write."""
+    now = now or time.time()
+    conn = connect(path)
+    try:
+        conn.execute("INSERT INTO feedback(account_id, ts, kind, rating, comment) VALUES(?,?,?,?,?)",
+                     (account_id, now, kind, rating, (comment or "").strip()[:2000]))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def list_feedback(limit: int = 50, path: str | None = None) -> list[dict]:
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT f.id, f.account_id, f.ts, f.kind, f.rating, f.comment, a.email"
+            " FROM feedback f LEFT JOIN accounts a ON a.id=f.account_id"
+            " ORDER BY f.ts DESC LIMIT ?", (int(limit),)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def activation_funnel(path: str | None = None) -> dict:
+    """Counts of accounts at each activation stage — the 'are customers reaching
+    value' funnel. signed_up -> set_up (made a key) -> routed (sent traffic) ->
+    proven (got measured savings) -> paid (converted)."""
+    conn = connect(path)
+    try:
+        one = lambda q: conn.execute(q).fetchone()[0]
+        return {
+            "signed_up": one("SELECT COUNT(*) FROM accounts"),
+            "set_up": one("SELECT COUNT(DISTINCT account_id) FROM api_keys"),
+            "routed": one("SELECT COUNT(DISTINCT d.account_id) FROM meter m"
+                          " JOIN deployments d ON d.deployment_id=m.deployment_id WHERE m.routed>0"),
+            "proven": one("SELECT COUNT(DISTINCT d.account_id) FROM meter m"
+                          " JOIN deployments d ON d.deployment_id=m.deployment_id"
+                          " WHERE m.realized_savings>0"),
+            "paid": one("SELECT COUNT(*) FROM plans WHERE plan='paid'"),
+        }
+    finally:
+        conn.close()
+
+
+# --------------------------------------------------------------------------- #
 # Team members (additive: the account owner stays on `accounts`; invited
 # teammates live here with a per-account role). Members never get vendor-admin.
 # --------------------------------------------------------------------------- #
@@ -711,6 +771,8 @@ def update_settings(account_id: int, *, mode: str | None = None,
                     path: str | None = None) -> dict:
     if mode is not None and mode not in MODES:
         raise StoreError(f"mode must be one of {MODES}")
+    if mode == "guidance" and get_plan(account_id, path).get("plan") == "paid":
+        raise StoreError("guidance mode is only available during the free trial; paid plans use autopilot")
     if risk is not None and risk not in RISK_LEVELS:
         raise StoreError(f"risk must be one of {RISK_LEVELS}")
     cur = get_settings(account_id, path)
@@ -905,6 +967,8 @@ def convert_to_paid(account_id: int, *, stripe_customer_id: str | None = None,
             " stripe_item_id=COALESCE(?, stripe_item_id)"
             " WHERE account_id=?",
             (now, stripe_customer_id, stripe_subscription_id, stripe_item_id, account_id))
+        # Paid plans are autopilot-only (guidance is a trial-only "try it first" mode).
+        conn.execute("UPDATE settings SET mode='autopilot' WHERE account_id=?", (account_id,))
         conn.commit()
     finally:
         conn.close()
@@ -955,6 +1019,7 @@ def entitlement(deployment_id: str, path: str | None = None, now: float | None =
     if plan.get("plan") == "paid":
         entitled = True
         reason = "paid"
+        mode = "autopilot"  # paid plans are autopilot-only; guidance is trial-only
     else:
         ts = trial_status(acct["id"], path, now)
         entitled = ts["active"]
