@@ -166,6 +166,7 @@ has no history, and one `validated` + several `needs_validation` routing recs.
 | `canary.py` | **quality gate** — non-inferiority trial + two-gate graduation |
 | `budget.py` | **burndown** — actual vs scope-based budget, pace-projected |
 | `dogfood.py` | `python -m scopepilot.dogfood` — one-command real-data run |
+| `audit.py` | `python -m scopepilot.audit` — join-convention rate across public repos |
 | `report.py` / `cli.py` | the VP report + `--emit-policy` / `--budgets` |
 
 ## Budgets & guardrails (the original value prop)
