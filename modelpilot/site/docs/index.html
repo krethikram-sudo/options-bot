@@ -1,99 +1,209 @@
 <!doctype html>
 <html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quickstart — Outlay docs</title>
-<meta name="description" content="Get Outlay routing your Claude traffic in five minutes: install the proxy, configure it, point your SDK at it, and watch the savings.">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docs — Outlay</title>
+<meta name="description" content="Outlay docs: how attribution, forecasting, and the optional optimization engine work — plus a quickstart for the routing proxy, configuration, SDK snippets, and the privacy architecture.">
 <link rel="canonical" href="https://modelpilot.pages.dev/docs/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="stylesheet" href="/docs/docs.css">
-</head><body>
-<div class="top"><div class="row">
-  <a class="brand" href="/">Out<span class="dot">lay</span></a>
-  <span class="tag">Docs</span><span class="sp"></span>
-  <a class="lnk" href="/">Home</a>
-  <a class="lnk" href="https://modelpilot-console-prod.fly.dev/login">Sign in</a>
-  <a class="cta" href="https://modelpilot-console-prod.fly.dev/signup">Start free trial</a>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<meta property="og:title" content="Docs — Outlay">
+<meta property="og:description" content="Quickstart, configuration, SDKs, and the privacy architecture for Outlay.">
+<link rel="stylesheet" href="/outlay.css">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Out<span class="dot">lay</span></a>
+  <div class="navlinks">
+    <a href="/#how">How it works</a>
+    <a href="/#owners">For eng &amp; finance</a>
+    <a href="/#optimize">Optimization engine</a>
+    <a href="/#compare">Compare</a>
+    <a href="/pilot.html">Pilot</a>
+  </div>
+  <div class="navsp"></div>
+  <div class="navcta">
+    <a class="signin" href="https://modelpilot-console-prod.fly.dev/login">Sign in</a>
+    <a class="btn primary" href="mailto:krethikram@gmail.com?subject=Outlay%20design-partner%20pilot">Book a pilot</a>
+  </div>
+</div></nav>
+
+<div class="page"><div class="wrap">
+  <div class="eyebrow">Documentation</div>
+  <h1>Outlay docs.</h1>
+  <p class="lede">Outlay maps your AI spend to your roadmap and, optionally, routes each request down to
+    the cheapest model that's provably good enough. The attribution platform onboards through a
+    <a href="/pilot.html">design-partner pilot</a>; the pages below cover the optional routing proxy you
+    run yourself — quickstart, configuration, SDKs, and the privacy architecture.</p>
 </div></div>
 
-<div class="layout">
-  <aside class="side">
-    <div class="grp">Get started</div>
-    <a class="on" href="/docs/">Quickstart</a>
-    <a href="/docs/configuration.html">Configuration</a>
-    <a href="/docs/sdks.html">SDKs</a>
-    <div class="grp">Reference</div>
-    <a href="/docs/architecture.html">Architecture &amp; privacy</a>
-    <a href="/security.html">Security &amp; trust</a>
-    <a href="https://modelpilot-console-prod.fly.dev/app">Open dashboard ↗</a>
-  </aside>
+<section style="padding-top:18px"><div class="wrap"><div class="prose">
 
-  <main>
-    <h1>Quickstart</h1>
-    <p class="lead">Route your Claude traffic through Outlay in about five minutes. Your API key
-      and prompts never leave your machine.</p>
+  <div class="docnav">
+    <a href="#quickstart">Quickstart</a>
+    <a href="#configuration">Configuration</a>
+    <a href="#sdks">SDKs</a>
+    <a href="#architecture">Architecture &amp; privacy</a>
+  </div>
 
-    <div class="note">You'll need a Outlay account (free 7-day trial, no card) and your Anthropic
-      API key. <a href="https://modelpilot-console-prod.fly.dev/signup">Create an account →</a></div>
+  <h2 id="quickstart">Quickstart</h2>
+  <p>Route your Claude traffic through Outlay's optimization engine in about five minutes. Your API key
+    and prompts never leave your machine — the proxy runs locally and classifies on your box.</p>
+  <div class="note">You'll need a deployment from your pilot (a <code>deployment id</code> and an Outlay
+    API key) plus your own Anthropic API key. Not in a pilot yet?
+    <a href="/pilot.html">Book one →</a></div>
 
-    <ol class="steps-n">
-      <li><h3 style="margin-top:0">Get your deployment id and an API key</h3>
-        After signing up, open <a href="https://modelpilot-console-prod.fly.dev/app/connect">Connect</a> in the
-        console. Copy your <code>deployment id</code> and click <b>Create API key</b> (it's shown once).</li>
+  <ol class="steps-n">
+    <li><h3>Get your deployment id and an API key</h3>
+      Open <a href="https://modelpilot-console-prod.fly.dev/app/connect">Connect</a> in the console. Copy
+      your <code>deployment id</code> and click <b>Create API key</b> (shown once).</li>
 
-      <li><h3 style="margin-top:0">Install the proxy</h3>
-        <pre><span class="c"># Python 3.10+</span>
+    <li><h3>Install the proxy</h3>
+      <pre><span class="c"># Python 3.10+</span>
 pip install modelpilot-client</pre></li>
 
-      <li><h3 style="margin-top:0">Configure &amp; run it</h3>
-        <pre><span class="b">export</span> ANTHROPIC_API_KEY=sk-ant-…        <span class="c"># stays on your machine</span>
+    <li><h3>Configure &amp; run it</h3>
+      <pre><span class="b">export</span> ANTHROPIC_API_KEY=sk-ant-…        <span class="c"># stays on your machine</span>
 <span class="b">export</span> MODELPILOT_API_KEY=mp_live_…       <span class="c"># from the Connect page</span>
+<span class="b">export</span> MODELPILOT_DEPLOYMENT_ID=dep_…
 <span class="b">export</span> MODELPILOT_BRAIN_URL=https://modelpilot-brain-prod.fly.dev
 <span class="b">export</span> MODELPILOT_CONSOLE_URL=https://modelpilot-console-prod.fly.dev
-<span class="b">export</span> MODELPILOT_DEPLOYMENT_ID=dep_…
 
 modelpilot-client            <span class="c"># listens on http://127.0.0.1:8400</span></pre>
-        <p class="small muted">See the full list on the <a href="/docs/configuration.html">Configuration</a> page.</p></li>
+      <p>Full env-var list under <a href="#configuration">Configuration</a>.</p></li>
 
-      <li><h3 style="margin-top:0">Point your app at it</h3>
-        The proxy speaks the Claude Messages API — just change the base URL. Nothing else in your code changes.
-        <pre><span class="c"># Python</span>
+    <li><h3>Point your app at it</h3>
+      The proxy speaks the Claude Messages API — just change the base URL. Nothing else in your code changes.
+      <pre><span class="c"># Python</span>
 from anthropic import Anthropic
 client = Anthropic(base_url=<span class="y">"http://127.0.0.1:8400"</span>)   <span class="c"># your key, local</span></pre>
-        <p class="small muted">Or one line with our helper — see <a href="/docs/sdks.html">SDKs</a>.</p></li>
+      <p>One-line variants for TypeScript and cURL are under <a href="#sdks">SDKs</a>.</p></li>
 
-      <li><h3 style="margin-top:0">Watch the savings</h3>
-        Send some traffic, then open your <a href="https://modelpilot-console-prod.fly.dev/app">dashboard</a> — realized
-        savings by task type, baseline-vs-actual, and a non-inferiority proof rate, recomputed from real tokens.</li>
-    </ol>
+    <li><h3>Watch the savings</h3>
+      Send some traffic, then open your <a href="https://modelpilot-console-prod.fly.dev/app">dashboard</a>
+      — realized savings by task type, baseline-vs-actual, and a non-inferiority proof rate, recomputed
+      from real tokens.</li>
+  </ol>
 
-    <h2 id="modes">Choosing a routing mode</h2>
-    <p>Set your mode in the console (it takes effect server-side within seconds, no redeploy):</p>
-    <table>
-      <thead><tr><th>Mode</th><th>What it does</th><th>When to use</th></tr></thead>
-      <tbody>
-        <tr><td><b>guidance</b></td><td>Recommends a cheaper model per request; traffic is unchanged. The default.</td><td>To review routing before trusting it.</td></tr>
-        <tr><td><b>autopilot</b></td><td>Auto-routes to the cheapest good-enough model.</td><td>Once the numbers convince you. This is where you save.</td></tr>
-      </tbody>
-    </table>
+  <h3 id="modes">Choosing a routing mode</h3>
+  <p>Set your mode in the console (it takes effect server-side within seconds, no redeploy):</p>
+  <table>
+    <thead><tr><th>Mode</th><th>What it does</th><th>When to use</th></tr></thead>
+    <tbody>
+      <tr><td><b>shadow</b></td><td>Scores a cheaper candidate per request but leaves traffic untouched; builds the cost + quality evidence.</td><td>First — to see the routing before trusting it.</td></tr>
+      <tr><td><b>advise</b></td><td>Recommends a cheaper model per request; traffic still flows to your chosen model.</td><td>To review concrete suggestions.</td></tr>
+      <tr><td><b>autopilot</b></td><td>Auto-routes to the cheapest model proven non-inferior on your own work.</td><td>Once the numbers convince you. This is where you save.</td></tr>
+    </tbody>
+  </table>
+  <div class="note warn"><b>It always fails open.</b> If Outlay is ever unreachable, your request is
+    forwarded straight to the Claude API, unrouted. We can degrade your savings, never your uptime.</div>
 
-    <div class="note warn"><b>It always fails open.</b> If Outlay is ever unreachable, your request is
-      forwarded straight to the Claude API, unrouted. We can degrade your savings, never your uptime.</div>
+  <h2 id="configuration">Configuration</h2>
+  <p>The proxy is configured entirely through environment variables. Only the first three are required.</p>
+  <table>
+    <thead><tr><th>Variable</th><th>Required</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>ANTHROPIC_API_KEY</code></td><td>yes</td><td>Your Anthropic key. Stays on your machine; used to call Anthropic directly.</td></tr>
+      <tr><td><code>MODELPILOT_API_KEY</code></td><td>yes</td><td>Your Outlay key from the Connect page (<code>mp_live_…</code>).</td></tr>
+      <tr><td><code>MODELPILOT_DEPLOYMENT_ID</code></td><td>yes</td><td>The deployment the requests are billed/attributed to (<code>dep_…</code>).</td></tr>
+      <tr><td><code>MODELPILOT_BRAIN_URL</code></td><td>no</td><td>Routing-decision endpoint. Defaults to the hosted brain.</td></tr>
+      <tr><td><code>MODELPILOT_CONSOLE_URL</code></td><td>no</td><td>Control-plane endpoint for entitlement + telemetry. Defaults to the hosted console.</td></tr>
+      <tr><td><code>MODELPILOT_BIND</code></td><td>no</td><td>Local listen address. Defaults to <code>127.0.0.1:8400</code>.</td></tr>
+      <tr><td><code>MODELPILOT_MODE</code></td><td>no</td><td>Override the console mode (<code>shadow</code> / <code>advise</code> / <code>autopilot</code>) locally.</td></tr>
+      <tr><td><code>MODELPILOT_REQUEST_OBSERVER</code></td><td>no</td><td><code>module:factory</code> hook that receives per-request metadata — the seam Outlay's attribution uses. Stays out of the data path.</td></tr>
+    </tbody>
+  </table>
+  <p>To attribute a request to a ticket, pass a work tag on the call — an <code>x-modelpilot-work-ticket</code>
+    header (e.g. <code>PROJ-123</code>) on the request, or the <code>SCOPEPILOT_TICKET</code> env for the whole
+    process. Outlay also recovers the ticket from the branch, a PR→issue link, or a commit trailer when no
+    explicit tag is present.</p>
 
-    <h2 id="compliance">One compliance note before you go live</h2>
-    <p>You're using your own Anthropic key, so <b>Anthropic's Usage Policy still applies to your
-      traffic</b> when it routes through Outlay. Two things to check for your use case:</p>
-    <ul>
-      <li><b>High-risk domains</b> — legal, healthcare, insurance, finance, employment or housing,
-        academic testing, and journalism — need a qualified <b>human reviewing outputs</b> and an
-        <b>"AI was involved" disclosure</b> to your end users.</li>
-      <li><b>Any user-facing chatbot or agent</b> should tell users they're talking to AI.</li>
-    </ul>
-    <p class="small muted">These are Anthropic's requirements, not Outlay's — we just don't want
-      routing to put you offside. Full detail and a couple of other disclosures (IP-indemnity scope,
-      Anthropic's own data handling) are in <a href="/legal/terms.html#10">Terms §10</a>.</p>
+  <h2 id="sdks">SDKs</h2>
+  <p>The proxy is a drop-in Messages API endpoint, so every Anthropic SDK works by pointing
+    <code>base_url</code> at it. No new client library to learn.</p>
 
-    <div class="pager"><span></span><a href="/docs/configuration.html">Configuration →</a></div>
-    <p class="foot">© 2026 Outlay · <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a></p>
-  </main>
+  <h3>Python</h3>
+  <pre><span class="c"># pip install anthropic</span>
+from anthropic import Anthropic
+client = Anthropic(base_url=<span class="y">"http://127.0.0.1:8400"</span>)
+
+msg = client.messages.create(
+    model=<span class="y">"claude-sonnet-4-6"</span>,
+    max_tokens=<span class="y">512</span>,
+    messages=[{<span class="y">"role"</span>:<span class="y">"user"</span>,<span class="y">"content"</span>:<span class="y">"Summarize this ticket."</span>}],
+    extra_headers={<span class="y">"x-modelpilot-work-ticket"</span>:<span class="y">"PROJ-123"</span>},  <span class="c"># optional</span>
+)</pre>
+
+  <h3>TypeScript</h3>
+  <pre><span class="c">// npm i @anthropic-ai/sdk</span>
+import Anthropic from <span class="y">"@anthropic-ai/sdk"</span>;
+const client = new Anthropic({ baseURL: <span class="y">"http://127.0.0.1:8400"</span> });
+
+await client.messages.create({
+  model: <span class="y">"claude-sonnet-4-6"</span>,
+  max_tokens: <span class="y">512</span>,
+  messages: [{ role: <span class="y">"user"</span>, content: <span class="y">"Summarize this ticket."</span> }],
+}, { headers: { <span class="y">"x-modelpilot-work-ticket"</span>: <span class="y">"PROJ-123"</span> } });</pre>
+
+  <h3>cURL</h3>
+  <pre>curl http://127.0.0.1:8400/v1/messages \
+  -H <span class="y">"content-type: application/json"</span> \
+  -H <span class="y">"x-modelpilot-work-ticket: PROJ-123"</span> \
+  -d <span class="y">'{"model":"claude-sonnet-4-6","max_tokens":512,
+       "messages":[{"role":"user","content":"Summarize this ticket."}]}'</span></pre>
+  <p class="muted" style="font-size:14px">Your Anthropic key is read from the proxy's environment, so it
+    never appears in client code.</p>
+
+  <h2 id="architecture">Architecture &amp; privacy</h2>
+  <p>Outlay splits cleanly so your sensitive data physically can't reach us. The piece in your
+    environment is a <b>thin, inspectable client</b> that does local classification and tagging and
+    carries no proprietary routing logic. The decision engine and the attribution model run on our side
+    and only ever see metadata.</p>
+
+  <div class="flow">
+    <span class="node">Your app<small>prompt + API key</small></span>
+    <span class="arrow">→</span>
+    <span class="node">Local proxy<small>classifies on your box</small></span>
+    <span class="arrow">→</span>
+    <span class="node">Outlay<small>category + token counts + ticket id</small></span>
+    <span class="arrow">→</span>
+    <span class="node">Anthropic<small>your key, your prompt</small></span>
+  </div>
+
+  <ul>
+    <li><span class="ck">✓</span><div><b>Prompts and outputs never leave your environment.</b> Classification and routing run locally; we never receive request or response bodies.</div></li>
+    <li><span class="ck">✓</span><div><b>Your API key stays on your machine</b> and calls Anthropic directly.</div></li>
+    <li><span class="ck">✓</span><div><b>We see metadata only</b> — a task category, numeric features (token counts, flags), the ticket id, and per-request cost/savings figures.</div></li>
+    <li><span class="ck">✓</span><div><b>The engine fails open.</b> If our service is unreachable, traffic passes straight through to Anthropic, unrouted. A downgrade only happens after it's proven non-inferior on your own work (shadow → quality canary).</div></li>
+  </ul>
+  <div class="note">Our ingestion endpoints reject any payload containing prompt text, outputs, or
+    secret-looking keys (HTTP 422). The boundary is enforced, not just promised — full detail on
+    <a href="/security.html">Security &amp; privacy</a>.</div>
+
+  <h3>One compliance note before you go live</h3>
+  <p>You're using your own Anthropic key, so Anthropic's Usage Policy still applies to your traffic when
+    it routes through Outlay. High-risk domains (legal, healthcare, insurance, finance, employment or
+    housing, academic testing, journalism) need a qualified human reviewing outputs and an "AI was
+    involved" disclosure; any user-facing chatbot or agent should tell users they're talking to AI. These
+    are Anthropic's requirements — full detail in <a href="/legal/terms.html#10">Terms §10</a>.</p>
+
+  <p class="backlink" style="margin-top:30px"><a href="/">← Back to Outlay</a> · <a href="/pilot.html">Book a pilot</a> · <a href="/security.html">Security</a></p>
+</div></div></section>
+
+<footer><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Out<span class="dot">lay</span></a>
+  <span class="sep"></span>
+  <a href="/pilot.html">Book a pilot</a>
+  <a href="/#owners">For eng &amp; finance</a>
+  <a href="/#compare">Compare</a>
+  <a href="/security.html">Security</a>
+  <a href="/legal/privacy.html">Privacy</a>
+  <a href="mailto:krethikram@gmail.com">Contact</a>
 </div>
+<div class="wrap" style="margin-top:14px;font-size:12.5px;color:#6c7790">© 2026 Outlay · Budget by scope of work, stay within guardrails, capture the savings automatically.</div>
+</footer>
+
 </body></html>

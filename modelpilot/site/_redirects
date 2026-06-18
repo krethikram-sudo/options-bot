@@ -1,0 +1,11 @@
+# Deprecated ModelPilot-era marketing pages → relevant Outlay sections
+/cut-claude-costs.html      /#optimize       301
+/where-we-save.html         /#optimize       301
+/compare-martian.html       /compare.html    301
+/compare-openrouter.html    /compare.html    301
+/estimator.html             /pilot.html      301
+/playground.html            /                301
+# Docs consolidated into a single page in the new design system
+/docs/configuration.html    /docs/#configuration  301
+/docs/architecture.html     /docs/#architecture   301
+/docs/sdks.html             /docs/#sdks           301
