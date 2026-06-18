@@ -56,6 +56,25 @@ an escalation would cost more than one capable run).
 - **Stdlib-only.** No new dependencies; the live pullers use `urllib` behind a
   transport seam so they're testable offline with no credentials.
 
+## Attribution paths (in priority order)
+
+Real-data validation (`VALIDATION.md`) showed passive branch inference can't be
+the foundation — it returns 0% in detached-HEAD/remote sessions and varies
+0–100% by team hygiene. So attribution resolves the ticket from the most
+reliable signal available (`tag.py` → `resolve_ticket`):
+
+1. **Explicit tag** — the launcher/wrapper/CI/proxy declares the ticket
+   (`SCOPEPILOT_TICKET`, `tagged()`, or `--` arg). `call` fidelity. *Primary.*
+2. **Git branch** — parsed to a key when it isn't `HEAD`. `branch` fidelity.
+3. **CI PR-branch env** — `GITHUB_HEAD_REF` recovers the real branch in
+   detached-HEAD CI/web runs (the failure mode that scored us 0%).
+4. **Commit-message trailer** — `Ticket: PROJ-123` / `Closes #123`.
+5. **Jira/Linear join** — for teams whose tracker isn't GitHub Issues.
+
+The branch/PR signals are the zero-config bonus that delights disciplined teams
+(60–90% coverage in the audit); explicit tagging is what makes it reliable for
+everyone else.
+
 ## Ingestion sources & fidelity ceiling
 
 Different sources can reach different join fidelity — surfaced honestly so a
@@ -156,7 +175,8 @@ has no history, and one `validated` + several `needs_validation` routing recs.
 | `ingest/cursor.py` | live Cursor Admin API puller + events parser |
 | `ingest/claude_code.py` | Claude Code `.jsonl` transcript parser (branch-level) |
 | `ingest/github_issues.py` `ingest/jira.py` `ingest/linear.py` | planner JSON → `WorkItem`s |
-| `join.py` | **the IP** — branch→ticket join + identity graph + fidelity tiers |
+| `join.py` | branch→ticket join + identity graph + fidelity tiers |
+| `tag.py` | **explicit task-tagging** — the primary, reliable attribution path |
 | `classify.py` | task-class heuristics (labels → branch verbs → diff size) |
 | `attribute.py` | orchestrates join+cost; per-ticket rollups + coverage |
 | `forecast.py` | per-class distributions, roadmap forecast, anomaly flags |
@@ -240,3 +260,7 @@ prioritized by what design partners actually use.
    with pace projection (`--budgets`) — the founding value prop, end-to-end.
 10. **CI — ScopePilot has its own gate.** `.github/workflows/scopepilot-ci.yml`
     runs the test suite on every change to `scopepilot/` (the primary product).
+11. **Attribution rebalanced (evidence-backed).** Real-data validation showed
+    passive branch inference is unreliable as a foundation; `tag.py` makes
+    **explicit task-tagging the primary path**, branch/PR the zero-config
+    fallback. See `VALIDATION.md` for the full trail.
