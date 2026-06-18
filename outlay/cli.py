@@ -91,6 +91,7 @@ def run(
     emit_policy: Path | None = None,
     budgets_path: Path | None = None,
     calibrate: bool = False,
+    as_json: bool = False,
 ) -> str:
     events = gather_events(
         usage=usage_path,
@@ -136,11 +137,20 @@ def run(
         budgets = track_budgets(result, work_items,
                                 parse_budgets(_load_json(budgets_path)))
 
+    # Calibration is computed whenever it's requested, or always for JSON output.
+    calibration = backtest(result, work_items) if (calibrate or as_json) else None
+
+    if as_json:
+        from .serialize import to_json
+        return to_json(result, stats, fc, anomalies, recs,
+                       calibration=calibration, policy=policy,
+                       budgets=budgets, window_days=window_days)
+
     out = render(result, stats, fc, anomalies, recs, policy=policy,
                  budgets=budgets, window_days=window_days)
 
-    if calibrate:
-        out += "\n" + format_calibration(backtest(result, work_items))
+    if calibration is not None:
+        out += "\n" + format_calibration(calibration)
 
     return out
 
@@ -168,6 +178,8 @@ def main(argv: list[str] | None = None) -> int:
                    help="observed window length, used to project a monthly figure")
     p.add_argument("--calibrate", action="store_true",
                    help="append a leave-one-out backtest of forecast accuracy on realized spend")
+    p.add_argument("--json", action="store_true", dest="as_json",
+                   help="emit the full report as machine-readable JSON (implies --calibrate)")
     args = p.parse_args(argv)
 
     # Default to the bundled demo when no usage source is given.
@@ -184,6 +196,7 @@ def main(argv: list[str] | None = None) -> int:
         emit_policy=args.emit_policy,
         budgets_path=args.budgets,
         calibrate=args.calibrate,
+        as_json=args.as_json,
     ))
     return 0
 
