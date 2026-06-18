@@ -1,0 +1,9 @@
+{
+  "issues": {
+    "nodes": [
+      {"identifier": "ENG-201", "title": "Usage export to CSV", "state": {"name": "Done", "type": "completed"}, "labels": {"nodes": [{"name": "feature"}]}, "estimate": 5, "branchName": "alice/eng-201-usage-export", "project": {"name": "Billing"}, "team": {"key": "ENG"}, "createdAt": "2026-06-08T09:00:00Z", "completedAt": "2026-06-11T17:00:00Z"},
+      {"identifier": "ENG-202", "title": "Webhook signature mismatch", "state": {"name": "In Progress", "type": "started"}, "labels": {"nodes": [{"name": "bug"}]}, "estimate": 2, "branchName": "alice/eng-202-webhook-sig", "team": {"key": "ENG"}, "createdAt": "2026-06-10T09:00:00Z"},
+      {"identifier": "ENG-203", "title": "Refactor pricing service", "state": {"name": "Backlog", "type": "backlog"}, "labels": {"nodes": [{"name": "refactor"}]}, "estimate": 8, "branchName": "bob/eng-203-pricing", "team": {"key": "ENG"}, "createdAt": "2026-06-10T09:00:00Z"}
+    ]
+  }
+}

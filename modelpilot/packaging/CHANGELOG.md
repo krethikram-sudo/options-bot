@@ -4,6 +4,19 @@ Versioning: **integer** bumps (1.0, 2.0) are breaking changes you should
 re-validate against; **decimal** bumps (0.2, 0.3) are features, router
 retunes, and fixes that are safe to take.
 
+## 0.38.0 — 2026-06-18
+
+- **Optional, product-agnostic per-request observer seam.** The gateway can now
+  call an external observer after each request is ledgered, set via
+  `MODELPILOT_REQUEST_OBSERVER="module.path:factory"` (a zero-arg factory
+  returning `callable(payload: dict) -> None`). The observer receives a small,
+  flat payload (routing decision + token usage + any `x-modelpilot-work-*`
+  branch/ticket headers, which are never forwarded upstream) and is wrapped so it
+  can never alter or block the request path; load/runtime errors fail open and
+  disable it. Off by default — no behavior change unless the env var is set. This
+  is a generic extension point (used by the Outlay shadow-logger, but the
+  gateway takes no dependency on any consumer).
+
 ## 0.37.0 — 2026-06-17
 
 - **Long-document summarization now floors at Sonnet (safer).** A "summarize…"

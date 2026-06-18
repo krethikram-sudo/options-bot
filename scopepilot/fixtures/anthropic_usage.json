@@ -1,0 +1,28 @@
+{
+  "records": [
+    {"id": "e101", "model": "claude-opus-4-8", "timestamp": "2026-06-02T09:30:00Z", "usage": {"input_tokens": 20000, "output_tokens": 8000, "cache_read_input_tokens": 150000, "cache_creation_input_tokens": 20000}, "metadata": {"branch": "fix/101-null-pointer", "user": "alice@acme.dev", "session_id": "s101"}},
+
+    {"id": "e102a", "model": "claude-opus-4-8", "timestamp": "2026-06-04T10:00:00Z", "usage": {"input_tokens": 60000, "output_tokens": 30000, "cache_read_input_tokens": 500000, "cache_creation_input_tokens": 60000}, "metadata": {"branch": "feature/102-add-auth", "user": "alice@acme.dev", "session_id": "s102a"}},
+    {"id": "e102b", "model": "claude-sonnet-4-6", "timestamp": "2026-06-04T14:00:00Z", "usage": {"input_tokens": 40000, "output_tokens": 15000, "cache_read_input_tokens": 300000, "cache_creation_input_tokens": 30000}, "metadata": {"branch": "feature/102-add-auth", "user": "alice@acme.dev", "session_id": "s102b"}},
+
+    {"id": "e103a", "model": "claude-opus-4-8", "timestamp": "2026-06-08T11:00:00Z", "usage": {"input_tokens": 50000, "output_tokens": 25000, "cache_read_input_tokens": 350000, "cache_creation_input_tokens": 40000}, "metadata": {"branch": "feat/103-billing-ui", "user": "bob@acme.dev", "session_id": "s103a"}},
+    {"id": "e103b", "model": "claude-opus-4-8", "timestamp": "2026-06-08T15:00:00Z", "usage": {"input_tokens": 25000, "output_tokens": 10000, "cache_read_input_tokens": 150000, "cache_creation_input_tokens": 20000}, "metadata": {"ticket": "GH-103", "user": "bob@acme.dev", "session_id": "s103b"}},
+
+    {"id": "e104", "model": "claude-opus-4-8", "timestamp": "2026-06-05T10:00:00Z", "usage": {"input_tokens": 45000, "output_tokens": 18000, "cache_read_input_tokens": 280000, "cache_creation_input_tokens": 35000}, "metadata": {"branch": "refactor/104-extract-service", "user": "alice@acme.dev", "session_id": "s104"}},
+
+    {"id": "e105", "model": "claude-sonnet-4-6", "timestamp": "2026-06-06T13:00:00Z", "usage": {"input_tokens": 20000, "output_tokens": 8000, "cache_read_input_tokens": 100000, "cache_creation_input_tokens": 15000}, "metadata": {"branch": "test/105-coverage", "user": "bob@acme.dev", "session_id": "s105"}},
+
+    {"id": "e106a", "model": "claude-opus-4-8", "timestamp": "2026-06-05T09:00:00Z", "usage": {"input_tokens": 120000, "output_tokens": 60000, "cache_read_input_tokens": 1200000, "cache_creation_input_tokens": 120000}, "metadata": {"branch": "fix/106-flaky-retry", "user": "bob@acme.dev", "session_id": "s106a"}},
+    {"id": "e106b", "model": "claude-opus-4-8", "timestamp": "2026-06-06T09:00:00Z", "usage": {"input_tokens": 30000, "output_tokens": 12000, "cache_read_input_tokens": 200000, "cache_creation_input_tokens": 20000}, "metadata": {"branch": "fix/106-flaky-retry", "user": "bob@acme.dev", "session_id": "s106b"}},
+    {"id": "e106c", "model": "claude-opus-4-8", "timestamp": "2026-06-07T09:00:00Z", "usage": {"input_tokens": 25000, "output_tokens": 10000, "cache_read_input_tokens": 180000, "cache_creation_input_tokens": 18000}, "metadata": {"branch": "fix/106-flaky-retry", "user": "bob@acme.dev", "session_id": "s106c"}},
+    {"id": "e106d", "model": "claude-opus-4-8", "timestamp": "2026-06-08T09:00:00Z", "usage": {"input_tokens": 28000, "output_tokens": 11000, "cache_read_input_tokens": 190000, "cache_creation_input_tokens": 19000}, "metadata": {"branch": "fix/106-flaky-retry", "user": "bob@acme.dev", "session_id": "s106d"}},
+    {"id": "e106e", "model": "claude-opus-4-8", "timestamp": "2026-06-09T09:00:00Z", "usage": {"input_tokens": 26000, "output_tokens": 10500, "cache_read_input_tokens": 185000, "cache_creation_input_tokens": 18500}, "metadata": {"branch": "fix/106-flaky-retry", "user": "bob@acme.dev", "session_id": "s106e"}},
+
+    {"id": "e112", "model": "claude-opus-4-8", "timestamp": "2026-06-03T13:00:00Z", "usage": {"input_tokens": 18000, "output_tokens": 7000, "cache_read_input_tokens": 120000, "cache_creation_input_tokens": 15000}, "metadata": {"branch": "fix/112-typo", "user": "alice@acme.dev", "session_id": "s112"}},
+    {"id": "e113", "model": "claude-opus-4-8", "timestamp": "2026-06-04T13:00:00Z", "usage": {"input_tokens": 22000, "output_tokens": 9000, "cache_read_input_tokens": 160000, "cache_creation_input_tokens": 18000}, "metadata": {"branch": "fix/113-off-by-one", "user": "bob@acme.dev", "session_id": "s113"}},
+
+    {"id": "e_team", "model": "claude-sonnet-4-6", "timestamp": "2026-06-07T22:00:00Z", "usage": {"input_tokens": 30000, "output_tokens": 5000, "cache_read_input_tokens": 50000, "cache_creation_input_tokens": 10000}, "metadata": {"api_key_id": "key_ci", "session_id": "s_ci"}},
+
+    {"id": "e_invoice", "model": "claude-haiku-4-5", "timestamp": "2026-06-07T23:00:00Z", "usage": {"input_tokens": 10000, "output_tokens": 2000, "cache_read_input_tokens": 0, "cache_creation_input_tokens": 0}}
+  ]
+}

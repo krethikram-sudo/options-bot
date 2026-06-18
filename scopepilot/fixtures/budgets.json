@@ -1,0 +1,5 @@
+[
+  {"scope_type": "total", "scope_id": "ALL", "limit_usd": 45.0, "period_start": "2026-06-01T00:00:00Z", "period_end": "2026-06-30T00:00:00Z", "label": "June AI compute (whole team)"},
+  {"scope_type": "epic", "scope_id": "Q3 stability", "limit_usd": 5.0, "period_start": "2026-06-01T00:00:00Z", "period_end": "2026-06-30T00:00:00Z", "label": "Epic: Q3 stability"},
+  {"scope_type": "team", "scope_id": "platform", "limit_usd": 20.0, "period_start": "2026-06-01T00:00:00Z", "period_end": "2026-06-30T00:00:00Z", "label": "Team: platform"}
+]

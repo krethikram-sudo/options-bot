@@ -162,6 +162,33 @@ _RETURN_HEADERS = {"content-type", "request-id", "anthropic-ratelimit-requests-r
 from contextlib import asynccontextmanager
 
 
+def _load_observer(spec: str | None):
+    """Optional, product-agnostic per-request observer.
+
+    `MODELPILOT_REQUEST_OBSERVER="module.path:factory"` names a zero-arg factory
+    returning a `callable(payload: dict) -> None`. It's called after each request
+    is ledgered, with a small decision/usage payload (plus any work-context
+    headers), and may never alter or block the request path. This is the seam the
+    ScopePilot shadow-logger plugs into (`scopepilot.shadow:make_observer`)
+    without the published gateway taking any dependency on it. Fail-open: a bad
+    spec or construction error disables the observer rather than breaking boot.
+    """
+    if not spec:
+        return None
+    try:
+        mod_path, _, attr = spec.partition(":")
+        import importlib
+
+        factory = getattr(importlib.import_module(mod_path), attr)
+        return factory()
+    except Exception:  # noqa: BLE001 — observer is optional, never fatal
+        import logging
+
+        logging.getLogger("modelpilot.gateway").warning(
+            "request observer %r failed to load; disabled", spec)
+        return None
+
+
 @asynccontextmanager
 async def _lifespan(app):
     app.state.http = httpx.AsyncClient(timeout=httpx.Timeout(600.0, connect=10.0))
@@ -191,6 +218,10 @@ async def _lifespan(app):
                                if (app.state.brain_url or os.environ.get("MODELPILOT_CONSOLE_URL"))
                                else "")
     app.state.autotune_n = 0
+    # Optional per-request observer (e.g. ScopePilot shadow-logger). No-op unless
+    # MODELPILOT_REQUEST_OBSERVER is set; never touches the request path.
+    app.state.request_observer = _load_observer(
+        os.environ.get("MODELPILOT_REQUEST_OBSERVER"))
     # Usage metering (opt-in): if a console is configured, periodically report the
     # realized-savings delta from the ledger so billing reflects delivered savings.
     # Aggregate dollars/counts only; runs off the request path (background task).
@@ -454,7 +485,7 @@ class _SSEUsage:
 
 def _record(decision: Decision, status_code: int, usage: Usage,
             request_id: str, retry_of: str | None, session_key: str = "",
-            cache_applied: bool = False):
+            cache_applied: bool = False, work: dict | None = None):
     app.state.ledger.record(
         mode=MODE,
         recommendation=decision.recommendation,
@@ -469,7 +500,36 @@ def _record(decision: Decision, status_code: int, usage: Usage,
         opportunity_saved=decision.opportunity_saved(),
         cache_applied=cache_applied,
     )
+    _notify_observer(decision, status_code, usage, request_id, work)
     _maybe_autotune()
+
+
+def _notify_observer(decision: Decision, status_code: int, usage: Usage,
+                     request_id: str, work: dict | None):
+    """Hand a small, flat payload to the optional request observer. Wrapped so a
+    misbehaving observer can never affect the response the customer already got."""
+    obs = getattr(app.state, "request_observer", None)
+    if obs is None:
+        return
+    rec = decision.recommendation
+    try:
+        obs({
+            "request_id": request_id,
+            "status_code": status_code,
+            "category": rec.category,
+            "confidence": rec.confidence,
+            "original_model": rec.original_model,
+            "recommended_model": rec.recommended_model,
+            "routed_model": decision.routed_model,
+            "applied": decision.applied,
+            "input_tokens": usage.input_tokens,
+            "output_tokens": usage.output_tokens,
+            "cache_read_tokens": usage.cache_read_input_tokens,
+            "cache_write_tokens": usage.cache_creation_input_tokens,
+            "work": work or {},
+        })
+    except Exception:  # noqa: BLE001 — observer must never break the request path
+        pass
 
 
 def _maybe_autotune():
@@ -666,6 +726,13 @@ async def messages(request: Request):
         raw = json.dumps(body).encode()
 
     request_id = uuid.uuid4().hex
+    # Work context for the optional observer: the branch/ticket the calling agent
+    # is running on, declared via headers (never forwarded upstream). This is the
+    # signal ScopePilot resolves to a task-class for shadow/enforce accounting.
+    work_meta = {
+        "branch": request.headers.get("x-modelpilot-work-branch"),
+        "ticket": request.headers.get("x-modelpilot-work-ticket"),
+    }
     maybe_capture(app.state.ledger, body, decision, request_id, CAPTURE_PCT)
     fwd_headers = {k: v for k, v in request.headers.items() if k.lower() in _FORWARD_HEADERS}
     fwd_headers["content-length"] = str(len(raw))
@@ -698,7 +765,7 @@ async def messages(request: Request):
             finally:
                 await upstream.aclose()
                 _record(rec_decision, upstream.status_code, sse.usage, request_id, retry_of,
-                        session_key, cache_applied=cache_applied)
+                        session_key, cache_applied=cache_applied, work=work_meta)
 
         resp_headers = {k: v for k, v in upstream.headers.items() if k.lower() in _RETURN_HEADERS}
         return StreamingResponse(relay(), status_code=upstream.status_code, headers={**resp_headers, **extra})
@@ -710,7 +777,7 @@ async def messages(request: Request):
         except (json.JSONDecodeError, AttributeError):
             pass
     _record(rec_decision, upstream.status_code, usage, request_id, retry_of, session_key,
-            cache_applied=cache_applied)
+            cache_applied=cache_applied, work=work_meta)
     if cache_key and upstream.status_code == 200:
         CACHE.put(cache_key, upstream.content, upstream.headers.get("content-type", "application/json"))
         extra["x-modelpilot-cache"] = "MISS"

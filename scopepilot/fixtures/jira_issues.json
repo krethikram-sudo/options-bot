@@ -1,0 +1,7 @@
+{
+  "issues": [
+    {"key": "OPS-301", "fields": {"summary": "NullPointer in order parser", "status": {"name": "Done", "statusCategory": {"key": "done"}}, "labels": ["regression"], "issuetype": {"name": "Bug"}, "customfield_10016": 3, "project": {"key": "OPS"}, "created": "2026-06-01T09:00:00Z", "resolutiondate": "2026-06-02T10:00:00Z"}},
+    {"key": "OPS-302", "fields": {"summary": "Add OAuth login", "status": {"name": "In Progress", "statusCategory": {"key": "indeterminate"}}, "labels": [], "issuetype": {"name": "Story"}, "customfield_10016": 8, "parent": {"key": "OPS-300"}, "project": {"key": "OPS"}, "created": "2026-06-02T09:00:00Z"}},
+    {"key": "OPS-303", "fields": {"summary": "Update API docs", "status": {"name": "To Do", "statusCategory": {"key": "new"}}, "labels": ["documentation"], "issuetype": {"name": "Task"}, "project": {"key": "OPS"}, "created": "2026-06-10T09:00:00Z"}}
+  ]
+}
