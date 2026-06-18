@@ -168,3 +168,7 @@ def test_end_to_end_fixture_report():
     assert "GH-106" in out          # the anomaly ticket appears
     assert "needs validation" in out
     assert "validated" in out
+    # Forecast surfaces the realistic interval and the per-item bands.
+    assert "Likely range (p10–p90)" in out
+    assert "Top open items" in out
+    assert "p10–p90 range" in out
