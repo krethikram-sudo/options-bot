@@ -1,6 +1,6 @@
 # ModelPilot — Running TODO (founder)
 
-Living checklist. Claude keeps this current as we work. Last updated: **2026-06-15 (eve)**.
+Living checklist. Claude keeps this current as we work. Last updated: **2026-06-18 (eve)**.
 (Detailed legal/terms analysis lives in `modelpilot/LAUNCH_CHECKLIST.md`; this is the
 short, prioritized running list.)
 
@@ -33,6 +33,24 @@ Live URLs:
 > **done-for-you + proof + pay-on-savings**; privacy is the trust-unlock, regulated = premium expansion.
 > See revised `ICP.md` + `GTM_PLAN.md` (bill-shock motion) + `COMPETITIVE.md` (2026-06-16). **#1 next
 > business action: validate willingness-to-pay — 5–10 bill-shock pilots before investing further.**
+
+---
+
+## 🆕 Outlay (active brand/site)
+
+Outlay = the spend-attribution + forecasting product; ModelPilot routing is the embedded
+optimization engine within it. Marketing site rebranded to **Outlay** and moved to the brand domain.
+
+- [x] Site live on **https://outlay-ai.com** (Cloudflare Pages custom domain; registered at Cloudflare,
+      apex + www CNAME → `modelpilot.pages.dev`). Canonical/OG flipped to outlay-ai.com, extensionless
+      clean URLs, `modelpilot.pages.dev/*` 301 → outlay-ai.com. (PRs #8, #9.)
+- [ ] **Swap site email CTAs → `hello@outlay-ai.com`.** Set up **Cloudflare Email Routing** on the
+      `outlay-ai.com` zone (inbound forward to personal inbox; for *sending as* hello@, add a Gmail
+      "Send mail as" via a free SMTP relay or move to Workspace/Fastmail). Once verified, Claude swaps
+      every `mailto:krethikram@gmail.com` across `modelpilot/site/**` → `hello@outlay-ai.com` in one PR
+      (keeping the prefilled subject lines). **Founder: reply "email is live" when ready.**
+- [ ] **Send the design-partner outreach** (`OUTLAY_PILOT_OUTREACH.md`) — 3–5 pilots; the real
+      validation gap is end-to-end ticket coverage + a measured forecast-accuracy number on a real team.
 
 ---
 
