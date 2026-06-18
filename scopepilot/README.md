@@ -33,7 +33,11 @@ an escalation would cost more than one capable run).
 
 - **Sources:** Anthropic per-call usage, **Anthropic Admin API** (live puller),
   **Cursor Admin API** (live puller), **Claude Code transcripts** — additive.
-- **Planner:** GitHub Issues (issues/PRs + branch links).
+- **Planners:** GitHub Issues, **Jira**, **Linear** (`--planner`). Linear
+  exposes `branchName` directly; Jira/GitHub join on the key embedded in the
+  agent's git branch.
+- **Enforcement:** advisory recs compile to a proxy-consumable routing policy
+  (`policy.py`, `--emit-policy`) that the ModelPilot gateway can apply.
 - **Pipeline:** ingest → cost-normalize → branch→ticket join (fidelity-tiered)
   → task-class classify → attribute → forecast + anomaly guardrails → advisory
   model-routing recommendation.
@@ -91,6 +95,13 @@ has no history, and one `validated` + several `needs_validation` routing recs.
 - **Forecasting is per task-class, never per ticket.** A single unseen ticket
   is as unpredictable to cost as it is to estimate in hours; the distribution
   over a *class* is stable and useful.
+- **You never enforce a downgrade you haven't proven.** `validated` recs
+  (cheaper tier seen in history) compile to `ENFORCE`; `needs_validation` recs
+  run in `SHADOW` — logged, traffic unchanged — until their own data graduates
+  them. The policy composes with ModelPilot's category floors as
+  `binding_floor = min(category_floor, class_floor)` for enforced classes, with
+  ModelPilot's brittle-call guard still vetoing on top, so a lowered floor can
+  never break a structured-output/tool call.
 
 ## Module map
 
@@ -102,21 +113,22 @@ has no history, and one `validated` + several `needs_validation` routing recs.
 | `ingest/anthropic_admin.py` | live Admin Usage API puller + report parser |
 | `ingest/cursor.py` | live Cursor Admin API puller + events parser |
 | `ingest/claude_code.py` | Claude Code `.jsonl` transcript parser (branch-level) |
-| `ingest/github_issues.py` | GitHub issues/PR JSON → `WorkItem`s |
+| `ingest/github_issues.py` `ingest/jira.py` `ingest/linear.py` | planner JSON → `WorkItem`s |
 | `join.py` | **the IP** — branch→ticket join + identity graph + fidelity tiers |
 | `classify.py` | task-class heuristics (labels → branch verbs → diff size) |
 | `attribute.py` | orchestrates join+cost; per-ticket rollups + coverage |
 | `forecast.py` | per-class distributions, roadmap forecast, anomaly flags |
 | `recommend.py` | per-class routing recs, scored net of rework |
-| `report.py` / `cli.py` | the 30-second VP-readable report |
+| `policy.py` | **enforcement** — gated routing policy for the ModelPilot proxy |
+| `report.py` / `cli.py` | the 30-second VP-readable report + `--emit-policy` |
 
 ## Deferred to later phases (deliberately not in P0)
 
 SSO/SCIM-fed identity graph; a learned task-class model; budget-vs-actual
-burndown per epic; proxy-based **enforcement** of routing policy; Jira/Linear
-planner adapters; non-Anthropic provider rate tables (GPT/Gemini). The
-integration surface (N providers × M planners) is the treadmill *and* the moat —
-prioritized by what design partners actually use.
+burndown per epic; live shadow-mode delta logging wired into the proxy;
+non-Anthropic provider rate tables (GPT/Gemini). The integration surface
+(N providers × M planners) is the treadmill *and* the moat — prioritized by
+what design partners actually use.
 
 ## Settled decisions
 
@@ -124,4 +136,7 @@ prioritized by what design partners actually use.
    the enforcement proxy is an optional later tier, not a billing prerequisite.
 2. **Ingestion sources — all four shipped** (Anthropic per-call + Admin API,
    Cursor, Claude Code). Claude Code is the branch-bearing primary join; the
-   admin APIs reconcile to invoice. Jira/Linear planners are the next adapters.
+   admin APIs reconcile to invoice.
+3. **Planners — GitHub, Jira, Linear shipped** (`--planner`).
+4. **Enforcement — shipped, gated.** `policy.py` compiles recs into a proxy
+   policy; only `validated` classes enforce, `needs_validation` runs in shadow.

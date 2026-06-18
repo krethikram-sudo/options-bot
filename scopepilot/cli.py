@@ -31,15 +31,16 @@ from pathlib import Path
 from .attribute import attribute
 from .forecast import class_stats, find_anomalies, forecast_roadmap
 from .ingest import (
+    PLANNERS,
     parse_admin_usage_report,
     parse_anthropic_usage,
     parse_claude_code_dir,
     parse_claude_code_transcript,
     parse_cursor_events,
-    parse_github_issues,
 )
-from .join import IdentityGraph, JoinEngine
+from .join import IdentityGraph, JoinEngine, TicketResolver
 from .models import UsageEvent
+from .policy import build_policy
 from .recommend import recommend
 from .report import render
 
@@ -79,10 +80,12 @@ def run(
     issues_path: Path = _FIXTURES / "github_issues.json",
     window_days: int | None = None,
     *,
+    planner: str = "github",
     anthropic_admin: Path | None = None,
     cursor: Path | None = None,
     claude_code: Path | None = None,
     claude_code_user: str | None = None,
+    emit_policy: Path | None = None,
 ) -> str:
     events = gather_events(
         usage=usage_path,
@@ -91,7 +94,8 @@ def run(
         claude_code=claude_code,
         claude_code_user=claude_code_user,
     )
-    work_items = parse_github_issues(issues_path)
+    parse_work, resolver_source = PLANNERS[planner]
+    work_items = parse_work(issues_path)
 
     # Identity graph: seeds key→user→team so aggregated/no-branch spend (Admin
     # API, Cursor, CI keys) still rolls up to a team. Production feeds this from
@@ -104,7 +108,8 @@ def run(
             "bob@acme.dev": "growth",
         },
     )
-    engine = JoinEngine(work_items, identity=identity)
+    engine = JoinEngine(work_items, identity=identity,
+                        resolver=TicketResolver(source=resolver_source))
 
     result = attribute(events, work_items, engine=engine)
     stats = class_stats(result)
@@ -115,8 +120,13 @@ def run(
 
     horizon = (30.0 / window_days) if window_days else 1.0
     recs = recommend(result, horizon_scale=horizon)
+    policy = build_policy(recs)
 
-    return render(result, stats, fc, anomalies, recs, window_days=window_days)
+    if emit_policy:
+        Path(emit_policy).write_text(json.dumps(policy.to_dict(), indent=2))
+
+    return render(result, stats, fc, anomalies, recs, policy=policy,
+                  window_days=window_days)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -132,6 +142,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--claude-code-user", default=None,
                    help="engineer email to attribute a single Claude Code transcript to")
     p.add_argument("--issues", type=Path, default=_FIXTURES / "github_issues.json")
+    p.add_argument("--planner", choices=sorted(PLANNERS), default="github",
+                   help="planning system the --issues export came from")
+    p.add_argument("--emit-policy", type=Path, default=None,
+                   help="write the proxy-consumable routing policy JSON to this path")
     p.add_argument("--window-days", type=int, default=None,
                    help="observed window length, used to project a monthly figure")
     args = p.parse_args(argv)
@@ -142,10 +156,12 @@ def main(argv: list[str] | None = None) -> int:
 
     print(run(
         args.usage, args.issues, args.window_days,
+        planner=args.planner,
         anthropic_admin=args.anthropic_admin,
         cursor=args.cursor,
         claude_code=args.claude_code,
         claude_code_user=args.claude_code_user,
+        emit_policy=args.emit_policy,
     ))
     return 0
 

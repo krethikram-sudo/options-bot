@@ -10,6 +10,7 @@ from __future__ import annotations
 from .attribute import AttributionResult
 from .forecast import Anomaly, ClassStats, RoadmapForecast
 from .models import FidelityTier, TaskClass
+from .policy import PolicyMode, RoutingPolicy
 from .recommend import Recommendation
 
 
@@ -33,6 +34,7 @@ def render(
     anomalies: list[Anomaly],
     recs: list[Recommendation],
     *,
+    policy: RoutingPolicy | None = None,
     window_days: int | None = None,
 ) -> str:
     L: list[str] = []
@@ -110,6 +112,23 @@ def render(
         add(f"   {r.task_class.value:<10} {r.incumbent_model} → {r.candidate_model}")
         add(f"      save ~{_usd(r.projected_savings_usd)}  [{flag}]")
         add(f"      {r.rationale}")
+
+    # --- Enforcement policy (proxy) ---
+    if policy is not None:
+        add("")
+        add("  Enforcement policy for the ModelPilot proxy")
+        add("  " + "-" * 56)
+        enf = [e for e in policy.entries.values() if e.mode == PolicyMode.ENFORCE]
+        shd = [e for e in policy.entries.values() if e.mode == PolicyMode.SHADOW]
+        add(f"   enforce now: {_usd(policy.enforced_savings_usd)}/window over "
+            f"{len(enf)} class(es); shadow (earning trust): "
+            f"{_usd(policy.shadow_savings_usd)} over {len(shd)}.")
+        for e in sorted(policy.entries.values(),
+                        key=lambda x: x.projected_savings_usd, reverse=True):
+            mark = "ENFORCE" if e.mode == PolicyMode.ENFORCE else e.mode.value.upper()
+            add(f"   [{mark:<7}] {e.task_class.value:<10} floor→{e.model} "
+                f"(tier {e.floor_tier})  ~{_usd(e.projected_savings_usd)}")
+
     add("")
     add("=" * 64)
     return "\n".join(L)
