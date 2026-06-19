@@ -1,13 +1,13 @@
-# Fly.io config for the ModelPilot CONSOLE (vendor-internal control plane).
+# Fly.io config for the Outlay CONSOLE (vendor-internal control plane).
 # Stateful: SQLite lives on a persistent volume at /data, so we run exactly ONE
 # always-on machine (SQLite is single-writer — do NOT scale this to >1 machine).
 #
 # First-time setup + deploy steps are in console/FLY_DEPLOY.md.
 #
-# TODO before first deploy:
-#   1) set `app` to your chosen Fly app name (must be globally unique).
-#   2) after you add the custom domain, set CONSOLE_BASE_URL to https://app.modelpilot.app
-#      (until then, use your https://<app>.fly.dev URL so reset/login links are correct).
+# Custom domain: the product is served at https://app.outlay-ai.com (added with
+# `fly certs add app.outlay-ai.com`). The <app>.fly.dev route still works as a
+# fallback but isn't used. `app` is the Fly app name (globally unique); it's never
+# shown to users once the custom domain is live.
 
 app = "modelpilot-console-prod"
 primary_region = "iad"
@@ -17,8 +17,7 @@ primary_region = "iad"
 
 [env]
   CONSOLE_PORT = "8700"
-  CONSOLE_BASE_URL = "https://modelpilot-console-prod.fly.dev"
-  MODELPILOT_BRAIN_URL = "https://modelpilot-brain-prod.fly.dev"
+  CONSOLE_BASE_URL = "https://app.outlay-ai.com"
   CONSOLE_SECURE_COOKIES = "1"
 
 # Secrets (NEVER put these in this file — set with `fly secrets set ...`):
