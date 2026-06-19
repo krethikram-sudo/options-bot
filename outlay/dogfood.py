@@ -29,7 +29,8 @@ from .report import render
 from .size import fit_size_models
 
 
-def build_report(events, work, window_days: int = 30, *, as_json: bool = False) -> str:
+def build_report(events, work, window_days: int = 30, *, as_json: bool = False,
+                 as_html: bool = False, company: str | None = None) -> str:
     """Assemble the full dogfood report from already-ingested events + work items.
 
     Pure (no network) so it's unit-testable: runs attribution, the size-aware
@@ -44,11 +45,16 @@ def build_report(events, work, window_days: int = 30, *, as_json: bool = False) 
     recs = recommend(result, horizon_scale=30.0 / max(window_days, 1))
     calibration = backtest(result, work)
 
-    if as_json:
-        from .serialize import to_json
-        return to_json(result, stats, fc, find_anomalies(result, stats), recs,
+    if as_json or as_html:
+        from .serialize import to_dict
+        data = to_dict(result, stats, fc, find_anomalies(result, stats), recs,
                        calibration=calibration, policy=build_policy(recs),
                        window_days=window_days)
+        if as_html:
+            from .readout import render_html
+            return render_html(data, company=company)
+        import json as _json
+        return _json.dumps(data, indent=2)
 
     parts = [
         render(result, stats, fc, find_anomalies(result, stats), recs,
@@ -72,6 +78,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--window-days", type=int, default=30)
     p.add_argument("--json", action="store_true", dest="as_json",
                    help="emit the report as machine-readable JSON")
+    p.add_argument("--html", action="store_true", dest="as_html",
+                   help="emit a VP-ready printable HTML audit readout")
+    p.add_argument("--company", default=None, help="company/team name for the HTML readout")
     args = p.parse_args(argv)
 
     owner, _, repo = args.repo.partition("/")
@@ -82,13 +91,15 @@ def main(argv: list[str] | None = None) -> int:
     events = parse_claude_code_dir(args.claude_code)
     # On JSON output keep stdout clean (parseable); send diagnostics to stderr.
     import sys
-    diag = sys.stderr if args.as_json else sys.stdout
+    diag = sys.stderr if (args.as_json or args.as_html) else sys.stdout
     if not events:
         print(f"(no Claude Code transcripts found under {args.claude_code})", file=diag)
     if not work:
         print(f"(no issues returned for {args.repo} — check GITHUB_TOKEN/scope)", file=diag)
 
-    print(build_report(events, work, window_days=args.window_days, as_json=args.as_json))
+    print(build_report(events, work, window_days=args.window_days,
+                       as_json=args.as_json, as_html=args.as_html,
+                       company=args.company or args.repo))
     return 0
 
 
