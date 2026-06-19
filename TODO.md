@@ -83,6 +83,10 @@ optimization engine within it. Marketing site rebranded to **Outlay** and moved 
       spend snapshot (`outlay_history`); the Spend dashboard now shows a "↑/↓ % vs last sync" delta on the
       AI-spend KPI, an inline SVG sparkline of recent spend, and a "Last refreshed · cadence" status line.
       Estimate re-saves don't pollute history. +tests (108 pass).
+- [x] **Budget alerts now email the owner** — on a warn/over transition Outlay emails the account owner
+      (not just subscribed webhooks), so a pilot with no webhook still gets the guardrail. `send_budget_alert`
+      generalized with scope + product (Outlay vs legacy monthly), backward-compatible. Needs `SMTP_*` to
+      actually send (logs in dev). +tests (120 pass).
 - [x] **Connector sync-failure surfacing** — sync attempts now record `last_attempt_at` + a friendly
       `last_sync_error` (cleared on success). A failed manual sync or a silent auto-sync failure (expired
       token mid-pilot) shows a red banner on the Connect page and a "last sync failed → fix connection"

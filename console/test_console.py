@@ -1344,6 +1344,29 @@ def test_outlay_cursor_key_encrypted_at_rest(env, client):
         assert raw["cursor_key"].startswith("enc:") and "key_supersecret" not in raw["cursor_key"]
 
 
+def test_outlay_budget_alert_emails_owner(env, client, monkeypatch):
+    from console import notify
+    calls = []
+    monkeypatch.setattr(notify, "send_budget_alert",
+                        lambda *a, **k: (calls.append((a, k)), True)[1])
+    _signup(client, email="bmail@x.com")
+    # a tiny overall budget, then a run that blows past it → owner gets emailed
+    client.post("/app/outlay/budgets", data={"scope_type": "overall", "scope_id": "",
+                "limit_usd": "1", "period_days": "90"}, follow_redirects=True)
+    fix = _fixtures()
+    client.post("/app/outlay/run", json={"issues": (fix / "github_issues.json").read_text(),
+                "usage": (fix / "anthropic_usage.json").read_text()})
+    assert calls, "expected a budget alert email on the over transition"
+    args, kw = calls[-1]
+    assert args[0] == "bmail@x.com" and args[1] == "over" and kw.get("product") == "Outlay"
+
+
+def test_send_budget_alert_backward_compatible(env):
+    from console import notify
+    # legacy positional call (monthly budget) still works → dev path returns False
+    assert notify.send_budget_alert("x@y.com", "warn", 80.0, 100.0) is False
+
+
 def test_outlay_sync_error_recorded_and_cleared(env, client):
     _, store = env
     _signup(client, email="err@x.com")
