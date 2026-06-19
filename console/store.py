@@ -1,4 +1,4 @@
-"""ModelPilot console — data layer (SQLite).
+"""Outlay console — data layer (SQLite).
 
 VENDOR / INTERNAL: runs on OUR infrastructure (alongside brain + ingest). Not
 part of the shipped `modelpilot` package; never migrated to the customer repo.
@@ -1749,8 +1749,8 @@ def deliver_event(account_id: int, event_type: str, data: dict, path: str | None
                       separators=(",", ":")).encode()
 
     def _send(url, secret):
-        headers = {"content-type": "application/json", "user-agent": "ModelPilot-Webhook",
-                   "x-modelpilot-event": event_type, "x-modelpilot-signature": sign_payload(secret, body)}
+        headers = {"content-type": "application/json", "user-agent": "Outlay-Webhook",
+                   "x-outlay-event": event_type, "x-outlay-signature": sign_payload(secret, body)}
         if post_fn is not None:
             post_fn(url, body, headers)
             return

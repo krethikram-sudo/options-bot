@@ -1,4 +1,4 @@
-"""Stripe billing for the ModelPilot console — usage-based: the customer's bill
+"""Stripe billing for the Outlay console — usage-based: the customer's bill
 is 20% of the realized savings we deliver.
 
 Model: a Stripe **Meter** (event name e.g. `modelpilot_savings`, aggregation = sum)

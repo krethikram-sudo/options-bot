@@ -1,4 +1,4 @@
-"""ModelPilot console — FastAPI app (web UI + machine API).
+"""Outlay console — FastAPI app (web UI + machine API).
 
 VENDOR / INTERNAL. The customer-facing SaaS control plane: accounts, auth,
 dashboards, mode control, Stripe billing (20% of realized savings), and the
@@ -26,8 +26,8 @@ from . import notify, outlay_app, store, stripe_billing, web
 COOKIE = "mp_session"
 PENDING_2FA_COOKIE = "mp_2fa"  # short-lived marker between password and OTP steps
 # Where to send users after they sign out — the public marketing landing page.
-LANDING_URL = os.environ.get("LANDING_URL", "https://modelpilot.pages.dev/")
-app = FastAPI(title="ModelPilot console")
+LANDING_URL = os.environ.get("LANDING_URL", "https://outlay-ai.com/")
+app = FastAPI(title="Outlay console")
 
 
 @app.on_event("startup")
@@ -855,7 +855,7 @@ async def settings_post(request: Request):
 def _connect_html(acct: dict, new_key: str = ""):
     deps = store.deployments_for(acct["id"])
     brain = os.environ.get("MODELPILOT_BRAIN_URL", "https://brain.modelpilot.app")
-    console = os.environ.get("CONSOLE_BASE_URL", "https://app.modelpilot.app")
+    console = os.environ.get("CONSOLE_BASE_URL", "https://app.outlay-ai.com")
     keys = store.list_api_keys(acct["id"])
     hooks = store.list_webhooks(acct["id"])
     return _html(web.connect_page(acct, deps, brain, console, keys, new_key, hooks))
@@ -971,7 +971,7 @@ def logs_csv(request: Request):
         w.writerow(r)
     from fastapi.responses import Response
     return Response(buf.getvalue(), media_type="text/csv",
-                    headers={"content-disposition": "attachment; filename=modelpilot-logs.csv"})
+                    headers={"content-disposition": "attachment; filename=outlay-logs.csv"})
 
 
 @app.get("/app/team", response_class=HTMLResponse)
@@ -999,8 +999,8 @@ async def team_invite(request: Request):
     token = out[1] if out else ""
     if token:
         try:
-            notify.send_email(m["email"], "You're invited to ModelPilot",
-                              f"You've been added to a ModelPilot team. Set your password:\n\n"
+            notify.send_email(m["email"], "You're invited to Outlay",
+                              f"You've been added to an Outlay team. Set your password:\n\n"
                               f"{notify.reset_link(token)}")
         except Exception:  # noqa: BLE001
             pass
@@ -1388,7 +1388,7 @@ async def stripe_webhook(request: Request):
 
 
 def _check_components() -> list[dict]:
-    """Live health of ModelPilot services (stdlib pings, short timeout)."""
+    """Live health of Outlay services (stdlib pings, short timeout)."""
     import urllib.request
     comps = [{"name": "Console & dashboard", "ok": True, "detail": "operational"}]
     targets = [("Routing brain", os.environ.get("MODELPILOT_BRAIN_URL", "")),
@@ -1572,7 +1572,7 @@ def main():
     import uvicorn
     port = int(os.environ.get("CONSOLE_PORT", "8700"))
     store.init_db()
-    print(f"ModelPilot console on http://127.0.0.1:{port} "
+    print(f"Outlay console on http://127.0.0.1:{port} "
           f"(stripe: {'on' if stripe_billing.enabled() else 'off'})")
     uvicorn.run("console.server:app", host="0.0.0.0", port=port, log_level="warning")
 

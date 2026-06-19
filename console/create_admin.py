@@ -42,7 +42,7 @@ def main() -> int:
         print(f"Admin already exists: {email} (no change).")
         return 0
 
-    store.create_account(email, pw, company="ModelPilot", role="admin", consent=True)
+    store.create_account(email, pw, company="Outlay", role="admin", consent=True)
     print(f"Created admin: {email}")
     print("Log in at <your-console-url>/login — you'll be routed to /admin.")
     return 0

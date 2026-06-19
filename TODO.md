@@ -51,6 +51,16 @@ optimization engine within it. Marketing site rebranded to **Outlay** and moved 
       (keeping the prefilled subject lines). **Founder: reply "email is live" when ready.**
 - [ ] **Send the design-partner outreach** (`OUTLAY_PILOT_OUTREACH.md`) — 3–5 pilots; the real
       validation gap is end-to-end ticket coverage + a measured forecast-accuracy number on a real team.
+- [x] **Console rebranded ModelPilot → Outlay.** Every customer-visible string in the console: nav/logo,
+      page titles (`<title> · Outlay`), all prose, the FastAPI app title, transactional emails (reset/2FA/
+      invite/budget/digest subjects + `From: …@outlay-ai.com`), webhook headers (`x-outlay-signature/event`,
+      `Outlay-Webhook` UA), CSV/log download filenames, legal links → outlay-ai.com, seeded company name.
+      121 tests pass. **Deliberately kept** (renaming = breaking change to the published gateway/brain, not
+      console branding): the embedded routing client's identifiers — pip `modelpilot-client`, `MODELPILOT_*`
+      env vars, `modelpilot` CLI, `x-modelpilot-key` machine-auth header, `modelpilot_savings` Stripe meter.
+      The live URL `modelpilot-console-prod.fly.dev` is the Fly **app name** — fix by adding the
+      `app.outlay-ai.com` custom domain (no data migration): `fly certs add app.outlay-ai.com`, add the DNS
+      records, then set `CONSOLE_BASE_URL=https://app.outlay-ai.com` and redeploy.
 - [x] **Deploy is unblocked.** `console/Dockerfile` now copies the in-repo `outlay/` engine (+ fixtures)
       into the image — the console imports it at boot, so without this the container crash-looped. Verified
       a console+outlay-only layout boots (`/login` 200) and the sample-data path reads fixtures. **Founder:

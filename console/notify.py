@@ -29,7 +29,7 @@ def send_email(to: str, subject: str, body: str) -> bool:
         print(f"[notify:dev] to={to} subject={subject!r}\n{body}")
         return False
     msg = EmailMessage()
-    msg["From"] = os.environ.get("SMTP_FROM", "ModelPilot <no-reply@modelpilot.app>")
+    msg["From"] = os.environ.get("SMTP_FROM", "Outlay <no-reply@outlay-ai.com>")
     msg["To"] = to
     msg["Subject"] = subject
     msg.set_content(body)
@@ -45,9 +45,9 @@ def send_email(to: str, subject: str, body: str) -> bool:
 
 def send_reset(email: str, token: str) -> bool:
     link = reset_link(token)
-    body = (f"Reset your ModelPilot password by opening this link (valid for 1 hour):\n\n{link}\n\n"
+    body = (f"Reset your Outlay password by opening this link (valid for 1 hour):\n\n{link}\n\n"
             "If you didn't request this, you can ignore this email.")
-    return send_email(email, "Reset your ModelPilot password", body)
+    return send_email(email, "Reset your Outlay password", body)
 
 
 def sms_enabled() -> bool:
@@ -75,18 +75,18 @@ def send_sms(to: str, body: str) -> bool:
 
 def send_otp(dest: str, code: str, channel: str = "email") -> bool:
     """Deliver a 2FA one-time code via the chosen channel (email now; SMS via Twilio)."""
-    body = (f"Your ModelPilot verification code is {code}\n\n"
+    body = (f"Your Outlay verification code is {code}\n\n"
             "It expires in 10 minutes. If you didn't request it, you can ignore this message.")
     if channel == "sms":
         return send_sms(dest, body)
-    return send_email(dest, "Your ModelPilot verification code", body)
+    return send_email(dest, "Your Outlay verification code", body)
 
 
 def send_budget_alert(email: str, level: str, spend: float, budget: float,
-                      scope: str = "", product: str = "ModelPilot") -> bool:
+                      scope: str = "", product: str = "Outlay") -> bool:
     """Budget warn/over email. `scope` (e.g. 'team "platform"') and `product`
     ('Outlay') generalize it beyond the legacy monthly spend budget; defaults keep
-    the original ModelPilot monthly-budget caller working unchanged."""
+    the original Outlay monthly-budget caller working unchanged."""
     pct = (100 * spend / budget) if budget else 0
     what = f"budget for {scope}" if scope else "monthly spend budget"
     link = "/app/outlay/budgets" if product == "Outlay" else "/app"
