@@ -218,6 +218,13 @@ CREATE TABLE IF NOT EXISTS outlay_reports (
     ts REAL NOT NULL,
     report TEXT NOT NULL              -- the serialized Outlay report (JSON)
 );
+CREATE TABLE IF NOT EXISTS outlay_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL,
+    ts REAL NOT NULL,
+    total_usd REAL NOT NULL,          -- spend in the window at each data refresh
+    forecast_usd REAL NOT NULL        -- forecast for open work, for trend context
+);
 CREATE TABLE IF NOT EXISTS outlay_connections (
     account_id INTEGER PRIMARY KEY,   -- one connection config per account (upserted)
     github_owner TEXT,
@@ -621,6 +628,33 @@ def get_outlay_report(account_id: int, path: str | None = None) -> dict | None:
     data = json.loads(r["report"])
     data["_generated_ts"] = r["ts"]
     return data
+
+
+def record_outlay_snapshot(account_id: int, report: dict, path: str | None = None,
+                           now: float | None = None) -> None:
+    """Append a spend snapshot to history on a genuine data refresh (run / sync) —
+    powers the dashboard's trend delta and sparkline. Not called on estimate re-saves."""
+    total = (report.get("spend", {}) or {}).get("total_usd", 0.0)
+    fc = (report.get("forecast", {}) or {}).get("expected_usd", 0.0)
+    conn = connect(path)
+    try:
+        conn.execute("INSERT INTO outlay_history(account_id, ts, total_usd, forecast_usd)"
+                     " VALUES(?,?,?,?)", (account_id, now or time.time(), total, fc))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def outlay_history(account_id: int, limit: int = 12, path: str | None = None) -> list[dict]:
+    """Recent spend snapshots, oldest→newest (for sparkline + delta-vs-last)."""
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT ts, total_usd, forecast_usd FROM outlay_history WHERE account_id=?"
+            " ORDER BY ts DESC LIMIT ?", (account_id, limit)).fetchall()
+    finally:
+        conn.close()
+    return [dict(r) for r in reversed(rows)]
 
 
 def save_outlay_connection(account_id: int, github_owner: str | None = None,

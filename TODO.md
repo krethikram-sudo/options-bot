@@ -75,7 +75,12 @@ optimization engine within it. Marketing site rebranded to **Outlay** and moved 
 - [x] **Per-project / epic budgets** — budgets now scope to `overall | team | class | project`. Project
       spend rolls up by ticket-key prefix (`PROJ-123 → PROJ`); the budgets page shows a "Spend by project"
       pick-list so you know which keys to budget. Scope is validated server-side. +tests (106 pass).
-  - Next slices: dashboard polish (trend deltas, sync-status surfacing). **Needs `fly deploy`.**
+- [x] **Dashboard polish — trend + sync status.** Each genuine refresh (run/sync/auto-sync) appends a
+      spend snapshot (`outlay_history`); the Spend dashboard now shows a "↑/↓ % vs last sync" delta on the
+      AI-spend KPI, an inline SVG sparkline of recent spend, and a "Last refreshed · cadence" status line.
+      Estimate re-saves don't pollute history. +tests (108 pass).
+  - **Outlay product loop is feature-complete for a pilot.** Remaining is deployment + go-to-market
+    (below). **Needs `fly deploy` to go live.**
 
 ### 2026-06-18
 - [x] **Guidance is now trial-only; paid = autopilot (billable) only.** Verified guidance/free-tier can

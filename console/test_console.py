@@ -1344,6 +1344,42 @@ def test_outlay_cursor_key_encrypted_at_rest(env, client):
         assert raw["cursor_key"].startswith("enc:") and "key_supersecret" not in raw["cursor_key"]
 
 
+def test_outlay_history_records_and_trends(env, client):
+    _, store = env
+    _signup(client, email="hist@x.com")
+    fix = _fixtures()
+    issues = (fix / "github_issues.json").read_text()
+    usage = (fix / "anthropic_usage.json").read_text()
+    acct = store.get_account_by_email("hist@x.com")
+
+    # two refreshes → two history rows, oldest→newest
+    assert client.post("/app/outlay/run", json={"issues": issues, "usage": usage}).json()["ok"]
+    assert client.post("/app/outlay/run", json={"issues": issues, "usage": usage}).json()["ok"]
+    h = store.outlay_history(acct["id"])
+    assert len(h) == 2 and h[0]["ts"] <= h[1]["ts"]
+    assert h[-1]["total_usd"] > 0
+
+    # an estimate re-save must NOT add a history row (only genuine refreshes do)
+    client.post("/app/outlay/estimate/run", headers={"content-type": "application/json"},
+                json={"planned": '{"items":[{"id":"P-1","title":"Add SSO"}]}'})
+    assert len(store.outlay_history(acct["id"])) == 2
+
+    # dashboard renders the sparkline + a delta line
+    page = client.get("/app/outlay").text
+    assert "<svg" in page and "vs last sync" in page
+
+
+def test_sparkline_and_trend_helpers():
+    from console import web
+    assert web._sparkline([]) == "" and web._sparkline([5]) == ""  # need ≥2 points
+    assert "<svg" in web._sparkline([1, 2, 3])
+    assert web._trend_delta([]) == "this window"
+    up = web._trend_delta([{"total_usd": 100}, {"total_usd": 150}])
+    assert "↑" in up and "50%" in up
+    down = web._trend_delta([{"total_usd": 100}, {"total_usd": 80}])
+    assert "↓" in down and "20%" in down
+
+
 def test_outlay_project_spend_and_budget(env, client):
     _, store = env
     _signup(client, email="proj@x.com")

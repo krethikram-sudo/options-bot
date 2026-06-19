@@ -463,6 +463,7 @@ def _run_due_syncs(now: float | None = None, transport=None) -> dict:
             failed += 1
             continue
         store.save_outlay_report(account_id, report)
+        store.record_outlay_snapshot(account_id, report, now=now)
         store.mark_outlay_synced(account_id, now=now)
         _check_budgets(account_id, report)
         synced += 1
@@ -489,7 +490,9 @@ def app_outlay(request: Request):
         return redir
     report = store.get_outlay_report(acct["id"])
     statuses = outlay_app.budget_statuses(report, store.list_outlay_budgets(acct["id"])) if report else []
-    return _html(web.outlay_page(acct, report, statuses))
+    hist = store.outlay_history(acct["id"]) if report else []
+    return _html(web.outlay_page(acct, report, statuses, hist,
+                                 store.get_outlay_connection(acct["id"])))
 
 
 @app.post("/app/outlay/run")
@@ -513,6 +516,7 @@ async def app_outlay_run(request: Request):
     except Exception:  # noqa: BLE001
         return JSONResponse({"ok": False, "error": "Could not process that data."})
     store.save_outlay_report(acct["id"], report)
+    store.record_outlay_snapshot(acct["id"], report)
     _check_budgets(acct["id"], report)
     return JSONResponse({"ok": True})
 
@@ -557,6 +561,7 @@ async def app_outlay_sync(request: Request):
     except Exception:  # noqa: BLE001
         return JSONResponse({"ok": False, "error": "Sync failed. Check your tokens and try again."})
     store.save_outlay_report(acct["id"], report)
+    store.record_outlay_snapshot(acct["id"], report)
     store.mark_outlay_synced(acct["id"])
     _check_budgets(acct["id"], report)
     return JSONResponse({"ok": True})
