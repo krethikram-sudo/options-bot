@@ -431,9 +431,45 @@ async def app_outlay_run(request: Request):
         return JSONResponse({"ok": False, "error": str(e)})
     except Exception:  # noqa: BLE001
         return JSONResponse({"ok": False, "error": "Could not process that data."})
-    # Keep the raw history so the backlog estimator can re-use the learned model.
-    report["_raw"] = {"issues": issues, "usage": usage}
     store.save_outlay_report(acct["id"], report)
+    return JSONResponse({"ok": True})
+
+
+@app.get("/app/outlay/connect", response_class=HTMLResponse)
+def app_outlay_connect(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    return _html(web.outlay_connect_page(acct, store.get_outlay_connection(acct["id"])))
+
+
+@app.post("/app/outlay/connect")
+async def app_outlay_connect_save(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    store.save_outlay_connection(acct["id"], f.get("github_owner"), f.get("github_repo"),
+                                 f.get("github_token"), f.get("anthropic_key"))
+    return _redirect("/app/outlay/connect")
+
+
+@app.post("/app/outlay/sync")
+async def app_outlay_sync(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return JSONResponse({"ok": False, "error": "Please sign in again."}, status_code=401)
+    conn = store.get_outlay_connection(acct["id"])
+    if not conn:
+        return JSONResponse({"ok": False, "error": "Add your connection details first."})
+    try:
+        report = outlay_app.sync(conn)
+    except ValueError as e:
+        return JSONResponse({"ok": False, "error": str(e)})
+    except Exception:  # noqa: BLE001
+        return JSONResponse({"ok": False, "error": "Sync failed. Check your tokens and try again."})
+    store.save_outlay_report(acct["id"], report)
+    store.mark_outlay_synced(acct["id"])
     return JSONResponse({"ok": True})
 
 
@@ -458,11 +494,11 @@ async def app_outlay_estimate_run(request: Request):
     if not planned:
         return JSONResponse({"ok": False, "error": "Paste a planned backlog (JSON)."})
     report = store.get_outlay_report(acct["id"])
-    raw = report.get("_raw") if report else None
-    if not raw:
-        return JSONResponse({"ok": False, "error": "Connect your data on the Spend tab first."})
+    model = report.get("_model") if report else None
+    if not model:
+        return JSONResponse({"ok": False, "error": "Connect or upload data on the Spend tab first."})
     try:
-        est = outlay_app.estimate_backlog(raw["issues"], raw["usage"], planned)
+        est = outlay_app.estimate_with_model(model, planned)
     except ValueError as e:
         return JSONResponse({"ok": False, "error": str(e)})
     except Exception:  # noqa: BLE001

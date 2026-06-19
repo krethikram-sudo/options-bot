@@ -347,7 +347,9 @@ def outlay_page(account: dict, report: dict | None) -> str:
     if not report:
         intro = ('<div class=hero><h1>Your AI spend, on your roadmap.</h1>'
                  '<p class=muted>Connect your data and Outlay maps every dollar to the work that drove it, '
-                 'forecasts the quarter, and finds savings — all on metadata, prompts never leave your tools.</p></div>')
+                 'forecasts the quarter, and finds savings — all on metadata, prompts never leave your tools.</p>'
+                 '<p style="margin-top:6px"><a class="btn" href="/app/outlay/connect">Connect live (GitHub + Anthropic) →</a>'
+                 '<span class=muted style="margin-left:10px">or paste exports below</span></p></div>')
         return page("Spend", intro + _outlay_connect(), account, active="/app/outlay")
 
     sp = report.get("spend", {})
@@ -423,9 +425,48 @@ def outlay_page(account: dict, report: dict | None) -> str:
     return page("Spend", body, account, active="/app/outlay")
 
 
+def outlay_connect_page(account: dict, conn: dict | None) -> str:
+    """Live connectors — read-only tokens to pull GitHub Issues + Anthropic usage."""
+    conn = conn or {}
+    owner = _e(conn.get("github_owner") or "")
+    repo = _e(conn.get("github_repo") or "")
+    gh_set = "✓ saved" if conn.get("github_token") else "not set"
+    ak_set = "✓ saved" if conn.get("anthropic_key") else "not set"
+    synced = (f'Last synced {_fmt_date(conn.get("synced_at"))}.'
+              if conn.get("synced_at") else "Never synced yet.")
+    form = f"""<div class=hero><h1>Connect your sources <span class=muted style="font-weight:400">· read-only</span></h1>
+      <p class=muted>Outlay pulls live from your tracker and AI usage with read-only tokens — metadata only,
+        prompts never leave your tools. Or paste exports on the <a href="/app/outlay">Spend</a> tab.</p></div>
+      <form method=post action="/app/outlay/connect" class=card>
+        <h3 style="margin:.2em 0 .6em">GitHub Issues</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <label class=fld><span>Owner</span><input name=github_owner value="{owner}" placeholder="acme"></label>
+          <label class=fld><span>Repo</span><input name=github_repo value="{repo}" placeholder="web"></label>
+        </div>
+        <label class=fld style="margin-top:12px"><span>Read-only token ({gh_set})</span>
+          <input name=github_token type=password placeholder="ghp_… (leave blank to keep)"></label>
+        <h3 style="margin:1em 0 .6em">Anthropic usage</h3>
+        <label class=fld><span>Admin API key ({ak_set})</span>
+          <input name=anthropic_key type=password placeholder="sk-ant-admin… (leave blank to keep)"></label>
+        <button class="btn sec" style="margin-top:14px">Save connection</button>
+      </form>
+      <div class=card style="margin-top:16px">
+        <p class=muted style="margin:.2em 0 .8em">{synced}</p>
+        <button class="btn" onclick="outlaySync(this)">Sync now &amp; run the audit</button>
+        <a class="btn sec" href="/app/outlay" style="margin-left:8px">View Spend →</a>
+        <script>function outlaySync(btn){{btn.classList.add('loading');btn.disabled=true;
+          fetch('/app/outlay/sync',{{method:'POST'}}).then(function(r){{return r.json();}}).then(function(d){{
+            if(d.ok){{location.href='/app/outlay';}}else{{btn.classList.remove('loading');btn.disabled=false;
+              alert(d.error||'Sync failed.');}}}})
+          .catch(function(){{btn.classList.remove('loading');btn.disabled=false;alert('Network error.');}});}}
+        </script>
+      </div>"""
+    return page("Connect", form, account, active="/app/outlay")
+
+
 def estimate_backlog_page(account: dict, report: dict | None) -> str:
     """Budget planned work against the cost model learned from connected history."""
-    if not (report and report.get("_raw")):
+    if not (report and report.get("_model")):
         body = ('<div class=hero><h1>Estimate your backlog.</h1>'
                 '<p class=muted>Budget planned work before it\'s built. Connect your data on the '
                 '<a href="/app/outlay">Spend</a> tab first so Outlay can learn your cost model — then '

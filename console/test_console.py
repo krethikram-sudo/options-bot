@@ -1240,3 +1240,47 @@ def test_outlay_estimator_needs_history(env, client):
     _signup(client, email="c@d.com")
     r = client.post("/app/outlay/estimate/run", json={"planned": '{"items":[]}'})
     assert r.status_code == 200 and r.json()["ok"] is False
+
+
+def test_outlay_connection_store(env, client):
+    _, store = env
+    _signup(client, email="conn@x.com")
+    acct = store.get_account_by_email("conn@x.com")
+    store.save_outlay_connection(acct["id"], "acme", "web", "ghp_secret", "sk-admin")
+    c = store.get_outlay_connection(acct["id"])
+    assert c["github_owner"] == "acme" and c["github_token"] == "ghp_secret"
+    # blank token preserves the saved one
+    store.save_outlay_connection(acct["id"], "acme", "web2", "", "")
+    c = store.get_outlay_connection(acct["id"])
+    assert c["github_repo"] == "web2" and c["github_token"] == "ghp_secret"
+
+
+def test_outlay_connect_page_and_sync_guard(env, client):
+    _signup(client, email="cp@x.com")
+    r = client.get("/app/outlay/connect")
+    assert r.status_code == 200 and "Connect your sources" in r.text
+    # sync with no connection saved → friendly error
+    r = client.post("/app/outlay/sync")
+    assert r.status_code == 200 and r.json()["ok"] is False
+
+
+def _fake_transport():
+    import json
+    fix = _fixtures()
+    issues = json.loads((fix / "github_issues.json").read_text())["issues"]
+    admin = json.loads((fix / "anthropic_admin_report.json").read_text())
+
+    def t(method, url, headers, body):
+        if "api.github.com" in url:
+            return issues
+        return admin
+    return t
+
+
+def test_outlay_sync_pulls_live(env, client):
+    from console import outlay_app
+    conn = {"github_owner": "acme", "github_repo": "web",
+            "github_token": "ghp_x", "anthropic_key": "sk-admin"}
+    report = outlay_app.sync(conn, transport=_fake_transport())
+    assert report["spend"]["total_usd"] > 0
+    assert "_model" in report  # estimator can reuse the learned model
