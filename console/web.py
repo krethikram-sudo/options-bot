@@ -308,7 +308,7 @@ def page(title: str, body: str, account: dict | None = None, active: str = "", b
         em = _e(account.get("display_email") or account["email"])
         chrome = (
             '<div class=shell><aside class=side>'
-            '<a class=brand href="/app">Out<span class=dot>lay</span></a>'
+            '<a class=brand href="/app">Outlay<span class=dot>.ai</span></a>'
             f'<nav class=sidenav>{links}{admin}</nav>'
             f'<div class=side-foot>{_trial_pill(account)}<div class=email>{em}</div>'
             '<form method=post action="/logout" style="margin:0">'
@@ -318,14 +318,14 @@ def page(title: str, body: str, account: dict | None = None, active: str = "", b
         # Minimal public header (brand only) — for the pilot-request form etc.
         chrome = (
             '<div class=top><div class=wrap style="padding-top:12px;padding-bottom:12px">'
-            f'<a class=brand href="https://outlay-ai.com/">Out<span class=dot>lay</span></a></div></div>'
+            f'<a class=brand href="https://outlay-ai.com/">Outlay<span class=dot>.ai</span></a></div></div>'
             f'<div class=wrap style="max-width:640px">{body}</div>')
     else:
         nav = ('<div class="spacer"></div><div class="nav">'
                '<a href="/login">Sign in</a><a class="btn sm" href="/signup">Start free trial</a></div>')
         chrome = (
             '<div class=top><div class=wrap style="padding-top:12px;padding-bottom:12px">'
-            f'<a class=brand href="/">Out<span class=dot>lay</span></a>{nav}'
+            f'<a class=brand href="/">Outlay<span class=dot>.ai</span></a>{nav}'
             f'</div></div><div class=wrap>{body}</div>')
     return f"""<!doctype html><html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
