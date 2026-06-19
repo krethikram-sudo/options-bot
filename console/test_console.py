@@ -1227,10 +1227,10 @@ def test_outlay_backlog_estimator(env, client):
     r = client.post("/app/outlay/estimate/run", json={"planned": planned})
     assert r.status_code == 200 and r.json()["ok"] is True
 
-    # the estimate renders
+    # the estimate renders (per-item rows + a total with a likely range)
     r = client.get("/app/outlay/estimate")
     assert r.status_code == 200 and "Backlog estimate" in r.text
-    assert "Confidence" in r.text
+    assert "estimated," in r.text and "likely" in r.text
 
 
 def test_outlay_estimator_needs_history(env, client):

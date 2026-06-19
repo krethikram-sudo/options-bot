@@ -180,6 +180,20 @@ pre{background:var(--paper2);color:var(--navy);padding:16px;border-radius:10px;o
 .olinks{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:0 0 18px;font-size:13.5px}
 .olinks .sp{flex:1}
 .syncline{color:var(--muted);font-size:12.5px;margin:-6px 0 16px}
+/* form fields used on Connect / Estimate / Budgets */
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld>span{font-size:12.5px;font-weight:600;color:var(--ink)}
+.fld input,.fld select,.fld textarea{padding:10px 12px;border:1px solid var(--line);border-radius:9px;
+  font:inherit;font-size:14px;background:#fff;color:var(--ink);width:100%}
+.fld input:focus,.fld select:focus,.fld textarea:focus,textarea:focus{outline:none;border-color:var(--grn);box-shadow:0 0 0 3px rgba(15,107,79,.15)}
+.ocard textarea,textarea{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;
+  font:inherit;font-size:13.5px;background:#fff;color:var(--ink);font-family:var(--mono)}
+.ocard h3{font-family:var(--disp);font-size:15px;color:var(--ink);font-weight:600;margin:0 0 6px}
+.ohead h1 .muted{font-weight:400}
+.chip{display:inline-block;background:var(--paper2);border:1px solid var(--line);border-radius:999px;
+  padding:3px 10px;margin:0 6px 6px 0;font-size:12.5px;color:var(--body)}
+.chip .mono{font-family:var(--mono);color:var(--ink)}
+.bcard{background:#fff;border:1px solid var(--line);border-radius:13px;padding:15px 17px;margin-top:12px}
 """
 
 
@@ -637,15 +651,14 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
     if asy:
         synced += f' Auto-sync is on ({"daily" if asy == 24 else "weekly"}).'
     err = conn.get("last_sync_error")
-    err_banner = (f'<div class=card style="border-left:4px solid #b3261e;margin-bottom:16px">'
-                  f'<b style="color:#b3261e">⚠ Last sync failed.</b> {_e(err)} '
-                  f'<span class=muted style="font-size:12.5px">Fix the token/fields above and sync again.</span></div>'
+    err_banner = (f'<div class=ostrip style="background:var(--red-l)"><span><span class="otag over">sync</span> '
+                  f'<b style="color:var(--red)">Last sync failed.</b> {_e(err)}</span></div>'
                   if err else "")
-    form = f"""<div class=hero><h1>Connect your sources <span class=muted style="font-weight:400">· read-only</span></h1>
-      <p class=muted>Outlay pulls live from your tracker and AI usage with read-only tokens — metadata only,
+    form = f"""<div class=ohead><h1>Connect your sources <span class=muted>· read-only</span></h1>
+      <p>Outlay pulls live from your tracker and AI usage with read-only tokens — metadata only,
         prompts never leave your tools. Or paste exports on the <a href="/app/outlay">Spend</a> tab.</p></div>
       {err_banner}
-      <form method=post action="/app/outlay/connect" class=card>
+      <form method=post action="/app/outlay/connect" class=ocard>
         <label class=fld><span>Tracker</span><select name=tracker>
           <option value=github{opt('github')}>GitHub Issues</option>
           <option value=jira{opt('jira')}>Jira</option>
@@ -684,10 +697,10 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
           <option value=0{aopt(0)}>Off — sync manually</option>
           <option value=24{aopt(24)}>Daily</option>
           <option value=168{aopt(168)}>Weekly</option></select></label>
-        <button class="btn sec" style="margin-top:14px">Save connection</button>
+        <button class="btn sec" style="margin-top:16px">Save connection</button>
       </form>
-      <div class=card style="margin-top:16px">
-        <p class=muted style="margin:.2em 0 .8em">{synced}</p>
+      <div class=ocard style="margin-top:16px">
+        <p class=muted style="margin:0 0 12px;font-size:13.5px">{synced}</p>
         <button class="btn" onclick="outlaySync(this)">Sync now &amp; run the audit</button>
         <a class="btn sec" href="/app/outlay" style="margin-left:8px">View Spend →</a>
         <script>function outlaySync(btn){{btn.classList.add('loading');btn.disabled=true;
@@ -702,19 +715,21 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
 
 def estimate_backlog_page(account: dict, report: dict | None) -> str:
     """Budget planned work against the cost model learned from connected history."""
+    head = ('<div class=ohead><h1>Estimate your backlog</h1>'
+            '<p>Price planned work before it\'s built. Outlay costs each item against the model it learned '
+            'from your delivered work — the more scope you give (requirements, design docs, points), the '
+            'tighter the range.</p></div>')
     if not (report and report.get("_model")):
-        body = ('<div class=hero><h1>Estimate your backlog.</h1>'
-                '<p class=muted>Budget planned work before it\'s built. Connect your data on the '
+        body = (head + '<div class=ocard><p class=muted style="margin:0 0 12px">Connect your data on the '
                 '<a href="/app/outlay">Spend</a> tab first so Outlay can learn your cost model — then '
-                'paste a backlog here.</p></div>'
-                '<div class=card><a class="btn" href="/app/outlay">Go to Spend →</a></div>')
+                'estimate a backlog here.</p><a class="btn" href="/app/outlay">Go to Spend →</a></div>')
         return page("Estimate", body, account, active="/app/outlay")
 
-    form = """<div class=card><h3 style="margin:.2em 0 .4em">Paste a planned backlog</h3>
-      <p class=muted style="margin:.2em 0 .8em">A JSON list of items — each with a <b>title</b>, and ideally
-        <b>requirements</b>, <b>design_docs</b>, and/or story <b>points</b>. The more scope you give, the tighter the estimate.</p>
+    form = """<div class=ocard><div class=dh>Paste a planned backlog</div>
+      <p class=muted style="margin:-4px 0 10px;font-size:13.5px">A JSON list of items — each with a <b>title</b>, and ideally
+        <b>requirements</b>, <b>design_docs</b>, and/or story <b>points</b>.</p>
       <textarea id=ol_plan rows=6 placeholder='{"items":[{"id":"PROJ-1","title":"Add SSO","requirements":"SAML + SCIM, multi-tenant, audit log","points":8}]}'></textarea>
-      <button class="btn" style="margin-top:10px" onclick="estRun(this)">Estimate</button>
+      <button class="btn" style="margin-top:12px" onclick="estRun(this)">Estimate →</button>
       <script>function estRun(btn){btn.classList.add('loading');btn.disabled=true;
         fetch('/app/outlay/estimate/run',{method:'POST',headers:{'content-type':'application/json'},
           body:JSON.stringify({planned:document.getElementById('ol_plan').value})})
@@ -726,29 +741,28 @@ def estimate_backlog_page(account: dict, report: dict | None) -> str:
     est = report.get("estimate")
     result = ""
     if est:
+        emax = max((e.get("expected_usd", 0) for e in est.get("items", [])), default=1) or 1
         rows = ""
         for e in est.get("items", []):
             if e.get("costable"):
-                val = money(e.get("expected_usd", 0))
-                band = f'{money(e.get("low_usd", 0))}–{money(e.get("high_usd", 0))}'
                 typ = _e(e.get("task_class")) + (f' · {_e(e.get("complexity_tier"))}' if e.get("complexity_tier") else "")
-                conf = _e(e.get("confidence"))
+                sub = f'{typ} · {money(e.get("low_usd",0))}–{money(e.get("high_usd",0))} · {_e(e.get("confidence"))}'
+                rows += (f'<div class=erow><span class=nm>{_e(e.get("id"))} <small>· {sub}</small></span>'
+                         f'<span class=amt>{money(e.get("expected_usd",0))}</span>'
+                         f'<div class=ebar><span style="width:{min(100,e.get("expected_usd",0)/emax*100):.0f}%;background:var(--grn)"></span></div></div>')
             else:
-                val, band, typ, conf = "—", "no history", _e(e.get("task_class")), "declined"
-            rows += (f'<tr><td class=mono>{_e(e.get("id"))}</td><td>{typ}</td>'
-                     f'<td style="text-align:right">{val}</td><td class=muted style="font-size:12px">{band}</td>'
-                     f'<td class=muted style="font-size:12px">{conf}</td></tr>')
-        tighten = ('<p class=muted style="font-size:12.5px;margin-top:8px">To tighten the estimate, add: '
-                   + _e("; ".join(est.get("tighten", []))) + '</p>') if est.get("tighten") else ""
-        result = (f'<div class=card style="margin-top:16px"><h3 style="margin:.2em 0 .4em">Backlog estimate</h3>'
-                  f'<div style="font-size:28px;font-weight:700">{money(est.get("expected_usd", 0))}</div>'
-                  f'<div class=muted>likely {money(est.get("low_usd", 0))}–{money(est.get("high_usd", 0))} · '
-                  f'{est.get("items_costed", 0)} estimated, {est.get("items_unknown", 0)} declined</div>'
-                  f'<table class=tbl style="width:100%;margin-top:10px"><thead><tr>'
-                  f'<th style="text-align:left">Item</th><th style="text-align:left">Type</th>'
-                  f'<th style="text-align:right">Estimate</th><th style="text-align:left">Range</th>'
-                  f'<th style="text-align:left">Confidence</th></tr></thead><tbody>{rows}</tbody></table>{tighten}</div>')
-    return page("Estimate", form + result, account, active="/app/outlay")
+                rows += (f'<div class=erow><span class=nm>{_e(e.get("id"))} '
+                         f'<small>· {_e(e.get("task_class"))} · needs scope to cost</small></span>'
+                         f'<span class=amt style="color:var(--muted)">—</span>'
+                         f'<div class=ebar></div></div>')
+        tighten = ('<p class=muted style="font-size:12.5px;margin-top:10px">To tighten the estimate, add: '
+                   + _e("; ".join(est.get("tighten", []))) + '.</p>') if est.get("tighten") else ""
+        result = (f'<div class=ocard style="margin-top:16px"><div class=dh>Backlog estimate</div>'
+                  f'<div class=bignum><span class=v>{money(est.get("expected_usd", 0))}</span>'
+                  f'<span class=of>likely {money(est.get("low_usd", 0))}–{money(est.get("high_usd", 0))}</span></div>'
+                  f'<div class=muted style="font-size:12.5px;margin:2px 0 12px">{est.get("items_costed", 0)} '
+                  f'estimated, {est.get("items_unknown", 0)} declined.</div>{rows}{tighten}</div>')
+    return page("Estimate", head + form + result, account, active="/app/outlay")
 
 
 def _pct(x, digits: int = 0) -> str:
@@ -762,59 +776,56 @@ def accuracy_page(account: dict, report: dict | None) -> str:
     """The honesty layer, front and center: how close our forecast lands on the
     customer's *own* closed tickets, measured leave-one-out. This is the #1
     customer question, so we lead with the measured number and never hide n."""
-    head = ('<div class=hero><h1>How accurate is this?</h1>'
-            '<p class=muted>We don\'t ask you to trust a vendor benchmark. Outlay back-tests its forecast '
-            'on <b>your own closed tickets</b>, leave-one-out: hide a ticket, predict it from the rest, '
+    head = ('<div class=ohead><h1>How accurate is this?</h1>'
+            '<p>We don\'t ask you to trust a vendor benchmark. Outlay back-tests its forecast on '
+            '<b>your own closed tickets</b>, leave-one-out: hide a ticket, predict it from the rest, '
             'compare to what it actually cost. Below is that measured error — on your data.</p></div>')
     cal = (report or {}).get("calibration") or {}
     n = cal.get("n_evaluated", 0)
     if not report or n < 1:
-        body = (head + '<div class=card><p class=muted>Not enough closed, attributed tickets yet to '
-                'measure accuracy. Connect data on the <a href="/app/outlay">Spend</a> tab and let a few '
-                'tickets close — accuracy appears here automatically once there\'s history to back-test.</p></div>')
+        body = (head + '<div class=ocard><p class=muted style="margin:0">Not enough closed, attributed '
+                'tickets yet to measure accuracy. Connect data on the <a href="/app/outlay">Spend</a> tab '
+                'and let a few tickets close — accuracy appears here automatically once there\'s history '
+                'to back-test.</p></div>')
         return page("Accuracy", body, account, active="/app/outlay")
 
     mdape, within = cal.get("mdape", 0), cal.get("within_p90", 0)
-    grade_c = "#0f6b4f" if mdape <= 0.25 else ("#b45309" if mdape <= 0.5 else "#b3261e")
-    low = ('<div class=card style="border-left:4px solid #b45309;margin-bottom:16px">'
-           f'<b style="color:#b45309">Early read — {n} ticket(s) evaluated.</b> '
+    low = (f'<div class=flagbox style="margin-bottom:16px"><b>Early read — {n} ticket(s) evaluated.</b> '
            'Treat these as directional until more work closes.</div>') if n < 12 else ""
-    kpis = (
-        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:0 0 18px">'
-        + _kpi("Median error (MdAPE)", _pct(mdape), "typical forecast vs actual", grade_c)
-        + _kpi("Within the p90 band", _pct(within), "actuals at/under our high estimate",
-               "#0f6b4f" if within >= 0.8 else "#b45309")
-        + _kpi("Tickets back-tested", str(n), f"{_pct(cal.get('coverage',0))} of closed work")
-        + "</div>")
+
+    def _kpicard(label, value, sub, grn=False):
+        return (f'<div class=kpi><div class=l>{_e(label)}</div>'
+                f'<div class="v{" grn" if grn else ""}">{value}</div><div class=s>{_e(sub)}</div></div>')
+    kpis = ('<div class=kpis style="grid-template-columns:repeat(3,1fr)">'
+            + _kpicard("Median error (MdAPE)", _pct(mdape), "typical forecast vs actual", grn=mdape <= 0.25)
+            + _kpicard("Within the p90 band", _pct(within), "actuals at/under our high estimate", grn=within >= 0.8)
+            + _kpicard("Tickets back-tested", str(n), f"{_pct(cal.get('coverage',0))} of closed work")
+            + '</div>')
 
     rows = ""
+    cmax = max((cc.get("mdape", 0) for cc in cal.get("by_class", [])), default=1) or 1
     for cc in cal.get("by_class", []):
         bias = cc.get("bias", 0)
         bias_txt = ("over-forecasts" if bias > 0.02 else "under-forecasts" if bias < -0.02 else "unbiased")
-        bias_c = "#b45309" if abs(bias) > 0.15 else "#475569"
-        rows += (f'<tr><td>{_e(cc.get("task_class"))}</td><td style="text-align:right">{cc.get("n",0)}</td>'
-                 f'<td style="text-align:right">{_pct(cc.get("mdape",0))}</td>'
-                 f'<td style="text-align:right">{_pct(cc.get("within_p90",0))}</td>'
-                 f'<td style="color:{bias_c}">{bias_txt} ({_pct(bias,0)})</td></tr>')
-    by_class = (f'<div class=card><h3 style="margin:.2em 0 .6em">Accuracy by work type</h3>'
-                f'<table class=tbl style="width:100%"><thead><tr>'
-                f'<th style="text-align:left">Work type</th><th style="text-align:right">n</th>'
-                f'<th style="text-align:right">Median err</th><th style="text-align:right">Within p90</th>'
-                f'<th style="text-align:left">Bias</th></tr></thead><tbody>{rows}</tbody></table>'
+        col = "var(--amber)" if cc.get("mdape", 0) > 0.4 else "var(--grn)"
+        rows += (f'<div class=erow><span class=nm>{_e(cc.get("task_class"))} '
+                 f'<small>· n={cc.get("n",0)} · {bias_txt} ({_pct(bias,0)})</small></span>'
+                 f'<span class=amt>{_pct(cc.get("mdape",0))} <span style="color:var(--muted);font-weight:400">err</span></span>'
+                 f'<div class=ebar><span style="width:{min(100,cc.get("mdape",0)/cmax*100):.0f}%;background:{col}"></span></div></div>')
+    by_class = (f'<div class=ocard><div class=dh>Accuracy by work type<span class=sub>lower error is better</span></div>{rows}'
                 f'<p class=muted style="font-size:12px;margin-top:10px">Bias is the average signed error: '
-                f'positive means we tend to over-forecast (you\'ll likely spend less), negative the reverse.</p></div>')
+                'positive means we tend to over-forecast (you\'ll likely spend less), negative the reverse.</p></div>')
 
     size = cal.get("size") or {}
     size_card = ""
     if size.get("n"):
         if size.get("improves"):
-            size_card = (f'<div class=card style="margin-top:16px;border-left:4px solid #0f6b4f">'
-                         f'<b style="color:#0f6b4f">Story points help.</b> Conditioning on size cuts median '
-                         f'error by {_pct(size.get("error_reduction",0))} vs work-type alone '
+            size_card = (f'<div class=okbox style="margin-top:16px"><b>Story points help.</b> Conditioning on '
+                         f'size cuts median error by {_pct(size.get("error_reduction",0))} vs work-type alone '
                          f'({_pct(size.get("mdape_size",0))} vs {_pct(size.get("mdape_class",0))}, n={size.get("n",0)}). '
                          f'Keep estimating points and forecasts tighten.</div>')
         else:
-            size_card = (f'<div class=card style="margin-top:16px"><b>Story points aren\'t adding signal yet</b> '
+            size_card = (f'<div class=ocard style="margin-top:16px"><b>Story points aren\'t adding signal yet</b> '
                          f'on your data (size {_pct(size.get("mdape_size",0))} vs work-type {_pct(size.get("mdape_class",0))}). '
                          f'We fall back to the work-type model, which is doing as well or better.</div>')
 
@@ -827,38 +838,40 @@ def accuracy_page(account: dict, report: dict | None) -> str:
 def budgets_page(account: dict, report: dict | None, statuses: list[dict],
                  projects: list[dict] | None = None) -> str:
     """Set budgets by scope and see spend-vs-budget with pace projection."""
-    colors = {"ok": "#0f6b4f", "warn": "#b45309", "over": "#b3261e"}
-    note = "" if report else ('<div class=card><p class=muted>Connect data on the '
-                              '<a href="/app/outlay">Spend</a> tab to see live status.</p></div>')
+    tones = {"ok": ("var(--grn)", "var(--grn-d)"), "warn": ("var(--amber)", "var(--amber)"),
+             "over": ("var(--red)", "var(--red)")}
+    note = "" if report else ('<div class=ocard style="margin-bottom:16px"><p class=muted style="margin:0">'
+                              'Connect data on the <a href="/app/outlay">Spend</a> tab to see live status.</p></div>')
     rows = ""
     for s in statuses:
-        c = colors.get(s["status"], "#0f6b4f")
+        bar, txt = tones.get(s["status"], tones["ok"])
         name = _e(s["scope_type"]) + (f': {_e(s["scope_id"])}' if s.get("scope_id") else "")
         w = min(max(s.get("pct_used", 0), 0), 1) * 100
-        rows += (f'<div class=card style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:baseline">'
-                 f'<b>{name}</b><span class="pill" style="background:{c}22;color:{c}">{_e(s["status"])}</span></div>'
-                 f'<div style="height:8px;border-radius:5px;background:#eee;overflow:hidden;margin:8px 0 6px">'
-                 f'<span style="display:block;height:100%;width:{w:.0f}%;background:{c}"></span></div>'
-                 f'<div class=muted style="font-size:13px">{money(s.get("spent_usd",0))} of {money(s["limit_usd"])} '
-                 f'this window · projected <b style="color:{c}">{money(s.get("projected_usd",0))}</b> over {int(s.get("period_days") or 30)} days'
-                 f'<form method=post action="/app/outlay/budgets/delete" style="display:inline;margin-left:10px">'
+        rows += (f'<div class=bcard><div style="display:flex;justify-content:space-between;align-items:center;gap:10px">'
+                 f'<b style="font-size:14px">{name}</b>'
+                 f'<span class="otag {s["status"]}">{_e(s["status"])}</span></div>'
+                 f'<div class=dual style="margin-top:10px"><div class=track>'
+                 f'<span style="width:{w:.0f}%;background:{bar}"></span></div></div>'
+                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">'
+                 f'<span class=muted style="font-size:12.5px">{money(s.get("spent_usd",0))} of {money(s["limit_usd"])} · '
+                 f'projected <b style="color:{txt}">{money(s.get("projected_usd",0))}</b> / {int(s.get("period_days") or 30)}d</span>'
+                 f'<form method=post action="/app/outlay/budgets/delete" style="margin:0">'
                  f'<input type=hidden name=id value="{s["id"]}">'
                  f'<button class="btn sec sm">Remove</button></form></div></div>')
-    if not statuses:
-        rows = '<p class=muted>No budgets yet — add one below.</p>'
+    rows = (f'<div class=ocard><div class=dh>Your budgets</div>{rows}</div>' if statuses
+            else '<div class=ocard><p class=muted style="margin:0">No budgets yet — add one below.</p></div>')
     # Project/epic pick-list so users know which keys they can budget against.
     pref = ""
     if projects:
         chips = "".join(
-            f'<span class="pill" style="background:#13203a11;margin:0 6px 6px 0;display:inline-block">'
-            f'<span class=mono>{_e(p["project"])}</span> · {money(p.get("spent_usd",0))}</span>'
+            f'<span class=chip><span class=mono>{_e(p["project"])}</span> · {money(p.get("spent_usd",0))}</span>'
             for p in projects[:12])
-        pref = (f'<div class=card style="margin-top:16px"><h3 style="margin:.2em 0 .4em">Spend by project / epic</h3>'
-                f'<p class=muted style="font-size:13px;margin:.2em 0 .8em">Budget any of these by choosing '
+        pref = (f'<div class=ocard style="margin-top:16px"><div class=dh>Spend by project / epic</div>'
+                f'<p class=muted style="font-size:13px;margin:-4px 0 10px">Budget any of these by choosing '
                 f'<b>Project / epic</b> below and pasting the key.</p>{chips}</div>')
-    add = """<div class=card style="margin-top:16px"><h3 style="margin:.2em 0 .6em">Add a budget</h3>
+    add = """<div class=ocard style="margin-top:16px"><div class=dh>Add a budget</div>
       <form method=post action="/app/outlay/budgets">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;align-items:end">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;align-items:end">
           <label class=fld><span>Scope</span><select name=scope_type>
             <option value=overall>Overall</option><option value=team>Team</option>
             <option value=class>Work type</option><option value=project>Project / epic</option></select></label>
@@ -866,13 +879,12 @@ def budgets_page(account: dict, report: dict | None, statuses: list[dict],
           <label class=fld><span>Limit (USD)</span><input name=limit_usd type=number step=any placeholder="5000"></label>
           <label class=fld><span>Period (days)</span><input name=period_days type=number value=90></label>
         </div>
-        <button class="btn" style="margin-top:12px">Add budget</button>
+        <button class="btn" style="margin-top:14px">Add budget</button>
       </form></div>"""
-    add = pref + add
-    head = ('<div class=hero><h1>Budgets &amp; guardrails.</h1>'
-            '<p class=muted>Set a budget by scope; Outlay projects your spend to the period and flags it '
+    head = ('<div class=ohead><h1>Budgets &amp; guardrails</h1>'
+            '<p>Set a budget by scope; Outlay projects your spend to the period and flags it '
             '<b>before</b> you go over — not at month-end.</p></div>')
-    return page("Budgets", head + note + rows + add, account, active="/app/outlay")
+    return page("Budgets", head + note + rows + pref + add, account, active="/app/outlay")
 
 
 # --------------------------------------------------------------------------- #
