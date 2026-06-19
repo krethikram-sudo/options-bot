@@ -254,6 +254,12 @@ _MIGRATIONS = [
     "ALTER TABLE meter ADD COLUMN opportunity_saved REAL NOT NULL DEFAULT 0",
     "ALTER TABLE meter ADD COLUMN caching_saved REAL NOT NULL DEFAULT 0",
     "ALTER TABLE outlay_budgets ADD COLUMN last_status TEXT",
+    "ALTER TABLE outlay_connections ADD COLUMN tracker TEXT NOT NULL DEFAULT 'github'",
+    "ALTER TABLE outlay_connections ADD COLUMN jira_base_url TEXT",
+    "ALTER TABLE outlay_connections ADD COLUMN jira_email TEXT",
+    "ALTER TABLE outlay_connections ADD COLUMN jira_token TEXT",
+    "ALTER TABLE outlay_connections ADD COLUMN jira_jql TEXT",
+    "ALTER TABLE outlay_connections ADD COLUMN linear_key TEXT",
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -613,21 +619,34 @@ def get_outlay_report(account_id: int, path: str | None = None) -> dict | None:
     return data
 
 
-def save_outlay_connection(account_id: int, github_owner: str | None,
-                           github_repo: str | None, github_token: str | None,
-                           anthropic_key: str | None, path: str | None = None) -> None:
-    """Upsert a customer's connection config, preserving a secret left blank."""
+def save_outlay_connection(account_id: int, github_owner: str | None = None,
+                           github_repo: str | None = None, github_token: str | None = None,
+                           anthropic_key: str | None = None, tracker: str | None = None,
+                           jira_base_url: str | None = None, jira_email: str | None = None,
+                           jira_token: str | None = None, jira_jql: str | None = None,
+                           linear_key: str | None = None, path: str | None = None) -> None:
+    """Upsert a customer's connection config. Secrets left blank are preserved;
+    other blank fields are cleared. Supports GitHub / Jira / Linear trackers."""
     cur = get_outlay_connection(account_id, path) or {}
+
+    def _txt(v):  # non-secret: blank clears
+        return (v.strip() if isinstance(v, str) else v) or None
+
+    def _sec(v, key):  # secret: blank preserves
+        return (v or "").strip() or cur.get(key)
+
     conn = connect(path)
     try:
         conn.execute(
             "INSERT OR REPLACE INTO outlay_connections"
-            "(account_id, github_owner, github_repo, github_token, anthropic_key, synced_at)"
-            " VALUES(?,?,?,?,?,?)",
-            (account_id, (github_owner or "").strip() or None, (github_repo or "").strip() or None,
-             (github_token or "").strip() or cur.get("github_token"),
-             (anthropic_key or "").strip() or cur.get("anthropic_key"),
-             cur.get("synced_at")))
+            "(account_id, tracker, github_owner, github_repo, github_token, anthropic_key,"
+            " jira_base_url, jira_email, jira_token, jira_jql, linear_key, synced_at)"
+            " VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+            (account_id, _txt(tracker) or cur.get("tracker") or "github",
+             _txt(github_owner), _txt(github_repo), _sec(github_token, "github_token"),
+             _sec(anthropic_key, "anthropic_key"),
+             _txt(jira_base_url), _txt(jira_email), _sec(jira_token, "jira_token"),
+             _txt(jira_jql), _sec(linear_key, "linear_key"), cur.get("synced_at")))
         conn.commit()
     finally:
         conn.close()

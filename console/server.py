@@ -467,8 +467,12 @@ async def app_outlay_connect_save(request: Request):
     if redir:
         return redir
     f = await _form(request)
-    store.save_outlay_connection(acct["id"], f.get("github_owner"), f.get("github_repo"),
-                                 f.get("github_token"), f.get("anthropic_key"))
+    store.save_outlay_connection(
+        acct["id"], github_owner=f.get("github_owner"), github_repo=f.get("github_repo"),
+        github_token=f.get("github_token"), anthropic_key=f.get("anthropic_key"),
+        tracker=f.get("tracker"), jira_base_url=f.get("jira_base_url"),
+        jira_email=f.get("jira_email"), jira_token=f.get("jira_token"),
+        jira_jql=f.get("jira_jql"), linear_key=f.get("linear_key"))
     return _redirect("/app/outlay/connect")
 
 
