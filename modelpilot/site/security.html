@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Security &amp; privacy — Outlay</title>
-<meta name="description" content="Outlay is built so your sensitive data physically can't reach us. Attribution and routing run on metadata — categories, token counts, ticket IDs. Prompt content, model outputs, and API keys never leave your environment.">
+<meta name="description" content="Outlay is built so your sensitive data physically can't reach us. Attribution runs on metadata — categories, token counts, ticket IDs — pulled with read-only tokens. Prompt content, model outputs, and API keys never leave your environment.">
 <link rel="canonical" href="https://outlay-ai.com/security">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,7 +20,6 @@
   <div class="navlinks">
     <a href="/#how">How it works</a>
     <a href="/#owners">For eng &amp; finance</a>
-    <a href="/#optimize">Optimization engine</a>
     <a href="/#compare">Compare</a>
     <a href="/demo">Demo</a>
     <a href="/pilot">Pilot</a>
@@ -41,19 +40,17 @@
 
 <section style="padding-top:24px"><div class="wrap">
   <div class="flow">
-    <span class="node">Your app<small>prompt + API key</small></span>
+    <span class="node">Your tools<small>tracker + AI usage</small></span>
     <span class="arrow">→</span>
-    <span class="node">Local agent<small>classifies on your system</small></span>
+    <span class="node">Read-only sync<small>usage counts + ticket ids</small></span>
     <span class="arrow">→</span>
-    <span class="node">Outlay<small>category + token counts + ticket id</small></span>
-    <span class="arrow">→</span>
-    <span class="node">Anthropic<small>your key, your prompt</small></span>
+    <span class="node">Outlay<small>spend mapped to work, forecast, budgets</small></span>
   </div>
 
   <div class="prose">
     <h2>What never leaves your environment</h2>
     <ul>
-      <li><span class="ck">✓</span><div><b>Prompt text and model outputs.</b> Classification and routing happen locally; we never receive request or response bodies.</div></li>
+      <li><span class="ck">✓</span><div><b>Prompt text and model outputs.</b> Outlay connects read-only to your tracker and your provider's usage data — we never receive request or response bodies.</div></li>
       <li><span class="ck">✓</span><div><b>Your API keys.</b> Your provider key stays on your side and is used to call Anthropic directly.</div></li>
       <li><span class="ck">✓</span><div><b>Customer / PII data.</b> Anything inside a prompt stays inside your boundary.</div></li>
     </ul>
@@ -61,32 +58,25 @@
       or secret-looking keys (HTTP 422). The boundary is enforced, not just promised.</div>
 
     <h2>What we do see — metadata only</h2>
-    <p>To attribute spend to work and to route safely, Outlay receives a small, non-sensitive set of
-      metadata:</p>
+    <p>To attribute spend to work, Outlay receives a small, non-sensitive set of metadata:</p>
     <ul>
       <li><span class="ck">·</span><div>A <b>task category</b> and numeric features (token counts, flags).</div></li>
       <li><span class="ck">·</span><div>The <b>ticket / branch identifier</b> the work belongs to (e.g. <code>PROJ-123</code>).</div></li>
-      <li><span class="ck">·</span><div>Per-request <b>cost and savings</b> figures, as dollars and counts — never content.</div></li>
+      <li><span class="ck">·</span><div>Per-request <b>cost</b> figures from your provider's usage data, as dollars and counts — never content.</div></li>
     </ul>
 
-    <h2>Architecture: the IP is server-side, your data is client-side</h2>
-    <p>The piece that runs in your environment is a <b>thin, inspectable client</b> — it does local
-      classification and tagging and carries no proprietary routing logic. The decision engine and the
-      attribution model run on our side and only ever see metadata. You can read exactly what the client
-      sends; you never have to trust a black box with your prompts.</p>
-
-    <h2>The optimization engine fails open</h2>
-    <p>When you turn on the optional optimization engine, it sits in your request path — and it is built
-      to <b>never block a request</b>. If our routing service is unreachable, traffic passes straight
-      through to Anthropic, unrouted. We can degrade your savings; we can't degrade your uptime. A model
-      downgrade only ever happens after it's been proven non-inferior on your own work (shadow → quality
-      canary).</p>
+    <h2>Architecture: read-only, and never in your traffic path</h2>
+    <p>Outlay is <b>not a proxy or gateway</b> — your AI calls never flow through us. It connects to your
+      tracker (Jira/Linear/GitHub) and your provider's usage/admin APIs with <b>read-only tokens</b> and
+      pulls metadata: usage counts, models, and ticket references. Your prompts, model outputs, and API
+      keys stay entirely on your side; there's nothing for us to see in your traffic because we're not in
+      it.</p>
 
     <h2>Data handling, isolation &amp; exit</h2>
     <ul>
       <li><span class="ck">·</span><div><b>Per-deployment isolation</b> — your metadata is scoped to your deployment.</div></li>
       <li><span class="ck">·</span><div><b>Deletion on request</b> — during a design-partner pilot, your data is deleted at the end on request.</div></li>
-      <li><span class="ck">·</span><div><b>Leave anytime</b> — it's your key and your traffic; removing Outlay restores the unrouted path.</div></li>
+      <li><span class="ck">·</span><div><b>Leave anytime</b> — it's your key and your traffic; removing Outlay changes nothing about how your calls are made (we were never in the path).</div></li>
     </ul>
 
     <div class="note">Outlay is early and onboarding design partners. We're happy to walk a security

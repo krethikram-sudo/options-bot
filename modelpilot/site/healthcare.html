@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Outlay for healthcare — cut Claude costs, PHI never leaves your environment</title>
-<meta name="description" content="Outlay cuts your Claude bill without your PHI ever leaving your environment. Classification runs locally; prompts, outputs, and your API key never reach us. Built for HIPAA-conscious health-tech teams.">
+<title>Outlay for healthcare — govern Claude spend, PHI never leaves your environment</title>
+<meta name="description" content="Outlay maps and forecasts your Claude spend without your PHI ever leaving your environment. Read-only metadata only; prompts, outputs, and your API key never reach us. Built for HIPAA-conscious health-tech teams.">
 <link rel="canonical" href="https://outlay-ai.com/healthcare">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="/docs/docs.css">
@@ -16,26 +16,26 @@
 </div></div>
 
 <main style="max-width:820px;margin:0 auto;padding:34px 22px 80px">
-  <h1>Cut your Claude bill — without PHI ever leaving your environment.</h1>
+  <h1>Govern your Claude spend — without PHI ever leaving your environment.</h1>
   <p class="lead">Health-tech teams can't route patient data through a third-party gateway. Outlay
     is built so it never has to: prompts, model outputs, and your API key <b>never reach us</b>.</p>
 
-  <div class="note"><b>Why this works for healthcare:</b> Outlay classifies each request
-    <b>locally, on your own system</b>, and only a task category + numeric features are used to choose the
-    cheapest model that's good enough. Prompt text and completions — where PHI lives — stay entirely inside
-    your environment and go directly to Anthropic with your own key.</p>
+  <div class="note"><b>Why this works for healthcare:</b> Outlay connects <b>read-only</b> to your tracker
+    and your provider's usage data, and only a task category + numeric features (token counts, ticket IDs)
+    are used to attribute spend. Prompt text and completions — where PHI lives — never leave your
+    environment; Outlay is not in the path of your AI calls.</p>
 
   <h2>What that means for your security & compliance review</h2>
   <ul>
-    <li><b>No PHI egress to Outlay.</b> The sensitive data physically can't reach us — our endpoints
-      even reject any payload that contains prompt/output/key fields (HTTP 422), as defense in depth.</li>
-    <li><b>You keep your own Anthropic relationship.</b> Requests go to Anthropic directly with your key;
-      we're not in the path of your prompt content. Configure Anthropic's data terms (e.g. zero-retention)
-      with them as you do today.</li>
-    <li><b>Fail-open.</b> If Outlay is ever unreachable, traffic passes straight through to Claude,
-      unrouted — we can degrade savings, never your uptime or your data path.</li>
-    <li><b>Auditable savings.</b> Realized savings are measured against a held-out control arm with
-      non-inferiority checks on your own traffic — a number you can defend internally.</li>
+    <li><b>No PHI egress to Outlay.</b> The sensitive data physically can't reach us — we read usage
+      metadata and ticket references, never request or response bodies.</li>
+    <li><b>You keep your own Anthropic relationship.</b> Your calls go to Anthropic directly with your key;
+      Outlay isn't a proxy and isn't in the path of your prompt content. Configure Anthropic's data terms
+      (e.g. zero-retention) with them as you do today.</li>
+    <li><b>Read-only by design.</b> Connect with read-only tokens; remove Outlay anytime and nothing about
+      how your calls are made changes — it was never in the path.</li>
+    <li><b>Defensible forecasts.</b> Cost forecasts are back-tested on your own closed tickets
+      (leave-one-out) and shown with the sample size — a number you can defend internally.</li>
   </ul>
 
   <h2>The honest part on certifications</h2>
@@ -45,10 +45,10 @@
     we'll share exactly where we are. (See <a href="/security">Security &amp; trust</a>.)</p>
 
   <h2>The economics</h2>
-  <p>You pay only a share of the savings we actually deliver (20% pay-as-you-go; lower on subscription
-    tiers) — no savings, no bill. For a team spending five or six figures a month on Claude, routing the
-    easy requests to a cheaper-but-good-enough model adds up fast, with quality floors that keep your
-    clinical-grade work on a capable model.</p>
+  <p>Pilots run free. For a team spending five or six figures a month on Claude across clinical and
+    back-office work, knowing <b>which workflows and teams</b> drive the spend — and forecasting it by
+    scope before the invoice — is the difference between governing the line item and being surprised by
+    it.</p>
 
   <p style="margin-top:28px"><a class="cta" href="https://modelpilot-console-prod.fly.dev/signup">Start a free 7-day trial</a>
     &nbsp; <a class="lnk" href="mailto:krethikram@gmail.com?subject=Outlay%20for%20healthcare%20(BAA)">Talk to us about a BAA</a></p>

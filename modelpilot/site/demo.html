@@ -3,14 +3,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live demo — Outlay</title>
-<meta name="description" content="A guided, interactive walk-through of Outlay on example data: connect your sources, see AI spend mapped to epics, forecast the quarter, hold it to budget with pace alerts, and route spend down with proof — without a single prompt leaving your environment.">
+<meta name="description" content="A guided, interactive walk-through of Outlay on example data: connect your sources, see AI spend mapped to epics, forecast the quarter, and hold it to budget with pace alerts — without a single prompt leaving your environment.">
 <link rel="canonical" href="https://outlay-ai.com/demo">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
 <meta property="og:title" content="Live demo — Outlay">
-<meta property="og:description" content="Walk through Outlay step by step — attribution, forecasting, budget guardrails, and proven savings. Interactive, on example data.">
+<meta property="og:description" content="Walk through Outlay step by step — attribution, forecasting, and budget guardrails. Interactive, on example data.">
 <link rel="stylesheet" href="/outlay.css">
 <style>
   .demo-wrap{max-width:1000px;margin:0 auto;padding:0 24px}
@@ -116,7 +116,6 @@
   <div class="navlinks">
     <a href="/#how">How it works</a>
     <a href="/#owners">For eng &amp; finance</a>
-    <a href="/#optimize">Optimization engine</a>
     <a href="/#compare">Compare</a>
     <a href="/demo">Demo</a>
     <a href="/pilot">Pilot</a>
@@ -130,8 +129,8 @@
 <div class="page"><div class="wrap" style="text-align:center;max-width:680px">
   <div class="eyebrow">Interactive product tour · example data</div>
   <h1 style="margin:10px auto 0">Walk through Outlay, step by step.</h1>
-  <p class="lede" style="margin:14px auto 0">Five steps, on an example ~75-engineer team — connect your
-    sources, then watch AI spend get mapped, forecast, budgeted, and routed down. Click through at your
+  <p class="lede" style="margin:14px auto 0">Four steps, on an example ~75-engineer team — connect your
+    sources, then watch AI spend get mapped, forecast, and held to budget. Click through at your
     own pace. No prompts ever leave the box.</p>
 </div></div>
 
@@ -142,7 +141,6 @@
     <li data-go="2"><span class="n">2</span><span class="lb">Attribute</span></li>
     <li data-go="3"><span class="n">3</span><span class="lb">Forecast</span></li>
     <li data-go="4"><span class="n">4</span><span class="lb">Budget</span></li>
-    <li data-go="5"><span class="n">5</span><span class="lb">Optimize</span></li>
   </ol>
 
   <div class="stage">
@@ -261,38 +259,9 @@
       </div>
     </div></div>
 
-    <!-- STEP 5 — OPTIMIZE -->
-    <div class="pane" data-step="5"><div class="pane-grid">
-      <div class="explain">
-        <div class="ey">Step 5 · Optimize</div>
-        <h2>Route spend down — with proof.</h2>
-        <p>For each work-type, Outlay learns which cheaper model is <b>provably good enough</b>: it scores a
-          candidate in <b>shadow</b>, proves non-inferiority in a <b>quality canary</b>, then <b>enforces</b>
-          the downgrade. You're billed only on realized savings, and it always fails open.</p>
-        <ul>
-          <li><span class="ck">✓</span><div><b>~$5,480/mo</b> in proven, non-inferior savings here.</div></li>
-          <li><span class="ck">✓</span><div>Savings measured against a held-out <b>control arm</b> — audited, not quoted.</div></li>
-          <li><span class="ck">✓</span><div>Unreachable engine → traffic passes straight through. <b>Never your uptime.</b></div></li>
-        </ul>
-      </div>
-      <div>
-        <div class="card">
-          <div class="flow">
-            <span class="nd">Shadow<small>score candidate</small></span><span class="ar">→</span>
-            <span class="nd">Canary<small>prove quality</small></span><span class="ar">→</span>
-            <span class="nd">Enforce<small>route down</small></span>
-          </div>
-          <div class="dh">Recommended routing · net of rework</div>
-          <div class="recrow"><span class="w">Doc summarization <small>opus-4.8 → sonnet-4.6</small></span><span class="sv num">~$2,100/mo</span><span class="tag ok" style="grid-column:1/3;justify-self:start;margin-top:3px">✓ validated</span></div>
-          <div class="recrow"><span class="w">Test generation <small>sonnet-4.6 → haiku-4.5</small></span><span class="sv num">~$1,900/mo</span><span class="tag warn" style="grid-column:1/3;justify-self:start;margin-top:3px">needs validation</span></div>
-          <div class="recrow"><span class="w">Bugfix triage <small>opus-4.8 → sonnet-4.6</small></span><span class="sv num">~$1,480/mo</span><span class="tag warn" style="grid-column:1/3;justify-self:start;margin-top:3px">needs validation</span></div>
-        </div>
-      </div>
-    </div></div>
-
     <div class="navrow">
       <button class="btn ghost sm" id="back" disabled>← Back</button>
-      <span class="count" id="count">Step 1 of 5</span>
+      <span class="count" id="count">Step 1 of 4</span>
       <span class="sp"></span>
       <a class="btn primary sm" id="next" href="#">Next: Attribute →</a>
     </div>
@@ -321,15 +290,15 @@
   <a href="/docs/">Docs</a>
   <a href="mailto:krethikram@gmail.com">Contact</a>
 </div>
-<div class="wrap" style="margin-top:14px;font-size:12.5px;color:#6c7790">© 2026 Outlay · Budget by scope of work, stay within guardrails, capture the savings automatically.</div>
+<div class="wrap" style="margin-top:14px;font-size:12.5px;color:#6c7790">© 2026 Outlay · See AI spend mapped to your work, forecast it, and hold it to budget.</div>
 </footer>
 
 <script>
 (function(){
-  var TOTAL=5, cur=0, reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var TOTAL=4, cur=0, reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   var d=document, panes=d.querySelectorAll('.pane'), stepEls=d.querySelectorAll('#steps li'),
       back=d.getElementById('back'), next=d.getElementById('next'), count=d.getElementById('count');
-  var LABELS=['Connect','Attribute','Forecast','Budget','Optimize'];
+  var LABELS=['Connect','Attribute','Forecast','Budget'];
   var mail='mailto:krethikram@gmail.com?subject=Outlay%20design-partner%20pilot';
 
   function countUp(el){

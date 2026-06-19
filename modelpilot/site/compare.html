@@ -3,14 +3,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Compare — Outlay vs. FinOps suites, LLM observability &amp; AI gateways</title>
-<meta name="description" content="How Outlay differs from cloud FinOps suites, LLM observability tools, native provider consoles, AI gateways, and building it yourself: spend mapped to your roadmap, metadata-only privacy, and routing that bills only on realized savings.">
+<meta name="description" content="How Outlay differs from cloud FinOps suites, LLM observability tools, native provider consoles, AI gateways, and building it yourself: AI spend mapped to your roadmap, forecast by scope, with metadata-only privacy.">
 <link rel="canonical" href="https://outlay-ai.com/compare">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
 <meta property="og:title" content="Compare — Outlay vs. the alternatives">
-<meta property="og:description" content="Spend mapped to your roadmap, metadata-only privacy, and routing that bills only on realized savings.">
+<meta property="og:description" content="AI spend mapped to your roadmap, forecast by scope, with metadata-only privacy.">
 <link rel="stylesheet" href="/outlay.css">
 </head>
 <body>
@@ -20,7 +20,6 @@
   <div class="navlinks">
     <a href="/#how">How it works</a>
     <a href="/#owners">For eng &amp; finance</a>
-    <a href="/#optimize">Optimization engine</a>
     <a href="/#compare">Compare</a>
     <a href="/demo">Demo</a>
     <a href="/pilot">Pilot</a>
@@ -78,18 +77,18 @@
           <td class="us"><span class="y">✓</span><span class="sub">metadata-only, classified locally</span></td>
         </tr>
         <tr>
-          <td class="feat">Cuts spend (routes down) with proof</td>
-          <td><span class="n">✕</span><span class="sub">reports, doesn't act</span></td>
-          <td><span class="n">✕</span><span class="sub">observes, doesn't act</span></td>
+          <td class="feat">Forecast accuracy back-tested on your own work</td>
           <td><span class="n">✕</span></td>
-          <td class="us"><span class="y">✓</span><span class="sub">shadow → non-inferiority → autopilot</span></td>
+          <td><span class="n">✕</span></td>
+          <td><span class="n">✕</span></td>
+          <td class="us"><span class="y">✓</span><span class="sub">leave-one-out, with sample size</span></td>
         </tr>
         <tr>
-          <td class="feat">Pricing aligned to your bill going down</td>
-          <td><span class="n">✕</span><span class="sub">seat / % of cloud spend</span></td>
-          <td><span class="n">✕</span><span class="sub">seat / event volume</span></td>
-          <td><span class="n">✕</span></td>
-          <td class="us"><span class="y">✓</span><span class="sub">share of realized savings</span></td>
+          <td class="feat">Prompts &amp; keys never leave your environment</td>
+          <td><span class="y">✓</span><span class="sub">reads billing, not content</span></td>
+          <td><span class="n">✕</span><span class="sub">traces prompts/outputs</span></td>
+          <td><span class="y">✓</span></td>
+          <td class="us"><span class="y">✓</span><span class="sub">read-only metadata</span></td>
         </tr>
       </tbody>
     </table>
@@ -118,26 +117,24 @@
   <p>Free, accurate, and already there — totals by API key, model, and workspace. The gap is the join:
     a key or workspace isn't an epic, and there's no forecast, no pace guardrail, and no cross-tool view
     (Claude Code + Cursor + direct API in one place). Outlay reads these consoles read-only and does the
-    attribution, forecasting, and routing on top.</p>
+    attribution and forecasting on top.</p>
 
   <h2>Build it yourself</h2>
   <p>Entirely doable — a script that pulls the Anthropic admin API, joins PRs to tickets, and charts it.
     Most teams who try it find the <b>join is the hard part</b> (detached-HEAD CI agents, tracker teams,
     branches not named after tickets), and that a one-off dashboard rots. Outlay ships the attribution
-    join with fidelity tiers, the cache-aware cost model, the forecast, and the proven routing as a
-    product — read-only, metadata-only, free during the pilot. If it's not worth more than a weekend to
-    you, build it; if AI is a real and growing line item, don't maintain it yourself.</p>
+    join with fidelity tiers, the cache-aware cost model, and the forecast as a product — read-only,
+    metadata-only, free during the pilot. If it's not worth more than a weekend to you, build it; if AI
+    is a real and growing line item, don't maintain it yourself.</p>
 
   <h2>What about AI gateways &amp; routers? (OpenRouter, Portkey, Martian…)</h2>
   <p>Different category: gateways are a <b>hosted layer your traffic flows through</b> to reach many
-    models, and routers pick a model <em>by reading your prompt</em>. Outlay's optional optimization
-    engine sits on your own Claude key, decides from a <b>local classification</b> (so the prompt never
-    reaches us), bills only a share of <b>realized savings</b>, and fails open to your direct Anthropic
-    account. If you need one API across many providers or a multi-model ensemble for maximum quality, a
-    gateway is the right tool — some teams run both: a gateway for breadth, Outlay to stop overspending
-    on the easy requests and to map it all to the roadmap.</p>
+    models. Outlay isn't in your traffic path at all — it connects read-only to your tracker and your
+    provider's usage data, so your prompts and keys never reach us. Run a gateway if you need one API
+    across many providers; Outlay attributes and forecasts the spend regardless of how your calls are
+    made, and maps it all to the roadmap.</p>
 
-  <p class="backlink" style="margin-top:28px"><a href="/">← Back to Outlay</a> · <a href="/security">How we optimize without seeing your data</a></p>
+  <p class="backlink" style="margin-top:28px"><a href="/">← Back to Outlay</a> · <a href="/security">How we protect your data</a></p>
 </div></div></section>
 
 <section class="final"><div class="wrap">
