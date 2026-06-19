@@ -123,10 +123,18 @@ the work that caused it and forecasts it — read-only, ~30 min, free for design
 
 ## ICP (who to pursue, in order — see `PROSPECTS.md` for named targets)
 
-**Bullseye — the "spend-maturity moment":** an engineering-led company (Series A–C) with a **real,
-growing, finance-visible Claude bill** ($5K–$100K+/mo) and **no one assigned to attribute or forecast
-it**. Buyer = CTO / Head of AI / platform or FinOps lead — someone who sees the Anthropic invoice and is
-already being asked "what is this and where's it going."
+**Bullseye — the "spend-maturity moment":** a company (Series A–C) with a **real, growing, finance-visible
+Claude bill** ($5K–$100K+/mo) and **no one assigned to attribute or forecast it**.
+
+**Buyer — lead with finance (the economic buyer), implement with eng.** Outlay's output is a finance
+artifact (COGS attribution, gross-margin-by-product, a board-grade forecast, budget guardrails), so the
+person who *feels the pain and owns the budget* is in **finance** — CFO / VP Finance / Head of (Strategic)
+Finance / FinOps. They can say "yes, this matters." The only eng involvement is **~30 min to connect two
+read-only tokens** (no code change), so qualify with finance, then loop eng to connect. Two exceptions:
+at the leanest shops (<~25 ppl) there's often **no finance hire** — the founder/CTO owns the bill, so
+target them directly (with the margin framing). And a technically-curious Head of AI / platform lead can
+still be a great champion. Finance-persona drafts: `OUTLAY_OUTREACH_BATCH1_FINANCE.md`; eng-persona:
+`OUTLAY_OUTREACH_BATCH1.md`. Best results: **multi-thread** finance + eng the same week.
 
 | Priority | Segment | Why Outlay fits |
 |---|---|---|
