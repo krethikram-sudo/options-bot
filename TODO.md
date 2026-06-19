@@ -1,20 +1,32 @@
 # ModelPilot — Running TODO (founder)
 
-Living checklist. Claude keeps this current as we work. Last updated: **2026-06-18 (eve)**.
+Living checklist. Claude keeps this current as we work. Last updated: **2026-06-19 (eve)**.
 (Detailed legal/terms analysis lives in `modelpilot/LAUNCH_CHECKLIST.md`; this is the
 short, prioritized running list.)
 
 Live URLs:
-- Marketing: https://modelpilot.pages.dev/
-- Console (admin + customer): https://modelpilot-console-prod.fly.dev/  (admin → `/admin`)
-- Brain: https://modelpilot-brain-prod.fly.dev/  (health: `/health`)
+- Marketing: https://outlay-ai.com/  (Cloudflare Pages custom domain)
+- App / console (customer + admin): https://app.outlay-ai.com/  (admin → `/admin`; Fly app `modelpilot-console-prod`)
+- Pilot requests: https://app.outlay-ai.com/pilot-request  (admin inbox → `/admin/leads`)
+- Inbound email: hello@outlay-ai.com  (Cloudflare Email Routing → personal inbox; *sending* still needs SMTP)
+- Brain (routing, parked): https://modelpilot-brain-prod.fly.dev/  (health: `/health`)
 
-> **▶️ RESUME HERE next session:** Launch blocker #1 (deploy) DONE — console + brain deployed,
-> Fly billing card added (2026-06-16, per founder). Remaining launch path: **(2) founder track —
-> form entity → live Stripe → $99 price**, **(3) security — rotate leaked key, SMTP, admin password**,
-> **(4) counsel review**. Everything is committed/pushed. **Two quick ops steps now queued (see Security):
-> `fly deploy` the console (to ship the 2026-06-18 guidance-billing + funnel + feedback changes) and flip
-> on Cloudflare Web Analytics.**
+> **▶️ RESUME HERE next session:** Product is **Outlay** (spend attribution + forecasting); routing/
+> ModelPilot engine is parked. The full product is built and the marketing site + console are on the
+> brand domains. **Latest shipped (2026-06-19): in-app pilot-request form + admin leads inbox (#61),
+> product UI redesigned to match the marketing site, sign-in removed from the public site (pilot-only
+> funnel), Product Tour, forward-estimator surfaced on the landing page.** ⚠️ **Ops now queued:**
+> **(1) `fly deploy` the console** so `/pilot-request` (and the redesigned product) are live — the site
+> CTAs already point at it; **(2) set up transactional SMTP** (`SMTP_*` Fly secrets) so 2FA codes,
+> password resets, budget alerts, and pilot-request notifications actually send (logged-only until then);
+> optionally set `PILOT_INBOX`. Then: **send the design-partner outreach** (the real validation gap is
+> end-to-end ticket coverage + a measured forecast-accuracy number on a real team). Founder track
+> (entity → live Stripe) + counsel review of legal docs still open below.
+>
+> **NOTE — legal docs lag the pivot:** `modelpilot/site/legal/terms.html` + `msa.html` still describe the
+> old **"20% of realized savings"** routing-billing model. Outlay pilots run **free** and platform pricing
+> is set with design partners, so this copy is stale/misleading. Left for the **counsel review** pass
+> (don't rewrite legal terms ad hoc) — but flag it to the attorney.
 >
 > **PROGRESS 2026-06-17:** Nav decluttered. Deep competitor research added
 > (`MARKET_STUDY_2026.md`, `TOKEN_OPTIMIZATION_THESIS.md`, + proof/billing audit): durable
@@ -48,8 +60,9 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
       card are gone (replaced KPI with "Open work items"); savings CSV link removed. Pilots run **free** —
       trial-expiry billing gate disabled. All engine/brain code + the routes are left intact, so bringing
       routing back is a one-PR revert. Post-login (password/SSO/member/signup) all land on Spend. 121 tests
-      pass. **Follow-up:** the marketing site still sells routing ("Outlay bends spend down", autopilot) —
-      decide whether to de-emphasize that copy to match the parked scope.
+      pass. **Follow-up [done]:** the marketing site no longer sells routing/autopilot — copy now leads with
+      attribution + forecasting + estimate, matching the parked scope. (Only the legal `terms.html`/`msa.html`
+      still carry the old "20% of realized savings" billing — flagged for the counsel pass, see top note.)
 
 - [x] Site live on **https://outlay-ai.com** (Cloudflare Pages custom domain; registered at Cloudflare,
       apex + www CNAME → `modelpilot.pages.dev`). Canonical/OG flipped to outlay-ai.com, extensionless
@@ -70,9 +83,10 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
       121 tests pass. **Deliberately kept** (renaming = breaking change to the published gateway/brain, not
       console branding): the embedded routing client's identifiers — pip `modelpilot-client`, `MODELPILOT_*`
       env vars, `modelpilot` CLI, `x-modelpilot-key` machine-auth header, `modelpilot_savings` Stripe meter.
-      The live URL `modelpilot-console-prod.fly.dev` is the Fly **app name** — fix by adding the
-      `app.outlay-ai.com` custom domain (no data migration): `fly certs add app.outlay-ai.com`, add the DNS
-      records, then set `CONSOLE_BASE_URL=https://app.outlay-ai.com` and redeploy.
+- [x] **Console on the brand domain — `app.outlay-ai.com`.** `fly certs add app.outlay-ai.com` + Cloudflare
+      DNS (A `66.241.124.2` / AAAA, DNS-only/grey cloud); `CONSOLE_BASE_URL=https://app.outlay-ai.com` in
+      `fly.toml`. Customers reach the product from the brand domain, not the `…fly.dev` app name. (Needs the
+      `fly deploy` below for the env change + redesigned product to be live.)
 - [x] **Deploy is unblocked.** `console/Dockerfile` now copies the in-repo `outlay/` engine (+ fixtures)
       into the image — the console imports it at boot, so without this the container crash-looped. Verified
       a console+outlay-only layout boots (`/login` 200) and the sample-data path reads fixtures. **Founder:
@@ -81,6 +95,28 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 ---
 
 ## ✅ Done
+
+### 2026-06-19 (eve) — brand-domain launch + pilot funnel + product polish
+- [x] **In-app pilot-request form + admin leads inbox** (PR #61). Landing CTAs go to
+      `app.outlay-ai.com/pilot-request` (a console-hosted form: name/email/company/tools/message, honeypot
+      anti-spam, email validation) instead of opening Gmail. Submissions persist in a `pilot_requests` table
+      and email `hello@outlay-ai.com` when SMTP is set (saved either way); admins read them at `/admin/leads`
+      (Vendor → Pilot requests). 124 tests pass. ⚠️ **Live on `fly deploy`** — the route is in the console.
+- [x] **Product UI redesigned to match the marketing site** (PRs #59, #60). All five Outlay product pages
+      (Spend, Connect, Estimate, Accuracy, Budgets) rebuilt on the marketing design system (Fraunces + Inter,
+      green/paper) with a real component library (KPI row, forecast band, attribution rows, otags, form
+      fields). Was "horrible / misleading vs the landing page" — now consistent. ⚠️ live on `fly deploy`.
+- [x] **Sign-in removed from the public site — pilot-only funnel.** Public nav/CTAs take requests for a pilot;
+      no "Sign in / Start free trial" on the marketing site (the console login still exists for pilots).
+- [x] **Product Tour** (renamed from "demo") — comprehensive 5-step tour (Connect → Attribute → Forecast →
+      Estimate → Budget) including the forward estimator; `/demo` 301 → `/tour`; nav is identical across all
+      site pages (doesn't shift when you enter the tour).
+- [x] **Forward compute-cost estimator surfaced on the landing page** (`/#estimate`) — the "price planned
+      work before you build it" capability is now first-class marketing content, not buried.
+- [x] **2FA confirmed shipped** — opt-in email one-time-code (Settings enroll + login challenge). Needs SMTP
+      to actually send the codes (see Security).
+- [x] **Inbound brand email live** — `hello@outlay-ai.com` via Cloudflare Email Routing; every site/console
+      `mailto:` swapped from the personal Gmail to `hello@outlay-ai.com` (PR #51).
 
 ### 2026-06-19 — Outlay product built into the console
 - [x] **Spend dashboard, backlog estimator, budgets** (`/app/outlay`, `/app/outlay/estimate`,
@@ -313,9 +349,11 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
       alerts to actually send (without it they're only logged in dev). See `console/FLY_DEPLOY.md`.
       Optional: `TWILIO_*` for SMS 2FA.
 - [ ] Change any seeded/default admin password; confirm strong admin credentials.
-- [ ] **`fly deploy` the console** to ship the 2026-06-18 changes (guidance-trial-only billing policy,
-      activation funnel + feedback widget + cancel-reason, hidden-guidance-for-paid UI). They're committed
-      but not live until deployed.
+- [ ] **`fly deploy` the console** — now ships a large committed-but-undeployed backlog: the whole Outlay
+      product (Spend/Estimate/Accuracy/Budgets + connectors), the redesigned product UI, the
+      `/pilot-request` form + `/admin/leads` inbox, `CONSOLE_BASE_URL=app.outlay-ai.com`, and the
+      2026-06-18 changes (guidance-trial-only billing, activation funnel + feedback widget + cancel-reason).
+      The site's pilot CTAs already point at `/pilot-request`, so deploy soon to avoid a dead link.
 - [ ] **Enable Cloudflare Web Analytics** on the Pages project (Dashboard → Web Analytics → add the site).
       Cookieless, no token in repo; the Privacy Policy disclosure is already in place.
 - [ ] (Optional) Custom domain `app.modelpilot.app` via `fly certs add` — currently on free `.fly.dev`.
