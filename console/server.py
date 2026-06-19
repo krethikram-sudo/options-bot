@@ -204,10 +204,10 @@ def _is_set_up(account: dict) -> bool:
 
 
 def _post_auth_dest(account: dict) -> str:
-    """Vendor admins -> admin; set-up customers -> Home; new customers -> Setup."""
+    """Vendor admins -> admin; customers -> Spend (the Outlay product home)."""
     if account.get("role") == "admin":
         return "/admin"
-    return "/app" if _is_set_up(account) else "/app/connect"
+    return "/app/outlay"
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -235,7 +235,7 @@ async def signup(request: Request):
                                     company=f.get("company", ""), consent=True)
     except store.StoreError as e:
         return _html(web.auth_form("signup", str(e), f.get("email", "")), 400)
-    resp = _redirect("/app/connect")  # brand-new customer -> Setup first
+    resp = _redirect("/app/outlay")  # brand-new customer -> Spend product home
     _set_session(resp, acct)
     return resp
 
@@ -266,7 +266,7 @@ async def login(request: Request):
     member = store.authenticate_member(f.get("email", ""), f.get("password", ""))
     if member:  # invited teammate
         org = store.get_account(member["account_id"])
-        resp = _redirect("/app")
+        resp = _redirect("/app/outlay")
         _set_session(resp, org, member["role"], member["id"], platform_role="customer")
         return resp
     return _html(web.auth_form("login", "Wrong email or password (or account suspended).",
@@ -382,11 +382,8 @@ def _require(request: Request):
     acct = _current(request)
     if not acct:
         return None, _redirect("/login")
-    # Free-trial enforcement: once it ends and they haven't converted, the app is
-    # gated to Billing until they activate. Vendor admins are exempt.
-    if acct.get("role") != "admin" and _trial_expired(acct) and not _is_paid(acct):
-        if not request.url.path.startswith(_TRIAL_OK_PREFIXES):
-            return None, _redirect("/app/billing?trial=ended")
+    # Pilots run free for now — trial-expiry gating to Billing is parked along with
+    # the routing/savings billing model. (Re-enable by restoring the check below.)
     return acct, None
 
 
@@ -395,7 +392,10 @@ def app_dashboard(request: Request):
     acct, redir = _require(request)
     if redir:
         return redir
-    plan = store.get_plan(acct["id"])
+    # Routing/optimization is parked for now — Spend is the product home. (To bring
+    # the routing console back, remove this redirect; the render below still works.)
+    return _redirect("/app/outlay")
+    plan = store.get_plan(acct["id"])  # noqa: F841 — preserved for reversibility
     trial = store.trial_status(acct["id"])
     settings = store.get_settings(acct["id"])
     bill = store.bill_estimate(acct["id"])
@@ -1480,7 +1480,7 @@ def sso_callback(request: Request):
     except store.StoreError:
         return _redirect("/login?sso=failed")
     org = store.get_account(account_id)
-    resp = _redirect("/app")
+    resp = _redirect("/app/outlay")
     _set_session(resp, org, member["role"], member["id"], platform_role="customer")
     return resp
 
