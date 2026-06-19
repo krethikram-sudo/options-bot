@@ -226,6 +226,14 @@ CREATE TABLE IF NOT EXISTS outlay_connections (
     anthropic_key TEXT,               -- admin key; TODO encrypt at rest
     synced_at REAL
 );
+CREATE TABLE IF NOT EXISTS outlay_budgets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL,
+    scope_type TEXT NOT NULL,         -- 'overall' | 'team' | 'class'
+    scope_id TEXT,                    -- team id / work-type; NULL for overall
+    limit_usd REAL NOT NULL,
+    period_days INTEGER NOT NULL DEFAULT 30
+);
 """
 
 WEBHOOK_EVENTS = ("budget.warn", "budget.over", "proposal.pending", "account.suspended")
@@ -640,6 +648,40 @@ def mark_outlay_synced(account_id: int, path: str | None = None,
     try:
         conn.execute("UPDATE outlay_connections SET synced_at=? WHERE account_id=?",
                      (now or time.time(), account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def add_outlay_budget(account_id: int, scope_type: str, scope_id: str | None,
+                      limit_usd: float, period_days: int = 30, path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute(
+            "INSERT INTO outlay_budgets(account_id, scope_type, scope_id, limit_usd, period_days)"
+            " VALUES(?,?,?,?,?)",
+            (account_id, scope_type, (scope_id or "").strip() or None,
+             float(limit_usd), int(period_days)))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def list_outlay_budgets(account_id: int, path: str | None = None) -> list[dict]:
+    conn = connect(path)
+    try:
+        rows = conn.execute("SELECT * FROM outlay_budgets WHERE account_id=? ORDER BY id",
+                            (account_id,)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def delete_outlay_budget(account_id: int, budget_id: int, path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute("DELETE FROM outlay_budgets WHERE id=? AND account_id=?",
+                     (int(budget_id), account_id))
         conn.commit()
     finally:
         conn.close()

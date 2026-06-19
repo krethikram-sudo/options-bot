@@ -420,7 +420,8 @@ def outlay_page(account: dict, report: dict | None) -> str:
 
     grid = (f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">{spend_card}{fc_card}</div>'
             f'<div style="margin-top:16px">{save_card}</div>' + (f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""))
-    estlink = '<div style="margin:-4px 0 16px"><a href="/app/outlay/estimate">Estimate your backlog →</a></div>'
+    estlink = ('<div style="margin:-4px 0 16px"><a href="/app/outlay/estimate">Estimate your backlog →</a>'
+               '<a href="/app/outlay/budgets" style="margin-left:16px">Budgets &amp; guardrails →</a></div>')
     body = kpis + estlink + grid + '<div style="margin-top:16px">' + _outlay_connect(collapsed=True) + '</div>'
     return page("Spend", body, account, active="/app/outlay")
 
@@ -513,6 +514,44 @@ def estimate_backlog_page(account: dict, report: dict | None) -> str:
                   f'<th style="text-align:right">Estimate</th><th style="text-align:left">Range</th>'
                   f'<th style="text-align:left">Confidence</th></tr></thead><tbody>{rows}</tbody></table>{tighten}</div>')
     return page("Estimate", form + result, account, active="/app/outlay")
+
+
+def budgets_page(account: dict, report: dict | None, statuses: list[dict]) -> str:
+    """Set budgets by scope and see spend-vs-budget with pace projection."""
+    colors = {"ok": "#0f6b4f", "warn": "#b45309", "over": "#b3261e"}
+    note = "" if report else ('<div class=card><p class=muted>Connect data on the '
+                              '<a href="/app/outlay">Spend</a> tab to see live status.</p></div>')
+    rows = ""
+    for s in statuses:
+        c = colors.get(s["status"], "#0f6b4f")
+        name = _e(s["scope_type"]) + (f': {_e(s["scope_id"])}' if s.get("scope_id") else "")
+        w = min(max(s.get("pct_used", 0), 0), 1) * 100
+        rows += (f'<div class=card style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:baseline">'
+                 f'<b>{name}</b><span class="pill" style="background:{c}22;color:{c}">{_e(s["status"])}</span></div>'
+                 f'<div style="height:8px;border-radius:5px;background:#eee;overflow:hidden;margin:8px 0 6px">'
+                 f'<span style="display:block;height:100%;width:{w:.0f}%;background:{c}"></span></div>'
+                 f'<div class=muted style="font-size:13px">{money(s.get("spent_usd",0))} of {money(s["limit_usd"])} '
+                 f'this window · projected <b style="color:{c}">{money(s.get("projected_usd",0))}</b> over {int(s.get("period_days") or 30)} days'
+                 f'<form method=post action="/app/outlay/budgets/delete" style="display:inline;margin-left:10px">'
+                 f'<input type=hidden name=id value="{s["id"]}">'
+                 f'<button class="btn sec sm">Remove</button></form></div></div>')
+    if not statuses:
+        rows = '<p class=muted>No budgets yet — add one below.</p>'
+    add = """<div class=card style="margin-top:16px"><h3 style="margin:.2em 0 .6em">Add a budget</h3>
+      <form method=post action="/app/outlay/budgets">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;align-items:end">
+          <label class=fld><span>Scope</span><select name=scope_type>
+            <option value=overall>Overall</option><option value=team>Team</option><option value=class>Work type</option></select></label>
+          <label class=fld><span>Scope id (team / type)</span><input name=scope_id placeholder="platform / bugfix"></label>
+          <label class=fld><span>Limit (USD)</span><input name=limit_usd type=number step=any placeholder="5000"></label>
+          <label class=fld><span>Period (days)</span><input name=period_days type=number value=90></label>
+        </div>
+        <button class="btn" style="margin-top:12px">Add budget</button>
+      </form></div>"""
+    head = ('<div class=hero><h1>Budgets &amp; guardrails.</h1>'
+            '<p class=muted>Set a budget by scope; Outlay projects your spend to the period and flags it '
+            '<b>before</b> you go over — not at month-end.</p></div>')
+    return page("Budgets", head + note + rows + add, account, active="/app/outlay")
 
 
 # --------------------------------------------------------------------------- #
