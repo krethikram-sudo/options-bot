@@ -21,6 +21,6 @@ Sendbird,support_ai,John S. Kim (CEO),CTO / VP Eng,,,target,,find buyer; one-pag
 Decagon,support_ai,Jesse Zhang (CEO),CTO / Head of AI,,,target,,strategic; find buyer,T2 confirmed; MULTI-MODEL; SIZE ($4.5B). src anthropic.com/customers/decagon
 11x,sdr_agent,,CTO / Head of AI,,,target,,find buyer; opener+estimator,T2 confirmed (personalization); MULTI-MODEL. src zenml llmops
 Brex,fintech_spend,,VP Eng / Head of AI,,,target,,strategic; find buyer,T2 confirmed; BEDROCK; SIZE. src anthropic.com/customers/brex
-Casey,insurance_ai,Pascal Kung (VP Eng),VP Eng,,,target,,verify Claude; opener (routing on merits),T3 best-stage (YC F25); Claude UNCONFIRMED. src ycombinator.com/companies/casey
+Casey,insurance_ai,Pascal Kung (VP Eng),VP Eng,,,target,,verify Claude; opener (attribution/forecast on merits),T3 best-stage (YC F25); Claude UNCONFIRMED. src ycombinator.com/companies/casey
 Leaping AI,voice_support,,CTO co-founder,,,target,,verify Claude; opener,"T3 (YC W25, >100k calls/yr); Claude UNCONFIRMED. src ycombinator.com/companies/leaping-ai"
 Ambral,account_mgmt,,Founder / CTO,,,target,,find buyer; opener,T3 (YC W25); Claude confirmed in build tooling. src claude.com/blog/building-companies-with-claude-code
