@@ -51,6 +51,10 @@ optimization engine within it. Marketing site rebranded to **Outlay** and moved 
       (keeping the prefilled subject lines). **Founder: reply "email is live" when ready.**
 - [ ] **Send the design-partner outreach** (`OUTLAY_PILOT_OUTREACH.md`) — 3–5 pilots; the real
       validation gap is end-to-end ticket coverage + a measured forecast-accuracy number on a real team.
+- [x] **Deploy is unblocked.** `console/Dockerfile` now copies the in-repo `outlay/` engine (+ fixtures)
+      into the image — the console imports it at boot, so without this the container crash-looped. Verified
+      a console+outlay-only layout boots (`/login` 200) and the sample-data path reads fixtures. **Founder:
+      `fly deploy` from the repo root (runbook `console/FLY_DEPLOY.md`) to put all of the Outlay product live.**
 
 ---
 
