@@ -425,7 +425,8 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     acc = ""
     if cal.get("n_evaluated", 0) > 0:
         acc = (f'<p class=muted style="font-size:12.5px;margin-top:10px">Forecast accuracy (measured): median '
-               f'estimate within ~{cal.get("mdape",0)*100:.0f}% of actual on your closed tickets.</p>')
+               f'estimate within ~{cal.get("mdape",0)*100:.0f}% of actual on your closed tickets. '
+               f'<a href="/app/outlay/accuracy">details →</a></p>')
     fc_card = (f'<div class=card><h3 style="margin:.2em 0 .4em">Forecast · open work</h3>'
                f'<div style="font-size:28px;font-weight:700">{money(fc.get("expected_usd",0))}</div>'
                f'<div class=muted>likely {money(fc.get("low_usd",0))}–{money(fc.get("high_usd",0))} · '
@@ -468,7 +469,8 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     sync_line = (f'<div class=muted style="font-size:12.5px;margin:-2px 0 12px">'
                  f'Last refreshed <b>{last}</b> · {cadence} · '
                  f'<a href="/app/outlay/connect">manage connection →</a></div>')
-    estlink = ('<div style="margin:-4px 0 16px"><a href="/app/outlay/estimate">Estimate your backlog →</a>'
+    estlink = ('<div style="margin:-4px 0 16px"><a href="/app/outlay/accuracy">How accurate is this? →</a>'
+               '<a href="/app/outlay/estimate" style="margin-left:16px">Estimate your backlog →</a>'
                '<a href="/app/outlay/budgets" style="margin-left:16px">Budgets &amp; guardrails →</a></div>')
     bstrip = ""
     if statuses:
@@ -612,6 +614,79 @@ def estimate_backlog_page(account: dict, report: dict | None) -> str:
                   f'<th style="text-align:right">Estimate</th><th style="text-align:left">Range</th>'
                   f'<th style="text-align:left">Confidence</th></tr></thead><tbody>{rows}</tbody></table>{tighten}</div>')
     return page("Estimate", form + result, account, active="/app/outlay")
+
+
+def _pct(x, digits: int = 0) -> str:
+    try:
+        return f"{float(x) * 100:.{digits}f}%"
+    except (TypeError, ValueError):
+        return "—"
+
+
+def accuracy_page(account: dict, report: dict | None) -> str:
+    """The honesty layer, front and center: how close our forecast lands on the
+    customer's *own* closed tickets, measured leave-one-out. This is the #1
+    customer question, so we lead with the measured number and never hide n."""
+    head = ('<div class=hero><h1>How accurate is this?</h1>'
+            '<p class=muted>We don\'t ask you to trust a vendor benchmark. Outlay back-tests its forecast '
+            'on <b>your own closed tickets</b>, leave-one-out: hide a ticket, predict it from the rest, '
+            'compare to what it actually cost. Below is that measured error — on your data.</p></div>')
+    cal = (report or {}).get("calibration") or {}
+    n = cal.get("n_evaluated", 0)
+    if not report or n < 1:
+        body = (head + '<div class=card><p class=muted>Not enough closed, attributed tickets yet to '
+                'measure accuracy. Connect data on the <a href="/app/outlay">Spend</a> tab and let a few '
+                'tickets close — accuracy appears here automatically once there\'s history to back-test.</p></div>')
+        return page("Accuracy", body, account, active="/app/outlay")
+
+    mdape, within = cal.get("mdape", 0), cal.get("within_p90", 0)
+    grade_c = "#0f6b4f" if mdape <= 0.25 else ("#b45309" if mdape <= 0.5 else "#b3261e")
+    low = ('<div class=card style="border-left:4px solid #b45309;margin-bottom:16px">'
+           f'<b style="color:#b45309">Early read — {n} ticket(s) evaluated.</b> '
+           'Treat these as directional until more work closes.</div>') if n < 12 else ""
+    kpis = (
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:0 0 18px">'
+        + _kpi("Median error (MdAPE)", _pct(mdape), "typical forecast vs actual", grade_c)
+        + _kpi("Within the p90 band", _pct(within), "actuals at/under our high estimate",
+               "#0f6b4f" if within >= 0.8 else "#b45309")
+        + _kpi("Tickets back-tested", str(n), f"{_pct(cal.get('coverage',0))} of closed work")
+        + "</div>")
+
+    rows = ""
+    for cc in cal.get("by_class", []):
+        bias = cc.get("bias", 0)
+        bias_txt = ("over-forecasts" if bias > 0.02 else "under-forecasts" if bias < -0.02 else "unbiased")
+        bias_c = "#b45309" if abs(bias) > 0.15 else "#475569"
+        rows += (f'<tr><td>{_e(cc.get("task_class"))}</td><td style="text-align:right">{cc.get("n",0)}</td>'
+                 f'<td style="text-align:right">{_pct(cc.get("mdape",0))}</td>'
+                 f'<td style="text-align:right">{_pct(cc.get("within_p90",0))}</td>'
+                 f'<td style="color:{bias_c}">{bias_txt} ({_pct(bias,0)})</td></tr>')
+    by_class = (f'<div class=card><h3 style="margin:.2em 0 .6em">Accuracy by work type</h3>'
+                f'<table class=tbl style="width:100%"><thead><tr>'
+                f'<th style="text-align:left">Work type</th><th style="text-align:right">n</th>'
+                f'<th style="text-align:right">Median err</th><th style="text-align:right">Within p90</th>'
+                f'<th style="text-align:left">Bias</th></tr></thead><tbody>{rows}</tbody></table>'
+                f'<p class=muted style="font-size:12px;margin-top:10px">Bias is the average signed error: '
+                f'positive means we tend to over-forecast (you\'ll likely spend less), negative the reverse.</p></div>')
+
+    size = cal.get("size") or {}
+    size_card = ""
+    if size.get("n"):
+        if size.get("improves"):
+            size_card = (f'<div class=card style="margin-top:16px;border-left:4px solid #0f6b4f">'
+                         f'<b style="color:#0f6b4f">Story points help.</b> Conditioning on size cuts median '
+                         f'error by {_pct(size.get("error_reduction",0))} vs work-type alone '
+                         f'({_pct(size.get("mdape_size",0))} vs {_pct(size.get("mdape_class",0))}, n={size.get("n",0)}). '
+                         f'Keep estimating points and forecasts tighten.</div>')
+        else:
+            size_card = (f'<div class=card style="margin-top:16px"><b>Story points aren\'t adding signal yet</b> '
+                         f'on your data (size {_pct(size.get("mdape_size",0))} vs work-type {_pct(size.get("mdape_class",0))}). '
+                         f'We fall back to the work-type model, which is doing as well or better.</div>')
+
+    foot = ('<p class=muted style="font-size:12.5px;margin-top:16px">Method: leave-one-out back-test over '
+            'closed, ticket-attributed work. We never score a ticket using its own cost. As more work '
+            'closes, the sample grows and this number sharpens — re-checked on every sync.</p>')
+    return page("Accuracy", head + low + kpis + by_class + size_card + foot, account, active="/app/outlay")
 
 
 def budgets_page(account: dict, report: dict | None, statuses: list[dict],

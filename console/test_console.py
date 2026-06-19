@@ -1344,6 +1344,32 @@ def test_outlay_cursor_key_encrypted_at_rest(env, client):
         assert raw["cursor_key"].startswith("enc:") and "key_supersecret" not in raw["cursor_key"]
 
 
+def test_outlay_accuracy_empty_then_populated(env, client):
+    _signup(client, email="acc@x.com")
+    # before any data → honest "not enough yet" state, not a fake number
+    r = client.get("/app/outlay/accuracy")
+    assert r.status_code == 200 and "Not enough closed" in r.text
+
+    fix = _fixtures()
+    issues = (fix / "github_issues.json").read_text()
+    usage = (fix / "anthropic_usage.json").read_text()
+    assert client.post("/app/outlay/run", json={"issues": issues, "usage": usage}).json()["ok"]
+
+    r = client.get("/app/outlay/accuracy")
+    assert r.status_code == 200
+    assert "Median error (MdAPE)" in r.text          # measured headline
+    assert "Accuracy by work type" in r.text          # per-class breakdown
+    assert "Story points help" in r.text              # size-conditioning win (fixture improves)
+    assert "Early read" in r.text                     # n=6 < 12 → directional banner
+    # dashboard links to it
+    assert "/app/outlay/accuracy" in client.get("/app/outlay").text
+
+
+def test_outlay_accuracy_requires_auth(env, client):
+    r = client.get("/app/outlay/accuracy", follow_redirects=False)
+    assert r.status_code in (302, 303, 307) and "/login" in r.headers.get("location", "")
+
+
 def test_outlay_history_records_and_trends(env, client):
     _, store = env
     _signup(client, email="hist@x.com")
