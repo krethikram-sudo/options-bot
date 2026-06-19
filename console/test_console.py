@@ -1284,3 +1284,42 @@ def test_outlay_sync_pulls_live(env, client):
     report = outlay_app.sync(conn, transport=_fake_transport())
     assert report["spend"]["total_usd"] > 0
     assert "_model" in report  # estimator can reuse the learned model
+
+
+def test_outlay_budgets_crud_and_status(env, client):
+    _, store = env
+    _signup(client, email="bud@x.com")
+    fix = _fixtures()
+    issues = (fix / "github_issues.json").read_text()
+    usage = (fix / "anthropic_usage.json").read_text()
+    assert client.post("/app/outlay/run", json={"issues": issues, "usage": usage}).json()["ok"]
+
+    # empty budgets page
+    r = client.get("/app/outlay/budgets")
+    assert r.status_code == 200 and "Budgets" in r.text
+
+    # add an overall budget that's tiny → projected over
+    r = client.post("/app/outlay/budgets",
+                    data={"scope_type": "overall", "scope_id": "", "limit_usd": "1", "period_days": "90"},
+                    follow_redirects=True)
+    assert r.status_code == 200
+    acct = store.get_account_by_email("bud@x.com")
+    buds = store.list_outlay_budgets(acct["id"])
+    assert len(buds) == 1
+    from console import outlay_app
+    rep = store.get_outlay_report(acct["id"])
+    st = outlay_app.budget_statuses(rep, buds)[0]
+    assert st["status"] == "over"   # $13 spend vs $1 limit
+
+    # delete it
+    client.post("/app/outlay/budgets/delete", data={"id": str(buds[0]["id"])}, follow_redirects=True)
+    assert store.list_outlay_budgets(acct["id"]) == []
+
+
+def test_outlay_budget_ok_when_under(env, client):
+    _signup(client, email="bud2@x.com")
+    from console import outlay_app
+    report = {"window_days": 30, "spend": {"total_usd": 100.0}, "tickets": []}
+    st = outlay_app.budget_statuses(report, [{"id": 1, "scope_type": "overall",
+                                              "scope_id": None, "limit_usd": 10000, "period_days": 30}])[0]
+    assert st["status"] == "ok" and st["projected_usd"] == 100.0

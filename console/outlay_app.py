@@ -139,6 +139,39 @@ def build_report(issues, usage, planned: Optional[object] = None, window_days: i
     return _report(work, result, stats, size_models, planned_items, window_days)
 
 
+def budget_statuses(report: dict, budgets: list[dict]) -> list[dict]:
+    """Compute spend-vs-budget with pace projection from the stored report.
+
+    Pace projection: the report covers `window_days`; we straight-line the spend
+    to the budget's period. Status: over (already past, or projected past),
+    warn (projected ≥ 80%), else ok — guardrails that flag *before* overspend.
+    """
+    tickets = report.get("tickets", []) if report else []
+    total = (report.get("spend", {}) or {}).get("total_usd", 0.0) if report else 0.0
+    window = (report.get("window_days") if report else None) or 30
+    out = []
+    for b in budgets:
+        st, sid = b["scope_type"], b.get("scope_id")
+        if st == "team":
+            spent = sum(t.get("cost_usd", 0) for t in tickets if (t.get("team_id") or "") == sid)
+        elif st == "class":
+            spent = sum(t.get("cost_usd", 0) for t in tickets if t.get("task_class") == sid)
+        else:  # overall
+            spent = total
+        period = b.get("period_days") or 30
+        projected = spent / window * period if window else spent
+        limit = b.get("limit_usd", 0) or 0
+        if limit and (spent >= limit or projected > limit):
+            status = "over"
+        elif limit and projected >= 0.8 * limit:
+            status = "warn"
+        else:
+            status = "ok"
+        out.append({**b, "spent_usd": round(spent, 2), "projected_usd": round(projected, 2),
+                    "pct_used": round(spent / limit, 3) if limit else 0.0, "status": status})
+    return out
+
+
 def sync(conn: dict, window_days: int = 30, transport=None) -> dict:
     """Pull live from the customer's connected sources and run the pipeline.
 

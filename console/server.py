@@ -473,6 +473,42 @@ async def app_outlay_sync(request: Request):
     return JSONResponse({"ok": True})
 
 
+@app.get("/app/outlay/budgets", response_class=HTMLResponse)
+def app_outlay_budgets(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    report = store.get_outlay_report(acct["id"])
+    statuses = outlay_app.budget_statuses(report, store.list_outlay_budgets(acct["id"]))
+    return _html(web.budgets_page(acct, report, statuses))
+
+
+@app.post("/app/outlay/budgets")
+async def app_outlay_budgets_add(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    try:
+        limit = float(f.get("limit_usd") or 0)
+    except ValueError:
+        limit = 0.0
+    if limit > 0:
+        store.add_outlay_budget(acct["id"], f.get("scope_type") or "overall",
+                                f.get("scope_id"), limit, int(f.get("period_days") or 30))
+    return _redirect("/app/outlay/budgets")
+
+
+@app.post("/app/outlay/budgets/delete")
+async def app_outlay_budgets_delete(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    store.delete_outlay_budget(acct["id"], int(f.get("id") or 0))
+    return _redirect("/app/outlay/budgets")
+
+
 @app.get("/app/outlay/estimate", response_class=HTMLResponse)
 def app_outlay_estimate(request: Request):
     acct, redir = _require(request)
