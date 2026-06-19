@@ -54,11 +54,13 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 - [x] Site live on **https://outlay-ai.com** (Cloudflare Pages custom domain; registered at Cloudflare,
       apex + www CNAME → `modelpilot.pages.dev`). Canonical/OG flipped to outlay-ai.com, extensionless
       clean URLs, `modelpilot.pages.dev/*` 301 → outlay-ai.com. (PRs #8, #9.)
-- [ ] **Swap site email CTAs → `hello@outlay-ai.com`.** Set up **Cloudflare Email Routing** on the
-      `outlay-ai.com` zone (inbound forward to personal inbox; for *sending as* hello@, add a Gmail
-      "Send mail as" via a free SMTP relay or move to Workspace/Fastmail). Once verified, Claude swaps
-      every `mailto:krethikram@gmail.com` across `modelpilot/site/**` → `hello@outlay-ai.com` in one PR
-      (keeping the prefilled subject lines). **Founder: reply "email is live" when ready.**
+- [x] **Site email CTAs → `hello@outlay-ai.com`.** Cloudflare Email Routing live (`hello@` forwards to
+      personal inbox); every `mailto:krethikram@gmail.com` across the site + console status page swapped to
+      `hello@outlay-ai.com`, subject lines preserved (PR #51).
+  - [ ] **Sending as hello@ (transactional email).** For the app to *send* password resets / budget alerts
+        from `hello@outlay-ai.com`, set up a sender (Resend/Postmark — domain verify adds DKIM) and
+        `fly secrets set SMTP_HOST/PORT/USER/PASSWORD SMTP_FROM='Outlay <hello@outlay-ai.com>'`. Until then
+        those emails log server-side only. (Receiving/forwarding is done.)
 - [ ] **Send the design-partner outreach** (`OUTLAY_PILOT_OUTREACH.md`) — 3–5 pilots; the real
       validation gap is end-to-end ticket coverage + a measured forecast-accuracy number on a real team.
 - [x] **Console rebranded ModelPilot → Outlay.** Every customer-visible string in the console: nav/logo,
