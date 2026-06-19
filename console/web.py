@@ -566,7 +566,8 @@ def estimate_backlog_page(account: dict, report: dict | None) -> str:
     return page("Estimate", form + result, account, active="/app/outlay")
 
 
-def budgets_page(account: dict, report: dict | None, statuses: list[dict]) -> str:
+def budgets_page(account: dict, report: dict | None, statuses: list[dict],
+                 projects: list[dict] | None = None) -> str:
     """Set budgets by scope and see spend-vs-budget with pace projection."""
     colors = {"ok": "#0f6b4f", "warn": "#b45309", "over": "#b3261e"}
     note = "" if report else ('<div class=card><p class=muted>Connect data on the '
@@ -587,17 +588,29 @@ def budgets_page(account: dict, report: dict | None, statuses: list[dict]) -> st
                  f'<button class="btn sec sm">Remove</button></form></div></div>')
     if not statuses:
         rows = '<p class=muted>No budgets yet — add one below.</p>'
+    # Project/epic pick-list so users know which keys they can budget against.
+    pref = ""
+    if projects:
+        chips = "".join(
+            f'<span class="pill" style="background:#13203a11;margin:0 6px 6px 0;display:inline-block">'
+            f'<span class=mono>{_e(p["project"])}</span> · {money(p.get("spent_usd",0))}</span>'
+            for p in projects[:12])
+        pref = (f'<div class=card style="margin-top:16px"><h3 style="margin:.2em 0 .4em">Spend by project / epic</h3>'
+                f'<p class=muted style="font-size:13px;margin:.2em 0 .8em">Budget any of these by choosing '
+                f'<b>Project / epic</b> below and pasting the key.</p>{chips}</div>')
     add = """<div class=card style="margin-top:16px"><h3 style="margin:.2em 0 .6em">Add a budget</h3>
       <form method=post action="/app/outlay/budgets">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;align-items:end">
           <label class=fld><span>Scope</span><select name=scope_type>
-            <option value=overall>Overall</option><option value=team>Team</option><option value=class>Work type</option></select></label>
-          <label class=fld><span>Scope id (team / type)</span><input name=scope_id placeholder="platform / bugfix"></label>
+            <option value=overall>Overall</option><option value=team>Team</option>
+            <option value=class>Work type</option><option value=project>Project / epic</option></select></label>
+          <label class=fld><span>Scope id (team / type / key)</span><input name=scope_id placeholder="platform / bugfix / PROJ"></label>
           <label class=fld><span>Limit (USD)</span><input name=limit_usd type=number step=any placeholder="5000"></label>
           <label class=fld><span>Period (days)</span><input name=period_days type=number value=90></label>
         </div>
         <button class="btn" style="margin-top:12px">Add budget</button>
       </form></div>"""
+    add = pref + add
     head = ('<div class=hero><h1>Budgets &amp; guardrails.</h1>'
             '<p class=muted>Set a budget by scope; Outlay projects your spend to the period and flags it '
             '<b>before</b> you go over — not at month-end.</p></div>')
