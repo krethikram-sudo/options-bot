@@ -1,0 +1,29 @@
+name: console-ci
+
+# The console now hosts the Outlay product surface (spend dashboard, backlog
+# estimator, live connectors). Its tests must gate console changes — and engine
+# changes too, since the console imports the in-repo `outlay` package.
+on:
+  push:
+    paths:
+      - "console/**"
+      - "outlay/**"
+      - ".github/workflows/console-ci.yml"
+  pull_request:
+    paths:
+      - "console/**"
+      - "outlay/**"
+      - ".github/workflows/console-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # FastAPI app + TestClient (httpx). Stripe is optional — tests run with it
+      # disabled, but it's in requirements so install it for import parity.
+      - run: pip install -r console/requirements.txt pytest "httpx<0.28"
+      - run: python -m pytest console/test_console.py -q
