@@ -71,12 +71,17 @@ Open `https://<app>.fly.dev/login`, sign in with your ADMIN_EMAIL / ADMIN_PASSWO
 Because the account's role is `admin`, you're routed straight to **/admin** (the
 cross-customer overview + tuning-review queue). Done.
 
-## 6. Custom domain (optional, do when ready)
+## 6. Custom domain — serve the product at app.outlay-ai.com
 ```bash
-fly certs add app.modelpilot.app          # then add the shown DNS records at your registrar
+fly certs add app.outlay-ai.com           # prints the DNS records to add
 ```
-After the cert is issued, update `CONSOLE_BASE_URL` in `fly.toml` to
-`https://app.modelpilot.app` and `fly deploy` again so reset/login links use it.
+Then in Cloudflare (the `outlay-ai.com` zone) add the records Fly shows, set to
+**DNS only (grey cloud, not proxied)** so Fly can validate + serve TLS. Check with
+`fly certs show app.outlay-ai.com` until it reads **Ready**. `CONSOLE_BASE_URL` in
+`fly.toml` is already `https://app.outlay-ai.com`, so reset/login links use it after
+the next `fly deploy`. The `<app>.fly.dev` route still works as a fallback but isn't
+shared. (To drop the `modelpilot` Fly app name from that fallback entirely, recreate
+the app under a new name — see "Renaming the app" below.)
 
 ## Notes
 - **Never run more than one machine.** SQLite is single-writer. The app is set to
