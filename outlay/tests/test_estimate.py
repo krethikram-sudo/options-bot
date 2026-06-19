@@ -4,6 +4,7 @@ from datetime import datetime
 
 from outlay.attribute import attribute
 from outlay.classify import classify
+from outlay.complexity import scope_of
 from outlay.estimate import (estimate_item, estimate_plan, format_estimate,
                              parse_planned)
 from outlay.forecast import class_stats
@@ -88,11 +89,55 @@ def test_estimate_plan_pools_and_counts():
 
 # ---- ingest + end-to-end on fixtures ----
 
-def test_parse_planned_fixture():
+# ---- complexity from requirements / design docs ----
+
+def test_scope_thin_text_returns_none():
+    assert scope_of("") is None
+    assert scope_of("Fix bug") is None   # too thin to size
+
+
+def test_scope_tiers_scale_with_detail():
+    light = scope_of("Add a small settings toggle so users can opt out of email "
+                     "notifications from their account page.")
+    heavy = scope_of("Add SSO. Acceptance criteria: 1) SAML 2) SCIM 3) audit log. "
+                     "Integrations: Okta, Azure AD, third-party IdP. Requires a schema "
+                     "change and a backfill migration, multi-tenant, feature-flagged rollout.")
+    assert light is not None and heavy is not None
+    order = ["S", "M", "L", "XL"]
+    assert order.index(heavy.tier) > order.index(light.tier)
+
+
+def test_estimate_uses_scope_when_no_points():
+    res, work = _pointed_bug_history()
+    stats, models = class_stats(res), fit_size_models(res, work)
+    # A heavy bugfix with rich requirements but NO points → sized by scope, within class.
+    rich = WorkItem("PROJ-9", "plan", title="Fix the data-loss bug",
+                    description=("Acceptance criteria: 1) no rows dropped 2) idempotent retries "
+                                 "3) backfill corrupted records. Integrations: Kafka, S3. "
+                                 "Requires a schema change and a migration."))
+    e = estimate_item(rich, stats, models)
+    assert e.basis == "scope" and e.complexity_tier in ("L", "XL")
+    assert e.confidence == "medium"
+    assert "story points (→ point-calibrated, higher confidence)" in e.needs
+
+
+def test_estimate_thin_title_suggests_more_input():
+    res, work = _pointed_bug_history()
+    stats, models = class_stats(res), fit_size_models(res, work)
+    thin = WorkItem("PROJ-10", "plan", title="Fix login")   # no points, no requirements
+    e = estimate_item(thin, stats, models)
+    assert e.basis == "class"
+    assert any("requirements" in n for n in e.needs)
+
+
+def test_parse_planned_folds_requirements_and_design():
     items = parse_planned(FIX / "planned_features.json")
     assert len(items) == 6
     assert items[0].ticket_id == "PROJ-301" and items[0].est_points == 8
     assert all(it.source == "plan" and it.status == "open" for it in items)
+    # SSO item's design doc text is folded into its description for sizing.
+    sso = next(i for i in items if i.ticket_id == "PROJ-305")
+    assert "SCIM" in sso.description and "migration" in sso.description
 
 
 def test_end_to_end_estimate_against_history():

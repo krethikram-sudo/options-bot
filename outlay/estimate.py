@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Optional
 
 from .classify import classify
+from .complexity import scope_of
 from .forecast import ClassStats, _Z_P90
 from .models import TaskClass, WorkItem
 from .size import size_feature
@@ -44,9 +45,25 @@ class ItemEstimate:
     expected_usd: float
     low_usd: float
     high_usd: float
-    basis: str          # "points" | "class" | "none"
+    basis: str          # "points" | "scope" | "class" | "none"
     confidence: str     # "high" | "medium" | "low"
     costable: bool
+    complexity_tier: Optional[str] = None   # S | M | L | XL when sized by requirements/design
+    needs: list[str] = field(default_factory=list)  # inputs that would raise confidence
+
+
+def _tier_band(st: ClassStats, tier: str) -> tuple[float, float, float]:
+    """Place an item within its class's *own* cost distribution by complexity tier.
+
+    Stays inside the observed range (XL gets a modest stretch beyond p90), so a
+    complexity read never invents a number the team has never actually hit."""
+    if tier == "S":
+        return (st.p10 + st.median) / 2, st.p10, st.median
+    if tier == "L":
+        return (st.median + st.p90) / 2, st.median, st.p90
+    if tier == "XL":
+        return st.p90, st.median, st.p90 * 1.25
+    return st.mean, st.p10, st.p90   # "M" — the class-typical case
 
 
 @dataclass
@@ -68,28 +85,45 @@ def estimate_item(
 ) -> ItemEstimate:
     """Estimate one planned item from the learned cost model."""
     size_models = size_models or {}
-    tc = classify(item)
+    tc = classify(item)   # reads title + description (which carries requirements + design)
     points = item.est_points
     st = stats.get(tc)
 
     if st is None or st.n == 0:
         # No history to ground a number — say so, don't invent one.
         return ItemEstimate(item.ticket_id, item.title, tc, points,
-                            0.0, 0.0, 0.0, basis="none", confidence="low", costable=False)
+                            0.0, 0.0, 0.0, basis="none", confidence="low", costable=False,
+                            needs=["realized history for this work type"])
 
+    tier = None
+    needs: list[str] = []
     sm = size_models.get(tc)
     sf = size_feature(item) if sm is not None else None
+    scope = scope_of(item.description)
+
     if sm is not None and sf is not None and sf[0] == sm.feature:
+        # Best: story points + a fitted, history-calibrated size model.
         exp = sm.predict(sf[1])
         lo, hi = exp * sm.lo_mult, exp * sm.hi_mult
         basis, confidence = "points", "high"
+    elif scope is not None:
+        # Size from the requirements/design read, within the class's own distribution.
+        exp, lo, hi = _tier_band(st, scope.tier)
+        basis, confidence, tier = "scope", "medium", scope.tier
+        if points is None:
+            needs.append("story points (→ point-calibrated, higher confidence)")
     else:
+        # Only a thin title — flat class mean.
         exp, lo, hi = st.mean, st.p10, st.p90
         basis = "class"
         confidence = "medium" if st.n >= _MIN_CONFIDENT_HISTORY else "low"
+        needs.append("business requirements + a design doc (→ complexity-sized)")
+        if points is None:
+            needs.append("story points")
 
     return ItemEstimate(item.ticket_id, item.title, tc, points,
-                        exp, lo, hi, basis=basis, confidence=confidence, costable=True)
+                        exp, lo, hi, basis=basis, confidence=confidence, costable=True,
+                        complexity_tier=tier, needs=needs)
 
 
 def estimate_plan(
@@ -129,20 +163,44 @@ def estimate_plan(
     )
 
 
+def _join_docs(v) -> str:
+    """Flatten design_docs / requirements that may be a string, a list of strings,
+    or a list of {title, body|text|content} dicts, into one text blob."""
+    if not v:
+        return ""
+    if isinstance(v, str):
+        return v
+    parts = []
+    for d in v:
+        if isinstance(d, str):
+            parts.append(d)
+        elif isinstance(d, dict):
+            parts.append(" ".join(str(d.get(k, "")) for k in ("title", "body", "text", "content")))
+    return "\n".join(p for p in parts if p)
+
+
 def parse_planned(path: Path | str) -> list[WorkItem]:
     """Load planned items from a simple JSON list.
 
-    Each entry: {"id", "title", "description"?, "points"?, "labels"?}.
+    Each entry: {"id", "title", "description"?, "requirements"?, "design_docs"?,
+    "points"?, "labels"?}. `requirements` and `design_docs` may be strings or
+    lists; they're folded into the item text so it classifies and sizes on the
+    full scope, not just a title.
     """
     data = json.loads(Path(path).read_text())
     rows = data.get("items", data) if isinstance(data, dict) else data
     out: list[WorkItem] = []
     for r in rows:
+        text = "\n".join(p for p in (
+            r.get("description", "") or r.get("body", ""),
+            _join_docs(r.get("requirements")),
+            _join_docs(r.get("design_docs") or r.get("design")),
+        ) if p).strip()
         out.append(WorkItem(
             ticket_id=str(r.get("id") or r.get("key") or r.get("ticket_id") or "?"),
             source="plan",
             title=r.get("title", "") or r.get("summary", ""),
-            description=r.get("description", "") or r.get("body", ""),
+            description=text,
             labels=list(r.get("labels", []) or []),
             est_points=r.get("points", r.get("est_points")),
             status="open",
@@ -175,13 +233,20 @@ def format_estimate(plan: PlanEstimate) -> str:
         for tc, amt in sorted(plan.by_class.items(), key=lambda kv: kv[1], reverse=True):
             L.append(f"     {tc.value:<10} {_usd(amt)}")
     L.append("")
-    L.append("   Top items (expected · band · confidence):")
+    L.append("   Top items (expected · band · basis · confidence):")
     top = sorted([e for e in plan.items if e.costable],
                  key=lambda e: e.expected_usd, reverse=True)[:12]
     for e in top:
         pts = f"{e.est_points:g}pt" if e.est_points else "—"
+        basis = e.basis + (f"·{e.complexity_tier}" if e.complexity_tier else "")
         L.append(f"     {e.item_id:<10}{e.task_class.value:<9}{pts:>5}  "
-                 f"{_usd(e.expected_usd):>9}  [{_usd(e.low_usd)}–{_usd(e.high_usd)}]  {e.confidence}")
+                 f"{_usd(e.expected_usd):>9}  [{_usd(e.low_usd)}–{_usd(e.high_usd)}]  "
+                 f"{basis:<10} {e.confidence}")
+    # What would tighten the weakest estimates.
+    hints = sorted({n for e in plan.items for n in e.needs})
+    if hints:
+        L.append("")
+        L.append("   To tighten the estimate, add: " + "; ".join(hints))
     unk = [e for e in plan.items if not e.costable]
     if unk:
         L.append(f"   Not estimated (no history): {', '.join(e.item_id for e in unk[:8])}"
@@ -234,7 +299,8 @@ def main(argv: list[str] | None = None) -> int:
                 "id": e.item_id, "title": e.title, "task_class": e.task_class.value,
                 "est_points": e.est_points, "expected_usd": round(e.expected_usd, 4),
                 "low_usd": round(e.low_usd, 4), "high_usd": round(e.high_usd, 4),
-                "basis": e.basis, "confidence": e.confidence, "costable": e.costable,
+                "basis": e.basis, "complexity_tier": e.complexity_tier,
+                "confidence": e.confidence, "costable": e.costable, "needs": e.needs,
             } for e in plan.items],
         }, indent=2))
     else:
