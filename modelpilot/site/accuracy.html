@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How accurate is Outlay? — Outlay</title>
+<meta name="description" content="An honest answer to the question every buyer asks: how accurately can Outlay predict AI compute spend? Allocating past spend is exact; forecasting future work is a measured range — and we backtest it on your own data rather than asserting a number.">
+<link rel="canonical" href="https://outlay-ai.com/accuracy">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<meta property="og:title" content="How accurate is Outlay? — honestly">
+<meta property="og:description" content="Allocating past AI spend is exact; forecasting future work is a measured range — backtested on your own data, not asserted.">
+<link rel="stylesheet" href="/outlay.css">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Out<span class="dot">lay</span></a>
+  <div class="navlinks">
+    <a href="/#how">How it works</a>
+    <a href="/#owners">For eng &amp; finance</a>
+    <a href="/#optimize">Optimization engine</a>
+    <a href="/#compare">Compare</a>
+    <a href="/demo">Demo</a>
+    <a href="/pilot">Pilot</a>
+  </div>
+  <div class="navsp"></div>
+  <div class="navcta">
+    <a class="btn primary" href="mailto:krethikram@gmail.com?subject=Outlay%20design-partner%20pilot">Book a pilot</a>
+  </div>
+</div></nav>
+
+<div class="page"><div class="wrap">
+  <div class="eyebrow">Accuracy</div>
+  <h1>How accurate is Outlay — honestly.</h1>
+  <p class="lede">The first question every eng and finance leader asks. Here's the straight answer:
+    allocating what you've already spent is <b>exact</b>; forecasting future work is a <b>measured range</b> —
+    and we backtest it on <b>your own data</b> instead of quoting a number.</p>
+</div></div>
+
+<section style="padding-top:24px"><div class="wrap"><div class="prose">
+
+  <h2>"How accurate?" is two questions</h2>
+  <p>Conflating them is how vendors lose credibility. We keep them separate:</p>
+  <ul>
+    <li><span class="ck">1</span><div><b>Allocating spend that already happened</b> — where did last quarter's AI cost go? This is arithmetic, not prediction.</div></li>
+    <li><span class="ck">2</span><div><b>Forecasting spend that hasn't happened yet</b> — what will this quarter, or this backlog, cost? This is genuinely a range.</div></li>
+  </ul>
+
+  <h2>Allocating past spend: essentially exact</h2>
+  <p>Token counts come straight from your provider's admin/usage API, and we cost them with a
+    <b>cache-aware</b> model — cache reads bill ~0.1× and writes ~1.25× of base input, the thing naive
+    trackers get wrong by 5–10× on agentic workloads. So the dollars are computed, not estimated. The only
+    question on the backward-looking side is <b>coverage</b> — what fraction of spend we could tie to a real
+    ticket — and we report that number plainly, including what we couldn't attribute (reconciled to your
+    invoice, never dropped).</p>
+
+  <h2>Forecasting future work: a measured range</h2>
+  <p>Per-item AI cost is heavy-tailed — the same "bugfix" might be one cheap call or a 40-turn agentic loop.
+    So we never hand you a single number for a single ticket; we give a <b>p10–p90 band</b>. But here's the
+    key: <b>the aggregate is far more predictable than any one item.</b> Across a quarter of work, the
+    per-item over- and under-shoots partially cancel (that's why our roadmap total is variance-pooled, not a
+    naive sum of worst cases). Realistically:</p>
+  <ul>
+    <li><span class="ck">·</span><div><b>A single ticket:</b> wide — treat the band, not the midpoint, as the answer.</div></li>
+    <li><span class="ck">·</span><div><b>A quarter, a team, a portfolio:</b> tighter — useful for budgeting, in the spirit of forecasting cloud spend or sprint velocity. Directionally reliable, not penny-precise.</div></li>
+  </ul>
+
+  <h2>We measure it on your data — we don't assert it</h2>
+  <p>This is the part that matters. Outlay <b>backtests its own forecast on your closed tickets</b>
+    (leave-one-out cross-validation) and reports the median error <em>before</em> you trust it. If the
+    forecast isn't good enough on your data, you'll see that in week one — we won't hide it. Most tools
+    quote a savings or accuracy figure from someone else's deployment; we show you the number from yours.</p>
+  <div class="note">The estimate also states its own coverage: work types with too little history are
+    <b>counted, not guessed</b>. An honest "we can't ground this yet" beats a confident wrong number.</div>
+
+  <h2>Estimating work that isn't built yet</h2>
+  <p>To budget against a roadmap, you need to cost work that has no history of its own. Outlay estimates a
+    <b>planned backlog</b> — a Jira/Linear feature's title, description, and story-point estimate — by
+    classifying it from its text and applying the cost-per-point model learned from your realized history.
+    Each planned item carries a band and a <b>confidence</b>: <em>high</em> when it has points and a fitted
+    size model, <em>medium</em> on class history alone, and <em>declined</em> when there's too little to
+    ground. So a sprint or epic becomes a compute budget with an honest confidence interval.</p>
+
+  <h2>What makes it more — and less — accurate</h2>
+  <p><b>More accurate:</b> more history per work type · stable workflows and model mix · estimating at the
+    quarter/team level rather than per ticket · good attribution coverage · story points on your backlog
+    (size conditioning measurably tightens the estimate).</p>
+  <p><b>Less accurate — and the biggest one is change:</b> AI usage per developer has grown roughly 18× in
+    well under a year, and a forecast trained on history widens when the regime shifts — a new agent
+    adopted, autonomy turned up, a vendor price change. We're upfront that a fast-moving team's forecast
+    carries a wider band, and the backtest will show it.</p>
+
+  <h2>The honest bottom line</h2>
+  <p>We won't promise a crystal ball. What we promise is the <b>first real forward visibility you have</b> —
+    a quarter budget with a measured error bar, and a flag on the epic about to blow its estimate weeks
+    before the invoice. Even a ±20% forecast that warns you early is infinitely better than the blank page
+    you have today — and unlike everyone else, we tell you exactly how good it is on your numbers.</p>
+
+  <p class="backlink" style="margin-top:28px"><a href="/demo">See the live demo →</a> ·
+    <a href="/security">Security &amp; privacy</a> · <a href="/pilot">Book a pilot</a></p>
+</div></div></section>
+
+<section class="final"><div class="wrap">
+  <h2>See the accuracy on your own numbers.</h2>
+  <p>In a two-week pilot we backtest the forecast on your real history and show you the error before you
+    trust a dollar of it.</p>
+  <div class="center">
+    <a class="btn onnavy lg" href="mailto:krethikram@gmail.com?subject=Outlay%20design-partner%20pilot">Book a design-partner pilot →</a>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Out<span class="dot">lay</span></a>
+  <span class="sep"></span>
+  <a href="/pilot">Book a pilot</a>
+  <a href="/demo">Demo</a>
+  <a href="/#compare">Compare</a>
+  <a href="/security">Security</a>
+  <a href="/docs/">Docs</a>
+  <a href="mailto:krethikram@gmail.com">Contact</a>
+</div>
+<div class="wrap" style="margin-top:14px;font-size:12.5px;color:#6c7790">© 2026 Outlay · Budget by scope of work, stay within guardrails, capture the savings automatically.</div>
+</footer>
+
+</body></html>
