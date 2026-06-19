@@ -1392,3 +1392,32 @@ def test_outlay_connect_page_has_all_trackers(env, client):
     _, store = env
     c = store.get_outlay_connection(store.get_account_by_email("trk@x.com")["id"])
     assert c["tracker"] == "jira" and c["jira_token"] == "tok"
+
+
+def test_secret_box_roundtrip():
+    from console import secret_box
+    e = secret_box.encrypt("hello-token")
+    assert secret_box.decrypt(e) == "hello-token"
+    assert secret_box.decrypt("plain-legacy") == "plain-legacy"   # pre-encryption passthrough
+    if secret_box.available():
+        assert e.startswith("enc:") and "hello-token" not in e
+
+
+def test_outlay_token_encrypted_at_rest(env, client):
+    _, store = env
+    from console import secret_box
+    _signup(client, email="enc@x.com")
+    acct = store.get_account_by_email("enc@x.com")
+    store.save_outlay_connection(acct["id"], github_owner="acme", github_repo="web",
+                                 github_token="ghp_supersecret", anthropic_key="sk-admin")
+    # get() returns plaintext for use
+    assert store.get_outlay_connection(acct["id"])["github_token"] == "ghp_supersecret"
+    # raw DB value is encrypted (when cryptography is present)
+    raw = store.connect().execute(
+        "SELECT github_token FROM outlay_connections WHERE account_id=?", (acct["id"],)).fetchone()
+    if secret_box.available():
+        assert raw["github_token"].startswith("enc:")
+        assert "ghp_supersecret" not in raw["github_token"]
+    # preserve-on-blank still works through encryption
+    store.save_outlay_connection(acct["id"], github_owner="acme", github_repo="web2", github_token="")
+    assert store.get_outlay_connection(acct["id"])["github_token"] == "ghp_supersecret"
