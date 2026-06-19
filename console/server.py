@@ -230,10 +230,12 @@ async def pilot_request_submit(request: Request):
     if not email or "@" not in email or "." not in email.split("@")[-1]:
         return _html(web.pilot_request_page("Please enter a valid work email.", f), status=400)
     store.add_pilot_request(email=email, name=f.get("name", ""), company=f.get("company", ""),
-                            tools=f.get("tools", ""), message=f.get("message", ""))
+                            title=f.get("title", ""), tools=f.get("tools", ""),
+                            message=f.get("message", ""))
     try:
         notify.send_pilot_request({"name": f.get("name"), "email": email, "company": f.get("company"),
-                                   "tools": f.get("tools"), "message": f.get("message")})
+                                   "title": f.get("title"), "tools": f.get("tools"),
+                                   "message": f.get("message")})
     except Exception:  # noqa: BLE001 — never fail the request on a mail hiccup
         pass
     return _redirect("/pilot-request/thanks")

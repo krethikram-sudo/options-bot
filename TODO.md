@@ -70,10 +70,11 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 - [x] **Site email CTAs → `hello@outlay-ai.com`.** Cloudflare Email Routing live (`hello@` forwards to
       personal inbox); every `mailto:krethikram@gmail.com` across the site + console status page swapped to
       `hello@outlay-ai.com`, subject lines preserved (PR #51).
-  - [ ] **Sending as hello@ (transactional email).** For the app to *send* password resets / budget alerts
-        from `hello@outlay-ai.com`, set up a sender (Resend/Postmark — domain verify adds DKIM) and
-        `fly secrets set SMTP_HOST/PORT/USER/PASSWORD SMTP_FROM='Outlay <hello@outlay-ai.com>'`. Until then
-        those emails log server-side only. (Receiving/forwarding is done.)
+  - [x] **Sending as hello@ (transactional email) — LIVE (2026-06-19).** Resend wired up: domain verified
+        (DKIM/SPF in Cloudflare DNS, on the `send.` subdomain so it doesn't clash with the apex Email
+        Routing), `SMTP_*` + `PILOT_INBOX=krethikram@gmail.com` set as Fly secrets. Verified end-to-end —
+        a test pilot request emailed through. This also turns on 2FA codes, password resets, and budget
+        alerts (all share `send_email`).
 - [ ] **Send the design-partner outreach** — kit is ready: `OUTLAY_PILOT_OUTREACH.md` (opener/email/
       community/security-FAQ/call-script/per-prospect drafts, all Outlay-framed, free read-only pilots) +
       `OUTLAY_ONEPAGER.md` (prospect-facing). Targets in `PROSPECTS.md` (list still valid — drop the routing
@@ -348,9 +349,9 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
       Brain stays scale-to-zero (fails open). TODO: move Fly billing to the business card once the
       entity exists.
 - [ ] Verify `CONSOLE_SECRET` is a **stable** Fly secret (don't rotate casually — it logs everyone out).
-- [ ] **Configure SMTP** (`SMTP_*` Fly secrets) — REQUIRED for 2FA codes, password resets, and budget
-      alerts to actually send (without it they're only logged in dev). See `console/FLY_DEPLOY.md`.
-      Optional: `TWILIO_*` for SMS 2FA.
+- [x] **Configure SMTP — DONE (2026-06-19).** Resend wired up (`SMTP_*` + `PILOT_INBOX` Fly secrets,
+      domain verified in Cloudflare DNS); 2FA codes, password resets, budget alerts, and pilot-request
+      notifications all send and were verified end-to-end. Optional later: `TWILIO_*` for SMS 2FA.
 - [ ] Change any seeded/default admin password; confirm strong admin credentials.
 - [ ] **`fly deploy` the console** — now ships a large committed-but-undeployed backlog: the whole Outlay
       product (Spend/Estimate/Accuracy/Budgets + connectors), the redesigned product UI, the
