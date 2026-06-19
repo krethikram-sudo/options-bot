@@ -21,6 +21,7 @@ _CSS = """
 :root{--ink:#0c0e12;--body:#3b414c;--muted:#7b818d;--faint:#a4a9b3;
   --line:#e8e6df;--line2:#f0eee7;--bg:#ffffff;--paper:#fbfaf6;--paper2:#f6f4ed;--navy:#13203a;
   --grn:#0f6b4f;--grn-d:#0a4f3a;--grn-l:#e7f1ec;--warn:#b45309;--bad:#b3261e;
+  --mut:#7b818d;--amber:#b45309;--amber-l:#fbf0df;--red:#b3261e;--red-l:#f8e7e4;
   --accent:#0f6b4f;--accent-d:#0a4f3a;--grad:linear-gradient(135deg,#0f6b4f,#13203a);
   --disp:"Fraunces",Georgia,"Times New Roman",serif;
   --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -134,6 +135,51 @@ pre{background:var(--paper2);color:var(--navy);padding:16px;border-radius:10px;o
 .btn.sec.loading::after{border-color:rgba(0,0,0,.25);border-top-color:#111}
 @keyframes mp-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){#nprogress b{transition:opacity .2s}.btn.loading::after{animation:none}}
+
+/* ---- Outlay dashboard component library (ported from the marketing site) ---- */
+.ohead{margin:2px 0 20px}
+.ohead h1{font-family:var(--disp);font-size:26px;color:var(--ink);font-weight:600;letter-spacing:-.015em;margin:0}
+.ohead p{color:var(--muted);font-size:14.5px;margin:6px 0 0}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0 0 18px}
+@media(max-width:880px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:13px;padding:15px 17px}
+.kpi .l{font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.kpi .v{font-family:var(--disp);font-weight:700;font-size:27px;color:var(--ink);letter-spacing:-.02em;margin-top:6px;line-height:1.1}
+.kpi .v.grn{color:var(--grn-d)}
+.kpi .s{font-size:11.5px;color:var(--muted);margin-top:3px}
+.ocard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.ocard+.ocard,.ocard{margin-top:0}
+.ogrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.ogrid{grid-template-columns:1fr}}
+.dh{font-family:var(--disp);font-size:15px;color:var(--ink);font-weight:600;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.dh .sub{font-family:var(--sans);font-weight:400;font-size:12.5px;color:var(--muted)}
+.erow{display:grid;grid-template-columns:1fr auto;gap:3px 12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line2)}
+.erow:last-child{border-bottom:none}
+.erow .nm{font-size:13.5px;color:var(--ink);font-weight:500}
+.erow .nm small{color:var(--faint);font-weight:400}
+.erow .amt{font-size:13.5px;font-weight:600;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+.erow .shr{font-size:12px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.erow .ebar{grid-column:1/3;height:6px;border-radius:5px;background:#eceae3;overflow:hidden;margin-top:3px}
+.erow .ebar>span{display:block;height:100%;border-radius:5px}
+.bignum{display:flex;align-items:baseline;gap:10px;margin:2px 0}
+.bignum .v{font-family:var(--disp);font-weight:700;font-size:32px;color:var(--ink);letter-spacing:-.02em}
+.bignum .of{font-size:13px;color:var(--muted)}
+.band{height:9px;border-radius:6px;background:#eceae3;position:relative;margin:14px 0 6px;overflow:hidden}
+.band>span{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,var(--grn-l),var(--grn));border-radius:6px}
+.bandlab{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.dual{display:grid;gap:8px;margin-top:12px}
+.dual .r{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted)}
+.dual .r b{color:var(--ink);font-variant-numeric:tabular-nums}
+.dual .track{height:8px;border-radius:6px;background:#eceae3;overflow:hidden}
+.dual .track>span{display:block;height:100%;border-radius:6px}
+.flagbox{background:var(--amber-l);border:1px solid #e6cfa0;border-radius:11px;padding:11px 13px;font-size:12.5px;color:#7a3d08;margin-top:14px}
+.okbox{background:var(--grn-l);border:1px solid #cfe3d8;border-radius:11px;padding:11px 13px;font-size:12.5px;color:var(--grn-d);margin-top:14px}
+.otag{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:2px 9px}
+.otag.ok{color:var(--grn-d);background:var(--grn-l)}.otag.warn{color:var(--amber);background:var(--amber-l)}.otag.over{color:var(--red);background:var(--red-l)}.otag.ex{color:var(--muted);background:var(--paper2);border:1px solid var(--line)}
+.ostrip{border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:13.5px}
+.olinks{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:0 0 18px;font-size:13.5px}
+.olinks .sp{flex:1}
+.syncline{color:var(--muted);font-size:12.5px;margin:-6px 0 16px}
 """
 
 
@@ -410,167 +456,166 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                 has_budget: bool = False) -> str:
     checklist = _onboarding(conn, report, has_budget)
     if not report:
-        intro = ('<div class=hero><h1>Your AI spend, on your roadmap.</h1>'
-                 '<p class=muted>Connect your data and Outlay maps every dollar to the work that drove it, '
-                 'forecasts the quarter, and finds savings — all on metadata, prompts never leave your tools.</p>'
-                 '<p style="margin-top:6px"><a class="btn" href="/app/outlay/connect">Connect live (GitHub + Anthropic) →</a>'
-                 '<form method=post action="/app/outlay/sample" style="display:inline;margin-left:10px">'
-                 '<button class="btn sec">See it with sample data</button></form>'
-                 '<span class=muted style="margin-left:10px">or paste exports below</span></p></div>')
+        intro = (
+            '<div class=ohead><h1>Your AI spend, on your roadmap.</h1>'
+            '<p>Connect your tracker and AI usage — read-only — and Outlay maps every dollar to the work '
+            'that drove it, forecasts the quarter, estimates planned work, and holds it to budget. '
+            'Prompts never leave your tools.</p></div>'
+            '<div class="row" style="margin:0 0 22px">'
+            '<a class="btn" href="/app/outlay/connect">Connect your sources →</a>'
+            '<form method=post action="/app/outlay/sample" style="margin:0">'
+            '<button class="btn sec">See it with sample data</button></form></div>')
         return page("Spend", intro + checklist + _outlay_connect(), account, active="/app/outlay")
 
     sp = report.get("spend", {})
     fc = report.get("forecast", {})
-    recs = report.get("recommendations", [])
     cal = report.get("calibration") or {}
     est = report.get("estimate")
-
     cov = sp.get("ticket_coverage", 0.0)
-    savings = sum(r.get("projected_savings_usd", 0) for r in recs)
-    cov_color = "#0f6b4f" if cov >= 0.6 else "#b45309"
     open_items = fc.get("items_costed", 0) + fc.get("items_unclassified", 0)
-    kpis = (
-        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0 0 18px">'
-        + _kpi("AI spend", money(sp.get("total_usd", 0)), _trend_delta(history or []), sub_raw=True)
-        + _kpi("Mapped to a ticket", f"{cov*100:.0f}%", money(sp.get("attributed_to_ticket_usd", 0)) + " attributed", cov_color)
-        + _kpi("Forecast · open work", money(fc.get("expected_usd", 0)),
-               f"likely {money(fc.get('low_usd', 0))}–{money(fc.get('high_usd', 0))}")
-        + _kpi("Open work items", str(open_items), f"{fc.get('items_costed', 0)} costed from history")
-        + "</div>")
+
+    ohead = ('<div class=ohead><h1>AI spend, on your roadmap</h1>'
+             '<p>Every dollar mapped to the work that drove it — forecast, estimated, and held to budget.</p></div>')
+
+    def _kpicard(label, value, sub, grn=False):
+        return (f'<div class=kpi><div class=l>{_e(label)}</div>'
+                f'<div class="v{" grn" if grn else ""}">{value}</div><div class=s>{sub}</div></div>')
+    kpis = ('<div class=kpis>'
+            + _kpicard("AI spend · window", money(sp.get("total_usd", 0)), _trend_delta(history or []))
+            + _kpicard("Mapped to a ticket", f"{cov*100:.0f}%",
+                       money(sp.get("attributed_to_ticket_usd", 0)) + " attributed", grn=cov >= 0.6)
+            + _kpicard("Forecast · open work", money(fc.get("expected_usd", 0)),
+                       f"likely {money(fc.get('low_usd', 0))}–{money(fc.get('high_usd', 0))}")
+            + _kpicard("Open work items", str(open_items),
+                       f"{fc.get('items_costed', 0)} costed from history")
+            + '</div>')
+
+    def _erow(name, sub, amount, bar_pct, color="var(--grn)"):
+        sub_html = f' <small>· {_e(sub)}</small>' if sub else ""
+        return (f'<div class=erow><span class=nm>{_e(name)}{sub_html}</span>'
+                f'<span class=amt>{amount}</span>'
+                f'<div class=ebar><span style="width:{max(2,min(100,bar_pct)):.0f}%;background:{color}"></span></div></div>')
 
     # Spend by ticket
     tickets = report.get("tickets", [])[:8]
     maxc = max((t.get("cost_usd", 0) for t in tickets), default=1) or 1
     trows = "".join(
-        f'<tr><td class=mono>{_e(t.get("ticket_id"))}</td><td>{_e(t.get("task_class"))}</td>'
-        f'<td style="text-align:right">{money(t.get("cost_usd",0))}</td>'
-        f'<td style="width:120px"><div style="height:6px;border-radius:4px;background:#eee;overflow:hidden">'
-        f'<span style="display:block;height:100%;width:{(t.get("cost_usd",0)/maxc)*100:.0f}%;background:#13203a"></span></div></td></tr>'
-        for t in tickets) or '<tr><td colspan=4 class=muted>No ticket-attributed spend yet.</td></tr>'
+        _erow(t.get("ticket_id"), t.get("task_class"), money(t.get("cost_usd", 0)),
+              t.get("cost_usd", 0) / maxc * 100, "var(--amber)" if i == 0 else "var(--grn)")
+        for i, t in enumerate(tickets)) or '<p class=muted style="font-size:13px">No ticket-attributed spend yet.</p>'
     spark = _sparkline([h.get("total_usd", 0) for h in (history or [])])
-    spark_hdr = (f'<div style="display:flex;justify-content:space-between;align-items:center;margin:.2em 0 .6em">'
-                 f'<h3 style="margin:0">Where your AI spend went</h3>'
-                 f'<span title="Spend over your last {len(history or [])} refreshes">{spark}</span></div>'
-                 if spark else '<h3 style="margin:.2em 0 .6em">Where your AI spend went</h3>')
-    spend_card = (f'<div class=card>{spark_hdr}'
-                  f'<table class=tbl style="width:100%"><tbody>{trows}</tbody></table></div>')
+    sub = f'<span class=sub title="Spend over your last {len(history or [])} refreshes">{spark}</span>' if spark else ""
+    spend_card = (f'<div class=ocard><div class=dh>Where your AI spend went{sub}</div>{trows}</div>')
 
-    # Spend by work type (FinOps view)
+    # Forecast card with p10–p90 band
+    acc = ""
+    if cal.get("n_evaluated", 0) > 0:
+        acc = (f'<div class=okbox><b>Forecast accuracy (measured):</b> median estimate within '
+               f'~{cal.get("mdape",0)*100:.0f}% of actual on your closed tickets (leave-one-out). '
+               f'<a href="/app/outlay/accuracy">details →</a></div>')
+    fc_card = (f'<div class=ocard><div class=dh>Forecast · open work</div>'
+               f'<div class=bignum><span class=v>{money(fc.get("expected_usd",0))}</span>'
+               f'<span class=of>expected from open scope</span></div>'
+               f'<div class=band><span style="left:13%;width:74%"></span></div>'
+               f'<div class=bandlab><span>p10 · {money(fc.get("low_usd",0))}</span>'
+               f'<span>p90 · {money(fc.get("high_usd",0))}</span></div>'
+               f'<div class=muted style="font-size:12.5px;margin-top:8px">{fc.get("items_costed",0)} items '
+               f'costed, {fc.get("items_unclassified",0)} without history.</div>{acc}</div>')
+
+    # Spend by work type
     cls = report.get("class_spend") or []
     clsmax = max((c.get("spent_usd", 0) for c in cls), default=1) or 1
     crows = "".join(
-        f'<tr><td>{_e(c.get("task_class"))}</td>'
-        f'<td class=muted style="text-align:right;font-size:12px">{c.get("tickets",0)}</td>'
-        f'<td style="text-align:right">{money(c.get("spent_usd",0))}</td>'
-        f'<td class=muted style="text-align:right;font-size:12px">{c.get("share",0)*100:.0f}%</td>'
-        f'<td style="width:90px"><div style="height:6px;border-radius:4px;background:#eee;overflow:hidden">'
-        f'<span style="display:block;height:100%;width:{(c.get("spent_usd",0)/clsmax)*100:.0f}%;background:#13203a"></span></div></td></tr>'
-        for c in cls) or '<tr><td colspan=5 class=muted>No work-type spend yet.</td></tr>'
-    class_card = (f'<div class=card><h3 style="margin:.2em 0 .6em">Spend by work type</h3>'
-                  f'<table class=tbl style="width:100%"><thead><tr>'
-                  f'<th style="text-align:left">Work type</th><th style="text-align:right">Tickets</th>'
-                  f'<th style="text-align:right">Spend</th><th style="text-align:right">Share</th><th></th>'
-                  f'</tr></thead><tbody>{crows}</tbody></table></div>')
+        _erow(c.get("task_class"), f'{c.get("tickets",0)} tickets · {c.get("share",0)*100:.0f}%',
+              money(c.get("spent_usd", 0)), c.get("spent_usd", 0) / clsmax * 100)
+        for c in cls) or '<p class=muted style="font-size:13px">No work-type spend yet.</p>'
+    class_card = f'<div class=ocard><div class=dh>Spend by work type</div>{crows}</div>'
 
-    # Forecast + accuracy
-    acc = ""
-    if cal.get("n_evaluated", 0) > 0:
-        acc = (f'<p class=muted style="font-size:12.5px;margin-top:10px">Forecast accuracy (measured): median '
-               f'estimate within ~{cal.get("mdape",0)*100:.0f}% of actual on your closed tickets. '
-               f'<a href="/app/outlay/accuracy">details →</a></p>')
-    fc_card = (f'<div class=card><h3 style="margin:.2em 0 .4em">Forecast · open work</h3>'
-               f'<div style="font-size:28px;font-weight:700">{money(fc.get("expected_usd",0))}</div>'
-               f'<div class=muted>likely {money(fc.get("low_usd",0))}–{money(fc.get("high_usd",0))} · '
-               f'{fc.get("items_costed",0)} items costed, {fc.get("items_unclassified",0)} without history</div>{acc}</div>')
-
-    # Routing/optimization recommendations are parked for now — the product is
-    # spend attribution + forecasting. (The engine still computes recs; we just
-    # don't surface the "route down" card. Re-add when routing returns.)
-
-    # Spend by engineer (from Anthropic/Cursor user attribution)
+    # Spend by engineer
     people = [p for p in (report.get("people") or []) if p.get("user") != "(unattributed)"][:8]
     people_card = ""
     if people:
         pmax = max((p.get("spent_usd", 0) for p in people), default=1) or 1
         prows = "".join(
-            f'<tr><td>{_e(p.get("user"))}</td>'
-            f'<td class=mono style="font-size:12px">{_e(p.get("top_model"))}</td>'
-            f'<td style="text-align:right">{money(p.get("spent_usd",0))}</td>'
-            f'<td class=muted style="text-align:right;font-size:12px">{p.get("share",0)*100:.0f}%</td>'
-            f'<td style="width:110px"><div style="height:6px;border-radius:4px;background:#eee;overflow:hidden">'
-            f'<span style="display:block;height:100%;width:{(p.get("spent_usd",0)/pmax)*100:.0f}%;background:#13203a"></span></div></td></tr>'
+            _erow(p.get("user"), f'{p.get("top_model")} · {p.get("share",0)*100:.0f}%',
+                  money(p.get("spent_usd", 0)), p.get("spent_usd", 0) / pmax * 100)
             for p in people)
-        people_card = (f'<div class=card><h3 style="margin:.2em 0 .6em">Spend by engineer '
-                       f'<span class=muted style="font-weight:400;font-size:13px">· team-fidelity (user→cost)</span></h3>'
-                       f'<table class=tbl style="width:100%"><thead><tr>'
-                       f'<th style="text-align:left">Engineer</th><th style="text-align:left">Top model</th>'
-                       f'<th style="text-align:right">Spend</th><th style="text-align:right">Share</th><th></th>'
-                       f'</tr></thead><tbody>{prows}</tbody></table></div>')
+        people_card = (f'<div class=ocard><div class=dh>Spend by engineer'
+                       f'<span class=sub>team-fidelity · user→cost</span></div>{prows}</div>')
 
     # Backlog estimate (optional)
     est_card = ""
     if est:
+        emax = max((e.get("expected_usd", 0) for e in est.get("items", [])), default=1) or 1
         erows = "".join(
-            f'<tr><td class=mono>{_e(e.get("id"))}</td><td>{_e(e.get("task_class"))}'
-            f'{(" · "+_e(e.get("complexity_tier"))) if e.get("complexity_tier") else ""}</td>'
-            f'<td style="text-align:right">{money(e.get("expected_usd",0))}</td>'
-            f'<td class=muted style="font-size:12px">{_e(e.get("confidence"))}</td></tr>'
+            _erow(e.get("id"),
+                  e.get("task_class") + (" · " + e.get("complexity_tier") if e.get("complexity_tier") else "") +
+                  (" · " + e.get("confidence") if e.get("confidence") else ""),
+                  money(e.get("expected_usd", 0)), e.get("expected_usd", 0) / emax * 100)
             for e in est.get("items", []) if e.get("costable"))
-        est_card = (f'<div class=card><h3 style="margin:.2em 0 .4em">Backlog estimate</h3>'
-                    f'<div style="font-size:24px;font-weight:700">{money(est.get("expected_usd",0))}</div>'
-                    f'<div class=muted>likely {money(est.get("low_usd",0))}–{money(est.get("high_usd",0))} · '
-                    f'{est.get("items_costed",0)} estimated, {est.get("items_unknown",0)} declined</div>'
-                    f'<table class=tbl style="width:100%;margin-top:8px"><tbody>{erows}</tbody></table></div>')
+        est_card = (f'<div class=ocard><div class=dh>Backlog estimate '
+                    f'<a class=sub href="/app/outlay/estimate">re-estimate →</a></div>'
+                    f'<div class=bignum><span class=v>{money(est.get("expected_usd",0))}</span>'
+                    f'<span class=of>likely {money(est.get("low_usd",0))}–{money(est.get("high_usd",0))}</span></div>'
+                    f'<div class=muted style="font-size:12.5px;margin:2px 0 12px">{est.get("items_costed",0)} '
+                    f'estimated, {est.get("items_unknown",0)} declined.</div>{erows}</div>')
 
-    grid = (f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">{spend_card}{fc_card}</div>'
-            f'<div style="margin-top:16px">{class_card}</div>'
-            + (f'<div style="margin-top:16px">{people_card}</div>' if people_card else "")
-            + (f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""))
-    # Sync status — when the data last refreshed and whether it's automatic.
+    g1 = f'<div class=ogrid>{spend_card}{fc_card}</div>'
+    g2 = (f'<div class=ogrid style="margin-top:16px">{class_card}{people_card}</div>' if people_card
+          else f'<div style="margin-top:16px">{class_card}</div>')
+    g3 = f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""
+    grid = g1 + g2 + g3
+
+    # Sync status
     conn = conn or {}
     asy = conn.get("auto_sync_hours") or 0
     cadence = {24: "auto-syncs daily", 168: "auto-syncs weekly"}.get(asy, "manual sync")
     last = _fmt_date(conn.get("synced_at")) if conn.get("synced_at") else (
         _fmt_date(report.get("_generated_ts")) if report.get("_generated_ts") else "—")
-    sync_err = ('<span style="color:#b3261e"> · ⚠ last sync failed — '
-                '<a href="/app/outlay/connect" style="color:#b3261e">fix connection →</a></span>'
+    sync_err = ('<span style="color:var(--red)"> · ⚠ last sync failed — '
+                '<a href="/app/outlay/connect" style="color:var(--red)">fix connection →</a></span>'
                 if conn.get("last_sync_error") else
-                f'<a href="/app/outlay/connect"> · manage connection →</a>')
-    sync_line = (f'<div class=muted style="font-size:12.5px;margin:-2px 0 12px">'
-                 f'Last refreshed <b>{last}</b> · {cadence}{sync_err}</div>')
-    estlink = ('<div style="margin:-4px 0 16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center">'
-               '<a href="/app/outlay/accuracy">How accurate is this? →</a>'
-               '<a href="/app/outlay/estimate">Estimate your backlog →</a>'
-               '<a href="/app/outlay/budgets">Budgets &amp; guardrails →</a>'
-               '<span style="flex:1"></span>'
-               '<span class=muted style="font-size:12.5px">Export CSV:</span>'
-               '<a href="/app/outlay/export.csv?view=tickets">tickets</a>'
-               '<a href="/app/outlay/export.csv?view=classes">work types</a>'
-               '<a href="/app/outlay/export.csv?view=people">engineers</a></div>')
+                ' · <a href="/app/outlay/connect">manage connection →</a>')
+    sync_line = f'<div class=syncline>Last refreshed <b>{last}</b> · {cadence}{sync_err}</div>'
+
+    olinks = ('<div class=olinks>'
+              '<a href="/app/outlay/accuracy">How accurate is this? →</a>'
+              '<a href="/app/outlay/estimate">Estimate your backlog →</a>'
+              '<a href="/app/outlay/budgets">Budgets &amp; guardrails →</a>'
+              '<span class=sp></span>'
+              '<span class=muted style="font-size:12.5px">Export CSV:</span>'
+              '<a href="/app/outlay/export.csv?view=tickets">tickets</a>'
+              '<a href="/app/outlay/export.csv?view=classes">work types</a>'
+              '<a href="/app/outlay/export.csv?view=people">engineers</a></div>')
+
     bstrip = ""
     if statuses:
         over = [s for s in statuses if s["status"] == "over"]
         warn = [s for s in statuses if s["status"] == "warn"]
         if over or warn:
-            c = "#b3261e" if over else "#b45309"
+            tone, tag = ("over", "over") if over else ("warn", "warn")
+            bg = {"over": "var(--red-l)", "warn": "var(--amber-l)"}[tone]
+            col = {"over": "var(--red)", "warn": "var(--amber)"}[tone]
             parts = ([f"{len(over)} over budget"] if over else []) + ([f"{len(warn)} at warn"] if warn else [])
-            bstrip = (f'<div class=card style="border-left:4px solid {c};margin-bottom:16px">'
-                      f'<b style="color:{c}">⚠ {" · ".join(parts)}</b> — '
+            bstrip = (f'<div class=ostrip style="background:{bg}"><span><span class="otag {tag}">budget</span> '
+                      f'<b style="color:{col}">{" · ".join(parts)}</b></span>'
                       f'<a href="/app/outlay/budgets">review budgets →</a></div>')
         else:
-            bstrip = (f'<div class=card style="border-left:4px solid #0f6b4f;margin-bottom:16px">'
-                      f'<b style="color:#0f6b4f">✓ All {len(statuses)} budgets on track</b> — '
-                      f'<a href="/app/outlay/budgets">budgets →</a></div>')
+            bstrip = (f'<div class=ostrip style="background:var(--grn-l)">'
+                      f'<span><span class="otag ok">budget</span> <b style="color:var(--grn-d)">'
+                      f'All {len(statuses)} on track</b></span>'
+                      f'<a href="/app/outlay/budgets">manage budgets →</a></div>')
+
     sample = ""
     if report.get("_sample"):
-        sample = ('<div class=card style="border-left:4px solid #2563eb;margin-bottom:16px;'
-                  'display:flex;justify-content:space-between;align-items:center">'
-                  '<span><b style="color:#2563eb">Sample data.</b> This is a worked example so you can see '
-                  'the product end-to-end — not your real spend. '
-                  '<a href="/app/outlay/connect">Connect your sources →</a></span>'
+        sample = ('<div class=ostrip style="background:#eef2fb;border:1px solid #d3def5">'
+                  '<span><b style="color:#2451b3">Sample data</b> — a worked example so you can see the '
+                  'product end-to-end, not your real spend. <a href="/app/outlay/connect">Connect your sources →</a></span>'
                   '<form method=post action="/app/outlay/clear" style="margin:0">'
                   '<button class="btn sec sm">Clear sample data</button></form></div>')
-    body = kpis + sample + checklist + sync_line + bstrip + estlink + grid + '<div style="margin-top:16px">' + _outlay_connect(collapsed=True) + '</div>'
+
+    body = (ohead + sample + checklist + bstrip + kpis + sync_line + olinks + grid
+            + '<div style="margin-top:18px">' + _outlay_connect(collapsed=True) + '</div>')
     return page("Spend", body, account, active="/app/outlay")
 
 
