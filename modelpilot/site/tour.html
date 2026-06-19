@@ -2,15 +2,15 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Live demo — Outlay</title>
-<meta name="description" content="A guided, interactive walk-through of Outlay on example data: connect your sources, see AI spend mapped to epics, forecast the quarter, and hold it to budget with pace alerts — without a single prompt leaving your environment.">
-<link rel="canonical" href="https://outlay-ai.com/demo">
+<title>Product tour — Outlay</title>
+<meta name="description" content="A guided, interactive product tour of Outlay on example data: connect your sources, see AI spend mapped to epics, forecast the quarter, estimate planned work before you build it, and hold it to budget — without a single prompt leaving your environment.">
+<link rel="canonical" href="https://outlay-ai.com/tour">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
-<meta property="og:title" content="Live demo — Outlay">
-<meta property="og:description" content="Walk through Outlay step by step — attribution, forecasting, and budget guardrails. Interactive, on example data.">
+<meta property="og:title" content="Product tour — Outlay">
+<meta property="og:description" content="A comprehensive product tour — attribution, forecasting, estimating planned work, and budget guardrails. Interactive, on example data.">
 <link rel="stylesheet" href="/outlay.css">
 <style>
   .demo-wrap{max-width:1000px;margin:0 auto;padding:0 24px}
@@ -117,7 +117,7 @@
     <a href="/#how">How it works</a>
     <a href="/#owners">For eng &amp; finance</a>
     <a href="/#compare">Compare</a>
-    <a href="/demo">Demo</a>
+    <a href="/tour">Product tour</a>
     <a href="/pilot">Pilot</a>
   </div>
   <div class="navsp"></div>
@@ -128,10 +128,10 @@
 
 <div class="page"><div class="wrap" style="text-align:center;max-width:680px">
   <div class="eyebrow">Interactive product tour · example data</div>
-  <h1 style="margin:10px auto 0">Walk through Outlay, step by step.</h1>
-  <p class="lede" style="margin:14px auto 0">Four steps, on an example ~75-engineer team — connect your
-    sources, then watch AI spend get mapped, forecast, and held to budget. Click through at your
-    own pace. No prompts ever leave the box.</p>
+  <h1 style="margin:10px auto 0">Take the Outlay product tour.</h1>
+  <p class="lede" style="margin:14px auto 0">Five steps, on an example ~75-engineer team — connect your
+    sources, then watch AI spend get mapped, forecast the quarter, estimate planned work before it's built,
+    and hold it to budget. Click through at your own pace. No prompts ever leave the box.</p>
 </div></div>
 
 <section style="padding-top:18px"><div class="demo-wrap">
@@ -140,7 +140,8 @@
     <li data-go="1"><span class="n">1</span><span class="lb">Connect</span></li>
     <li data-go="2"><span class="n">2</span><span class="lb">Attribute</span></li>
     <li data-go="3"><span class="n">3</span><span class="lb">Forecast</span></li>
-    <li data-go="4"><span class="n">4</span><span class="lb">Budget</span></li>
+    <li data-go="4"><span class="n">4</span><span class="lb">Estimate</span></li>
+    <li data-go="5"><span class="n">5</span><span class="lb">Budget</span></li>
   </ol>
 
   <div class="stage">
@@ -228,10 +229,39 @@
       </div>
     </div></div>
 
-    <!-- STEP 4 — BUDGET -->
+    <!-- STEP 4 — ESTIMATE -->
     <div class="pane" data-step="4"><div class="pane-grid">
       <div class="explain">
-        <div class="ey">Step 4 · Budget &amp; guardrails</div>
+        <div class="ey">Step 4 · Estimate</div>
+        <h2>Price planned work before you build it.</h2>
+        <p>Hand Outlay a planned backlog — epics and tickets with their <b>requirements and design docs</b> —
+          and it prices each against the cost-per-work-type model learned from your delivered work, with a
+          confidence range you can budget against. Roadmap planning with numbers, not vibes.</p>
+        <ul>
+          <li><span class="ck">✓</span><div>Per-item estimate with a <b>low–high band</b>, priced from your own history.</div></li>
+          <li><span class="ck">✓</span><div>More scope in — <b>requirements, design docs, story points</b> — a tighter range out.</div></li>
+          <li><span class="ck">✓</span><div>Under-specified items are <b>flagged to tighten</b>, never silently guessed.</div></li>
+        </ul>
+      </div>
+      <div>
+        <div class="card">
+          <div class="dh">Planned next-quarter backlog · estimated</div>
+          <div class="erow"><span class="nm">SSO — SAML + SCIM <small>· requirements + design doc</small></span><span class="amt num">$3,800</span><span class="bar"><span data-w="40%" style="background:var(--grn)"></span></span></div>
+          <div class="erow"><span class="nm">Billing v2 migration <small>· large · thin scope</small></span><span class="amt num">$9,400</span><span class="bar"><span data-w="100%" style="background:var(--amber)"></span></span></div>
+          <div class="erow"><span class="nm">Flaky-test cleanup <small>· well-specified</small></span><span class="amt num">$1,200</span><span class="bar"><span data-w="13%" style="background:var(--grn)"></span></span></div>
+          <div class="bignum" style="margin-top:14px"><span class="v num" data-count="14400" data-prefix="$">$14,400</span><span class="of">total estimate</span></div>
+          <div class="band"><span data-w="50%"></span></div>
+          <div class="bandlab"><span class="num">low · $9.9k</span><span class="num">high · $19.9k</span></div>
+          <div class="trust"><b>Priced from your own history.</b> Each item costed against your per-work-type
+            model; thin-scope items get a wider band and a "tighten" flag — never a false-precise number.</div>
+        </div>
+      </div>
+    </div></div>
+
+    <!-- STEP 5 — BUDGET -->
+    <div class="pane" data-step="5"><div class="pane-grid">
+      <div class="explain">
+        <div class="ey">Step 5 · Budget &amp; guardrails</div>
         <h2>Hold it to budget — and get warned early.</h2>
         <p>Set budgets by scope (team, epic, cost center). Outlay tracks actuals against them and
           <b>projects to end-of-period by pace</b>, so a team about to blow its budget is flagged weeks
@@ -261,7 +291,7 @@
 
     <div class="navrow">
       <button class="btn ghost sm" id="back" disabled>← Back</button>
-      <span class="count" id="count">Step 1 of 4</span>
+      <span class="count" id="count">Step 1 of 5</span>
       <span class="sp"></span>
       <a class="btn primary sm" id="next" href="#">Next: Attribute →</a>
     </div>
@@ -295,10 +325,10 @@
 
 <script>
 (function(){
-  var TOTAL=4, cur=0, reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var TOTAL=5, cur=0, reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   var d=document, panes=d.querySelectorAll('.pane'), stepEls=d.querySelectorAll('#steps li'),
       back=d.getElementById('back'), next=d.getElementById('next'), count=d.getElementById('count');
-  var LABELS=['Connect','Attribute','Forecast','Budget'];
+  var LABELS=['Connect','Attribute','Forecast','Estimate','Budget'];
   var mail='mailto:hello@outlay-ai.com?subject=Outlay%20design-partner%20pilot';
 
   function countUp(el){
