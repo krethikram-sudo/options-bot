@@ -1299,44 +1299,14 @@ def mode_toggle(current: str, paid: bool = False) -> str:
 
 def settings_page(account: dict, settings: dict, saved: bool = False,
                   delete_error: bool = False, twofa: str = "") -> str:
-    from .store import RISK_LEVELS
-    risk_opts = "".join(
-        f'<option value="{r}"{" selected" if settings["risk"]==r else ""}>{r.title()}</option>'
-        for r in RISK_LEVELS)
-    models = ["", "claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-8", "claude-fable-5"]
-    model_opts = "".join(
-        f'<option value="{m}"{" selected" if settings["min_model"]==m else ""}>'
-        f'{m or "No floor (cheapest acceptable)"}</option>' for m in models)
+    # Routing-mode / routing-policy / model-spend-budget cards are parked along with
+    # the optimization engine — Settings now covers account, team, and security only.
+    # (Budgets for the spend product live at /app/outlay/budgets.) The /app/settings
+    # POST route still accepts the legacy fields, so this is a UI-only change.
     saved_note = '<div class="note">Settings saved.</div>' if saved else ""
-    body = f"""
-    <h1>Settings</h1>{saved_note}
-    <div class=card>
-      <h2 style="margin-top:0">Routing mode</h2>
-      {mode_toggle(settings['mode'], store.get_plan(account["id"]).get("plan") == "paid")}
-      {_autopilot_ramp(int(settings.get('autopilot_pct', 100)), settings['mode'])}
-    </div>
-    <div class=card style="margin-top:16px">
-      <form method=post action="/app/settings">
-        <h2 style="margin-top:0">Routing policy</h2>
-        <div class=field><label>Risk tolerance</label>
-          <select name=risk>{risk_opts}</select>
-          <p class="small muted">Conservative keeps a higher confidence gate; aggressive routes more.</p></div>
-        <div class=field><label>Minimum model (quality floor)</label>
-          <select name=min_model>{model_opts}</select>
-          <p class="small muted">Outlay will never route below this model, whatever the classifier says.</p></div>
-        <div class=field><label class=row>
-          <input type=checkbox name=telemetry_opt_in value=1 {"checked" if settings["telemetry_opt_in"] else ""}
-            style="width:auto;margin-right:8px"> Share anonymous, aggregate performance telemetry</label>
-          <p class="small muted">Counts and dollars only — never prompt text. Helps us tune routing for your traffic.</p></div>
-        <h2>Spend budget</h2>
-        <div class=field><label>Monthly spend budget (USD, 0 = no cap)</label>
-          <input name=monthly_budget type=number step="0.01" min="0" value="{settings.get('monthly_budget') or 0:g}">
-          <p class="small muted">Your model spend through Outlay this cycle. We email you when you cross the alert threshold and again if you go over.</p></div>
-        <div class=field><label>Alert at (% of budget)</label>
-          <input name=budget_alert_pct type=number step="1" min="1" max="100" value="{int((settings.get('budget_alert_pct') or 0.8)*100)}"></div>
-        <button class=btn>Save settings</button>
-      </form>
-    </div>{_settings_links(account)}{_twofa_section(account, twofa)}{_danger_zone(account, delete_error)}"""
+    body = (f"<h1>Settings</h1>{saved_note}"
+            f"{_settings_links(account)}{_twofa_section(account, twofa)}"
+            f"{_danger_zone(account, delete_error)}")
     return page("Settings", body, account, "/app/settings")
 
 
@@ -1359,9 +1329,8 @@ def _danger_zone(account: dict, delete_error: bool = False) -> str:
     return f"""
     <div class=card style="margin-top:16px;border:1px solid #e3b3b3">
       <h2 style="margin-top:0">Danger zone</h2>
-      <p class="small muted">Permanently delete this account and <b>all</b> its data — deployments,
-        API keys, routing history, savings/metering, team members, and settings. This cannot be undone.
-        Any active Stripe subscription is cancelled.</p>
+      <p class="small muted">Permanently delete this account and <b>all</b> its data — connected sources,
+        spend reports, budgets, team members, and settings. This cannot be undone.</p>
       {err}
       <form method=post action="/app/account/delete"
             onsubmit="return confirm('Permanently delete your account and all data? This cannot be undone.')">
