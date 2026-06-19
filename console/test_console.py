@@ -1344,6 +1344,30 @@ def test_outlay_cursor_key_encrypted_at_rest(env, client):
         assert raw["cursor_key"].startswith("enc:") and "key_supersecret" not in raw["cursor_key"]
 
 
+def test_outlay_csv_export(env, client):
+    _signup(client, email="csv@x.com")
+    # no report yet → redirect to dashboard, not a broken download
+    assert client.get("/app/outlay/export.csv", follow_redirects=False).status_code in (302, 303, 307)
+
+    client.post("/app/outlay/sample", follow_redirects=True)
+    r = client.get("/app/outlay/export.csv?view=tickets")
+    assert r.status_code == 200 and "text/csv" in r.headers["content-type"]
+    assert "attachment" in r.headers["content-disposition"] and "outlay-tickets.csv" in r.headers["content-disposition"]
+    assert r.text.splitlines()[0] == "ticket_id,task_class,status,cost_usd,rework_iterations,team_id"
+    assert len(r.text.splitlines()) > 1  # header + at least one ticket
+
+    people = client.get("/app/outlay/export.csv?view=people")
+    assert people.text.splitlines()[0] == "engineer,spend_usd,share_pct,top_model,events"
+    savings = client.get("/app/outlay/export.csv?view=savings")
+    assert savings.text.splitlines()[0] == "work_type,from_model,to_model,projected_savings_usd,confidence"
+
+    # bogus view falls back to tickets, never errors
+    bogus = client.get("/app/outlay/export.csv?view=evil")
+    assert bogus.status_code == 200 and bogus.text.startswith("ticket_id,")
+    # dashboard exposes the export links
+    assert "/app/outlay/export.csv?view=people" in client.get("/app/outlay").text
+
+
 def test_outlay_sample_data_load_and_clear(env, client):
     _, store = env
     _signup(client, email="samp@x.com")
