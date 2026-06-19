@@ -18,7 +18,7 @@ from urllib.parse import parse_qs
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
-from . import notify, store, stripe_billing, web
+from . import notify, outlay_app, store, stripe_billing, web
 
 COOKIE = "mp_session"
 PENDING_2FA_COOKIE = "mp_2fa"  # short-lived marker between password and OTP steps
@@ -400,6 +400,39 @@ def app_estimate(request: Request):
     cycle = store.savings_summary(acct["id"], since=bill["cycle_start"])
     lifetime = store.savings_summary(acct["id"])
     return _html(web.estimate_page(acct, plan, cycle, lifetime, bill))
+
+
+@app.get("/app/outlay", response_class=HTMLResponse)
+def app_outlay(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    report = store.get_outlay_report(acct["id"])
+    return _html(web.outlay_page(acct, report))
+
+
+@app.post("/app/outlay/run")
+async def app_outlay_run(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return JSONResponse({"ok": False, "error": "Please sign in again."}, status_code=401)
+    try:
+        data = await request.json()
+    except Exception:  # noqa: BLE001
+        return JSONResponse({"ok": False, "error": "Invalid request."}, status_code=400)
+    issues = (data.get("issues") or "").strip()
+    usage = (data.get("usage") or "").strip()
+    planned = (data.get("planned") or "").strip() or None
+    if not issues or not usage:
+        return JSONResponse({"ok": False, "error": "Paste both the tracker and AI-usage JSON."})
+    try:
+        report = outlay_app.build_report(issues, usage, planned)
+    except ValueError as e:
+        return JSONResponse({"ok": False, "error": str(e)})
+    except Exception:  # noqa: BLE001
+        return JSONResponse({"ok": False, "error": "Could not process that data."})
+    store.save_outlay_report(acct["id"], report)
+    return JSONResponse({"ok": True})
 
 
 @app.post("/app/mode")

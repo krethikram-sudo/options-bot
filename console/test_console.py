@@ -1171,3 +1171,42 @@ def test_activation_funnel_and_feedback(env, client):
     store.record_feedback(a["id"], "cancel", comment="too pricey")
     store.delete_account(a["id"])
     assert any(x["kind"] == "cancel" and x["comment"] == "too pricey" for x in store.list_feedback())
+
+
+# --- Outlay spend dashboard ---
+
+def _fixtures():
+    from pathlib import Path
+    return Path(__file__).resolve().parent.parent / "outlay" / "fixtures"
+
+
+def test_outlay_empty_then_run_then_dashboard(env, client):
+    _signup(client)
+    fix = _fixtures()
+    issues = (fix / "github_issues.json").read_text()
+    usage = (fix / "anthropic_usage.json").read_text()
+
+    # empty state shows the connect form
+    r = client.get("/app/outlay")
+    assert r.status_code == 200 and "Connect your data" in r.text
+
+    # run the engine on uploaded data
+    r = client.post("/app/outlay/run", json={"issues": issues, "usage": usage})
+    assert r.status_code == 200 and r.json()["ok"] is True
+
+    # dashboard now renders real engine output
+    r = client.get("/app/outlay")
+    assert r.status_code == 200
+    assert "Where your AI spend went" in r.text
+    assert "Mapped to a ticket" in r.text
+
+
+def test_outlay_run_rejects_bad_data(env, client):
+    _signup(client)
+    r = client.post("/app/outlay/run", json={"issues": "not json", "usage": "nope"})
+    assert r.status_code == 200 and r.json()["ok"] is False
+
+
+def test_outlay_requires_auth(env, client):
+    r = client.post("/app/outlay/run", json={"issues": "{}", "usage": "[]"})
+    assert r.status_code == 401

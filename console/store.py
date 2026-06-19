@@ -213,6 +213,11 @@ CREATE TABLE IF NOT EXISTS feedback (
     rating TEXT,                   -- 'up' | 'down' | NULL
     comment TEXT
 );
+CREATE TABLE IF NOT EXISTS outlay_reports (
+    account_id INTEGER PRIMARY KEY,   -- one current report per account (upserted)
+    ts REAL NOT NULL,
+    report TEXT NOT NULL              -- the serialized Outlay report (JSON)
+);
 """
 
 WEBHOOK_EVENTS = ("budget.warn", "budget.over", "proposal.pending", "account.suspended")
@@ -561,6 +566,34 @@ def list_feedback(limit: int = 50, path: str | None = None) -> list[dict]:
         return [dict(r) for r in rows]
     finally:
         conn.close()
+
+
+def save_outlay_report(account_id: int, report: dict, path: str | None = None,
+                       now: float | None = None) -> None:
+    """Upsert the account's current Outlay report (the serialized engine output)."""
+    now = now or time.time()
+    conn = connect(path)
+    try:
+        conn.execute("INSERT OR REPLACE INTO outlay_reports(account_id, ts, report) VALUES(?,?,?)",
+                     (account_id, now, json.dumps(report)))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_outlay_report(account_id: int, path: str | None = None) -> dict | None:
+    """The account's current Outlay report, or None if they haven't run one yet."""
+    conn = connect(path)
+    try:
+        r = conn.execute("SELECT ts, report FROM outlay_reports WHERE account_id=?",
+                         (account_id,)).fetchone()
+    finally:
+        conn.close()
+    if not r:
+        return None
+    data = json.loads(r["report"])
+    data["_generated_ts"] = r["ts"]
+    return data
 
 
 def activation_funnel(path: str | None = None) -> dict:
