@@ -1210,3 +1210,33 @@ def test_outlay_run_rejects_bad_data(env, client):
 def test_outlay_requires_auth(env, client):
     r = client.post("/app/outlay/run", json={"issues": "{}", "usage": "[]"})
     assert r.status_code == 401
+
+
+def test_outlay_backlog_estimator(env, client):
+    _signup(client)
+    fix = _fixtures()
+    issues = (fix / "github_issues.json").read_text()
+    usage = (fix / "anthropic_usage.json").read_text()
+    planned = (fix / "planned_features.json").read_text()
+
+    # estimator requires connected history first
+    r = client.get("/app/outlay/estimate")
+    assert r.status_code == 200 and "Connect your data" in r.text
+
+    # connect history
+    assert client.post("/app/outlay/run", json={"issues": issues, "usage": usage}).json()["ok"]
+
+    # now estimate a backlog
+    r = client.post("/app/outlay/estimate/run", json={"planned": planned})
+    assert r.status_code == 200 and r.json()["ok"] is True
+
+    # the estimate renders
+    r = client.get("/app/outlay/estimate")
+    assert r.status_code == 200 and "Backlog estimate" in r.text
+    assert "Confidence" in r.text
+
+
+def test_outlay_estimator_needs_history(env, client):
+    _signup(client, email="c@d.com")
+    r = client.post("/app/outlay/estimate/run", json={"planned": '{"items":[]}'})
+    assert r.status_code == 200 and r.json()["ok"] is False

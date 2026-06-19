@@ -431,6 +431,43 @@ async def app_outlay_run(request: Request):
         return JSONResponse({"ok": False, "error": str(e)})
     except Exception:  # noqa: BLE001
         return JSONResponse({"ok": False, "error": "Could not process that data."})
+    # Keep the raw history so the backlog estimator can re-use the learned model.
+    report["_raw"] = {"issues": issues, "usage": usage}
+    store.save_outlay_report(acct["id"], report)
+    return JSONResponse({"ok": True})
+
+
+@app.get("/app/outlay/estimate", response_class=HTMLResponse)
+def app_outlay_estimate(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    return _html(web.estimate_backlog_page(acct, store.get_outlay_report(acct["id"])))
+
+
+@app.post("/app/outlay/estimate/run")
+async def app_outlay_estimate_run(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return JSONResponse({"ok": False, "error": "Please sign in again."}, status_code=401)
+    try:
+        data = await request.json()
+    except Exception:  # noqa: BLE001
+        return JSONResponse({"ok": False, "error": "Invalid request."}, status_code=400)
+    planned = (data.get("planned") or "").strip()
+    if not planned:
+        return JSONResponse({"ok": False, "error": "Paste a planned backlog (JSON)."})
+    report = store.get_outlay_report(acct["id"])
+    raw = report.get("_raw") if report else None
+    if not raw:
+        return JSONResponse({"ok": False, "error": "Connect your data on the Spend tab first."})
+    try:
+        est = outlay_app.estimate_backlog(raw["issues"], raw["usage"], planned)
+    except ValueError as e:
+        return JSONResponse({"ok": False, "error": str(e)})
+    except Exception:  # noqa: BLE001
+        return JSONResponse({"ok": False, "error": "Could not estimate that backlog."})
+    report["estimate"] = est
     store.save_outlay_report(acct["id"], report)
     return JSONResponse({"ok": True})
 
