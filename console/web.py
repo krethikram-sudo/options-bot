@@ -237,7 +237,8 @@ def page(title: str, body: str, account: dict | None = None, active: str = "") -
     if account:
         # Customer-first: a few clear destinations. Logs live inside Home,
         # Team/SSO inside Settings — reached contextually, not as top-level tabs.
-        items = [("/app", "Home"), ("/app/connect", "Configuration"),
+        items = [("/app", "Home"), ("/app/outlay", "Spend"),
+                 ("/app/connect", "Configuration"),
                  ("/app/settings", "Settings"), ("/app/billing", "Billing")]
         links = "".join(f'<a class="{"on" if active == href else ""}" href="{href}">{_e(label)}</a>'
                         for href, label in items)
@@ -295,6 +296,130 @@ els.forEach(function(c,i){{c.classList.add('reveal');c.style.setProperty('--rd',
 var io=new IntersectionObserver(function(es){{es.forEach(function(e){{if(e.isIntersecting){{e.target.classList.add('in');io.unobserve(e.target);}}}});}},{{threshold:.06}});
 els.forEach(function(c){{io.observe(c);}});}})();</script>
 </body></html>"""
+
+
+# --------------------------------------------------------------------------- #
+# Outlay — spend attribution / forecast dashboard (real engine output)
+# --------------------------------------------------------------------------- #
+
+def _outlay_connect(error: str = "", collapsed: bool = False) -> str:
+    err = f'<div class="err">{_e(error)}</div>' if error else ""
+    summary = ('<summary class="btn sec sm" style="display:inline-block">Update data</summary>'
+               if collapsed else "")
+    open_attr = "" if collapsed else " open"
+    return f"""<details class=card{open_attr}>{summary}
+      <h3 style="margin:.2em 0 .4em">Connect your data <span class=muted style="font-weight:400">· read-only</span></h3>
+      <p class=muted style="margin:.2em 0 1em">Paste your tracker export (GitHub Issues JSON) and your AI-usage
+        export (Anthropic usage JSON). Metadata only — no prompts. Optionally add a planned-work backlog to budget it.</p>
+      {err}
+      <div style="display:grid;gap:12px">
+        <label class=fld><span>Tracker — GitHub Issues JSON</span>
+          <textarea id=ol_issues rows=4 placeholder='{{"issues":[ ... ]}}'></textarea></label>
+        <label class=fld><span>AI usage — Anthropic usage JSON</span>
+          <textarea id=ol_usage rows=4 placeholder='[ {{"id":"e1","model":"claude-...","input_tokens":...}} ]'></textarea></label>
+        <label class=fld><span>Planned backlog (optional) — JSON</span>
+          <textarea id=ol_planned rows=3 placeholder='{{"items":[{{"id":"PROJ-1","title":"Add SSO","requirements":"...","points":8}}]}}'></textarea></label>
+      </div>
+      <button class="btn" style="margin-top:12px" onclick="outlayRun(this)">Run the audit</button>
+      <script>
+      function outlayRun(btn){{btn.classList.add('loading');btn.disabled=true;
+        fetch('/app/outlay/run',{{method:'POST',headers:{{'content-type':'application/json'}},
+          body:JSON.stringify({{issues:document.getElementById('ol_issues').value,
+            usage:document.getElementById('ol_usage').value,
+            planned:document.getElementById('ol_planned').value}})}})
+        .then(function(r){{return r.json();}}).then(function(d){{
+          if(d.ok){{location.reload();}}else{{btn.classList.remove('loading');btn.disabled=false;
+            alert(d.error||'Could not run the audit.');}}}})
+        .catch(function(){{btn.classList.remove('loading');btn.disabled=false;alert('Network error.');}});}}
+      </script>
+    </details>"""
+
+
+def _kpi(label: str, value: str, sub: str = "", color: str = "") -> str:
+    style = f' style="color:{color}"' if color else ""
+    sub = f'<div class=muted style="font-size:12px;margin-top:2px">{_e(sub)}</div>' if sub else ""
+    return (f'<div class=card style="padding:16px 18px"><div class=muted '
+            f'style="font-size:11px;letter-spacing:.04em;text-transform:uppercase">{_e(label)}</div>'
+            f'<div style="font-size:26px;font-weight:700;margin-top:6px"{style}>{value}</div>{sub}</div>')
+
+
+def outlay_page(account: dict, report: dict | None) -> str:
+    if not report:
+        intro = ('<div class=hero><h1>Your AI spend, on your roadmap.</h1>'
+                 '<p class=muted>Connect your data and Outlay maps every dollar to the work that drove it, '
+                 'forecasts the quarter, and finds savings — all on metadata, prompts never leave your tools.</p></div>')
+        return page("Spend", intro + _outlay_connect(), account, active="/app/outlay")
+
+    sp = report.get("spend", {})
+    fc = report.get("forecast", {})
+    recs = report.get("recommendations", [])
+    cal = report.get("calibration") or {}
+    est = report.get("estimate")
+
+    cov = sp.get("ticket_coverage", 0.0)
+    savings = sum(r.get("projected_savings_usd", 0) for r in recs)
+    cov_color = "#0f6b4f" if cov >= 0.6 else "#b45309"
+    kpis = (
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0 0 18px">'
+        + _kpi("AI spend", money(sp.get("total_usd", 0)), "this window")
+        + _kpi("Mapped to a ticket", f"{cov*100:.0f}%", money(sp.get("attributed_to_ticket_usd", 0)) + " attributed", cov_color)
+        + _kpi("Forecast · open work", money(fc.get("expected_usd", 0)),
+               f"likely {money(fc.get('low_usd', 0))}–{money(fc.get('high_usd', 0))}")
+        + _kpi("Savings opportunity", money(savings), f"{len(recs)} work type(s)", "#0f6b4f")
+        + "</div>")
+
+    # Spend by ticket
+    tickets = report.get("tickets", [])[:8]
+    maxc = max((t.get("cost_usd", 0) for t in tickets), default=1) or 1
+    trows = "".join(
+        f'<tr><td class=mono>{_e(t.get("ticket_id"))}</td><td>{_e(t.get("task_class"))}</td>'
+        f'<td style="text-align:right">{money(t.get("cost_usd",0))}</td>'
+        f'<td style="width:120px"><div style="height:6px;border-radius:4px;background:#eee;overflow:hidden">'
+        f'<span style="display:block;height:100%;width:{(t.get("cost_usd",0)/maxc)*100:.0f}%;background:#13203a"></span></div></td></tr>'
+        for t in tickets) or '<tr><td colspan=4 class=muted>No ticket-attributed spend yet.</td></tr>'
+    spend_card = (f'<div class=card><h3 style="margin:.2em 0 .6em">Where your AI spend went</h3>'
+                  f'<table class=tbl style="width:100%"><tbody>{trows}</tbody></table></div>')
+
+    # Forecast + accuracy
+    acc = ""
+    if cal.get("n_evaluated", 0) > 0:
+        acc = (f'<p class=muted style="font-size:12.5px;margin-top:10px">Forecast accuracy (measured): median '
+               f'estimate within ~{cal.get("mdape",0)*100:.0f}% of actual on your closed tickets.</p>')
+    fc_card = (f'<div class=card><h3 style="margin:.2em 0 .4em">Forecast · open work</h3>'
+               f'<div style="font-size:28px;font-weight:700">{money(fc.get("expected_usd",0))}</div>'
+               f'<div class=muted>likely {money(fc.get("low_usd",0))}–{money(fc.get("high_usd",0))} · '
+               f'{fc.get("items_costed",0)} items costed, {fc.get("items_unclassified",0)} without history</div>{acc}</div>')
+
+    # Savings recs
+    rrows = "".join(
+        f'<tr><td>{_e(r.get("task_class"))}</td>'
+        f'<td class=mono style="font-size:12px">{_e(r.get("incumbent_model"))} → {_e(r.get("candidate_model"))}</td>'
+        f'<td style="text-align:right;font-weight:600;color:#0a4f3a">{money(r.get("projected_savings_usd",0))}</td>'
+        f'<td><span class="pill {"ok" if r.get("confidence")=="validated" else "warn"}">'
+        f'{"validated" if r.get("confidence")=="validated" else "needs validation"}</span></td></tr>'
+        for r in recs) or '<tr><td colspan=4 class=muted>No downgrade opportunities found.</td></tr>'
+    save_card = (f'<div class=card><h3 style="margin:.2em 0 .6em">Optimization — route down with proof</h3>'
+                 f'<table class=tbl style="width:100%"><tbody>{rrows}</tbody></table></div>')
+
+    # Backlog estimate (optional)
+    est_card = ""
+    if est:
+        erows = "".join(
+            f'<tr><td class=mono>{_e(e.get("id"))}</td><td>{_e(e.get("task_class"))}'
+            f'{(" · "+_e(e.get("complexity_tier"))) if e.get("complexity_tier") else ""}</td>'
+            f'<td style="text-align:right">{money(e.get("expected_usd",0))}</td>'
+            f'<td class=muted style="font-size:12px">{_e(e.get("confidence"))}</td></tr>'
+            for e in est.get("items", []) if e.get("costable"))
+        est_card = (f'<div class=card><h3 style="margin:.2em 0 .4em">Backlog estimate</h3>'
+                    f'<div style="font-size:24px;font-weight:700">{money(est.get("expected_usd",0))}</div>'
+                    f'<div class=muted>likely {money(est.get("low_usd",0))}–{money(est.get("high_usd",0))} · '
+                    f'{est.get("items_costed",0)} estimated, {est.get("items_unknown",0)} declined</div>'
+                    f'<table class=tbl style="width:100%;margin-top:8px"><tbody>{erows}</tbody></table></div>')
+
+    grid = (f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">{spend_card}{fc_card}</div>'
+            f'<div style="margin-top:16px">{save_card}</div>' + (f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""))
+    body = kpis + grid + '<div style="margin-top:16px">' + _outlay_connect(collapsed=True) + '</div>'
+    return page("Spend", body, account, active="/app/outlay")
 
 
 # --------------------------------------------------------------------------- #
