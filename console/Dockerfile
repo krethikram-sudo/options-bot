@@ -8,6 +8,10 @@ COPY console/requirements.txt /app/console/requirements.txt
 RUN pip install --no-cache-dir -r /app/console/requirements.txt
 
 COPY console/ /app/console/
+# The console runs the Outlay engine in-process (Spend dashboard, estimator,
+# connectors). It's stdlib-only and imported at boot, so it must be in the image
+# — including outlay/fixtures, which back the "See it with sample data" demo.
+COPY outlay/ /app/outlay/
 
 ENV CONSOLE_DB=/data/console.db \
     CONSOLE_PORT=8700
