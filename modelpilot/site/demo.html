@@ -198,16 +198,19 @@
     document.querySelectorAll('#results [data-w]').forEach(function(b){b.style.width=b.getAttribute('data-w');});
     document.querySelectorAll('#results [data-count]').forEach(countUp);
   }
-  btn.addEventListener('click',function(){
+  function start(){
     if(stage.classList.contains('running'))return;
-    // reset bars so a re-run re-animates
+    // reset bars so a (re-)run re-animates
     document.querySelectorAll('#results [data-w]').forEach(function(b){b.style.width='0';});
     var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
     if(reduce){reveal();return;}
     stage.classList.remove('done'); stage.classList.add('running');
     btn.textContent='Resolving spend → tickets…'; btn.disabled=true;
     setTimeout(reveal, 1100);
-  });
+  }
+  btn.addEventListener('click',start);
+  // Auto-play once on load so the page is alive when you open/share it.
+  setTimeout(start, 650);
 })();
 </script>
 </body></html>
