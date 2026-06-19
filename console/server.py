@@ -1126,6 +1126,14 @@ def _require_admin(request: Request):
     return acct, None
 
 
+@app.get("/admin/leads", response_class=HTMLResponse)
+def admin_leads(request: Request):
+    acct, redir = _require_admin(request)
+    if redir:
+        return redir
+    return _html(web.leads_page(acct, store.list_pilot_requests()))
+
+
 @app.get("/admin", response_class=HTMLResponse)
 def admin_overview(request: Request):
     acct, redir = _require_admin(request)

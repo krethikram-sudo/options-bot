@@ -298,10 +298,11 @@ def page(title: str, body: str, account: dict | None = None, active: str = "", b
         items = [("/app/outlay", "Spend"), ("/app/settings", "Settings")]
         links = "".join(f'<a class="{"on" if active == href else ""}" href="{href}">{_e(label)}</a>'
                         for href, label in items)
-        # Vendor Overview/Review (cross-customer routing overview + tuning-proposal
-        # queue) are parked with routing — removed from the nav. The /admin routes
-        # still exist (account management) and are reachable by direct URL.
+        # Routing-era vendor Overview/Review are parked; keep just the leads inbox.
         admin = ""
+        if account.get("role") == "admin":
+            admin = ('<div class=navgrp>Vendor</div>'
+                     f'<a class="{"on" if active == "/admin/leads" else ""}" href="/admin/leads">Pilot requests</a>')
         em = _e(account.get("display_email") or account["email"])
         chrome = (
             '<div class=shell><aside class=side>'
@@ -918,6 +919,30 @@ def pilot_request_page(error: str = "", values: dict | None = None) -> str:
         'No spam.</p>'
         '</form>')
     return page("Request a pilot", body, bare=True)
+
+
+def leads_page(account: dict, leads: list[dict]) -> str:
+    """Admin inbox of inbound pilot requests from the public form."""
+    head = (f'<div class=ohead><h1>Pilot requests <span class=muted>· {len(leads)}</span></h1>'
+            '<p>Inbound design-partner requests from <a href="https://app.outlay-ai.com/pilot-request">'
+            'the form</a>. Also emailed to your inbox when SMTP is configured.</p></div>')
+    if not leads:
+        return page("Pilot requests", head + '<div class=ocard><p class=muted style="margin:0">'
+                    'No requests yet.</p></div>', account, active="/admin/leads")
+    cards = ""
+    for ld in leads:
+        when = _fmt_date(ld.get("ts"))
+        company = _e(ld.get("company") or "—")
+        name = _e(ld.get("name") or "")
+        email = _e(ld.get("email") or "")
+        tools = f'<div class=muted style="font-size:12.5px;margin-top:4px">Tools: {_e(ld.get("tools"))}</div>' if ld.get("tools") else ""
+        msg = f'<div style="font-size:13.5px;margin-top:8px;white-space:pre-wrap">{_e(ld.get("message"))}</div>' if ld.get("message") else ""
+        cards += (f'<div class=bcard><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">'
+                  f'<b style="font-size:14.5px">{company}</b><span class=muted style="font-size:12px">{when}</span></div>'
+                  f'<div style="font-size:13.5px;margin-top:3px">{name} · '
+                  f'<a href="mailto:{email}?subject=Your%20Outlay%20pilot">{email}</a></div>{tools}{msg}</div>')
+    return page("Pilot requests", head + f'<div class=ocard><div class=dh>Inbox</div>{cards}</div>',
+                account, active="/admin/leads")
 
 
 def pilot_thanks_page() -> str:

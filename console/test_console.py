@@ -1853,3 +1853,20 @@ def test_pilot_request_rejects_bad_email_and_honeypot(env, client):
     r = client.post("/pilot-request", data={"email": "bot@x.com", "website": "spam"}, follow_redirects=False)
     assert r.status_code in (302, 303)
     assert store.list_pilot_requests() == []
+
+
+def test_admin_leads_inbox(env, client):
+    server, store = env
+    store.create_account("boss@b.com", "password123", role="admin")
+    # a lead comes in via the public form
+    client.post("/pilot-request", data={"email": "lead@acme.dev", "name": "Lee",
+                "company": "Acme", "message": "interested"})
+    # a plain customer can't see the inbox
+    _signup(client, email="cust@b.com")
+    assert client.get("/admin/leads").status_code == 403
+    client.post("/logout")
+    # admin sees the lead
+    client.post("/login", data={"email": "boss@b.com", "password": "password123"})
+    r = client.get("/admin/leads")
+    assert r.status_code == 200 and "Acme" in r.text and "lead@acme.dev" in r.text
+    assert "Pilot requests" in r.text
