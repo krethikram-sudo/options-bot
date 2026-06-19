@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Outlay — design-partner audit (one-pager)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0c0e12; --body:#3b414c; --mut:#7b818d; --faint:#a4a9b3;
+    --line:#e8e6df; --line2:#f0eee7; --paper:#fbfaf6; --paper2:#f6f4ed;
+    --navy:#13203a; --grn:#0f6b4f; --grn-d:#0a4f3a; --grn-l:#e7f1ec;
+    --amber:#b45309; --amber-l:#fbf0df;
+    --disp:"Fraunces",Georgia,serif; --sans:"Inter",-apple-system,system-ui,sans-serif;
+    --mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--sans);color:var(--body);background:var(--paper2);
+    font-size:13.5px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .sheet{max-width:860px;margin:22px auto;background:#fff;border:1px solid var(--line);
+    border-radius:16px;padding:34px 40px;box-shadow:0 30px 60px -40px rgba(19,32,58,.35)}
+  .mast{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:18px}
+  .brand{font-family:var(--disp);font-weight:700;font-size:23px;color:var(--ink);letter-spacing:-.02em}
+  .brand .dot{color:var(--grn)}
+  .ey{font-size:11px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--grn);margin-top:6px}
+  .mast .meta{text-align:right;font-size:11.5px;color:var(--mut);line-height:1.7}
+  h1{font-family:var(--disp);font-size:25px;color:var(--ink);font-weight:600;letter-spacing:-.015em;margin:2px 0 8px;max-width:22ch}
+  .lede{font-size:14.5px;color:var(--body);max-width:64ch;margin:0 0 18px}
+  .lede b{color:var(--ink);font-weight:600}
+  h2{font-family:var(--disp);font-size:15px;color:var(--ink);font-weight:600;margin:18px 0 9px;letter-spacing:-.01em}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  ul{list-style:none;padding:0;margin:0;display:grid;gap:7px}
+  li{display:flex;gap:9px;font-size:13px;color:var(--body)}
+  li .ck{color:var(--grn);font-weight:800;flex-shrink:0}
+  li .ar{color:var(--grn);font-weight:800;flex-shrink:0}
+  li b{color:var(--ink);font-weight:600}
+  .arc{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:4px 0 4px}
+  .step{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+  .step .n{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--grn)}
+  .step .t{font-size:13px;font-weight:600;color:var(--ink);margin:3px 0 2px}
+  .step .d{font-size:11.5px;color:var(--mut);line-height:1.4}
+  .privacy{background:var(--grn-l);border:1px solid #cfe3d8;border-radius:12px;padding:14px 16px;margin:16px 0;font-size:12.5px;color:var(--grn-d)}
+  .privacy b{color:var(--grn-d)}
+  .crit{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin-top:4px}
+  .cta{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;
+    background:var(--navy);color:#fff;border-radius:12px;padding:16px 20px;margin-top:18px}
+  .cta .h{font-family:var(--disp);font-size:16px;font-weight:600}
+  .cta .s{font-size:12px;color:#a8b4cb;margin-top:2px}
+  .cta a{display:inline-block;background:#fff;color:var(--navy);font-weight:600;font-size:13.5px;
+    text-decoration:none;border-radius:8px;padding:10px 18px;white-space:nowrap}
+  .foot{border-top:1px solid var(--line);margin-top:16px;padding-top:12px;font-size:11px;color:var(--mut);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  @media(max-width:680px){.cols,.crit{grid-template-columns:1fr}.arc{grid-template-columns:1fr 1fr}}
+  @media print{body{background:#fff}.sheet{box-shadow:none;border:none;margin:0;max-width:none;border-radius:0;padding:24px 28px}.cta a{border:1px solid #fff}}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="mast">
+    <div>
+      <div class="brand">Out<span class="dot">lay</span></div>
+      <div class="ey">Design-partner audit</div>
+    </div>
+    <div class="meta">Read-only · ~2 weeks · free for design partners<br>
+      <span style="color:var(--grn)">Prompts never leave your environment</span></div>
+  </div>
+
+  <h1>Map your AI spend to your roadmap — in two weeks.</h1>
+  <p class="lede">Outlay turns AI compute from an unpredictable, runaway line item into something you
+    <b>budget and govern like any other engineering cost</b>. Your AI bill is climbing and now
+    finance-visible — but it lives in API dashboards keyed by model, not the <b>work that drove it</b>.
+    No one can say what an epic costs, forecast next quarter from the roadmap, or get warned before a
+    team blows its budget. Outlay fixes exactly that.</p>
+
+  <h2>What Outlay does</h2>
+  <div class="arc">
+    <div class="step"><div class="n">Attribute</div><div class="t">Spend → work</div><div class="d">Every dollar of LLM &amp; coding-agent spend, mapped to tickets, epics, and teams.</div></div>
+    <div class="step"><div class="n">Forecast</div><div class="t">By scope</div><div class="d">A quarter's cost projected from your open roadmap — with a measured accuracy number.</div></div>
+    <div class="step"><div class="n">Guard</div><div class="t">Before overspend</div><div class="d">Budgets by scope with pace alerts that flag a team before it goes over.</div></div>
+    <div class="step"><div class="n">Optimize</div><div class="t">Routes down</div><div class="d">Proven, non-inferior model routing that cuts cost — billed only on realized savings.</div></div>
+  </div>
+
+  <div class="cols">
+    <div>
+      <h2>What you connect <span style="color:var(--mut);font-weight:400;font-size:12px">(read-only, ~30 min)</span></h2>
+      <ul>
+        <li><span class="ar">→</span><div>One tracker — <b>GitHub Issues, Jira, or Linear</b>.</div></li>
+        <li><span class="ar">→</span><div>Your AI usage — <b>Anthropic admin API, Cursor export, and/or Claude Code transcripts</b>.</div></li>
+        <li><span class="ar">→</span><div>That's it. No app rewrite, no proxy required to see the picture.</div></li>
+      </ul>
+    </div>
+    <div>
+      <h2>What you get back</h2>
+      <ul>
+        <li><span class="ck">✓</span><div>Spend <b>attributed to tickets, epics, and teams</b> — with a coverage number.</div></li>
+        <li><span class="ck">✓</span><div>A <b>quarter forecast</b> from your open scope + a budget burndown.</div></li>
+        <li><span class="ck">✓</span><div><b>Anomaly flags</b> and a concrete <b>optimization-savings estimate</b>.</div></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="privacy">
+    <b>Privacy by architecture.</b> Outlay runs on <b>metadata only</b> — task categories, token counts,
+    ticket IDs. Prompt text, model outputs, and API keys <b>never leave your environment</b>, and our
+    ingestion endpoints reject any payload that contains them. The boundary is enforced, not just promised.
+  </div>
+
+  <div class="cols">
+    <div>
+      <h2>How it runs · 2–3 weeks</h2>
+      <ul>
+        <li><span class="ar">1</span><div><b>Kickoff</b> — 20 min to confirm fit and agree what "good" looks like.</div></li>
+        <li><span class="ar">2</span><div><b>Connect</b> — read-only access; we resolve spend to your tickets.</div></li>
+        <li><span class="ar">3</span><div><b>Review</b> — we walk you through your real numbers, live.</div></li>
+        <li><span class="ar">4</span><div><b>Decide</b> — keep going or part as friends; your data deleted on request.</div></li>
+      </ul>
+    </div>
+    <div>
+      <h2>What success looks like</h2>
+      <div class="crit">
+        <ul>
+          <li><span class="ck">✓</span><div><b>≥60% coverage</b> of AI spend to a real ticket.</div></li>
+          <li><span class="ck">✓</span><div><b>≥1 actionable finding</b> — an over-pace epic or real downgrade.</div></li>
+        </ul>
+        <ul>
+          <li><span class="ck">✓</span><div>A <b>credible forecast</b> your eng lead would plan against.</div></li>
+          <li><span class="ck">✓</span><div><b>Zero prompts</b> left your environment — verifiable.</div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta">
+    <div>
+      <div class="h">Two weeks to a real number.</div>
+      <div class="s">Free for design partners · read-only · prompts never leave your environment.</div>
+    </div>
+    <a href="mailto:krethikram@gmail.com?subject=Outlay%20design-partner%20pilot">Book a pilot →</a>
+  </div>
+
+  <div class="foot">
+    <span>Outlay · budget AI spend by scope of work · <b>outlay-ai.com</b></span>
+    <span>krethikram@gmail.com</span>
+  </div>
+</div>
+</body></html>
