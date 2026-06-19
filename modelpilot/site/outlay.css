@@ -35,14 +35,15 @@
   .btn.lg{padding:15px 28px;font-size:16.5px}
 
   /* nav */
-  nav{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);backdrop-filter:blur(12px) saturate(1.1);
-      border-bottom:1px solid var(--line)}
+  nav{position:sticky;top:0;z-index:60;background:rgba(11,16,26,.82);backdrop-filter:blur(12px) saturate(1.1);
+      border-bottom:1px solid rgba(255,255,255,.08)}
+  nav .brand{color:#fff} nav .brand .dot{color:#6ee7b7}
   nav .wrap{display:flex;align-items:center;gap:30px;height:var(--nav-h)}
   .brand{font-family:var(--disp);font-weight:700;font-size:22px;color:var(--ink);letter-spacing:-.02em}
   .brand .dot{color:var(--grn)}
   .navlinks{display:flex;gap:22px;margin-left:8px}
-  .navlinks a{color:var(--body);font-size:14.5px;font-weight:500;white-space:nowrap}
-  .navlinks a:hover{color:var(--ink);text-decoration:none}
+  .navlinks a{color:#c4cddb;font-size:14.5px;font-weight:500;white-space:nowrap}
+  .navlinks a:hover{color:#fff;text-decoration:none}
   .navsp{flex:1}
   .navcta{display:flex;gap:14px;align-items:center}
   .navcta .signin{color:var(--body);font-size:14.5px;font-weight:600}
@@ -50,19 +51,23 @@
 
   /* hero */
   .hero{background:
-      linear-gradient(rgba(19,32,58,.032) 1px, transparent 1px) 0 -1px/100% 64px,
-      linear-gradient(90deg, rgba(19,32,58,.032) 1px, transparent 1px) -1px 0/64px 100%,
-      radial-gradient(1100px 560px at 88% -18%, rgba(19,32,58,.06), transparent 60%),
-      linear-gradient(180deg,var(--paper),#fff 88%);
-      border-bottom:1px solid var(--line);padding:78px 0 60px}
+      linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px) 0 -1px/100% 64px,
+      linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px) -1px 0/64px 100%,
+      radial-gradient(1000px 520px at 84% -18%, rgba(15,107,79,.32), transparent 60%),
+      linear-gradient(180deg,#0c1424,#0a1018);
+      border-bottom:1px solid rgba(255,255,255,.08);padding:78px 0 60px}
   .herogrid{display:grid;grid-template-columns:1.04fr .96fr;gap:54px;align-items:center}
   @media(max-width:940px){.herogrid{grid-template-columns:1fr;gap:40px}}
-  .hero h1{font-size:58px;font-weight:700;letter-spacing:-.033em;max-width:13ch;margin:18px 0 0;color:var(--ink)}
-  .hero h1 em{font-style:normal;color:var(--grn-d)}
-  .hero .sub{font-size:19.5px;color:var(--body);max-width:54ch;margin:22px 0 30px}
+  .hero h1{font-size:58px;font-weight:700;letter-spacing:-.033em;max-width:13ch;margin:18px 0 0;color:#f4f7fb}
+  .hero h1 em{font-style:normal;color:#5fd0a0}
+  .hero .sub{font-size:19.5px;color:#aeb9cc;max-width:54ch;margin:22px 0 30px}
   .hero .ctarow{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .hero .eyebrow{color:#7fdcb4}
   .trustline{margin-top:20px;font-size:14px;color:var(--mut)}
   .trustline b{color:var(--ink);font-weight:600}
+  .hero .trustline{color:#8b98ad} .hero .trustline b{color:#e7ecf3} .hero .trustline a{color:#7fdcb4}
+  .hero .btn.ghost{color:#fff;border-color:rgba(255,255,255,.22)}
+  .hero .btn.ghost:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.36)}
   @media(max-width:940px){.hero h1{font-size:44px}}
   @media(max-width:520px){.hero h1{font-size:36px}}
 
