@@ -132,7 +132,18 @@ python -m outlay.cli --window-days 9 # project observed spend to a monthly figur
 python -m outlay.cli --usage usage.json --issues issues.json   # real exports
 python -m outlay.cli --calibrate     # append a measured forecast-accuracy backtest
 python -m outlay.cli --json          # machine-readable output (coverage/forecast/accuracy/savings)
+
+# Estimate PLANNED work (budget against a backlog of Jira/Linear features)
+python -m outlay.estimate --usage usage.json --issues history.json --plan backlog.json
 ```
+
+`outlay.estimate` is the **forward** tool: it learns a cost model from realized
+history, then estimates a backlog of *planned* items (a title, a description,
+optionally story points) classified from their text — so a team can budget
+against work that hasn't been built yet. Every estimate carries a p10–p90 band
+and a confidence (`high` = points + a fitted size model; `medium` = class history;
+`low`/declined = too little history to ground). Honest by the same rules as the
+forecast: it costs what it can and counts what it can't.
 
 The `--json` output is a single versioned object (`schema_version`) covering spend
 + coverage, per-ticket rollups, class distributions, the forecast with per-item
@@ -210,6 +221,7 @@ has no history, and one `validated` + several `needs_validation` routing recs.
 | `classify.py` | task-class heuristics (labels → branch verbs → diff size) |
 | `attribute.py` | orchestrates join+cost; per-ticket rollups + coverage |
 | `forecast.py` | per-class distributions, roadmap forecast, anomaly flags |
+| `estimate.py` | **forward estimator** — cost a backlog of *planned* features (text-classified) with confidence |
 | `backtest.py` | **calibration** — leave-one-out backtest of forecast accuracy + size-vs-class proof |
 | `size.py` | **size conditioning** — per-class cost-per-point/diff ratio model |
 | `recommend.py` | per-class routing recs, scored net of rework |

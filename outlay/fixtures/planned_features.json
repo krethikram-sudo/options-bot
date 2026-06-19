@@ -1,0 +1,10 @@
+{
+  "items": [
+    {"id": "PROJ-301", "title": "Add team billing dashboard", "description": "Build a per-team billing view with usage charts", "points": 8},
+    {"id": "PROJ-302", "title": "Fix checkout timeout on slow networks", "points": 3},
+    {"id": "PROJ-303", "title": "Refactor the auth module", "description": "Restructure session handling", "points": 5},
+    {"id": "PROJ-304", "title": "Add unit tests for the payments service", "points": 2},
+    {"id": "PROJ-305", "title": "Implement SSO support for enterprise", "description": "Add SAML login and provisioning", "points": 13},
+    {"id": "PROJ-306", "title": "Upgrade dependencies and bump CI", "points": 1}
+  ]
+}

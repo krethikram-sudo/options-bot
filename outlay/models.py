@@ -94,8 +94,9 @@ class WorkItem:
     """A unit of planned work from the planning system (GitHub Issue in P0)."""
 
     ticket_id: str           # canonical key, e.g. "GH-1234" or "PROJ-12"
-    source: str              # "github" | "jira" | "linear"
+    source: str              # "github" | "jira" | "linear" | "plan"
     title: str = ""
+    description: str = ""     # body text — used to classify planned work pre-build
     status: str = "open"     # "open" | "in_progress" | "done"
     labels: list[str] = field(default_factory=list)
     epic_id: Optional[str] = None
