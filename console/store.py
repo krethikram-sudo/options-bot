@@ -218,6 +218,11 @@ CREATE TABLE IF NOT EXISTS outlay_reports (
     ts REAL NOT NULL,
     report TEXT NOT NULL              -- the serialized Outlay report (JSON)
 );
+CREATE TABLE IF NOT EXISTS pilot_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts REAL NOT NULL,
+    name TEXT, email TEXT NOT NULL, company TEXT, tools TEXT, message TEXT
+);
 CREATE TABLE IF NOT EXISTS outlay_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     account_id INTEGER NOT NULL,
@@ -632,6 +637,30 @@ def get_outlay_report(account_id: int, path: str | None = None) -> dict | None:
     data = json.loads(r["report"])
     data["_generated_ts"] = r["ts"]
     return data
+
+
+def add_pilot_request(email: str, name: str = "", company: str = "", tools: str = "",
+                      message: str = "", path: str | None = None, now: float | None = None) -> int:
+    """Store an inbound design-partner pilot request (from the public form)."""
+    conn = connect(path)
+    try:
+        cur = conn.execute(
+            "INSERT INTO pilot_requests(ts, name, email, company, tools, message) VALUES(?,?,?,?,?,?)",
+            (now or time.time(), (name or "").strip()[:200], (email or "").strip()[:200],
+             (company or "").strip()[:200], (tools or "").strip()[:300], (message or "").strip()[:4000]))
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
+
+
+def list_pilot_requests(path: str | None = None) -> list[dict]:
+    conn = connect(path)
+    try:
+        rows = conn.execute("SELECT * FROM pilot_requests ORDER BY ts DESC").fetchall()
+    finally:
+        conn.close()
+    return [dict(r) for r in rows]
 
 
 def delete_outlay_report(account_id: int, path: str | None = None) -> None:

@@ -291,7 +291,7 @@ def _fmt_date(ts) -> str:
     return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%b %-d, %Y")
 
 
-def page(title: str, body: str, account: dict | None = None, active: str = "") -> str:
+def page(title: str, body: str, account: dict | None = None, active: str = "", bare: bool = False) -> str:
     if account:
         # Routing/optimization surfaces (Configuration, Billing) are parked for now;
         # the product is spend attribution + forecasting. Team/SSO live in Settings.
@@ -311,6 +311,12 @@ def page(title: str, body: str, account: dict | None = None, active: str = "") -
             '<form method=post action="/logout" style="margin:0">'
             '<button class="btn sec sm" style="width:100%">Sign out</button></form></div>'
             f'</aside><main class=main><div class=inner>{_account_trial_banner(account)}{body}</div></main></div>')
+    elif bare:
+        # Minimal public header (brand only) — for the pilot-request form etc.
+        chrome = (
+            '<div class=top><div class=wrap style="padding-top:12px;padding-bottom:12px">'
+            f'<a class=brand href="https://outlay-ai.com/">Out<span class=dot>lay</span></a></div></div>'
+            f'<div class=wrap style="max-width:640px">{body}</div>')
     else:
         nav = ('<div class="spacer"></div><div class="nav">'
                '<a href="/login">Sign in</a><a class="btn sm" href="/signup">Start free trial</a></div>')
@@ -885,6 +891,41 @@ def budgets_page(account: dict, report: dict | None, statuses: list[dict],
             '<p>Set a budget by scope; Outlay projects your spend to the period and flags it '
             '<b>before</b> you go over — not at month-end.</p></div>')
     return page("Budgets", head + note + rows + pref + add, account, active="/app/outlay")
+
+
+def pilot_request_page(error: str = "", values: dict | None = None) -> str:
+    """Public, branded design-partner pilot request form (replaces the mailto CTA)."""
+    v = values or {}
+    err = f'<div class=ostrip style="background:var(--red-l);margin-bottom:14px"><span>{_e(error)}</span></div>' if error else ""
+    body = (
+        '<div class=ohead style="margin-top:30px"><h1>Request a design-partner pilot</h1>'
+        '<p>Tell us a bit about your team and we\'ll get back to you within a day. A pilot is read-only, '
+        '~2 weeks, and free — we map your real AI spend to your roadmap and forecast the quarter.</p></div>'
+        f'{err}'
+        '<form method=post action="/pilot-request" class=ocard>'
+        '<input type=text name=website style="display:none" tabindex=-1 autocomplete=off>'  # honeypot
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+        f'<label class=fld><span>Name</span><input name=name value="{_e(v.get("name",""))}" placeholder="Jane Doe"></label>'
+        f'<label class=fld><span>Work email *</span><input name=email type=email required value="{_e(v.get("email",""))}" placeholder="jane@acme.dev"></label>'
+        '</div>'
+        f'<label class=fld style="margin-top:14px"><span>Company</span><input name=company value="{_e(v.get("company",""))}" placeholder="Acme"></label>'
+        f'<label class=fld style="margin-top:14px"><span>What AI tools do you use?</span>'
+        f'<input name=tools value="{_e(v.get("tools",""))}" placeholder="Claude Code, Cursor, the Anthropic API…"></label>'
+        f'<label class=fld style="margin-top:14px"><span>Anything you want us to know?</span>'
+        f'<textarea name=message rows=4 placeholder="Team size, what\'s driving the AI bill, what you\'re hoping to learn…">{_e(v.get("message",""))}</textarea></label>'
+        '<button class="btn" style="margin-top:16px">Send request →</button>'
+        '<p class=muted style="font-size:12px;margin:12px 0 0">We\'ll only use this to follow up about a pilot. '
+        'No spam.</p>'
+        '</form>')
+    return page("Request a pilot", body, bare=True)
+
+
+def pilot_thanks_page() -> str:
+    body = ('<div class=ohead style="margin-top:40px"><h1>Thanks — we\'ll be in touch.</h1>'
+            '<p>Your pilot request is in. We read every one and typically reply within a day '
+            '(from <b>hello@outlay-ai.com</b> — keep an eye on spam just in case).</p></div>'
+            '<a class="btn sec" href="https://outlay-ai.com/">← Back to outlay-ai.com</a>')
+    return page("Thanks", body, bare=True)
 
 
 # --------------------------------------------------------------------------- #
