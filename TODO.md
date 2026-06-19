@@ -68,7 +68,11 @@ optimization engine within it. Marketing site rebranded to **Outlay** and moved 
 - [x] **Scheduled auto-sync** — per-connection Off/Daily/Weekly; due connections re-synced by
       `_run_due_syncs` (resilient per-account). Drive it with an in-process loop (`OUTLAY_AUTOSYNC_EVERY_MIN`)
       or an external scheduler hitting `POST /internal/outlay/sync-due` with `OUTLAY_CRON_TOKEN`. +tests (99 pass).
-  - Next slices: Cursor/Copilot usage source; per-epic budgets; dashboard polish. **Needs `fly deploy`.**
+- [x] **Cursor usage source** — second AI-spend connector alongside the Anthropic Admin API
+      (`CursorAdminClient`); a team can connect either or both and `sync` merges the usage events.
+      Cursor admin key encrypted at rest like the rest. +tests (103 pass). Catches seats running
+      premium models on trivial work even when they're in Cursor, not the API.
+  - Next slices: per-epic budgets; dashboard polish (trend deltas, sync-status surfacing). **Needs `fly deploy`.**
 
 ### 2026-06-18
 - [x] **Guidance is now trial-only; paid = autopilot (billable) only.** Verified guidance/free-tier can

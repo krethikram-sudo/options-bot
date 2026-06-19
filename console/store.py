@@ -224,6 +224,7 @@ CREATE TABLE IF NOT EXISTS outlay_connections (
     github_repo TEXT,
     github_token TEXT,                -- read-only PAT; encrypted at rest (secret_box)
     anthropic_key TEXT,               -- admin key; encrypted at rest (secret_box)
+    cursor_key TEXT,                  -- Cursor admin key; encrypted at rest (secret_box)
     synced_at REAL,
     auto_sync_hours INTEGER NOT NULL DEFAULT 0  -- 0 = manual; else re-sync every N hours
 );
@@ -262,6 +263,7 @@ _MIGRATIONS = [
     "ALTER TABLE outlay_connections ADD COLUMN jira_jql TEXT",
     "ALTER TABLE outlay_connections ADD COLUMN linear_key TEXT",
     "ALTER TABLE outlay_connections ADD COLUMN auto_sync_hours INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE outlay_connections ADD COLUMN cursor_key TEXT",
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -626,7 +628,8 @@ def save_outlay_connection(account_id: int, github_owner: str | None = None,
                            anthropic_key: str | None = None, tracker: str | None = None,
                            jira_base_url: str | None = None, jira_email: str | None = None,
                            jira_token: str | None = None, jira_jql: str | None = None,
-                           linear_key: str | None = None, auto_sync_hours: int | None = None,
+                           linear_key: str | None = None, cursor_key: str | None = None,
+                           auto_sync_hours: int | None = None,
                            path: str | None = None) -> None:
     """Upsert a customer's connection config. Secrets left blank are preserved;
     other blank fields are cleared. Supports GitHub / Jira / Linear trackers."""
@@ -646,11 +649,12 @@ def save_outlay_connection(account_id: int, github_owner: str | None = None,
         conn.execute(
             "INSERT OR REPLACE INTO outlay_connections"
             "(account_id, tracker, github_owner, github_repo, github_token, anthropic_key,"
-            " jira_base_url, jira_email, jira_token, jira_jql, linear_key, synced_at, auto_sync_hours)"
-            " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            " cursor_key, jira_base_url, jira_email, jira_token, jira_jql, linear_key,"
+            " synced_at, auto_sync_hours)"
+            " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (account_id, _txt(tracker) or cur.get("tracker") or "github",
              _txt(github_owner), _txt(github_repo), enc(_sec(github_token, "github_token")),
-             enc(_sec(anthropic_key, "anthropic_key")),
+             enc(_sec(anthropic_key, "anthropic_key")), enc(_sec(cursor_key, "cursor_key")),
              _txt(jira_base_url), _txt(jira_email), enc(_sec(jira_token, "jira_token")),
              _txt(jira_jql), enc(_sec(linear_key, "linear_key")), cur.get("synced_at"), asy))
         conn.commit()
@@ -658,7 +662,7 @@ def save_outlay_connection(account_id: int, github_owner: str | None = None,
         conn.close()
 
 
-_OUTLAY_SECRETS = ("github_token", "anthropic_key", "jira_token", "linear_key")
+_OUTLAY_SECRETS = ("github_token", "anthropic_key", "cursor_key", "jira_token", "linear_key")
 
 
 def get_outlay_connection(account_id: int, path: str | None = None) -> dict | None:

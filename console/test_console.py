@@ -1286,6 +1286,64 @@ def test_outlay_sync_pulls_live(env, client):
     assert "_model" in report  # estimator can reuse the learned model
 
 
+def _fake_transport_with_cursor():
+    """GitHub issues + Anthropic admin + Cursor events, by URL."""
+    import json
+    fix = _fixtures()
+    issues = json.loads((fix / "github_issues.json").read_text())["issues"]
+    admin = json.loads((fix / "anthropic_admin_report.json").read_text())
+    cursor = json.loads((fix / "cursor_events.json").read_text())
+
+    def t(method, url, headers, body):
+        if "api.github.com" in url:
+            return issues
+        if "api.cursor.com" in url:
+            return cursor
+        return admin
+    return t
+
+
+def test_outlay_sync_cursor_only(env, client):
+    from console import outlay_app
+    conn = {"github_owner": "acme", "github_repo": "web",
+            "github_token": "ghp_x", "cursor_key": "key_cursor"}
+    report = outlay_app.sync(conn, transport=_fake_transport_with_cursor())
+    assert report["spend"]["total_usd"] > 0  # cursor token usage was costed
+
+
+def test_outlay_sync_merges_both_usage_sources(env, client):
+    from console import outlay_app
+    conn = {"github_owner": "acme", "github_repo": "web", "github_token": "ghp_x",
+            "anthropic_key": "sk-admin", "cursor_key": "key_cursor"}
+    both = outlay_app.sync(conn, transport=_fake_transport_with_cursor())
+    anthropic_only = outlay_app.sync(
+        {**conn, "cursor_key": ""}, transport=_fake_transport_with_cursor())
+    # merging Cursor events on top of Anthropic raises total spend
+    assert both["spend"]["total_usd"] > anthropic_only["spend"]["total_usd"]
+
+
+def test_outlay_sync_requires_a_usage_key(env, client):
+    import pytest as _pytest
+    from console import outlay_app
+    conn = {"github_owner": "acme", "github_repo": "web", "github_token": "ghp_x"}
+    with _pytest.raises(ValueError):
+        outlay_app.sync(conn, transport=_fake_transport_with_cursor())
+
+
+def test_outlay_cursor_key_encrypted_at_rest(env, client):
+    _, store = env
+    from console import secret_box
+    _signup(client, email="cur@x.com")
+    acct = store.get_account_by_email("cur@x.com")
+    store.save_outlay_connection(acct["id"], github_owner="acme", github_repo="web",
+                                 github_token="ghp_x", cursor_key="key_supersecret")
+    assert store.get_outlay_connection(acct["id"])["cursor_key"] == "key_supersecret"
+    raw = store.connect().execute(
+        "SELECT cursor_key FROM outlay_connections WHERE account_id=?", (acct["id"],)).fetchone()
+    if secret_box.available():
+        assert raw["cursor_key"].startswith("enc:") and "key_supersecret" not in raw["cursor_key"]
+
+
 def test_outlay_budgets_crud_and_status(env, client):
     _, store = env
     _signup(client, email="bud@x.com")
