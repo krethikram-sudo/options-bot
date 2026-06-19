@@ -218,6 +218,14 @@ CREATE TABLE IF NOT EXISTS outlay_reports (
     ts REAL NOT NULL,
     report TEXT NOT NULL              -- the serialized Outlay report (JSON)
 );
+CREATE TABLE IF NOT EXISTS outlay_connections (
+    account_id INTEGER PRIMARY KEY,   -- one connection config per account (upserted)
+    github_owner TEXT,
+    github_repo TEXT,
+    github_token TEXT,                -- read-only PAT; TODO encrypt at rest
+    anthropic_key TEXT,               -- admin key; TODO encrypt at rest
+    synced_at REAL
+);
 """
 
 WEBHOOK_EVENTS = ("budget.warn", "budget.over", "proposal.pending", "account.suspended")
@@ -594,6 +602,47 @@ def get_outlay_report(account_id: int, path: str | None = None) -> dict | None:
     data = json.loads(r["report"])
     data["_generated_ts"] = r["ts"]
     return data
+
+
+def save_outlay_connection(account_id: int, github_owner: str | None,
+                           github_repo: str | None, github_token: str | None,
+                           anthropic_key: str | None, path: str | None = None) -> None:
+    """Upsert a customer's connection config, preserving a secret left blank."""
+    cur = get_outlay_connection(account_id, path) or {}
+    conn = connect(path)
+    try:
+        conn.execute(
+            "INSERT OR REPLACE INTO outlay_connections"
+            "(account_id, github_owner, github_repo, github_token, anthropic_key, synced_at)"
+            " VALUES(?,?,?,?,?,?)",
+            (account_id, (github_owner or "").strip() or None, (github_repo or "").strip() or None,
+             (github_token or "").strip() or cur.get("github_token"),
+             (anthropic_key or "").strip() or cur.get("anthropic_key"),
+             cur.get("synced_at")))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_outlay_connection(account_id: int, path: str | None = None) -> dict | None:
+    conn = connect(path)
+    try:
+        r = conn.execute("SELECT * FROM outlay_connections WHERE account_id=?",
+                         (account_id,)).fetchone()
+    finally:
+        conn.close()
+    return dict(r) if r else None
+
+
+def mark_outlay_synced(account_id: int, path: str | None = None,
+                       now: float | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE outlay_connections SET synced_at=? WHERE account_id=?",
+                     (now or time.time(), account_id))
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def activation_funnel(path: str | None = None) -> dict:
