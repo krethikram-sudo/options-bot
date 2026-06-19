@@ -488,9 +488,11 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
         <label class=fld><span>API key ({sset('linear_key')})</span>
           <input name=linear_key type=password placeholder="lin_… (leave blank to keep)"></label>
 
-        <h3 style="margin:1em 0 .6em">Anthropic usage</h3>
-        <label class=fld><span>Admin API key ({sset('anthropic_key')})</span>
+        <h3 style="margin:1em 0 .6em">AI usage <span class=muted style="font-weight:400">· connect one or both</span></h3>
+        <label class=fld><span>Anthropic admin API key ({sset('anthropic_key')})</span>
           <input name=anthropic_key type=password placeholder="sk-ant-admin… (leave blank to keep)"></label>
+        <label class=fld style="margin-top:12px"><span>Cursor admin API key ({sset('cursor_key')})</span>
+          <input name=cursor_key type=password placeholder="key_… (Cursor team admin; leave blank to keep)"></label>
 
         <h3 style="margin:1em 0 .6em">Auto-sync</h3>
         <label class=fld><span>Keep the audit fresh automatically</span><select name=auto_sync_hours>

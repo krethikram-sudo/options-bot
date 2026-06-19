@@ -537,6 +537,7 @@ async def app_outlay_connect_save(request: Request):
         tracker=f.get("tracker"), jira_base_url=f.get("jira_base_url"),
         jira_email=f.get("jira_email"), jira_token=f.get("jira_token"),
         jira_jql=f.get("jira_jql"), linear_key=f.get("linear_key"),
+        cursor_key=f.get("cursor_key"),
         auto_sync_hours=_auto_sync_hours(f.get("auto_sync_hours")))
     return _redirect("/app/outlay/connect")
 

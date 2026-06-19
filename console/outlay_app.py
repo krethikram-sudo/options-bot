@@ -175,18 +175,22 @@ def budget_statuses(report: dict, budgets: list[dict]) -> list[dict]:
 def sync(conn: dict, window_days: int = 30, transport=None) -> dict:
     """Pull live from the customer's connected sources and run the pipeline.
 
-    `conn`: {github_owner, github_repo, github_token, anthropic_key}. `transport`
-    is the engine's HTTP seam — left None in production, injected in tests.
+    `conn`: tracker creds + at least one AI-usage key (`anthropic_key` and/or
+    `cursor_key`); usage events from both are merged. `transport` is the engine's
+    HTTP seam — left None in production, injected in tests.
     """
-    from outlay.ingest import (AnthropicAdminClient, GitHubIssuesClient,
-                               JiraClient, LinearClient)
+    from outlay.ingest import (AnthropicAdminClient, CursorAdminClient,
+                               GitHubIssuesClient, JiraClient, LinearClient)
 
     tracker = (conn.get("tracker") or "github").strip()
     ak = (conn.get("anthropic_key") or "").strip()
-    if not ak:
-        raise ValueError("Add an Anthropic admin key first.")
+    ck = (conn.get("cursor_key") or "").strip()
+    if not ak and not ck:
+        raise ValueError("Add an Anthropic admin key and/or a Cursor admin key first.")
 
-    starting_at = (datetime.now(timezone.utc) - timedelta(days=window_days)).strftime("%Y-%m-%dT00:00:00Z")
+    now = datetime.now(timezone.utc)
+    since = now - timedelta(days=window_days)
+    starting_at = since.strftime("%Y-%m-%dT00:00:00Z")
     try:
         if tracker == "jira":
             base = (conn.get("jira_base_url") or "").strip()
@@ -208,7 +212,12 @@ def sync(conn: dict, window_days: int = 30, transport=None) -> dict:
             if not (owner and repo and gh):
                 raise ValueError("Add a GitHub repo + read-only token.")
             work = GitHubIssuesClient(token=gh, transport=transport).pull(owner, repo)
-        events = AnthropicAdminClient(api_key=ak, transport=transport).pull(starting_at)
+        events = []
+        if ak:
+            events += AnthropicAdminClient(api_key=ak, transport=transport).pull(starting_at)
+        if ck:
+            start_ms, end_ms = int(since.timestamp() * 1000), int(now.timestamp() * 1000)
+            events += CursorAdminClient(api_key=ck, transport=transport).pull(start_ms, end_ms)
     except ValueError:
         raise
     except Exception as e:  # noqa: BLE001 — network / auth → clean message
