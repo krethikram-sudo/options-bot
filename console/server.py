@@ -460,7 +460,8 @@ def _run_due_syncs(now: float | None = None, transport=None) -> dict:
             continue
         try:
             report = outlay_app.sync(conn, transport=transport)
-        except Exception:  # noqa: BLE001 — keep sweeping other accounts
+        except Exception as e:  # noqa: BLE001 — keep sweeping other accounts
+            store.mark_outlay_sync_error(account_id, str(e), now=now)
             failed += 1
             continue
         store.save_outlay_report(account_id, report)
@@ -582,9 +583,12 @@ async def app_outlay_sync(request: Request):
     try:
         report = outlay_app.sync(conn)
     except ValueError as e:
+        store.mark_outlay_sync_error(acct["id"], str(e))
         return JSONResponse({"ok": False, "error": str(e)})
     except Exception:  # noqa: BLE001
-        return JSONResponse({"ok": False, "error": "Sync failed. Check your tokens and try again."})
+        msg = "Sync failed. Check your tokens and try again."
+        store.mark_outlay_sync_error(acct["id"], msg)
+        return JSONResponse({"ok": False, "error": msg})
     store.save_outlay_report(acct["id"], report)
     store.record_outlay_snapshot(acct["id"], report)
     store.mark_outlay_synced(acct["id"])

@@ -1344,6 +1344,40 @@ def test_outlay_cursor_key_encrypted_at_rest(env, client):
         assert raw["cursor_key"].startswith("enc:") and "key_supersecret" not in raw["cursor_key"]
 
 
+def test_outlay_sync_error_recorded_and_cleared(env, client):
+    _, store = env
+    _signup(client, email="err@x.com")
+    acct = store.get_account_by_email("err@x.com")
+    # connection with a tracker but NO usage key → manual sync fails
+    client.post("/app/outlay/connect", data={"tracker": "github", "github_owner": "acme",
+                "github_repo": "web", "github_token": "ghp_x"}, follow_redirects=True)
+    r = client.post("/app/outlay/sync")
+    assert r.json()["ok"] is False
+    conn = store.get_outlay_connection(acct["id"])
+    assert conn["last_sync_error"] and conn["last_attempt_at"]
+    # surfaced on the connect page
+    assert "Last sync failed" in client.get("/app/outlay/connect").text
+
+    # a later success clears it
+    store.mark_outlay_synced(acct["id"])
+    conn = store.get_outlay_connection(acct["id"])
+    assert conn["last_sync_error"] is None and conn["synced_at"]
+    assert "Last sync failed" not in client.get("/app/outlay/connect").text
+
+
+def test_run_due_syncs_records_per_account_error(env, client):
+    from console import server
+    _, store = env
+    _signup(client, email="sweeperr@x.com")
+    acct = store.get_account_by_email("sweeperr@x.com")
+    # auto-sync on, tracker set, but no usage key → sweep counts a failure + records it
+    store.save_outlay_connection(acct["id"], github_owner="acme", github_repo="web",
+                                 github_token="ghp_x", auto_sync_hours=24)
+    summary = server._run_due_syncs(transport=_fake_transport())
+    assert summary["failed"] == 1 and summary["synced"] == 0
+    assert store.get_outlay_connection(acct["id"])["last_sync_error"]
+
+
 def test_outlay_onboarding_checklist_shows_and_completes(env, client):
     _, store = env
     _signup(client, email="onb@x.com")

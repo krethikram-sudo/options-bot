@@ -232,7 +232,9 @@ CREATE TABLE IF NOT EXISTS outlay_connections (
     github_token TEXT,                -- read-only PAT; encrypted at rest (secret_box)
     anthropic_key TEXT,               -- admin key; encrypted at rest (secret_box)
     cursor_key TEXT,                  -- Cursor admin key; encrypted at rest (secret_box)
-    synced_at REAL,
+    synced_at REAL,                   -- last *successful* sync
+    last_attempt_at REAL,             -- last sync attempt (success or failure)
+    last_sync_error TEXT,             -- friendly error from the last failed attempt; NULL when healthy
     auto_sync_hours INTEGER NOT NULL DEFAULT 0  -- 0 = manual; else re-sync every N hours
 );
 CREATE TABLE IF NOT EXISTS outlay_budgets (
@@ -271,6 +273,8 @@ _MIGRATIONS = [
     "ALTER TABLE outlay_connections ADD COLUMN linear_key TEXT",
     "ALTER TABLE outlay_connections ADD COLUMN auto_sync_hours INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE outlay_connections ADD COLUMN cursor_key TEXT",
+    "ALTER TABLE outlay_connections ADD COLUMN last_sync_error TEXT",
+    "ALTER TABLE outlay_connections ADD COLUMN last_attempt_at REAL",
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -728,10 +732,24 @@ def get_outlay_connection(account_id: int, path: str | None = None) -> dict | No
 
 def mark_outlay_synced(account_id: int, path: str | None = None,
                        now: float | None = None) -> None:
+    """Record a successful sync: stamp synced_at + last_attempt_at, clear any error."""
+    ts = now or time.time()
     conn = connect(path)
     try:
-        conn.execute("UPDATE outlay_connections SET synced_at=? WHERE account_id=?",
-                     (now or time.time(), account_id))
+        conn.execute("UPDATE outlay_connections SET synced_at=?, last_attempt_at=?,"
+                     " last_sync_error=NULL WHERE account_id=?", (ts, ts, account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def mark_outlay_sync_error(account_id: int, message: str, path: str | None = None,
+                           now: float | None = None) -> None:
+    """Record a failed sync attempt so the UI can surface why refreshing stopped."""
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE outlay_connections SET last_attempt_at=?, last_sync_error=?"
+                     " WHERE account_id=?", (now or time.time(), (message or "")[:300], account_id))
         conn.commit()
     finally:
         conn.close()

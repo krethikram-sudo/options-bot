@@ -526,9 +526,12 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     cadence = {24: "auto-syncs daily", 168: "auto-syncs weekly"}.get(asy, "manual sync")
     last = _fmt_date(conn.get("synced_at")) if conn.get("synced_at") else (
         _fmt_date(report.get("_generated_ts")) if report.get("_generated_ts") else "—")
+    sync_err = ('<span style="color:#b3261e"> · ⚠ last sync failed — '
+                '<a href="/app/outlay/connect" style="color:#b3261e">fix connection →</a></span>'
+                if conn.get("last_sync_error") else
+                f'<a href="/app/outlay/connect"> · manage connection →</a>')
     sync_line = (f'<div class=muted style="font-size:12.5px;margin:-2px 0 12px">'
-                 f'Last refreshed <b>{last}</b> · {cadence} · '
-                 f'<a href="/app/outlay/connect">manage connection →</a></div>')
+                 f'Last refreshed <b>{last}</b> · {cadence}{sync_err}</div>')
     estlink = ('<div style="margin:-4px 0 16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center">'
                '<a href="/app/outlay/accuracy">How accurate is this? →</a>'
                '<a href="/app/outlay/estimate">Estimate your backlog →</a>'
@@ -582,9 +585,15 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
               if conn.get("synced_at") else "Never synced yet.")
     if asy:
         synced += f' Auto-sync is on ({"daily" if asy == 24 else "weekly"}).'
+    err = conn.get("last_sync_error")
+    err_banner = (f'<div class=card style="border-left:4px solid #b3261e;margin-bottom:16px">'
+                  f'<b style="color:#b3261e">⚠ Last sync failed.</b> {_e(err)} '
+                  f'<span class=muted style="font-size:12.5px">Fix the token/fields above and sync again.</span></div>'
+                  if err else "")
     form = f"""<div class=hero><h1>Connect your sources <span class=muted style="font-weight:400">· read-only</span></h1>
       <p class=muted>Outlay pulls live from your tracker and AI usage with read-only tokens — metadata only,
         prompts never leave your tools. Or paste exports on the <a href="/app/outlay">Spend</a> tab.</p></div>
+      {err_banner}
       <form method=post action="/app/outlay/connect" class=card>
         <label class=fld><span>Tracker</span><select name=tracker>
           <option value=github{opt('github')}>GitHub Issues</option>
