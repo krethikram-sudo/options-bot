@@ -1421,3 +1421,67 @@ def test_outlay_token_encrypted_at_rest(env, client):
     # preserve-on-blank still works through encryption
     store.save_outlay_connection(acct["id"], github_owner="acme", github_repo="web2", github_token="")
     assert store.get_outlay_connection(acct["id"])["github_token"] == "ghp_supersecret"
+
+
+def test_outlay_auto_sync_due_selection(env, client):
+    _, store = env
+    _signup(client, email="due@x.com")
+    acct = store.get_account_by_email("due@x.com")
+    # off by default → never due
+    store.save_outlay_connection(acct["id"], github_owner="acme", github_repo="web",
+                                 github_token="ghp_x", anthropic_key="sk-admin")
+    assert store.list_due_outlay_connections() == []
+    # daily, synced an hour ago → not due yet
+    store.save_outlay_connection(acct["id"], auto_sync_hours=24)
+    store.mark_outlay_synced(acct["id"], now=time.time() - 3600)
+    assert store.list_due_outlay_connections() == []
+    # synced 25h ago → due
+    store.mark_outlay_synced(acct["id"], now=time.time() - 25 * 3600)
+    assert store.list_due_outlay_connections() == [acct["id"]]
+    # never synced → due
+    _signup(client, email="due2@x.com")
+    a2 = store.get_account_by_email("due2@x.com")
+    store.save_outlay_connection(a2["id"], github_owner="b", github_repo="c",
+                                 github_token="g", anthropic_key="s", auto_sync_hours=168)
+    assert a2["id"] in store.list_due_outlay_connections()
+
+
+def test_outlay_auto_sync_hours_validated(env, client):
+    _, store = env
+    _signup(client, email="val@x.com")
+    client.post("/app/outlay/connect", data={"tracker": "github", "github_owner": "acme",
+                "github_repo": "web", "github_token": "ghp_x", "anthropic_key": "sk",
+                "auto_sync_hours": "999"}, follow_redirects=True)  # bogus → coerced to 0
+    c = store.get_outlay_connection(store.get_account_by_email("val@x.com")["id"])
+    assert c["auto_sync_hours"] == 0
+    client.post("/app/outlay/connect", data={"auto_sync_hours": "24"}, follow_redirects=True)
+    c = store.get_outlay_connection(store.get_account_by_email("val@x.com")["id"])
+    assert c["auto_sync_hours"] == 24
+
+
+def test_outlay_run_due_syncs_sweeps(env, client):
+    from console import server
+    _, store = env
+    _signup(client, email="sweep@x.com")
+    acct = store.get_account_by_email("sweep@x.com")
+    store.save_outlay_connection(acct["id"], github_owner="acme", github_repo="web",
+                                 github_token="ghp_x", anthropic_key="sk-admin", auto_sync_hours=24)
+    # due (never synced) → sweep pulls live and stores a report
+    summary = server._run_due_syncs(transport=_fake_transport())
+    assert summary == {"due": 1, "synced": 1, "failed": 0}
+    rep = store.get_outlay_report(acct["id"])
+    assert rep and rep["spend"]["total_usd"] > 0
+    # synced_at now set → no longer due
+    assert store.list_due_outlay_connections() == []
+
+
+def test_outlay_sync_due_cron_endpoint_auth(env, client, monkeypatch):
+    monkeypatch.setenv("OUTLAY_CRON_TOKEN", "cron-secret")
+    # no token → 401
+    assert client.post("/internal/outlay/sync-due").status_code == 401
+    # wrong token → 401
+    assert client.post("/internal/outlay/sync-due",
+                       headers={"authorization": "Bearer nope"}).status_code == 401
+    # right token → 200 with a summary
+    r = client.post("/internal/outlay/sync-due", headers={"authorization": "Bearer cron-secret"})
+    assert r.status_code == 200 and r.json()["ok"] is True and "synced" in r.json()

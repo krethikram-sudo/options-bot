@@ -12,7 +12,9 @@ Env: CONSOLE_DB, CONSOLE_SECRET, CONSOLE_BASE_URL, MODELPILOT_BRAIN_URL,
      CONSOLE_SECURE_COOKIES=1 (set behind HTTPS).
 """
 
+import asyncio
 import os
+import secrets
 from urllib.parse import parse_qs
 
 from fastapi import FastAPI, Request
@@ -47,12 +49,28 @@ async def _startup():
 
         app.state.digest_task = asyncio.create_task(_digest_loop())
 
+    # Auto-sync sweep: in single-process deploys run it in-process; under a real
+    # scheduler hit /internal/outlay/sync-due instead and leave this at 0.
+    app.state.autosync_task = None
+    every = float(os.environ.get("OUTLAY_AUTOSYNC_EVERY_MIN", "0") or 0)
+    if every > 0:
+        async def _autosync_loop():
+            while True:
+                await asyncio.sleep(every * 60)
+                try:
+                    await asyncio.to_thread(_run_due_syncs)
+                except Exception:  # noqa: BLE001 — a sweep must never crash the server
+                    pass
+
+        app.state.autosync_task = asyncio.create_task(_autosync_loop())
+
 
 @app.on_event("shutdown")
 async def _shutdown():
-    task = getattr(app.state, "digest_task", None)
-    if task is not None:
-        task.cancel()
+    for name in ("digest_task", "autosync_task"):
+        task = getattr(app.state, name, None)
+        if task is not None:
+            task.cancel()
 
 
 # --------------------------------------------------------------------------- #
@@ -418,6 +436,52 @@ def _check_budgets(account_id: int, report: dict) -> None:
         store.set_outlay_budget_status(s["id"], new)
 
 
+_AUTO_SYNC_CHOICES = (0, 24, 168)  # off · daily · weekly
+
+
+def _auto_sync_hours(raw) -> int:
+    try:
+        v = int(raw)
+    except (TypeError, ValueError):
+        return 0
+    return v if v in _AUTO_SYNC_CHOICES else 0
+
+
+def _run_due_syncs(now: float | None = None, transport=None) -> dict:
+    """Re-sync every connection whose auto-sync interval has elapsed. Resilient:
+    one account's failure (bad token, network) never blocks the rest. Returns a
+    summary so the cron endpoint / loop can be observed."""
+    due = store.list_due_outlay_connections(now=now)
+    synced, failed = 0, 0
+    for account_id in due:
+        conn = store.get_outlay_connection(account_id)
+        if not conn:
+            continue
+        try:
+            report = outlay_app.sync(conn, transport=transport)
+        except Exception:  # noqa: BLE001 — keep sweeping other accounts
+            failed += 1
+            continue
+        store.save_outlay_report(account_id, report)
+        store.mark_outlay_synced(account_id, now=now)
+        _check_budgets(account_id, report)
+        synced += 1
+    return {"due": len(due), "synced": synced, "failed": failed}
+
+
+@app.post("/internal/outlay/sync-due")
+async def app_outlay_sync_due(request: Request):
+    """Cron hook: an external scheduler (Fly scheduled machine / cron) posts here
+    with the OUTLAY_CRON_TOKEN to run all due auto-syncs. No browser session."""
+    want = os.environ.get("OUTLAY_CRON_TOKEN", "")
+    auth = request.headers.get("authorization", "")
+    got = auth[7:].strip() if auth[:7].lower() == "bearer " else ""
+    if not want or not secrets.compare_digest(got, want):
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+    summary = await asyncio.to_thread(_run_due_syncs)
+    return JSONResponse({"ok": True, **summary})
+
+
 @app.get("/app/outlay", response_class=HTMLResponse)
 def app_outlay(request: Request):
     acct, redir = _require(request)
@@ -472,7 +536,8 @@ async def app_outlay_connect_save(request: Request):
         github_token=f.get("github_token"), anthropic_key=f.get("anthropic_key"),
         tracker=f.get("tracker"), jira_base_url=f.get("jira_base_url"),
         jira_email=f.get("jira_email"), jira_token=f.get("jira_token"),
-        jira_jql=f.get("jira_jql"), linear_key=f.get("linear_key"))
+        jira_jql=f.get("jira_jql"), linear_key=f.get("linear_key"),
+        auto_sync_hours=_auto_sync_hours(f.get("auto_sync_hours")))
     return _redirect("/app/outlay/connect")
 
 
