@@ -521,6 +521,28 @@ async def app_outlay_run(request: Request):
     return JSONResponse({"ok": True})
 
 
+@app.post("/app/outlay/sample")
+async def app_outlay_sample(request: Request):
+    """One-click populated dashboard from bundled fixtures — for prospects/demos."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    report = outlay_app.sample_report()
+    store.save_outlay_report(acct["id"], report)
+    store.record_outlay_snapshot(acct["id"], report)
+    return _redirect("/app/outlay")
+
+
+@app.post("/app/outlay/clear")
+async def app_outlay_clear(request: Request):
+    """Drop the current report + history (used to clear sample data)."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    store.delete_outlay_report(acct["id"])
+    return _redirect("/app/outlay")
+
+
 @app.get("/app/outlay/connect", response_class=HTMLResponse)
 def app_outlay_connect(request: Request):
     acct, redir = _require(request)

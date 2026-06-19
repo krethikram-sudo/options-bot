@@ -1344,6 +1344,34 @@ def test_outlay_cursor_key_encrypted_at_rest(env, client):
         assert raw["cursor_key"].startswith("enc:") and "key_supersecret" not in raw["cursor_key"]
 
 
+def test_outlay_sample_data_load_and_clear(env, client):
+    _, store = env
+    _signup(client, email="samp@x.com")
+    acct = store.get_account_by_email("samp@x.com")
+
+    # empty dashboard offers the sample button
+    assert "See it with sample data" in client.get("/app/outlay").text
+
+    # one click → populated, flagged sample, with a forecast + estimate + people
+    client.post("/app/outlay/sample", follow_redirects=True)
+    rep = store.get_outlay_report(acct["id"])
+    assert rep and rep.get("_sample") is True
+    assert rep["spend"]["total_usd"] > 0 and rep.get("estimate") and rep.get("people")
+    page = client.get("/app/outlay").text
+    assert "Sample data" in page and "Clear sample data" in page
+
+    # clear → back to empty
+    client.post("/app/outlay/clear", follow_redirects=True)
+    assert store.get_outlay_report(acct["id"]) is None
+    assert store.outlay_history(acct["id"]) == []
+    assert "See it with sample data" in client.get("/app/outlay").text
+
+
+def test_outlay_sample_requires_auth(env, client):
+    r = client.post("/app/outlay/sample", follow_redirects=False)
+    assert r.status_code in (302, 303, 307) and "/login" in r.headers.get("location", "")
+
+
 def test_outlay_people_spend_rollup_and_dashboard(env, client):
     _, store = env
     _signup(client, email="ppl@x.com")

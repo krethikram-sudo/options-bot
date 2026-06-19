@@ -161,6 +161,26 @@ def build_report(issues, usage, planned: Optional[object] = None, window_days: i
     return _report(work, result, stats, size_models, planned_items, window_days)
 
 
+_SAMPLE_PLAN = ('{"items":[{"id":"PROJ-201","title":"Add SSO (SAML + SCIM)",'
+                '"requirements":"Multi-tenant SAML, SCIM provisioning, audit log","points":8},'
+                '{"id":"PROJ-202","title":"Fix flaky checkout test","points":2},'
+                '{"id":"PROJ-203","title":"Migrate billing to new pricing engine",'
+                '"requirements":"Backfill historical invoices, dual-write window","points":13}]}')
+
+
+def sample_report() -> dict:
+    """Build a fully-populated report from the bundled fixtures so a prospect can
+    see the product live before connecting any keys. Flagged `_sample` so the UI
+    can label it honestly and let them clear it."""
+    from pathlib import Path
+    fix = Path(__file__).resolve().parent.parent / "outlay" / "fixtures"
+    report = build_report((fix / "github_issues.json").read_text(),
+                          (fix / "anthropic_usage.json").read_text(),
+                          planned=_SAMPLE_PLAN)
+    report["_sample"] = True
+    return report
+
+
 def _project_key(ticket_id) -> str:
     """The project/epic prefix of a ticket key: PROJ-123 → PROJ, #42 → '' (none).
     GitHub issue numbers have no prefix, so they roll up under the empty key."""

@@ -79,6 +79,10 @@ optimization engine within it. Marketing site rebranded to **Outlay** and moved 
       spend snapshot (`outlay_history`); the Spend dashboard now shows a "↑/↓ % vs last sync" delta on the
       AI-spend KPI, an inline SVG sparkline of recent spend, and a "Last refreshed · cadence" status line.
       Estimate re-saves don't pollute history. +tests (108 pass).
+- [x] **"See it with sample data"** — one-click populated dashboard from bundled fixtures (spend,
+      forecast, accuracy, people, a worked backlog estimate) so a prospect sees the whole product before
+      wiring any keys. Flagged `_sample` with an honest banner + "Clear sample data" (drops report + history).
+      Huge for demos/onboarding. +tests (114 pass).
 - [x] **Spend by engineer** — per-user rollup from costed events (Anthropic + Cursor `userEmail`),
       biggest spender first, with each engineer's top model + share, on the Spend dashboard. Team-fidelity
       (user→cost); unattributed spend bucketed separately and kept out of the engineer card. Surfaces seats
