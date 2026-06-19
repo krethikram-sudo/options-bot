@@ -74,8 +74,11 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
         from `hello@outlay-ai.com`, set up a sender (Resend/Postmark — domain verify adds DKIM) and
         `fly secrets set SMTP_HOST/PORT/USER/PASSWORD SMTP_FROM='Outlay <hello@outlay-ai.com>'`. Until then
         those emails log server-side only. (Receiving/forwarding is done.)
-- [ ] **Send the design-partner outreach** (`OUTLAY_PILOT_OUTREACH.md`) — 3–5 pilots; the real
-      validation gap is end-to-end ticket coverage + a measured forecast-accuracy number on a real team.
+- [ ] **Send the design-partner outreach** — kit is ready: `OUTLAY_PILOT_OUTREACH.md` (opener/email/
+      community/security-FAQ/call-script/per-prospect drafts, all Outlay-framed, free read-only pilots) +
+      `OUTLAY_ONEPAGER.md` (prospect-facing). Targets in `PROSPECTS.md` (list still valid — drop the routing
+      narrative, keep the names). Goal: 3–5 pilots; the real validation gap is **attribution coverage + a
+      measured forecast-accuracy number on a real team** (the two numbers that close future customers).
 - [x] **Console rebranded ModelPilot → Outlay.** Every customer-visible string in the console: nav/logo,
       page titles (`<title> · Outlay`), all prose, the FastAPI app title, transactional emails (reset/2FA/
       invite/budget/digest subjects + `From: …@outlay-ai.com`), webhook headers (`x-outlay-signature/event`,
