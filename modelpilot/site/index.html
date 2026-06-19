@@ -28,6 +28,7 @@
     <a href="#how">How it works</a>
     <a href="#owners">For eng &amp; finance</a>
     <a href="#proof">Attribution</a>
+    <a href="#estimate">Estimate</a>
     <a href="#compare">Compare</a>
     <a href="#pricing">Pricing</a>
     <a href="/demo">Demo</a>
@@ -45,9 +46,9 @@
     <div class="eyebrow">The control plane for AI compute spend</div>
     <h1>Put AI compute <em>on a budget.</em></h1>
     <p class="sub">AI has become a runaway, unpredictable line item. Outlay attributes every dollar of
-      LLM and coding-agent spend to the work you already plan — tickets, epics, roadmap — then forecasts
-      cost by scope and holds it to budget with pace-based guardrails. Finally, the fastest-growing line
-      item is as predictable as the work that drives it.</p>
+      LLM and coding-agent spend to the work you already plan — tickets, epics, roadmap — forecasts
+      cost by scope, and <b>estimates what planned work will cost before you build it</b>. Finally, the
+      fastest-growing line item is as predictable as the work that drives it.</p>
     <div class="ctarow">
       <a class="btn primary lg" href="mailto:hello@outlay-ai.com?subject=Outlay%20design-partner%20pilot">Request a design-partner pilot →</a>
       <a class="btn ghost lg" href="/demo">See the live demo →</a>
@@ -104,6 +105,7 @@
         to blow its estimate — the way you already plan effort.</p>
       <ul>
         <li><span class="ck">→</span><div>Cost <b>per ticket, epic, sprint, and engineer</b>, reconciled to the real invoice.</div></li>
+        <li><span class="ck">→</span><div><b>Estimate planned work</b> from its requirements + design docs — budget an epic before you build it.</div></li>
         <li><span class="ck">→</span><div><b>Forecast a quarter</b> from its open scope, not from last month's bill.</div></li>
         <li><span class="ck">→</span><div><b>Anomaly flags</b> on the one ticket burning 10× its class — before it's a surprise.</div></li>
       </ul>
@@ -180,6 +182,38 @@ epic Q3-stability <span class="w">⚠ on pace $22k</span></code>
       <div class="s"><div class="v">On pace</div><div class="d">Guardrails project the end-of-period total at the current burn rate, so a lead acts <b>before</b> overspend — not after.</div></div>
       <div class="s"><div class="v">Measured, not promised</div><div class="d">Every forecast is back-tested on your own closed tickets (leave-one-out), and we show the error and the sample size — never a vendor benchmark.</div></div>
       <div class="s"><div class="v">Metadata only</div><div class="d">Attribution runs on categories, token counts, and ticket IDs. Prompt content, model outputs, and keys never leave your environment.</div></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ESTIMATE PLANNED WORK -->
+<section id="estimate"><div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">Plan with numbers, not vibes</div>
+    <h2>Estimate a project's AI cost before you build it.</h2>
+    <p>Roadmap and sprint planning shouldn't guess at compute. Hand Outlay the planned work — epics and
+       tickets with their <b>requirements and design docs</b> — and it prices each one against the cost
+       model it learned from your own delivered work, with a confidence range you can budget against.</p>
+  </div>
+  <div class="proofgrid">
+    <div class="pcard">
+      <div class="ph"><span class="t">Planned Q3 backlog · estimated</span><span class="tag ex">example</span></div>
+      <div class="pbody">
+        <div class="srow"><span class="nm">SSO — SAML + SCIM <small>requirements + design doc</small></span><span class="amt num">$3,800</span><span class="track"><span style="width:40%;background:var(--grn)"></span></span></div>
+        <div class="srow"><span class="nm">Billing v2 migration <small>large · thin scope</small></span><span class="amt num">$9,400</span><span class="track"><span style="width:100%;background:var(--amber)"></span></span></div>
+        <div class="srow"><span class="nm">Flaky-test cleanup <small>well-specified</small></span><span class="amt num">$1,200</span><span class="track"><span style="width:13%;background:var(--grn)"></span></span></div>
+        <div class="dual" style="margin-top:12px">
+          <div class="r"><span><b>Total estimate</b></span><b class="num">~$14,400</b></div>
+          <div class="r"><span class="muted" style="font-size:13px">Likely range</span><span class="muted num" style="font-size:13px">$9,900 – $19,900</span></div>
+        </div>
+        <p class="muted" style="font-size:12.5px;margin:12px 0 0">Illustrative. Each item priced from your own per-work-type history; thin-scope items get a wider band, not a false-precise number.</p>
+      </div>
+    </div>
+    <div class="statlist">
+      <div class="s"><div class="v">From your own history</div><div class="d">Each item is priced against the cost-per-work-type model learned from your <b>delivered</b> tickets — not a generic benchmark.</div></div>
+      <div class="s"><div class="v">Requirements + design docs</div><div class="d">Feed the scope you already wrote. The more context — requirements, design docs, story points — the tighter the range.</div></div>
+      <div class="s"><div class="v">Confidence, not false precision</div><div class="d">Every estimate carries a low–high band and a confidence tier; under-specified work is flagged to tighten, never silently guessed.</div></div>
+      <div class="s"><div class="v">Budget before you commit</div><div class="d">See what an epic or a sprint will cost in AI <b>before</b> it's built — so you can rescope, resource, or defer with eyes open.</div></div>
     </div>
   </div>
 </div></section>
@@ -342,6 +376,12 @@ epic Q3-stability <span class="w">⚠ on pace $22k</span></code>
         closed tickets, leave-one-out — hide a ticket, predict it from the rest, compare to what it actually
         cost — and shows the measured error and the sample size, by work type. As more work closes, the
         number sharpens.</p></details>
+    <details><summary>Can it estimate work that hasn't been built yet?</summary>
+      <p>Yes — that's the forward estimator. Hand it a planned backlog (epics/tickets with their
+        requirements, design docs, and story points) and it prices each item against the cost-per-work-type
+        model learned from your own delivered work, returning a per-item and total estimate with a low–high
+        confidence band. Under-specified items are flagged to tighten rather than guessed, so you can budget
+        an epic or a sprint <b>before</b> committing to it.</p></details>
     <details><summary>What does it work with?</summary>
       <p>Trackers: Jira, Linear, GitHub Issues. AI tools: Claude Code, Cursor, and the Anthropic API
         (per-call usage + the org admin API for reconciliation). Read-only to start — no app rewrite.</p></details>
