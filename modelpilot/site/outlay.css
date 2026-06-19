@@ -126,6 +126,7 @@
 
   /* steps / control loop */
   .loop{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .loop-3{grid-template-columns:repeat(3,1fr)}
   @media(max-width:920px){.loop{grid-template-columns:1fr 1fr}}
   @media(max-width:540px){.loop{grid-template-columns:1fr}}
   .lstep{background:#fff;border:1px solid var(--line);border-radius:10px;padding:24px}
