@@ -204,9 +204,8 @@ def _is_set_up(account: dict) -> bool:
 
 
 def _post_auth_dest(account: dict) -> str:
-    """Vendor admins -> admin; customers -> Spend (the Outlay product home)."""
-    if account.get("role") == "admin":
-        return "/admin"
+    """Everyone lands on Spend (the Outlay product home). The vendor /admin pages
+    are parked with routing and reachable by direct URL when needed."""
     return "/app/outlay"
 
 

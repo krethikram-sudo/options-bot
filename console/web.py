@@ -238,11 +238,10 @@ def page(title: str, body: str, account: dict | None = None, active: str = "") -
         items = [("/app/outlay", "Spend"), ("/app/settings", "Settings")]
         links = "".join(f'<a class="{"on" if active == href else ""}" href="{href}">{_e(label)}</a>'
                         for href, label in items)
+        # Vendor Overview/Review (cross-customer routing overview + tuning-proposal
+        # queue) are parked with routing — removed from the nav. The /admin routes
+        # still exist (account management) and are reachable by direct URL.
         admin = ""
-        if account.get("role") == "admin":
-            admin = ('<div class=navgrp>Vendor</div>'
-                     f'<a class="{"on" if active == "/admin" else ""}" href="/admin">Overview</a>'
-                     f'<a class="{"on" if active == "/admin/proposals" else ""}" href="/admin/proposals">Review</a>')
         em = _e(account.get("display_email") or account["email"])
         chrome = (
             '<div class=shell><aside class=side>'
