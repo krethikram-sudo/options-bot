@@ -221,7 +221,7 @@ CREATE TABLE IF NOT EXISTS outlay_reports (
 CREATE TABLE IF NOT EXISTS pilot_requests (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ts REAL NOT NULL,
-    name TEXT, email TEXT NOT NULL, company TEXT, tools TEXT, message TEXT
+    name TEXT, email TEXT NOT NULL, company TEXT, title TEXT, tools TEXT, message TEXT
 );
 CREATE TABLE IF NOT EXISTS outlay_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -280,6 +280,7 @@ _MIGRATIONS = [
     "ALTER TABLE outlay_connections ADD COLUMN cursor_key TEXT",
     "ALTER TABLE outlay_connections ADD COLUMN last_sync_error TEXT",
     "ALTER TABLE outlay_connections ADD COLUMN last_attempt_at REAL",
+    "ALTER TABLE pilot_requests ADD COLUMN title TEXT",
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -640,14 +641,17 @@ def get_outlay_report(account_id: int, path: str | None = None) -> dict | None:
 
 
 def add_pilot_request(email: str, name: str = "", company: str = "", tools: str = "",
-                      message: str = "", path: str | None = None, now: float | None = None) -> int:
+                      message: str = "", title: str = "", path: str | None = None,
+                      now: float | None = None) -> int:
     """Store an inbound design-partner pilot request (from the public form)."""
     conn = connect(path)
     try:
         cur = conn.execute(
-            "INSERT INTO pilot_requests(ts, name, email, company, tools, message) VALUES(?,?,?,?,?,?)",
+            "INSERT INTO pilot_requests(ts, name, email, company, title, tools, message) "
+            "VALUES(?,?,?,?,?,?,?)",
             (now or time.time(), (name or "").strip()[:200], (email or "").strip()[:200],
-             (company or "").strip()[:200], (tools or "").strip()[:300], (message or "").strip()[:4000]))
+             (company or "").strip()[:200], (title or "").strip()[:200],
+             (tools or "").strip()[:300], (message or "").strip()[:4000]))
         conn.commit()
         return cur.lastrowid
     finally:

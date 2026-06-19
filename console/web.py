@@ -909,7 +909,10 @@ def pilot_request_page(error: str = "", values: dict | None = None) -> str:
         f'<label class=fld><span>Name</span><input name=name value="{_e(v.get("name",""))}" placeholder="Jane Doe"></label>'
         f'<label class=fld><span>Work email *</span><input name=email type=email required value="{_e(v.get("email",""))}" placeholder="jane@acme.dev"></label>'
         '</div>'
-        f'<label class=fld style="margin-top:14px"><span>Company</span><input name=company value="{_e(v.get("company",""))}" placeholder="Acme"></label>'
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">'
+        f'<label class=fld><span>Company</span><input name=company value="{_e(v.get("company",""))}" placeholder="Acme"></label>'
+        f'<label class=fld><span>Title</span><input name=title value="{_e(v.get("title",""))}" placeholder="Head of Engineering"></label>'
+        '</div>'
         f'<label class=fld style="margin-top:14px"><span>What AI tools do you use?</span>'
         f'<input name=tools value="{_e(v.get("tools",""))}" placeholder="Claude Code, Cursor, the Anthropic API…"></label>'
         f'<label class=fld style="margin-top:14px"><span>Anything you want us to know?</span>'
@@ -935,11 +938,12 @@ def leads_page(account: dict, leads: list[dict]) -> str:
         company = _e(ld.get("company") or "—")
         name = _e(ld.get("name") or "")
         email = _e(ld.get("email") or "")
+        title = f' · {_e(ld.get("title"))}' if ld.get("title") else ""
         tools = f'<div class=muted style="font-size:12.5px;margin-top:4px">Tools: {_e(ld.get("tools"))}</div>' if ld.get("tools") else ""
         msg = f'<div style="font-size:13.5px;margin-top:8px;white-space:pre-wrap">{_e(ld.get("message"))}</div>' if ld.get("message") else ""
         cards += (f'<div class=bcard><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">'
                   f'<b style="font-size:14.5px">{company}</b><span class=muted style="font-size:12px">{when}</span></div>'
-                  f'<div style="font-size:13.5px;margin-top:3px">{name} · '
+                  f'<div style="font-size:13.5px;margin-top:3px">{name}{title} · '
                   f'<a href="mailto:{email}?subject=Your%20Outlay%20pilot">{email}</a></div>{tools}{msg}</div>')
     return page("Pilot requests", head + f'<div class=ocard><div class=dh>Inbox</div>{cards}</div>',
                 account, active="/admin/leads")

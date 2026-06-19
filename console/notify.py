@@ -88,6 +88,7 @@ def send_pilot_request(lead: dict) -> bool:
             f"Name:    {lead.get('name') or '—'}\n"
             f"Email:   {lead.get('email') or '—'}\n"
             f"Company: {lead.get('company') or '—'}\n"
+            f"Title:   {lead.get('title') or '—'}\n"
             f"Tools:   {lead.get('tools') or '—'}\n\n"
             f"Message:\n{lead.get('message') or '—'}\n")
     to = os.environ.get("PILOT_INBOX") or os.environ.get("SMTP_FROM_ADDR") or "hello@outlay-ai.com"
