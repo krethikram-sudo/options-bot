@@ -917,8 +917,12 @@ def _twofa_section(account: dict, state: str = "") -> str:
                  'placeholder="123456" style="max-width:150px;letter-spacing:3px">'
                  '<button class=btn>Confirm &amp; enable</button></form>')
     else:
+        from . import notify
+        warn = ('' if notify.enabled() else
+                '<div class="note warn">Email sending isn\'t configured yet, so the verification code '
+                'can\'t be delivered. Set the <code>SMTP_*</code> secrets first, then enable 2FA.</div>')
         inner = ('<p class="small muted">Require a one-time code at sign-in (emailed to you). '
-                 'Strongly recommended for account security.</p>'
+                 'Strongly recommended for account security.</p>' + warn +
                  '<form method=post action="/app/2fa/start"><button class=btn>Enable email 2FA</button></form>')
     return (f'<div class=card style="margin-top:16px"><div class=label>Two-factor authentication</div>'
             f'{note}{inner}</div>')
