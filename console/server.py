@@ -569,7 +569,7 @@ def app_outlay_budgets(request: Request):
         return redir
     report = store.get_outlay_report(acct["id"])
     statuses = outlay_app.budget_statuses(report, store.list_outlay_budgets(acct["id"]))
-    return _html(web.budgets_page(acct, report, statuses))
+    return _html(web.budgets_page(acct, report, statuses, outlay_app.project_spend(report)))
 
 
 @app.post("/app/outlay/budgets")
@@ -582,9 +582,12 @@ async def app_outlay_budgets_add(request: Request):
         limit = float(f.get("limit_usd") or 0)
     except ValueError:
         limit = 0.0
+    scope = f.get("scope_type") or "overall"
+    if scope not in ("overall", "team", "class", "project"):
+        scope = "overall"
     if limit > 0:
-        store.add_outlay_budget(acct["id"], f.get("scope_type") or "overall",
-                                f.get("scope_id"), limit, int(f.get("period_days") or 30))
+        store.add_outlay_budget(acct["id"], scope, f.get("scope_id"), limit,
+                                int(f.get("period_days") or 30))
     return _redirect("/app/outlay/budgets")
 
 

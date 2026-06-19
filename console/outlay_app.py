@@ -139,6 +139,27 @@ def build_report(issues, usage, planned: Optional[object] = None, window_days: i
     return _report(work, result, stats, size_models, planned_items, window_days)
 
 
+def _project_key(ticket_id) -> str:
+    """The project/epic prefix of a ticket key: PROJ-123 → PROJ, #42 → '' (none).
+    GitHub issue numbers have no prefix, so they roll up under the empty key."""
+    s = str(ticket_id or "")
+    return s.rsplit("-", 1)[0] if "-" in s else ""
+
+
+def project_spend(report: dict) -> list[dict]:
+    """Spend grouped by project/epic prefix, biggest first — a pick-list so users
+    know which keys they can budget against."""
+    if not report:
+        return []
+    agg: dict[str, float] = {}
+    for t in report.get("tickets", []):
+        key = _project_key(t.get("ticket_id"))
+        if key:
+            agg[key] = agg.get(key, 0.0) + t.get("cost_usd", 0.0)
+    return [{"project": k, "spent_usd": round(v, 2)}
+            for k, v in sorted(agg.items(), key=lambda kv: kv[1], reverse=True)]
+
+
 def budget_statuses(report: dict, budgets: list[dict]) -> list[dict]:
     """Compute spend-vs-budget with pace projection from the stored report.
 
@@ -156,6 +177,9 @@ def budget_statuses(report: dict, budgets: list[dict]) -> list[dict]:
             spent = sum(t.get("cost_usd", 0) for t in tickets if (t.get("team_id") or "") == sid)
         elif st == "class":
             spent = sum(t.get("cost_usd", 0) for t in tickets if t.get("task_class") == sid)
+        elif st == "project":  # group by ticket-key prefix (PROJ-123 → PROJ)
+            spent = sum(t.get("cost_usd", 0) for t in tickets
+                        if _project_key(t.get("ticket_id")) == sid)
         else:  # overall
             spent = total
         period = b.get("period_days") or 30

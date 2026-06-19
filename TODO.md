@@ -72,7 +72,10 @@ optimization engine within it. Marketing site rebranded to **Outlay** and moved 
       (`CursorAdminClient`); a team can connect either or both and `sync` merges the usage events.
       Cursor admin key encrypted at rest like the rest. +tests (103 pass). Catches seats running
       premium models on trivial work even when they're in Cursor, not the API.
-  - Next slices: per-epic budgets; dashboard polish (trend deltas, sync-status surfacing). **Needs `fly deploy`.**
+- [x] **Per-project / epic budgets** — budgets now scope to `overall | team | class | project`. Project
+      spend rolls up by ticket-key prefix (`PROJ-123 → PROJ`); the budgets page shows a "Spend by project"
+      pick-list so you know which keys to budget. Scope is validated server-side. +tests (106 pass).
+  - Next slices: dashboard polish (trend deltas, sync-status surfacing). **Needs `fly deploy`.**
 
 ### 2026-06-18
 - [x] **Guidance is now trial-only; paid = autopilot (billable) only.** Verified guidance/free-tier can

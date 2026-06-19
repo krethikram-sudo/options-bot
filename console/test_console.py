@@ -1344,6 +1344,49 @@ def test_outlay_cursor_key_encrypted_at_rest(env, client):
         assert raw["cursor_key"].startswith("enc:") and "key_supersecret" not in raw["cursor_key"]
 
 
+def test_outlay_project_spend_and_budget(env, client):
+    _, store = env
+    _signup(client, email="proj@x.com")
+    fix = _fixtures()
+    issues = (fix / "github_issues.json").read_text()
+    usage = (fix / "anthropic_usage.json").read_text()
+    assert client.post("/app/outlay/run", json={"issues": issues, "usage": usage}).json()["ok"]
+    from console import outlay_app
+    acct = store.get_account_by_email("proj@x.com")
+    rep = store.get_outlay_report(acct["id"])
+
+    # GH-### tickets roll up under the "GH" project key
+    ps = outlay_app.project_spend(rep)
+    assert ps and ps[0]["project"] == "GH" and ps[0]["spent_usd"] > 0
+    # the key shows up on the budgets page as a pick-list chip
+    assert "Spend by project" in client.get("/app/outlay/budgets").text
+
+    # a tiny project budget on GH projects over
+    client.post("/app/outlay/budgets", data={"scope_type": "project", "scope_id": "GH",
+                "limit_usd": "1", "period_days": "90"}, follow_redirects=True)
+    buds = store.list_outlay_budgets(acct["id"])
+    st = outlay_app.budget_statuses(rep, buds)[0]
+    assert st["scope_type"] == "project" and st["status"] == "over"
+    assert st["spent_usd"] == ps[0]["spent_usd"]  # matches the project rollup
+
+
+def test_outlay_project_key_parsing():
+    from console import outlay_app
+    assert outlay_app._project_key("PROJ-123") == "PROJ"
+    assert outlay_app._project_key("ENG-7-2") == "ENG-7"   # split on the last dash
+    assert outlay_app._project_key("42") == ""             # GitHub number → no project
+    assert outlay_app._project_key(None) == ""
+
+
+def test_outlay_budget_rejects_bogus_scope(env, client):
+    _, store = env
+    _signup(client, email="bog@x.com")
+    client.post("/app/outlay/budgets", data={"scope_type": "evil", "scope_id": "x",
+                "limit_usd": "5", "period_days": "30"}, follow_redirects=True)
+    acct = store.get_account_by_email("bog@x.com")
+    assert store.list_outlay_budgets(acct["id"])[0]["scope_type"] == "overall"
+
+
 def test_outlay_budgets_crud_and_status(env, client):
     _, store = env
     _signup(client, email="bud@x.com")
