@@ -1344,6 +1344,31 @@ def test_outlay_cursor_key_encrypted_at_rest(env, client):
         assert raw["cursor_key"].startswith("enc:") and "key_supersecret" not in raw["cursor_key"]
 
 
+def test_outlay_onboarding_checklist_shows_and_completes(env, client):
+    _, store = env
+    _signup(client, email="onb@x.com")
+    # fresh account → checklist visible, nothing done
+    page = client.get("/app/outlay").text
+    assert "Get set up" in page and "0/4" in page
+
+    # sample data does NOT count as being set up (still a worked example)
+    client.post("/app/outlay/sample", follow_redirects=True)
+    assert "Get set up" in client.get("/app/outlay").text
+
+    # configure everything: connection, a real (non-sample) report, a budget
+    client.post("/app/outlay/connect", data={"tracker": "github", "github_owner": "acme",
+                "github_repo": "web", "github_token": "ghp_x", "anthropic_key": "sk"},
+                follow_redirects=True)
+    fix = _fixtures()
+    client.post("/app/outlay/run", json={"issues": (fix / "github_issues.json").read_text(),
+                "usage": (fix / "anthropic_usage.json").read_text()})
+    client.post("/app/outlay/budgets", data={"scope_type": "overall", "scope_id": "",
+                "limit_usd": "5000", "period_days": "90"}, follow_redirects=True)
+
+    # all four steps done → checklist disappears
+    assert "Get set up" not in client.get("/app/outlay").text
+
+
 def test_outlay_csv_export(env, client):
     _signup(client, email="csv@x.com")
     # no report yet → redirect to dashboard, not a broken download

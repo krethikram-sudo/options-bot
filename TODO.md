@@ -83,6 +83,9 @@ optimization engine within it. Marketing site rebranded to **Outlay** and moved 
       spend snapshot (`outlay_history`); the Spend dashboard now shows a "↑/↓ % vs last sync" delta on the
       AI-spend KPI, an inline SVG sparkline of recent spend, and a "Last refreshed · cadence" status line.
       Estimate re-saves don't pollute history. +tests (108 pass).
+- [x] **First-run onboarding checklist** — a "Get set up · N/4" card on the Spend tab (connect tracker →
+      add AI-usage key → first sync → set a budget) that reflects real state and disappears once complete.
+      Sample data doesn't count as set up. Doubles as a "what's left" guide during a pilot. +tests (116 pass).
 - [x] **CSV export** — download ticket-level spend, spend-by-engineer, or savings recs as CSV from the
       Spend dashboard (`/app/outlay/export.csv?view=…`) so eng leads/finance can pull the numbers into
       sheets. Validated view param; redirects cleanly when there's no report. +tests (115 pass).

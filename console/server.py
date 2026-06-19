@@ -490,10 +490,12 @@ def app_outlay(request: Request):
     if redir:
         return redir
     report = store.get_outlay_report(acct["id"])
-    statuses = outlay_app.budget_statuses(report, store.list_outlay_budgets(acct["id"])) if report else []
+    budgets = store.list_outlay_budgets(acct["id"])
+    statuses = outlay_app.budget_statuses(report, budgets) if report else []
     hist = store.outlay_history(acct["id"]) if report else []
     return _html(web.outlay_page(acct, report, statuses, hist,
-                                 store.get_outlay_connection(acct["id"])))
+                                 store.get_outlay_connection(acct["id"]),
+                                 has_budget=bool(budgets)))
 
 
 @app.post("/app/outlay/run")

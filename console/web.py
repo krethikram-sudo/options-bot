@@ -376,8 +376,44 @@ def _kpi(label: str, value: str, sub: str = "", color: str = "", sub_raw: bool =
             f'<div style="font-size:26px;font-weight:700;margin-top:6px"{style}>{value}</div>{sub}</div>')
 
 
+def _onboarding(conn: dict | None, report: dict | None, has_budget: bool) -> str:
+    """A first-run checklist that disappears once the customer is set up. Each step
+    reflects real state so it doubles as a 'what's left' guide during a pilot."""
+    conn = conn or {}
+    tracker = conn.get("tracker") or "github"
+    if tracker == "jira":
+        has_tracker = bool(conn.get("jira_base_url") and conn.get("jira_token"))
+    elif tracker == "linear":
+        has_tracker = bool(conn.get("linear_key"))
+    else:
+        has_tracker = bool(conn.get("github_owner") and conn.get("github_repo") and conn.get("github_token"))
+    has_usage = bool(conn.get("anthropic_key") or conn.get("cursor_key"))
+    has_report = bool(report) and not (report or {}).get("_sample")
+    steps = [
+        ("Connect a tracker", has_tracker, "/app/outlay/connect", "Connect"),
+        ("Add an AI-usage key (Anthropic or Cursor)", has_usage, "/app/outlay/connect", "Add key"),
+        ("Run your first sync", has_report, "/app/outlay/connect", "Sync"),
+        ("Set a budget", has_budget, "/app/outlay/budgets", "Set budget"),
+    ]
+    done = sum(1 for _, d, _, _ in steps if d)
+    if done == len(steps):
+        return ""
+    rows = ""
+    for label, d, href, cta in steps:
+        mark = '<span style="color:#0f6b4f">✓</span>' if d else '<span style="color:#cbd5e1">○</span>'
+        action = "" if d else f'<a href="{href}" class="btn sec sm" style="margin-left:auto">{cta}</a>'
+        style = "color:#94a3b8;text-decoration:line-through" if d else ""
+        rows += (f'<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid #f1f5f9">'
+                 f'{mark}<span style="{style}">{_e(label)}</span>{action}</div>')
+    return (f'<div class=card style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:baseline">'
+            f'<h3 style="margin:.2em 0 .2em">Get set up <span class=muted style="font-weight:400">· {done}/{len(steps)}</span></h3>'
+            f'<span class=muted style="font-size:12px">~10 minutes with read-only tokens</span></div>{rows}</div>')
+
+
 def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None = None,
-                history: list[dict] | None = None, conn: dict | None = None) -> str:
+                history: list[dict] | None = None, conn: dict | None = None,
+                has_budget: bool = False) -> str:
+    checklist = _onboarding(conn, report, has_budget)
     if not report:
         intro = ('<div class=hero><h1>Your AI spend, on your roadmap.</h1>'
                  '<p class=muted>Connect your data and Outlay maps every dollar to the work that drove it, '
@@ -386,7 +422,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                  '<form method=post action="/app/outlay/sample" style="display:inline;margin-left:10px">'
                  '<button class="btn sec">See it with sample data</button></form>'
                  '<span class=muted style="margin-left:10px">or paste exports below</span></p></div>')
-        return page("Spend", intro + _outlay_connect(), account, active="/app/outlay")
+        return page("Spend", intro + checklist + _outlay_connect(), account, active="/app/outlay")
 
     sp = report.get("spend", {})
     fc = report.get("forecast", {})
@@ -525,7 +561,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                   '<a href="/app/outlay/connect">Connect your sources →</a></span>'
                   '<form method=post action="/app/outlay/clear" style="margin:0">'
                   '<button class="btn sec sm">Clear sample data</button></form></div>')
-    body = kpis + sample + sync_line + bstrip + estlink + grid + '<div style="margin-top:16px">' + _outlay_connect(collapsed=True) + '</div>'
+    body = kpis + sample + checklist + sync_line + bstrip + estlink + grid + '<div style="margin-top:16px">' + _outlay_connect(collapsed=True) + '</div>'
     return page("Spend", body, account, active="/app/outlay")
 
 
