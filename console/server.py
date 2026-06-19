@@ -216,6 +216,34 @@ def root(request: Request):
     return _html(web.landing())
 
 
+@app.get("/pilot-request", response_class=HTMLResponse)
+def pilot_request_form(request: Request):
+    return _html(web.pilot_request_page())
+
+
+@app.post("/pilot-request")
+async def pilot_request_submit(request: Request):
+    f = await _form(request)
+    if (f.get("website") or "").strip():  # honeypot → silently accept (bot)
+        return _redirect("/pilot-request/thanks")
+    email = (f.get("email") or "").strip()
+    if not email or "@" not in email or "." not in email.split("@")[-1]:
+        return _html(web.pilot_request_page("Please enter a valid work email.", f), status=400)
+    store.add_pilot_request(email=email, name=f.get("name", ""), company=f.get("company", ""),
+                            tools=f.get("tools", ""), message=f.get("message", ""))
+    try:
+        notify.send_pilot_request({"name": f.get("name"), "email": email, "company": f.get("company"),
+                                   "tools": f.get("tools"), "message": f.get("message")})
+    except Exception:  # noqa: BLE001 — never fail the request on a mail hiccup
+        pass
+    return _redirect("/pilot-request/thanks")
+
+
+@app.get("/pilot-request/thanks", response_class=HTMLResponse)
+def pilot_request_thanks(request: Request):
+    return _html(web.pilot_thanks_page())
+
+
 @app.get("/signup", response_class=HTMLResponse)
 def signup_form(request: Request):
     if _current(request):
@@ -1096,6 +1124,14 @@ def _require_admin(request: Request):
         return None, _html(web.page("Forbidden",
                                     "<h1>403</h1><p class=muted>Admin access required.</p>", acct), 403)
     return acct, None
+
+
+@app.get("/admin/leads", response_class=HTMLResponse)
+def admin_leads(request: Request):
+    acct, redir = _require_admin(request)
+    if redir:
+        return redir
+    return _html(web.leads_page(acct, store.list_pilot_requests()))
 
 
 @app.get("/admin", response_class=HTMLResponse)

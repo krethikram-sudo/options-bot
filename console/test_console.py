@@ -1826,3 +1826,47 @@ def test_outlay_sync_due_cron_endpoint_auth(env, client, monkeypatch):
     # right token → 200 with a summary
     r = client.post("/internal/outlay/sync-due", headers={"authorization": "Bearer cron-secret"})
     assert r.status_code == 200 and r.json()["ok"] is True and "synced" in r.json()
+
+
+def test_pilot_request_form_and_submit(env, client):
+    _, store = env
+    # public form renders (no auth)
+    r = client.get("/pilot-request")
+    assert r.status_code == 200 and "Request a design-partner pilot" in r.text and "name=email" in r.text
+    # valid submission → stored + redirect to thanks
+    r = client.post("/pilot-request", data={"email": "jane@acme.dev", "name": "Jane",
+                    "company": "Acme", "tools": "Claude Code", "message": "5 eng, big bill"},
+                    follow_redirects=False)
+    assert r.status_code in (302, 303) and "/pilot-request/thanks" in r.headers["location"]
+    leads = store.list_pilot_requests()
+    assert len(leads) == 1 and leads[0]["email"] == "jane@acme.dev" and leads[0]["company"] == "Acme"
+    assert "we'll be in touch" in client.get("/pilot-request/thanks").text.lower()
+
+
+def test_pilot_request_rejects_bad_email_and_honeypot(env, client):
+    _, store = env
+    # missing/invalid email → 400, re-renders the form, nothing stored
+    r = client.post("/pilot-request", data={"email": "notanemail", "name": "x"})
+    assert r.status_code == 400 and "valid work email" in r.text
+    assert store.list_pilot_requests() == []
+    # honeypot filled (bot) → silently accepted, nothing stored
+    r = client.post("/pilot-request", data={"email": "bot@x.com", "website": "spam"}, follow_redirects=False)
+    assert r.status_code in (302, 303)
+    assert store.list_pilot_requests() == []
+
+
+def test_admin_leads_inbox(env, client):
+    server, store = env
+    store.create_account("boss@b.com", "password123", role="admin")
+    # a lead comes in via the public form
+    client.post("/pilot-request", data={"email": "lead@acme.dev", "name": "Lee",
+                "company": "Acme", "message": "interested"})
+    # a plain customer can't see the inbox
+    _signup(client, email="cust@b.com")
+    assert client.get("/admin/leads").status_code == 403
+    client.post("/logout")
+    # admin sees the lead
+    client.post("/login", data={"email": "boss@b.com", "password": "password123"})
+    r = client.get("/admin/leads")
+    assert r.status_code == 200 and "Acme" in r.text and "lead@acme.dev" in r.text
+    assert "Pilot requests" in r.text

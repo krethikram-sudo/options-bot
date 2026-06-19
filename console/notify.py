@@ -82,6 +82,18 @@ def send_otp(dest: str, code: str, channel: str = "email") -> bool:
     return send_email(dest, "Your Outlay verification code", body)
 
 
+def send_pilot_request(lead: dict) -> bool:
+    """Notify the team of an inbound design-partner pilot request."""
+    body = (f"New Outlay pilot request:\n\n"
+            f"Name:    {lead.get('name') or '—'}\n"
+            f"Email:   {lead.get('email') or '—'}\n"
+            f"Company: {lead.get('company') or '—'}\n"
+            f"Tools:   {lead.get('tools') or '—'}\n\n"
+            f"Message:\n{lead.get('message') or '—'}\n")
+    to = os.environ.get("PILOT_INBOX") or os.environ.get("SMTP_FROM_ADDR") or "hello@outlay-ai.com"
+    return send_email(to, f"Pilot request — {lead.get('company') or lead.get('email')}", body)
+
+
 def send_budget_alert(email: str, level: str, spend: float, budget: float,
                       scope: str = "", product: str = "Outlay") -> bool:
     """Budget warn/over email. `scope` (e.g. 'team "platform"') and `product`
