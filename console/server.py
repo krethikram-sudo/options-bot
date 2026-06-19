@@ -18,7 +18,8 @@ import secrets
 from urllib.parse import parse_qs
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import (HTMLResponse, JSONResponse, PlainTextResponse,
+                               RedirectResponse)
 
 from . import notify, outlay_app, store, stripe_billing, web
 
@@ -626,6 +627,22 @@ async def app_outlay_budgets_delete(request: Request):
     f = await _form(request)
     store.delete_outlay_budget(acct["id"], int(f.get("id") or 0))
     return _redirect("/app/outlay/budgets")
+
+
+@app.get("/app/outlay/export.csv")
+def app_outlay_export(request: Request, view: str = "tickets"):
+    """Download a CSV slice of the report (tickets / people / savings) for finance."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    report = store.get_outlay_report(acct["id"])
+    if not report:
+        return _redirect("/app/outlay")
+    if view not in ("tickets", "people", "savings"):
+        view = "tickets"
+    csv_text = outlay_app.report_csv(report, view)
+    return PlainTextResponse(csv_text, media_type="text/csv", headers={
+        "content-disposition": f'attachment; filename="outlay-{view}.csv"'})
 
 
 @app.get("/app/outlay/accuracy", response_class=HTMLResponse)

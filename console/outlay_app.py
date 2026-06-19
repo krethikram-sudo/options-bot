@@ -238,6 +238,32 @@ def budget_statuses(report: dict, budgets: list[dict]) -> list[dict]:
     return out
 
 
+def report_csv(report: dict, view: str = "tickets") -> str:
+    """Serialize a slice of the report to CSV for finance/sheets export.
+    view: tickets (spend per ticket) | people (spend per engineer) | savings."""
+    import csv
+    import io
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    report = report or {}
+    if view == "people":
+        w.writerow(["engineer", "spend_usd", "share_pct", "top_model", "events"])
+        for p in report.get("people", []):
+            w.writerow([p.get("user"), p.get("spent_usd"), round(p.get("share", 0) * 100, 1),
+                        p.get("top_model"), p.get("events")])
+    elif view == "savings":
+        w.writerow(["work_type", "from_model", "to_model", "projected_savings_usd", "confidence"])
+        for r in report.get("recommendations", []):
+            w.writerow([r.get("task_class"), r.get("incumbent_model"), r.get("candidate_model"),
+                        r.get("projected_savings_usd"), r.get("confidence")])
+    else:  # tickets
+        w.writerow(["ticket_id", "task_class", "status", "cost_usd", "rework_iterations", "team_id"])
+        for t in report.get("tickets", []):
+            w.writerow([t.get("ticket_id"), t.get("task_class"), t.get("status"),
+                        t.get("cost_usd"), t.get("rework_iterations"), t.get("team_id")])
+    return buf.getvalue()
+
+
 def sync(conn: dict, window_days: int = 30, transport=None) -> dict:
     """Pull live from the customer's connected sources and run the pipeline.
 

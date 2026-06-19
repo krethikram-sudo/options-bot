@@ -493,9 +493,15 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     sync_line = (f'<div class=muted style="font-size:12.5px;margin:-2px 0 12px">'
                  f'Last refreshed <b>{last}</b> · {cadence} · '
                  f'<a href="/app/outlay/connect">manage connection →</a></div>')
-    estlink = ('<div style="margin:-4px 0 16px"><a href="/app/outlay/accuracy">How accurate is this? →</a>'
-               '<a href="/app/outlay/estimate" style="margin-left:16px">Estimate your backlog →</a>'
-               '<a href="/app/outlay/budgets" style="margin-left:16px">Budgets &amp; guardrails →</a></div>')
+    estlink = ('<div style="margin:-4px 0 16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center">'
+               '<a href="/app/outlay/accuracy">How accurate is this? →</a>'
+               '<a href="/app/outlay/estimate">Estimate your backlog →</a>'
+               '<a href="/app/outlay/budgets">Budgets &amp; guardrails →</a>'
+               '<span style="flex:1"></span>'
+               '<span class=muted style="font-size:12.5px">Export CSV:</span>'
+               '<a href="/app/outlay/export.csv?view=tickets">tickets</a>'
+               '<a href="/app/outlay/export.csv?view=people">engineers</a>'
+               '<a href="/app/outlay/export.csv?view=savings">savings</a></div>')
     bstrip = ""
     if statuses:
         over = [s for s in statuses if s["status"] == "over"]
