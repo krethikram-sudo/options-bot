@@ -1,47 +1,71 @@
 <!doctype html>
 <html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Outlay for healthcare — govern Claude spend, PHI never leaves your environment</title>
 <meta name="description" content="Outlay maps and forecasts your Claude spend without your PHI ever leaving your environment. Read-only metadata only; prompts, outputs, and your API key never reach us. Built for HIPAA-conscious health-tech teams.">
 <link rel="canonical" href="https://outlay-ai.com/healthcare">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="stylesheet" href="/docs/docs.css">
-</head><body>
-<div class="top"><div class="row">
-  <a class="brand" href="/">Out<span class="dot">lay</span></a>
-  <span class="tag">Healthcare</span><span class="sp"></span>
-  <a class="lnk" href="/security">Security</a>
-  <a class="lnk" href="/compare">Compare</a>
-  <a class="cta" href="https://app.outlay-ai.com/pilot-request">Request a pilot</a>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<meta property="og:title" content="Outlay for healthcare — govern Claude spend without PHI egress">
+<meta property="og:description" content="Map and forecast your Claude spend with read-only, metadata-only connections. Prompts, outputs, and your API key never leave your environment. Built for HIPAA-conscious health-tech teams.">
+<link rel="stylesheet" href="/outlay.css">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Out<span class="dot">lay</span></a>
+  <div class="navlinks">
+    <a href="/#how">How it works</a>
+    <a href="/#owners">For eng &amp; finance</a>
+    <a href="/#proof">Attribution</a>
+    <a href="/#estimate">Estimate</a>
+    <a href="/#compare">Compare</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/tour">Product Tour</a>
+    <a href="/pilot">Pilot</a>
+  </div>
+  <div class="navsp"></div>
+  <div class="navcta">
+    <a class="btn primary" href="https://app.outlay-ai.com/pilot-request">Request a pilot</a>
+  </div>
+</div></nav>
+
+<div class="page"><div class="wrap">
+  <div class="eyebrow">Healthcare</div>
+  <h1>Govern your Claude spend — without PHI ever leaving your environment.</h1>
+  <p class="lede">Health-tech teams can't route patient data through a third-party gateway. Outlay is built
+    so it never has to: prompts, model outputs, and your API key <b>never reach us</b> — we read usage
+    metadata only, and we're not in the path of your AI calls.</p>
 </div></div>
 
-<main style="max-width:820px;margin:0 auto;padding:34px 22px 80px">
-  <h1>Govern your Claude spend — without PHI ever leaving your environment.</h1>
-  <p class="lead">Health-tech teams can't route patient data through a third-party gateway. Outlay
-    is built so it never has to: prompts, model outputs, and your API key <b>never reach us</b>.</p>
+<section style="padding-top:8px"><div class="wrap"><div class="prose">
 
   <div class="note"><b>Why this works for healthcare:</b> Outlay connects <b>read-only</b> to your tracker
     and your provider's usage data, and only a task category + numeric features (token counts, ticket IDs)
     are used to attribute spend. Prompt text and completions — where PHI lives — never leave your
-    environment; Outlay is not in the path of your AI calls.</p>
+    environment; Outlay is not a proxy and isn't in the path of your AI calls.</div>
 
-  <h2>What that means for your security & compliance review</h2>
+  <h2>What that means for your security &amp; compliance review</h2>
   <ul>
-    <li><b>No PHI egress to Outlay.</b> The sensitive data physically can't reach us — we read usage
-      metadata and ticket references, never request or response bodies.</li>
-    <li><b>You keep your own Anthropic relationship.</b> Your calls go to Anthropic directly with your key;
-      Outlay isn't a proxy and isn't in the path of your prompt content. Configure Anthropic's data terms
-      (e.g. zero-retention) with them as you do today.</li>
-    <li><b>Read-only by design.</b> Connect with read-only tokens; remove Outlay anytime and nothing about
-      how your calls are made changes — it was never in the path.</li>
-    <li><b>Defensible forecasts.</b> Cost forecasts are back-tested on your own closed tickets
-      (leave-one-out) and shown with the sample size — a number you can defend internally.</li>
+    <li><span class="ck">&#10003;</span><div><b>No PHI egress to Outlay.</b> The sensitive data physically can't
+      reach us — we read usage metadata and ticket references, never request or response bodies.</div></li>
+    <li><span class="ck">&#10003;</span><div><b>You keep your own Anthropic relationship.</b> Your calls go to
+      Anthropic directly with your key; Outlay isn't a proxy and isn't in the path of your prompt content.
+      Configure Anthropic's data terms (e.g. zero-retention) with them as you do today.</div></li>
+    <li><span class="ck">&#10003;</span><div><b>Read-only by design.</b> Connect with read-only tokens; remove
+      Outlay anytime and nothing about how your calls are made changes — it was never in the path.</div></li>
+    <li><span class="ck">&#10003;</span><div><b>Defensible forecasts.</b> Cost forecasts are back-tested on your
+      own closed tickets (leave-one-out) and shown with the sample size — a number you can defend
+      internally.</div></li>
   </ul>
 
   <h2>The honest part on certifications</h2>
   <p>Our PHI-never-leaves-your-environment guarantee is a property of the <b>architecture</b>, verifiable in
-    the (inspectable) client. We are <b>not yet SOC-2 or HIPAA certified</b>, and we won't claim what we
-    don't hold. If you need a <b>BAA</b>, a security questionnaire, or our compliance roadmap, email us —
+    the (inspectable) client. We are <b>not yet SOC&#8209;2 or HIPAA certified</b>, and we won't claim what
+    we don't hold. If you need a <b>BAA</b>, a security questionnaire, or our compliance roadmap, email us —
     we'll share exactly where we are. (See <a href="/security">Security &amp; trust</a>.)</p>
 
   <h2>The economics</h2>
@@ -50,9 +74,26 @@
     scope before the invoice — is the difference between governing the line item and being surprised by
     it.</p>
 
-  <p style="margin-top:28px"><a class="cta" href="https://app.outlay-ai.com/pilot-request">Request a design-partner pilot</a>
-    &nbsp; <a class="lnk" href="mailto:hello@outlay-ai.com?subject=Outlay%20for%20healthcare%20(BAA)">Talk to us about a BAA</a></p>
-  <p class="foot" style="margin-top:22px"><a href="/">Outlay home</a> ·
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin:26px 0 8px">
+    <a class="btn primary" href="https://app.outlay-ai.com/pilot-request">Request a design-partner pilot →</a>
+    <a class="btn ghost" href="mailto:hello@outlay-ai.com?subject=Outlay%20for%20healthcare%20(BAA)">Talk to us about a BAA</a>
+  </div>
+
+  <p class="backlink" style="margin-top:24px"><a href="/">← Back to Outlay</a> ·
     <a href="/security">Security</a> · <a href="/compare">vs gateways &amp; routers</a></p>
-</main>
+</div></div></section>
+
+<footer><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Out<span class="dot">lay</span></a>
+  <span class="sep"></span>
+  <a href="https://app.outlay-ai.com/pilot-request">Book a pilot</a>
+  <a href="/#owners">For eng &amp; finance</a>
+  <a href="/#compare">Compare</a>
+  <a href="/security">Security</a>
+  <a href="/legal/privacy">Privacy</a>
+  <a href="mailto:hello@outlay-ai.com">Contact</a>
+</div>
+<div class="wrap" style="margin-top:14px;font-size:12.5px;color:#6c7790">© 2026 Outlay · See AI spend mapped to your work, forecast it, and hold it to budget.</div>
+</footer>
+
 </body></html>
