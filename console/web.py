@@ -441,27 +441,51 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
 
 
 def outlay_connect_page(account: dict, conn: dict | None) -> str:
-    """Live connectors — read-only tokens to pull GitHub Issues + Anthropic usage."""
+    """Live connectors — read-only tokens to pull a tracker + Anthropic usage."""
     conn = conn or {}
+    tracker = conn.get("tracker") or "github"
     owner = _e(conn.get("github_owner") or "")
     repo = _e(conn.get("github_repo") or "")
-    gh_set = "✓ saved" if conn.get("github_token") else "not set"
-    ak_set = "✓ saved" if conn.get("anthropic_key") else "not set"
+    jbase = _e(conn.get("jira_base_url") or "")
+    jemail = _e(conn.get("jira_email") or "")
+    jjql = _e(conn.get("jira_jql") or "")
+    sset = lambda k: "✓ saved" if conn.get(k) else "not set"  # noqa: E731
+    opt = lambda v: " selected" if tracker == v else ""        # noqa: E731
     synced = (f'Last synced {_fmt_date(conn.get("synced_at"))}.'
               if conn.get("synced_at") else "Never synced yet.")
     form = f"""<div class=hero><h1>Connect your sources <span class=muted style="font-weight:400">· read-only</span></h1>
       <p class=muted>Outlay pulls live from your tracker and AI usage with read-only tokens — metadata only,
         prompts never leave your tools. Or paste exports on the <a href="/app/outlay">Spend</a> tab.</p></div>
       <form method=post action="/app/outlay/connect" class=card>
-        <h3 style="margin:.2em 0 .6em">GitHub Issues</h3>
+        <label class=fld><span>Tracker</span><select name=tracker>
+          <option value=github{opt('github')}>GitHub Issues</option>
+          <option value=jira{opt('jira')}>Jira</option>
+          <option value=linear{opt('linear')}>Linear</option></select></label>
+
+        <h3 style="margin:1em 0 .6em">GitHub Issues</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <label class=fld><span>Owner</span><input name=github_owner value="{owner}" placeholder="acme"></label>
           <label class=fld><span>Repo</span><input name=github_repo value="{repo}" placeholder="web"></label>
         </div>
-        <label class=fld style="margin-top:12px"><span>Read-only token ({gh_set})</span>
+        <label class=fld style="margin-top:12px"><span>Read-only token ({sset('github_token')})</span>
           <input name=github_token type=password placeholder="ghp_… (leave blank to keep)"></label>
+
+        <h3 style="margin:1em 0 .6em">Jira</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <label class=fld><span>Base URL</span><input name=jira_base_url value="{jbase}" placeholder="https://acme.atlassian.net"></label>
+          <label class=fld><span>Email</span><input name=jira_email value="{jemail}" placeholder="you@acme.dev"></label>
+        </div>
+        <label class=fld style="margin-top:12px"><span>API token ({sset('jira_token')})</span>
+          <input name=jira_token type=password placeholder="(leave blank to keep)"></label>
+        <label class=fld style="margin-top:12px"><span>JQL (optional)</span>
+          <input name=jira_jql value="{jjql}" placeholder="project = ENG AND updated >= -90d"></label>
+
+        <h3 style="margin:1em 0 .6em">Linear</h3>
+        <label class=fld><span>API key ({sset('linear_key')})</span>
+          <input name=linear_key type=password placeholder="lin_… (leave blank to keep)"></label>
+
         <h3 style="margin:1em 0 .6em">Anthropic usage</h3>
-        <label class=fld><span>Admin API key ({ak_set})</span>
+        <label class=fld><span>Admin API key ({sset('anthropic_key')})</span>
           <input name=anthropic_key type=password placeholder="sk-ant-admin… (leave blank to keep)"></label>
         <button class="btn sec" style="margin-top:14px">Save connection</button>
       </form>

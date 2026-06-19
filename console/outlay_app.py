@@ -178,19 +178,39 @@ def sync(conn: dict, window_days: int = 30, transport=None) -> dict:
     `conn`: {github_owner, github_repo, github_token, anthropic_key}. `transport`
     is the engine's HTTP seam — left None in production, injected in tests.
     """
-    from outlay.ingest import AnthropicAdminClient, GitHubIssuesClient
+    from outlay.ingest import (AnthropicAdminClient, GitHubIssuesClient,
+                               JiraClient, LinearClient)
 
-    owner = (conn.get("github_owner") or "").strip()
-    repo = (conn.get("github_repo") or "").strip()
-    gh = (conn.get("github_token") or "").strip()
+    tracker = (conn.get("tracker") or "github").strip()
     ak = (conn.get("anthropic_key") or "").strip()
-    if not (owner and repo and gh and ak):
-        raise ValueError("Add a GitHub repo + token and an Anthropic admin key first.")
+    if not ak:
+        raise ValueError("Add an Anthropic admin key first.")
 
     starting_at = (datetime.now(timezone.utc) - timedelta(days=window_days)).strftime("%Y-%m-%dT00:00:00Z")
     try:
-        work = GitHubIssuesClient(token=gh, transport=transport).pull(owner, repo)
+        if tracker == "jira":
+            base = (conn.get("jira_base_url") or "").strip()
+            email = (conn.get("jira_email") or "").strip()
+            tok = (conn.get("jira_token") or "").strip()
+            if not (base and email and tok):
+                raise ValueError("Add your Jira URL, email, and API token.")
+            jql = (conn.get("jira_jql") or "").strip() or "updated >= -90d ORDER BY updated DESC"
+            work = JiraClient(base_url=base, email=email, api_token=tok, transport=transport).pull(jql)
+        elif tracker == "linear":
+            key = (conn.get("linear_key") or "").strip()
+            if not key:
+                raise ValueError("Add your Linear API key.")
+            work = LinearClient(api_key=key, transport=transport).pull()
+        else:
+            owner = (conn.get("github_owner") or "").strip()
+            repo = (conn.get("github_repo") or "").strip()
+            gh = (conn.get("github_token") or "").strip()
+            if not (owner and repo and gh):
+                raise ValueError("Add a GitHub repo + read-only token.")
+            work = GitHubIssuesClient(token=gh, transport=transport).pull(owner, repo)
         events = AnthropicAdminClient(api_key=ak, transport=transport).pull(starting_at)
+    except ValueError:
+        raise
     except Exception as e:  # noqa: BLE001 — network / auth → clean message
         raise ValueError(f"Couldn't sync from your sources: {e}") from e
 

@@ -1342,3 +1342,53 @@ def test_outlay_budget_alert_on_transition(env, client):
     # the Spend dashboard surfaces the over-budget strip
     r = client.get("/app/outlay")
     assert r.status_code == 200 and "over budget" in r.text
+
+
+def _fake_multi():
+    import json
+    fix = _fixtures()
+    admin = json.loads((fix / "anthropic_admin_report.json").read_text())
+
+    def t(method, url, headers, body):
+        if "api.github.com" in url:
+            return json.loads((fix / "github_issues.json").read_text())["issues"]
+        if "atlassian" in url or "/rest/api" in url:
+            return {"issues": [{"key": "OPS-1", "fields": {"summary": "Fix login bug",
+                    "status": {"name": "Done"}}}], "total": 1, "startAt": 0,
+                    "maxResults": 100, "isLast": True}
+        if "linear" in url:
+            return {"data": {"issues": {"nodes": [{"identifier": "ENG-1", "title": "Add SSO",
+                    "state": {"type": "completed"}}], "pageInfo": {"hasNextPage": False,
+                    "endCursor": None}}}}
+        return admin
+    return t
+
+
+def test_outlay_sync_jira(env, client):
+    from console import outlay_app
+    conn = {"tracker": "jira", "jira_base_url": "https://acme.atlassian.net",
+            "jira_email": "me@acme.dev", "jira_token": "tok", "anthropic_key": "sk-admin"}
+    report = outlay_app.sync(conn, transport=_fake_multi())
+    assert report["spend"]["total_usd"] > 0 and "_model" in report
+
+
+def test_outlay_sync_linear(env, client):
+    from console import outlay_app
+    conn = {"tracker": "linear", "linear_key": "lin_key", "anthropic_key": "sk-admin"}
+    report = outlay_app.sync(conn, transport=_fake_multi())
+    assert report["spend"]["total_usd"] > 0
+
+
+def test_outlay_connect_page_has_all_trackers(env, client):
+    _signup(client, email="trk@x.com")
+    r = client.get("/app/outlay/connect")
+    assert r.status_code == 200
+    for t in ("GitHub Issues", "Jira", "Linear"):
+        assert t in r.text
+    # save a jira tracker selection
+    client.post("/app/outlay/connect", data={"tracker": "jira",
+                "jira_base_url": "https://acme.atlassian.net", "jira_email": "a@b.com",
+                "jira_token": "tok", "anthropic_key": "sk"}, follow_redirects=True)
+    _, store = env
+    c = store.get_outlay_connection(store.get_account_by_email("trk@x.com")["id"])
+    assert c["tracker"] == "jira" and c["jira_token"] == "tok"
