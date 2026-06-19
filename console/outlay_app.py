@@ -101,12 +101,34 @@ def _deserialize_model(d: dict):
     return stats, size
 
 
+def _people_spend(result) -> list[dict]:
+    """Spend per engineer from costed events (user→cost), biggest first. Honest
+    about coverage: events without a resolved user roll up under '(unattributed)'.
+    Each engineer's top model is shown to surface premium-model-on-cheap-work."""
+    total = result.total_cost or 0.0
+    agg: dict[str, dict] = {}
+    for r in result.rows:
+        key = r.user or "(unattributed)"
+        a = agg.setdefault(key, {"user": key, "spent_usd": 0.0, "events": 0, "by_model": {}})
+        a["spent_usd"] += r.cost_usd
+        a["events"] += 1
+        a["by_model"][r.model] = a["by_model"].get(r.model, 0.0) + r.cost_usd
+    out = []
+    for a in sorted(agg.values(), key=lambda x: x["spent_usd"], reverse=True):
+        top_model = max(a["by_model"], key=a["by_model"].get) if a["by_model"] else "—"
+        out.append({"user": a["user"], "spent_usd": round(a["spent_usd"], 2),
+                    "events": a["events"], "top_model": top_model,
+                    "share": round(a["spent_usd"] / total, 4) if total else 0.0})
+    return out
+
+
 def _report(work, result, stats, size_models, planned_items=None, window_days: int = 30) -> dict:
     recs = recommend(result, horizon_scale=30.0 / max(window_days, 1))
     cal = backtest(result, work)
     fc = forecast_roadmap([w for w in work if w.is_open], stats, size_models)
     data = to_dict(result, stats, fc, find_anomalies(result, stats), recs,
                    calibration=cal, window_days=window_days)
+    data["people"] = _people_spend(result)  # per-engineer spend rollup
     data["_model"] = _serialize_model(stats, size_models)  # for the backlog estimator
     if planned_items:
         data["estimate"] = _serialize_plan(estimate_plan(planned_items, stats, size_models))
