@@ -82,16 +82,21 @@ def send_otp(dest: str, code: str, channel: str = "email") -> bool:
     return send_email(dest, "Your ModelPilot verification code", body)
 
 
-def send_budget_alert(email: str, level: str, spend: float, budget: float) -> bool:
+def send_budget_alert(email: str, level: str, spend: float, budget: float,
+                      scope: str = "", product: str = "ModelPilot") -> bool:
+    """Budget warn/over email. `scope` (e.g. 'team "platform"') and `product`
+    ('Outlay') generalize it beyond the legacy monthly spend budget; defaults keep
+    the original ModelPilot monthly-budget caller working unchanged."""
     pct = (100 * spend / budget) if budget else 0
+    what = f"budget for {scope}" if scope else "monthly spend budget"
+    link = "/app/outlay/budgets" if product == "Outlay" else "/app"
     if level == "over":
-        subject = "ModelPilot: you've exceeded your monthly spend budget"
-        lead = (f"Your model spend through ModelPilot this cycle is ${spend:,.2f}, "
-                f"which is over your ${budget:,.2f} budget ({pct:.0f}%).")
+        subject = f"{product}: projected to exceed your {scope or 'spend'} budget"
+        lead = (f"Your {product} spend is ${spend:,.2f}, which is over your "
+                f"${budget:,.2f} {what} ({pct:.0f}%).")
     else:
-        subject = "ModelPilot: approaching your monthly spend budget"
-        lead = (f"Your model spend through ModelPilot this cycle is ${spend:,.2f} "
-                f"({pct:.0f}% of your ${budget:,.2f} budget).")
-    body = (f"{lead}\n\nReview usage and adjust your budget or routing mode:\n"
-            f"{base_url()}/app\n\n— ModelPilot")
+        subject = f"{product}: approaching your {scope or 'spend'} budget"
+        lead = (f"Your {product} spend is ${spend:,.2f} "
+                f"({pct:.0f}% of your ${budget:,.2f} {what}).")
+    body = (f"{lead}\n\nReview and adjust:\n{base_url()}{link}\n\n— {product}")
     return send_email(email, subject, body)

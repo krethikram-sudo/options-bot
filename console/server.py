@@ -421,9 +421,25 @@ def app_estimate(request: Request):
     return _html(web.estimate_page(acct, plan, cycle, lifetime, bill))
 
 
+def _budget_email(account_id: int, s: dict) -> None:
+    """Email the account owner on a budget transition — webhooks reach machines,
+    this reaches a human (the only channel most pilots will have wired up)."""
+    acct = store.get_account(account_id)
+    email = (acct or {}).get("email")
+    if not email:
+        return
+    scope = s["scope_type"] + (f' "{s["scope_id"]}"' if s.get("scope_id") else "")
+    try:
+        notify.send_budget_alert(email, s["status"], s.get("projected_usd", 0), s.get("limit_usd", 0) or 0,
+                                 scope=scope, product="Outlay")
+    except Exception:  # noqa: BLE001 — alerting must never break the sync path
+        pass
+
+
 def _check_budgets(account_id: int, report: dict) -> None:
     """After new data lands, fire budget.warn / budget.over on transition into
-    those states (uses the existing webhook system; no-ops without subscribers)."""
+    those states — to subscribed webhooks AND the owner's email (so a pilot with
+    no webhook still gets the guardrail)."""
     budgets = store.list_outlay_budgets(account_id)
     if not budgets:
         return
@@ -434,6 +450,7 @@ def _check_budgets(account_id: int, report: dict) -> None:
                 "scope_type": s["scope_type"], "scope_id": s.get("scope_id"),
                 "spent_usd": s["spent_usd"], "limit_usd": s["limit_usd"],
                 "projected_usd": s["projected_usd"], "period_days": s.get("period_days")})
+            _budget_email(account_id, s)
         store.set_outlay_budget_status(s["id"], new)
 
 
