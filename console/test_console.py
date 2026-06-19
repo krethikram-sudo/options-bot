@@ -1050,8 +1050,8 @@ def test_webhook_create_match_sign_deliver(env):
     # signature verifies with the stored secret
     url, body, headers = sent[0]
     hooks = {w["url"]: w["secret"] for w in store.list_webhooks(a["id"])}
-    assert headers["x-modelpilot-signature"] == store.sign_payload(hooks[url], body)
-    assert b'"event":"budget.over"' in body and headers["x-modelpilot-event"] == "budget.over"
+    assert headers["x-outlay-signature"] == store.sign_payload(hooks[url], body)
+    assert b'"event":"budget.over"' in body and headers["x-outlay-event"] == "budget.over"
 
 
 def test_webhook_event_filtering(env):

@@ -36,10 +36,10 @@ def main():
     store.init_db()
     rng = random.Random(7)
 
-    admin_email = os.environ.get("ADMIN_EMAIL", "admin@modelpilot.app")
+    admin_email = os.environ.get("ADMIN_EMAIL", "admin@outlay-ai.com")
     admin_pw = os.environ.get("ADMIN_PASSWORD", "changeme-admin-pw")
     if not store.get_account_by_email(admin_email):
-        store.create_account(admin_email, admin_pw, company="ModelPilot", role="admin")
+        store.create_account(admin_email, admin_pw, company="Outlay", role="admin")
         print(f"admin: {admin_email} / {admin_pw}  (change this!)")
     else:
         print(f"admin exists: {admin_email}")

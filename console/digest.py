@@ -53,7 +53,7 @@ def send_digest(to: list[str] | None = None, path: str | None = None) -> dict:
     recipients = to or [a["email"] for a in store.list_accounts(path)
                         if a["role"] == "admin" and a["status"] == "active"]
     sent = 0
-    subject = f"ModelPilot: {d['n_pending']} tuning proposal(s) to review"
+    subject = f"Outlay: {d['n_pending']} tuning proposal(s) to review"
     for r in recipients:
         try:
             notify.send_email(r, subject, d["text"])

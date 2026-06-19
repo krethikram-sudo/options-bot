@@ -1,4 +1,4 @@
-"""ModelPilot console — HTML rendering (server-side, dependency-free).
+"""Outlay console — HTML rendering (server-side, dependency-free).
 
 One small design system (shared CSS) + a function per page. Server-rendered so
 the whole console deploys as a single FastAPI service with no build step,
@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from . import store
 
 ACCENT = "#111111"
-BRAND = "ModelPilot"
+BRAND = "Outlay"
 
 _CSS = """
 :root{--accent:#7c3aed;--accent-d:#8b5cf6;--ink:#f4f5f7;--muted:#8b97ad;
@@ -250,7 +250,7 @@ def page(title: str, body: str, account: dict | None = None, active: str = "") -
         em = _e(account.get("display_email") or account["email"])
         chrome = (
             '<div class=shell><aside class=side>'
-            '<a class=brand href="/app">Model<span class=dot>Pilot</span></a>'
+            '<a class=brand href="/app">Out<span class=dot>lay</span></a>'
             f'<nav class=sidenav>{links}{admin}</nav>'
             f'<div class=side-foot>{_trial_pill(account)}<div class=email>{em}</div>'
             '<form method=post action="/logout" style="margin:0">'
@@ -261,7 +261,7 @@ def page(title: str, body: str, account: dict | None = None, active: str = "") -
                '<a href="/login">Sign in</a><a class="btn sm" href="/signup">Start free trial</a></div>')
         chrome = (
             '<div class=top><div class=wrap style="padding-top:12px;padding-bottom:12px">'
-            f'<a class=brand href="/">Model<span class=dot>Pilot</span></a>{nav}'
+            f'<a class=brand href="/">Out<span class=dot>lay</span></a>{nav}'
             f'</div></div><div class=wrap>{body}</div>')
     return f"""<!doctype html><html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
@@ -860,7 +860,7 @@ def status_page(components: list[dict]) -> str:
                  f'<td>{_e(state)}</td><td class="small muted">{_e(c.get("detail",""))}</td></tr>')
     body = f"""
     <h1>System status</h1>
-    <p class=muted>Live health of ModelPilot services. Your gateway always
+    <p class=muted>Live health of Outlay services. Your gateway always
     <b>fails open</b> — if a service is unreachable, traffic passes straight through to the
     Claude API, unrouted.</p>
     {banner}
@@ -876,7 +876,7 @@ def landing() -> str:
     body = f"""
     <div class=hero>
       <h1>Cut your Claude bill through model optimization.</h1>
-      <p class=muted>ModelPilot routes each request to the cheapest model that's provably
+      <p class=muted>Outlay routes each request to the cheapest model that's provably
       good enough. Drop-in proxy, no prompt data leaves your system. Start free for 7 days;
       after that you only pay <b>20% of the savings we actually deliver</b>.</p>
       <div class="row center" style="justify-content:center;margin-top:18px">
@@ -944,10 +944,10 @@ def auth_form(kind: str, error: str = "", email: str = "") -> str:
                '<input name=company placeholder="Acme Inc."></div>') if is_signup else ""
     consent = ('<div class=field><label class=row style="gap:8px;font-weight:400;font-size:13px">'
                '<input type=checkbox name=accept value=1 required style="width:auto"> '
-               'I agree to the <a href="https://modelpilot.pages.dev/legal/terms.html" target=_blank>Terms</a>'
-               ' and <a href="https://modelpilot.pages.dev/legal/privacy.html" target=_blank>Privacy Policy</a>.'
+               'I agree to the <a href="https://outlay-ai.com/legal/terms.html" target=_blank>Terms</a>'
+               ' and <a href="https://outlay-ai.com/legal/privacy.html" target=_blank>Privacy Policy</a>.'
                '</label></div>') if is_signup else ""
-    beta = ('<p class="small muted center" style="margin-top:10px">ModelPilot is in early access — '
+    beta = ('<p class="small muted center" style="margin-top:10px">Outlay is in early access — '
             'we move fast and value your feedback.</p>') if is_signup else ""
     sub = "Create account" if is_signup else "Sign in"
     alt = ('Already have an account? <a href="/login">Sign in</a>' if is_signup
@@ -1080,7 +1080,7 @@ def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
     {_feedback_widget()}
 
     <div class=card style="margin-top:16px"><div class=label>Your connection</div>
-      <p class="small muted">Point your gateway at ModelPilot with this deployment id:</p>
+      <p class="small muted">Point your gateway at Outlay with this deployment id:</p>
       <p><code>{_e(deployment['deployment_id'])}</code></p>
       <div class=row><a class="btn sec sm" href="/app/connect">Configuration &amp; deployments</a>
         <a class="btn sec sm" href="/app/logs">View request logs</a>
@@ -1283,7 +1283,7 @@ def _compare_bars(baseline: float, actual: float) -> str:
     <div style="margin-top:10px"><div class="row small"><span>Baseline (all top-model)</span>
       <div class=spacer></div><span class=muted>{money(baseline)}</span></div>
       <div class=bar><span style="width:{bw:.0f}%;background:#3a4257"></span></div></div>
-    <div style="margin-top:10px"><div class="row small"><span>Actual (with ModelPilot)</span>
+    <div style="margin-top:10px"><div class="row small"><span>Actual (with Outlay)</span>
       <div class=spacer></div><span class=muted>{money(actual)}</span></div>
       <div class=bar><span style="width:{aw:.0f}%"></span></div></div>"""
 
@@ -1334,7 +1334,7 @@ def settings_page(account: dict, settings: dict, saved: bool = False,
           <p class="small muted">Conservative keeps a higher confidence gate; aggressive routes more.</p></div>
         <div class=field><label>Minimum model (quality floor)</label>
           <select name=min_model>{model_opts}</select>
-          <p class="small muted">ModelPilot will never route below this model, whatever the classifier says.</p></div>
+          <p class="small muted">Outlay will never route below this model, whatever the classifier says.</p></div>
         <div class=field><label class=row>
           <input type=checkbox name=telemetry_opt_in value=1 {"checked" if settings["telemetry_opt_in"] else ""}
             style="width:auto;margin-right:8px"> Share anonymous, aggregate performance telemetry</label>
@@ -1342,7 +1342,7 @@ def settings_page(account: dict, settings: dict, saved: bool = False,
         <h2>Spend budget</h2>
         <div class=field><label>Monthly spend budget (USD, 0 = no cap)</label>
           <input name=monthly_budget type=number step="0.01" min="0" value="{settings.get('monthly_budget') or 0:g}">
-          <p class="small muted">Your model spend through ModelPilot this cycle. We email you when you cross the alert threshold and again if you go over.</p></div>
+          <p class="small muted">Your model spend through Outlay this cycle. We email you when you cross the alert threshold and again if you go over.</p></div>
         <div class=field><label>Alert at (% of budget)</label>
           <input name=budget_alert_pct type=number step="1" min="1" max="100" value="{int((settings.get('budget_alert_pct') or 0.8)*100)}"></div>
         <button class=btn>Save settings</button>
@@ -1440,12 +1440,12 @@ def _webhooks_section(webhooks: list[dict]) -> str:
     return f"""
     <h2>Webhooks</h2>
     <p class="small muted">Get notified of events (budget thresholds, tuning proposals, account
-    changes). We POST JSON signed with <code>X-ModelPilot-Signature: sha256=…</code> (HMAC of the body
+    changes). We POST JSON signed with <code>X-Outlay-Signature: sha256=…</code> (HMAC of the body
     with the webhook's signing secret).</p>
     {table}
     <div class=card style="margin-top:12px">
       <form method=post action="/app/webhooks" class=row style="gap:8px">
-        <input name=url placeholder="https://your-app.com/hooks/modelpilot" style="min-width:280px">
+        <input name=url placeholder="https://your-app.com/hooks/outlay" style="min-width:280px">
         <select name=events>
           <option value="all">all events</option>{opts}
         </select>
@@ -1467,14 +1467,14 @@ def connect_page(account: dict, deployments: list[dict], brain_url: str, console
             <input name=label value="{_e(d.get('label') or '')}" style="padding:6px;max-width:200px">
             <button class="btn sec sm">Rename</button></form></td>
           <td class="small muted">{_fmt_date(d.get('created_at'))}</td></tr>"""
-    welcome = ('<div class=note style="margin-bottom:18px"><b>Welcome to ModelPilot 👋</b> '
+    welcome = ('<div class=note style="margin-bottom:18px"><b>Welcome to Outlay 👋</b> '
                'Let\'s get you connected — it takes about five minutes. Once your first requests '
                'flow through, your <a href="/app">Home dashboard</a> lights up with savings.</div>'
                if not keys else "")
     body = f"""
     <h1>Configuration</h1>
     {welcome}
-    <p class=muted>ModelPilot is a drop-in proxy for the Claude Messages API. Point your SDK at it —
+    <p class=muted>Outlay is a drop-in proxy for the Claude Messages API. Point your SDK at it —
     only a task category + numeric features ever leave your system, never prompt text or your API key.</p>
     <div class=card>
       <h2 style="margin-top:0">1. Install the client</h2>
@@ -1494,7 +1494,7 @@ client = Anthropic(base_url="http://127.0.0.1:8400")  # your key stays local</pr
     </div>
 
     <h2>Deployments</h2>
-    <p class="small muted">Run ModelPilot in more than one app or environment (staging, prod, a second
+    <p class="small muted">Run Outlay in more than one app or environment (staging, prod, a second
     service). Each gets its own id; savings across all of them roll up to one bill.</p>
     <div class=card style="padding:0"><table>
       <thead><tr><th>Deployment id</th><th>Label</th><th>Created</th></tr></thead>
@@ -1519,7 +1519,7 @@ def _tuning_capture_section(account: dict) -> str:
         return ("""
     <h2>Per-customer tuning <span class="small muted">— Self-optimize plan</span></h2>
     <div class=card>
-      <p class="small muted">On the <b>Self-optimize</b> plan, ModelPilot tunes routing to <b>your</b>
+      <p class="small muted">On the <b>Self-optimize</b> plan, Outlay tunes routing to <b>your</b>
         workload — learning per-category quality floors from your own traffic (category labels, token
         counts, routing outcomes — <b>never prompt content</b>) and proposing safe, judge-validated
         changes you approve. It gets cheaper-safe the more you use it.</p>
@@ -1528,7 +1528,7 @@ def _tuning_capture_section(account: dict) -> str:
     return ("""
     <h2>Per-customer tuning <span class="small muted">— active on your plan</span></h2>
     <div class=card>
-      <p class="small muted">ModelPilot continuously tunes routing to <b>your</b> workload from your
+      <p class="small muted">Outlay continuously tunes routing to <b>your</b> workload from your
         traffic metadata — category labels, token counts, and routing outcomes — <b>never prompt
         content</b>. Proposed per-category floor changes appear for you to review and approve; nothing
         to install. See <a href="/security.html#optimize">how we optimize without seeing your data</a>.</p>
@@ -1625,7 +1625,7 @@ def logs_page(account: dict, logs: list[dict], total: int) -> str:
         <div class=card><p class="muted">No logs yet. They're <b>opt-in</b>: run your gateway with
           <code>MODELPILOT_LOGS=1</code> (ships metadata to the console) and/or
           <code>MODELPILOT_OTEL_ENDPOINT=…</code> (exports OTLP traces to your own collector).
-          See the <a href="https://modelpilot.pages.dev/docs/configuration.html">docs</a>.</p></div>"""
+          See the <a href="https://outlay-ai.com/docs/configuration.html">docs</a>.</p></div>"""
         return page("Logs", body, account, "/app/logs")
     rows = ""
     for r in logs:
@@ -1653,7 +1653,7 @@ def logs_page(account: dict, logs: list[dict], total: int) -> str:
       <tbody>{rows}</tbody></table></div>
     <p class="small muted" style="margin-top:12px">Export to your own observability stack with OTLP:
       set <code>MODELPILOT_OTEL_ENDPOINT</code> on your gateway
-      (<a href="https://modelpilot.pages.dev/docs/configuration.html">docs</a>).</p>"""
+      (<a href="https://outlay-ai.com/docs/configuration.html">docs</a>).</p>"""
     return page("Logs", body, account, "/app/logs")
 
 
@@ -1833,7 +1833,7 @@ def _tier_options(plan: dict, stripe_on: bool) -> str:
 # --------------------------------------------------------------------------- #
 
 def _feedback_widget() -> str:
-    return ('<div class=card style="margin-top:16px"><div class=label>How\'s ModelPilot working for you?</div>'
+    return ('<div class=card style="margin-top:16px"><div class=label>How\'s Outlay working for you?</div>'
             '<form method=post action="/app/feedback" class=row '
             'style="gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">'
             '<button name=rating value=up class="btn sm sec" title="Going well">&#128077;</button>'
