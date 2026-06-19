@@ -92,6 +92,8 @@ def run(
     budgets_path: Path | None = None,
     calibrate: bool = False,
     as_json: bool = False,
+    as_html: bool = False,
+    company: str | None = None,
 ) -> str:
     events = gather_events(
         usage=usage_path,
@@ -137,14 +139,19 @@ def run(
         budgets = track_budgets(result, work_items,
                                 parse_budgets(_load_json(budgets_path)))
 
-    # Calibration is computed whenever it's requested, or always for JSON output.
-    calibration = backtest(result, work_items) if (calibrate or as_json) else None
+    # Calibration is computed whenever it's requested, or always for JSON/HTML output.
+    calibration = backtest(result, work_items) if (calibrate or as_json or as_html) else None
 
-    if as_json:
-        from .serialize import to_json
-        return to_json(result, stats, fc, anomalies, recs,
+    if as_json or as_html:
+        from .serialize import to_dict
+        data = to_dict(result, stats, fc, anomalies, recs,
                        calibration=calibration, policy=policy,
                        budgets=budgets, window_days=window_days)
+        if as_html:
+            from .readout import render_html
+            return render_html(data, company=company)
+        import json as _json
+        return _json.dumps(data, indent=2)
 
     out = render(result, stats, fc, anomalies, recs, policy=policy,
                  budgets=budgets, window_days=window_days)
@@ -180,6 +187,10 @@ def main(argv: list[str] | None = None) -> int:
                    help="append a leave-one-out backtest of forecast accuracy on realized spend")
     p.add_argument("--json", action="store_true", dest="as_json",
                    help="emit the full report as machine-readable JSON (implies --calibrate)")
+    p.add_argument("--html", action="store_true", dest="as_html",
+                   help="emit a VP-ready printable HTML audit readout")
+    p.add_argument("--company", default=None,
+                   help="company/team name for the HTML readout header")
     args = p.parse_args(argv)
 
     # Default to the bundled demo when no usage source is given.
@@ -197,6 +208,8 @@ def main(argv: list[str] | None = None) -> int:
         budgets_path=args.budgets,
         calibrate=args.calibrate,
         as_json=args.as_json,
+        as_html=args.as_html,
+        company=args.company,
     ))
     return 0
 
