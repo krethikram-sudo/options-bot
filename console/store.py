@@ -224,7 +224,8 @@ CREATE TABLE IF NOT EXISTS outlay_connections (
     github_repo TEXT,
     github_token TEXT,                -- read-only PAT; encrypted at rest (secret_box)
     anthropic_key TEXT,               -- admin key; encrypted at rest (secret_box)
-    synced_at REAL
+    synced_at REAL,
+    auto_sync_hours INTEGER NOT NULL DEFAULT 0  -- 0 = manual; else re-sync every N hours
 );
 CREATE TABLE IF NOT EXISTS outlay_budgets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -260,6 +261,7 @@ _MIGRATIONS = [
     "ALTER TABLE outlay_connections ADD COLUMN jira_token TEXT",
     "ALTER TABLE outlay_connections ADD COLUMN jira_jql TEXT",
     "ALTER TABLE outlay_connections ADD COLUMN linear_key TEXT",
+    "ALTER TABLE outlay_connections ADD COLUMN auto_sync_hours INTEGER NOT NULL DEFAULT 0",
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -624,7 +626,8 @@ def save_outlay_connection(account_id: int, github_owner: str | None = None,
                            anthropic_key: str | None = None, tracker: str | None = None,
                            jira_base_url: str | None = None, jira_email: str | None = None,
                            jira_token: str | None = None, jira_jql: str | None = None,
-                           linear_key: str | None = None, path: str | None = None) -> None:
+                           linear_key: str | None = None, auto_sync_hours: int | None = None,
+                           path: str | None = None) -> None:
     """Upsert a customer's connection config. Secrets left blank are preserved;
     other blank fields are cleared. Supports GitHub / Jira / Linear trackers."""
     cur = get_outlay_connection(account_id, path) or {}
@@ -635,6 +638,7 @@ def save_outlay_connection(account_id: int, github_owner: str | None = None,
     def _sec(v, key):  # secret: blank preserves (cur is already decrypted)
         return (v or "").strip() or cur.get(key)
 
+    asy = cur.get("auto_sync_hours") or 0 if auto_sync_hours is None else int(auto_sync_hours)
     from . import secret_box
     enc = secret_box.encrypt
     conn = connect(path)
@@ -642,13 +646,13 @@ def save_outlay_connection(account_id: int, github_owner: str | None = None,
         conn.execute(
             "INSERT OR REPLACE INTO outlay_connections"
             "(account_id, tracker, github_owner, github_repo, github_token, anthropic_key,"
-            " jira_base_url, jira_email, jira_token, jira_jql, linear_key, synced_at)"
-            " VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+            " jira_base_url, jira_email, jira_token, jira_jql, linear_key, synced_at, auto_sync_hours)"
+            " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (account_id, _txt(tracker) or cur.get("tracker") or "github",
              _txt(github_owner), _txt(github_repo), enc(_sec(github_token, "github_token")),
              enc(_sec(anthropic_key, "anthropic_key")),
              _txt(jira_base_url), _txt(jira_email), enc(_sec(jira_token, "jira_token")),
-             _txt(jira_jql), enc(_sec(linear_key, "linear_key")), cur.get("synced_at")))
+             _txt(jira_jql), enc(_sec(linear_key, "linear_key")), cur.get("synced_at"), asy))
         conn.commit()
     finally:
         conn.close()
@@ -682,6 +686,22 @@ def mark_outlay_synced(account_id: int, path: str | None = None,
         conn.commit()
     finally:
         conn.close()
+
+
+def list_due_outlay_connections(now: float | None = None,
+                                path: str | None = None) -> list[int]:
+    """Account ids whose auto-sync is on and is due (never synced, or older than
+    its interval). Returns ids only; callers fetch+decrypt the full connection."""
+    now = now or time.time()
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT account_id, synced_at, auto_sync_hours FROM outlay_connections"
+            " WHERE auto_sync_hours > 0").fetchall()
+    finally:
+        conn.close()
+    return [r["account_id"] for r in rows
+            if not r["synced_at"] or r["synced_at"] <= now - r["auto_sync_hours"] * 3600]
 
 
 def add_outlay_budget(account_id: int, scope_type: str, scope_id: str | None,

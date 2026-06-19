@@ -451,8 +451,12 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
     jjql = _e(conn.get("jira_jql") or "")
     sset = lambda k: "✓ saved" if conn.get(k) else "not set"  # noqa: E731
     opt = lambda v: " selected" if tracker == v else ""        # noqa: E731
+    asy = conn.get("auto_sync_hours") or 0
+    aopt = lambda v: " selected" if asy == v else ""           # noqa: E731
     synced = (f'Last synced {_fmt_date(conn.get("synced_at"))}.'
               if conn.get("synced_at") else "Never synced yet.")
+    if asy:
+        synced += f' Auto-sync is on ({"daily" if asy == 24 else "weekly"}).'
     form = f"""<div class=hero><h1>Connect your sources <span class=muted style="font-weight:400">· read-only</span></h1>
       <p class=muted>Outlay pulls live from your tracker and AI usage with read-only tokens — metadata only,
         prompts never leave your tools. Or paste exports on the <a href="/app/outlay">Spend</a> tab.</p></div>
@@ -487,6 +491,12 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
         <h3 style="margin:1em 0 .6em">Anthropic usage</h3>
         <label class=fld><span>Admin API key ({sset('anthropic_key')})</span>
           <input name=anthropic_key type=password placeholder="sk-ant-admin… (leave blank to keep)"></label>
+
+        <h3 style="margin:1em 0 .6em">Auto-sync</h3>
+        <label class=fld><span>Keep the audit fresh automatically</span><select name=auto_sync_hours>
+          <option value=0{aopt(0)}>Off — sync manually</option>
+          <option value=24{aopt(24)}>Daily</option>
+          <option value=168{aopt(168)}>Weekly</option></select></label>
         <button class="btn sec" style="margin-top:14px">Save connection</button>
       </form>
       <div class=card style="margin-top:16px">

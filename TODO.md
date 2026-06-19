@@ -56,6 +56,20 @@ optimization engine within it. Marketing site rebranded to **Outlay** and moved 
 
 ## ✅ Done
 
+### 2026-06-19 — Outlay product built into the console
+- [x] **Spend dashboard, backlog estimator, budgets** (`/app/outlay`, `/app/outlay/estimate`,
+      `/app/outlay/budgets`) — the engine (`outlay/`) wrapped for the web app via `outlay_app.py`;
+      reuses the console's auth/accounts/billing. Estimator runs off a serialized `_model` so it works
+      after either an upload or a live sync. (PRs #21–26.)
+- [x] **Live connectors** — pull read-only from GitHub Issues / Jira / Linear + the Anthropic Admin
+      API (`/app/outlay/connect` → "Sync now"); engine transport seam keeps it offline-testable. (#27.)
+- [x] **Connector tokens encrypted at rest** — Fernet keyed off `CONSOLE_SECRET` (`secret_box.py`),
+      `enc:`-prefixed, graceful passthrough if `cryptography` absent. A DB leak no longer exposes keys. (#28.)
+- [x] **Scheduled auto-sync** — per-connection Off/Daily/Weekly; due connections re-synced by
+      `_run_due_syncs` (resilient per-account). Drive it with an in-process loop (`OUTLAY_AUTOSYNC_EVERY_MIN`)
+      or an external scheduler hitting `POST /internal/outlay/sync-due` with `OUTLAY_CRON_TOKEN`. +tests (99 pass).
+  - Next slices: Cursor/Copilot usage source; per-epic budgets; dashboard polish. **Needs `fly deploy`.**
+
 ### 2026-06-18
 - [x] **Guidance is now trial-only; paid = autopilot (billable) only.** Verified guidance/free-tier can
       never bill (three guards: guidance never applies switches → 0 realized savings; `report_usage`
