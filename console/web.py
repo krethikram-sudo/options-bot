@@ -343,7 +343,7 @@ def _kpi(label: str, value: str, sub: str = "", color: str = "") -> str:
             f'<div style="font-size:26px;font-weight:700;margin-top:6px"{style}>{value}</div>{sub}</div>')
 
 
-def outlay_page(account: dict, report: dict | None) -> str:
+def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None = None) -> str:
     if not report:
         intro = ('<div class=hero><h1>Your AI spend, on your roadmap.</h1>'
                  '<p class=muted>Connect your data and Outlay maps every dollar to the work that drove it, '
@@ -422,7 +422,21 @@ def outlay_page(account: dict, report: dict | None) -> str:
             f'<div style="margin-top:16px">{save_card}</div>' + (f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""))
     estlink = ('<div style="margin:-4px 0 16px"><a href="/app/outlay/estimate">Estimate your backlog →</a>'
                '<a href="/app/outlay/budgets" style="margin-left:16px">Budgets &amp; guardrails →</a></div>')
-    body = kpis + estlink + grid + '<div style="margin-top:16px">' + _outlay_connect(collapsed=True) + '</div>'
+    bstrip = ""
+    if statuses:
+        over = [s for s in statuses if s["status"] == "over"]
+        warn = [s for s in statuses if s["status"] == "warn"]
+        if over or warn:
+            c = "#b3261e" if over else "#b45309"
+            parts = ([f"{len(over)} over budget"] if over else []) + ([f"{len(warn)} at warn"] if warn else [])
+            bstrip = (f'<div class=card style="border-left:4px solid {c};margin-bottom:16px">'
+                      f'<b style="color:{c}">⚠ {" · ".join(parts)}</b> — '
+                      f'<a href="/app/outlay/budgets">review budgets →</a></div>')
+        else:
+            bstrip = (f'<div class=card style="border-left:4px solid #0f6b4f;margin-bottom:16px">'
+                      f'<b style="color:#0f6b4f">✓ All {len(statuses)} budgets on track</b> — '
+                      f'<a href="/app/outlay/budgets">budgets →</a></div>')
+    body = kpis + bstrip + estlink + grid + '<div style="margin-top:16px">' + _outlay_connect(collapsed=True) + '</div>'
     return page("Spend", body, account, active="/app/outlay")
 
 

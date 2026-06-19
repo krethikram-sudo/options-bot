@@ -402,13 +402,30 @@ def app_estimate(request: Request):
     return _html(web.estimate_page(acct, plan, cycle, lifetime, bill))
 
 
+def _check_budgets(account_id: int, report: dict) -> None:
+    """After new data lands, fire budget.warn / budget.over on transition into
+    those states (uses the existing webhook system; no-ops without subscribers)."""
+    budgets = store.list_outlay_budgets(account_id)
+    if not budgets:
+        return
+    for s in outlay_app.budget_statuses(report, budgets):
+        new, old = s["status"], s.get("last_status")
+        if new in ("warn", "over") and new != old:
+            store.deliver_event(account_id, f"budget.{new}", {
+                "scope_type": s["scope_type"], "scope_id": s.get("scope_id"),
+                "spent_usd": s["spent_usd"], "limit_usd": s["limit_usd"],
+                "projected_usd": s["projected_usd"], "period_days": s.get("period_days")})
+        store.set_outlay_budget_status(s["id"], new)
+
+
 @app.get("/app/outlay", response_class=HTMLResponse)
 def app_outlay(request: Request):
     acct, redir = _require(request)
     if redir:
         return redir
     report = store.get_outlay_report(acct["id"])
-    return _html(web.outlay_page(acct, report))
+    statuses = outlay_app.budget_statuses(report, store.list_outlay_budgets(acct["id"])) if report else []
+    return _html(web.outlay_page(acct, report, statuses))
 
 
 @app.post("/app/outlay/run")
@@ -432,6 +449,7 @@ async def app_outlay_run(request: Request):
     except Exception:  # noqa: BLE001
         return JSONResponse({"ok": False, "error": "Could not process that data."})
     store.save_outlay_report(acct["id"], report)
+    _check_budgets(acct["id"], report)
     return JSONResponse({"ok": True})
 
 
@@ -470,6 +488,7 @@ async def app_outlay_sync(request: Request):
         return JSONResponse({"ok": False, "error": "Sync failed. Check your tokens and try again."})
     store.save_outlay_report(acct["id"], report)
     store.mark_outlay_synced(acct["id"])
+    _check_budgets(acct["id"], report)
     return JSONResponse({"ok": True})
 
 
