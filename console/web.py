@@ -16,14 +16,14 @@ ACCENT = "#111111"
 BRAND = "Outlay"
 
 _CSS = """
-/* Outlay console — matches the marketing site theme (outlay.css): warm paper
-   canvas, green accent, Fraunces display + Inter body. */
-:root{--ink:#0c0e12;--body:#3b414c;--muted:#7b818d;--faint:#a4a9b3;
-  --line:#e8e6df;--line2:#f0eee7;--bg:#ffffff;--paper:#fbfaf6;--paper2:#f6f4ed;--navy:#13203a;
+/* Outlay console — matches the marketing site theme (outlay.css): cool
+   slate-white canvas, green accent, Inter, dark public header. */
+:root{--ink:#0b0f17;--body:#3a4252;--muted:#6b7280;--faint:#9aa1ad;
+  --line:#e4e7ec;--line2:#eef1f5;--bg:#ffffff;--paper:#f6f8fa;--paper2:#eef1f5;--navy:#13203a;
   --grn:#0f6b4f;--grn-d:#0a4f3a;--grn-l:#e7f1ec;--warn:#b45309;--bad:#b3261e;
-  --mut:#7b818d;--amber:#b45309;--amber-l:#fbf0df;--red:#b3261e;--red-l:#f8e7e4;
+  --mut:#6b7280;--amber:#b45309;--amber-l:#fbf0df;--red:#b3261e;--red-l:#f8e7e4;
   --accent:#0f6b4f;--accent-d:#0a4f3a;--grad:linear-gradient(135deg,#0f6b4f,#13203a);
-  --disp:"Fraunces",Georgia,"Times New Roman",serif;
+  --disp:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --ease:cubic-bezier(.22,.61,.36,1);}
@@ -31,8 +31,10 @@ _CSS = """
 body{margin:0;font:16px/1.6 var(--sans);color:var(--body);-webkit-font-smoothing:antialiased;
   background:linear-gradient(180deg,var(--paper),var(--bg) 60%);background-attachment:fixed}
 a{color:var(--grn-d);text-decoration:none}a:hover{text-decoration:underline}
-.top{background:rgba(255,255,255,.8);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.top{background:rgba(11,16,26,.82);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;z-index:10}
 .top .wrap{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:18px}
+.top .brand{color:#fff}.top .brand .dot{color:#6ee7b7}
+.top .nav a{color:#c4cddb}.top .nav a:hover{color:#fff}
 /* left sidebar shell (signed-in) */
 .shell{display:flex;min-height:100vh;align-items:stretch}
 .side{width:236px;flex-shrink:0;display:flex;flex-direction:column;padding:18px 14px;
@@ -69,22 +71,22 @@ a{color:var(--grn-d);text-decoration:none}a:hover{text-decoration:underline}
 .spacer{flex:1}
 .wrap{max-width:1080px;margin:0 auto;padding:24px 20px}
 .muted{color:var(--muted)}.small{font-size:13px}
-h1,h2{font-family:var(--disp);letter-spacing:-.012em;color:var(--ink);font-weight:600}
+h1,h2{font-family:var(--disp);letter-spacing:-.02em;color:var(--ink);font-weight:600}
 h1{font-size:27px;margin:0 0 4px}h2{font-size:18px;margin:24px 0 12px}
 .grid{display:grid;gap:16px}
 .cols-3{grid-template-columns:repeat(3,1fr)}.cols-2{grid-template-columns:repeat(2,1fr)}
 @media(max-width:760px){.cols-3,.cols-2{grid-template-columns:1fr}}
-.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;color:var(--body);
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px;color:var(--body);
   box-shadow:0 1px 2px rgba(12,14,18,.03);
   transition:transform .25s var(--ease),box-shadow .25s ease}
 .card:hover{transform:translateY(-2px);box-shadow:0 18px 38px -26px rgba(12,14,18,.3)}
 .stat{font-family:var(--disp);font-size:30px;font-weight:700;letter-spacing:-.02em;color:var(--ink)}
 .stat.green{color:var(--grn-d)}
 .label{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:500}
-.btn{display:inline-block;background:var(--accent);color:#fff;border:0;border-radius:8px;
+.btn{display:inline-block;background:var(--accent);color:#fff;border:0;border-radius:6px;
   padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;
   transition:transform .15s var(--ease),background .15s,box-shadow .2s}
-.btn:hover{background:var(--accent-d);text-decoration:none;transform:translateY(-1px);box-shadow:0 12px 24px -12px rgba(15,107,79,.6)}
+.btn:hover{background:var(--accent-d);text-decoration:none;box-shadow:0 6px 16px -10px rgba(11,79,58,.5)}
 .btn.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
 .btn.sec:hover{background:var(--paper);box-shadow:none;transform:none;border-color:#d8d5cc}
 .btn.bad{background:var(--bad);color:#fff}.btn.bad:hover{background:#8f1e17}.btn.sm{padding:6px 10px;font-size:13px}
@@ -329,7 +331,7 @@ def page(title: str, body: str, account: dict | None = None, active: str = "", b
 <meta name=viewport content="width=device-width,initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
 <title>{_e(title)} · {BRAND}</title><style>{_CSS}</style></head><body>
 <div id=nprogress><b></b></div>
 {chrome}
