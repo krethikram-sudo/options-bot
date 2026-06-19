@@ -630,6 +630,17 @@ def get_outlay_report(account_id: int, path: str | None = None) -> dict | None:
     return data
 
 
+def delete_outlay_report(account_id: int, path: str | None = None) -> None:
+    """Clear an account's current report + spend history (used to drop sample data)."""
+    conn = connect(path)
+    try:
+        conn.execute("DELETE FROM outlay_reports WHERE account_id=?", (account_id,))
+        conn.execute("DELETE FROM outlay_history WHERE account_id=?", (account_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def record_outlay_snapshot(account_id: int, report: dict, path: str | None = None,
                            now: float | None = None) -> None:
     """Append a spend snapshot to history on a genuine data refresh (run / sync) —

@@ -383,6 +383,8 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                  '<p class=muted>Connect your data and Outlay maps every dollar to the work that drove it, '
                  'forecasts the quarter, and finds savings — all on metadata, prompts never leave your tools.</p>'
                  '<p style="margin-top:6px"><a class="btn" href="/app/outlay/connect">Connect live (GitHub + Anthropic) →</a>'
+                 '<form method=post action="/app/outlay/sample" style="display:inline;margin-left:10px">'
+                 '<button class="btn sec">See it with sample data</button></form>'
                  '<span class=muted style="margin-left:10px">or paste exports below</span></p></div>')
         return page("Spend", intro + _outlay_connect(), account, active="/app/outlay")
 
@@ -508,7 +510,16 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
             bstrip = (f'<div class=card style="border-left:4px solid #0f6b4f;margin-bottom:16px">'
                       f'<b style="color:#0f6b4f">✓ All {len(statuses)} budgets on track</b> — '
                       f'<a href="/app/outlay/budgets">budgets →</a></div>')
-    body = kpis + sync_line + bstrip + estlink + grid + '<div style="margin-top:16px">' + _outlay_connect(collapsed=True) + '</div>'
+    sample = ""
+    if report.get("_sample"):
+        sample = ('<div class=card style="border-left:4px solid #2563eb;margin-bottom:16px;'
+                  'display:flex;justify-content:space-between;align-items:center">'
+                  '<span><b style="color:#2563eb">Sample data.</b> This is a worked example so you can see '
+                  'the product end-to-end — not your real spend. '
+                  '<a href="/app/outlay/connect">Connect your sources →</a></span>'
+                  '<form method=post action="/app/outlay/clear" style="margin:0">'
+                  '<button class="btn sec sm">Clear sample data</button></form></div>')
+    body = kpis + sample + sync_line + bstrip + estlink + grid + '<div style="margin-top:16px">' + _outlay_connect(collapsed=True) + '</div>'
     return page("Spend", body, account, active="/app/outlay")
 
 
