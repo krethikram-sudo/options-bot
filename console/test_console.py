@@ -1323,3 +1323,22 @@ def test_outlay_budget_ok_when_under(env, client):
     st = outlay_app.budget_statuses(report, [{"id": 1, "scope_type": "overall",
                                               "scope_id": None, "limit_usd": 10000, "period_days": 30}])[0]
     assert st["status"] == "ok" and st["projected_usd"] == 100.0
+
+
+def test_outlay_budget_alert_on_transition(env, client):
+    _, store = env
+    _signup(client, email="alert@x.com")
+    acct = store.get_account_by_email("alert@x.com")
+    # a tiny overall budget → will go over once data lands
+    store.add_outlay_budget(acct["id"], "overall", None, 1.0, 90)
+    fix = _fixtures()
+    issues = (fix / "github_issues.json").read_text()
+    usage = (fix / "anthropic_usage.json").read_text()
+
+    assert client.post("/app/outlay/run", json={"issues": issues, "usage": usage}).json()["ok"]
+    buds = store.list_outlay_budgets(acct["id"])
+    assert buds[0]["last_status"] == "over"   # transition recorded (alert fired; no-op w/o webhooks)
+
+    # the Spend dashboard surfaces the over-budget strip
+    r = client.get("/app/outlay")
+    assert r.status_code == 200 and "over budget" in r.text

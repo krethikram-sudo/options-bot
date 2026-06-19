@@ -253,6 +253,7 @@ _MIGRATIONS = [
     "ALTER TABLE settings ADD COLUMN autopilot_pct INTEGER NOT NULL DEFAULT 100",
     "ALTER TABLE meter ADD COLUMN opportunity_saved REAL NOT NULL DEFAULT 0",
     "ALTER TABLE meter ADD COLUMN caching_saved REAL NOT NULL DEFAULT 0",
+    "ALTER TABLE outlay_budgets ADD COLUMN last_status TEXT",
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -682,6 +683,16 @@ def delete_outlay_budget(account_id: int, budget_id: int, path: str | None = Non
     try:
         conn.execute("DELETE FROM outlay_budgets WHERE id=? AND account_id=?",
                      (int(budget_id), account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def set_outlay_budget_status(budget_id: int, status: str, path: str | None = None) -> None:
+    """Persist a budget's last evaluated status (for alert-on-transition)."""
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE outlay_budgets SET last_status=? WHERE id=?", (status, int(budget_id)))
         conn.commit()
     finally:
         conn.close()
