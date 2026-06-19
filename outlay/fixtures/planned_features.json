@@ -1,10 +1,16 @@
 {
   "items": [
-    {"id": "PROJ-301", "title": "Add team billing dashboard", "description": "Build a per-team billing view with usage charts", "points": 8},
+    {"id": "PROJ-301", "title": "Add team billing dashboard",
+     "requirements": "Per-team billing view with usage charts. Acceptance criteria: 1) admins see spend by team; 2) export to CSV; 3) filter by date range.",
+     "points": 8},
     {"id": "PROJ-302", "title": "Fix checkout timeout on slow networks", "points": 3},
-    {"id": "PROJ-303", "title": "Refactor the auth module", "description": "Restructure session handling", "points": 5},
+    {"id": "PROJ-303", "title": "Refactor the auth module",
+     "requirements": "Restructure session handling and token refresh.", "points": 5},
     {"id": "PROJ-304", "title": "Add unit tests for the payments service", "points": 2},
-    {"id": "PROJ-305", "title": "Implement SSO support for enterprise", "description": "Add SAML login and provisioning", "points": 13},
+    {"id": "PROJ-305", "title": "Implement SSO support for enterprise",
+     "requirements": "Add SAML login and SCIM provisioning. Must support multi-tenant config, OAuth fallback, and an audit log.",
+     "design_docs": [{"title": "SSO design", "body": "New auth service with SAML and SCIM connectors. Requires a schema change and a backfill migration of existing users. Integrations: Okta, Azure AD, third-party IdPs. Feature-flagged rollout."}],
+     "points": 13},
     {"id": "PROJ-306", "title": "Upgrade dependencies and bump CI", "points": 1}
   ]
 }

@@ -138,12 +138,16 @@ python -m outlay.estimate --usage usage.json --issues history.json --plan backlo
 ```
 
 `outlay.estimate` is the **forward** tool: it learns a cost model from realized
-history, then estimates a backlog of *planned* items (a title, a description,
-optionally story points) classified from their text — so a team can budget
-against work that hasn't been built yet. Every estimate carries a p10–p90 band
-and a confidence (`high` = points + a fitted size model; `medium` = class history;
-`low`/declined = too little history to ground). Honest by the same rules as the
-forecast: it costs what it can and counts what it can't.
+history, then estimates a backlog of *planned* items so a team can budget against
+work that hasn't been built yet. The estimate scales with input — it reads each
+item's **title, business requirements, and design docs** (folded from the plan
+JSON), classifying on the title and extracting a complexity tier (S/M/L/XL) from
+the requirements/design (`complexity.py`) to place the item within its class's own
+cost range. Every estimate carries a p10–p90 band and a confidence that rises with
+the input: `high` = story points + a fitted size model; `medium` = sized from
+requirements/design; `low`/declined = bare title or no class history — and it
+reports what to add to tighten it. Honest by the same rules as the forecast: it
+costs what it can and counts what it can't.
 
 The `--json` output is a single versioned object (`schema_version`) covering spend
 + coverage, per-ticket rollups, class distributions, the forecast with per-item

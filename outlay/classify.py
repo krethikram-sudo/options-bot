@@ -67,11 +67,14 @@ def classify(item: WorkItem) -> TaskClass:
         if any(n in labels for n in needles):
             return cls
 
-    text = f"{item.title} {item.description}".strip()
-    if text:
-        for cls, pat in _TEXT_PATTERNS:
-            if pat.search(text):
-                return cls
+    # Title states the intent; the body only elaborates. Match the title first so a
+    # stray keyword in a long design doc (e.g. "migration") can't flip the class.
+    for field_text in (item.title, item.description):
+        ft = (field_text or "").strip()
+        if ft:
+            for cls, pat in _TEXT_PATTERNS:
+                if pat.search(ft):
+                    return cls
 
     branch = (item.branch or "").lower()
     for cls, rx in _BRANCH_VERBS:

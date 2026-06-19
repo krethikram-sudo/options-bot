@@ -76,12 +76,19 @@
     <b>counted, not guessed</b>. An honest "we can't ground this yet" beats a confident wrong number.</div>
 
   <h2>Estimating work that isn't built yet</h2>
-  <p>To budget against a roadmap, you need to cost work that has no history of its own. Outlay estimates a
-    <b>planned backlog</b> — a Jira/Linear feature's title, description, and story-point estimate — by
-    classifying it from its text and applying the cost-per-point model learned from your realized history.
-    Each planned item carries a band and a <b>confidence</b>: <em>high</em> when it has points and a fitted
-    size model, <em>medium</em> on class history alone, and <em>declined</em> when there's too little to
-    ground. So a sprint or epic becomes a compute budget with an honest confidence interval.</p>
+  <p>To budget against a roadmap, you need to cost work that has no history of its own. The estimate is only
+    as good as what you feed it, so Outlay reads three things:</p>
+  <ul>
+    <li><span class="ck">·</span><div><b>Your realized history</b> — teaches the cost model (per-work-type distributions + cost-per-point).</div></li>
+    <li><span class="ck">·</span><div><b>The business requirements</b> — acceptance criteria, integrations, and scope, read from the ticket.</div></li>
+    <li><span class="ck">·</span><div><b>Any design docs</b> — where the real complexity lives (a new service, a migration, multi-tenant work).</div></li>
+  </ul>
+  <p>From those, each planned item is classified, sized, and placed within your team's <b>own</b> historical
+    cost range for that work type — carrying a <b>confidence that rises with the input</b>: <em>high</em>
+    with story points + a fitted size model; <em>medium</em> when sized from requirements and design docs;
+    <em>low / declined</em> on a bare title or a work type with no history. It even tells you what to add to
+    tighten it. So a sprint or epic becomes a compute budget with an honest confidence interval — and the
+    more scope you give it, the tighter that interval gets.</p>
 
   <h2>What makes it more — and less — accurate</h2>
   <p><b>More accurate:</b> more history per work type · stable workflows and model mix · estimating at the
