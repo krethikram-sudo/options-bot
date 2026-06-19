@@ -857,7 +857,7 @@ def status_page(components: list[dict]) -> str:
       <thead><tr><th>Component</th><th>Status</th><th></th></tr></thead>
       <tbody>{rows}</tbody></table></div>
     <p class="small muted" style="margin-top:14px">Checked just now. For incident history or an
-    SLA, contact <a href="mailto:krethikram@gmail.com">krethikram@gmail.com</a>.</p>"""
+    SLA, contact <a href="mailto:hello@outlay-ai.com">hello@outlay-ai.com</a>.</p>"""
     return page("Status", body)
 
 
