@@ -1344,6 +1344,33 @@ def test_outlay_cursor_key_encrypted_at_rest(env, client):
         assert raw["cursor_key"].startswith("enc:") and "key_supersecret" not in raw["cursor_key"]
 
 
+def test_outlay_people_spend_rollup_and_dashboard(env, client):
+    _, store = env
+    _signup(client, email="ppl@x.com")
+    fix = _fixtures()
+    issues = (fix / "github_issues.json").read_text()
+    usage = (fix / "anthropic_usage.json").read_text()
+    assert client.post("/app/outlay/run", json={"issues": issues, "usage": usage}).json()["ok"]
+
+    rep = store.get_outlay_report(store.get_account_by_email("ppl@x.com")["id"])
+    people = rep.get("people")
+    assert people and people[0]["user"] == "bob@acme.dev"          # biggest spender first
+    assert people[0]["spent_usd"] >= people[1]["spent_usd"]        # sorted desc
+    assert people[0]["top_model"] and 0 < people[0]["share"] <= 1  # model + share present
+
+    page = client.get("/app/outlay").text
+    assert "Spend by engineer" in page and "bob@acme.dev" in page
+    # the unattributed bucket is excluded from the engineer card
+    assert "(unattributed)" not in page
+
+
+def test_outlay_people_spend_handles_no_users():
+    from console import outlay_app
+    # build_report tolerates usage with no resolvable users (people list still valid)
+    rep = outlay_app.build_report('{"issues": []}', '{"data": []}')
+    assert isinstance(rep.get("people"), list)
+
+
 def test_outlay_accuracy_empty_then_populated(env, client):
     _signup(client, email="acc@x.com")
     # before any data → honest "not enough yet" state, not a fake number

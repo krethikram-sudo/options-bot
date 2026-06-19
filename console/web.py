@@ -443,6 +443,26 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     save_card = (f'<div class=card><h3 style="margin:.2em 0 .6em">Optimization — route down with proof</h3>'
                  f'<table class=tbl style="width:100%"><tbody>{rrows}</tbody></table></div>')
 
+    # Spend by engineer (from Anthropic/Cursor user attribution)
+    people = [p for p in (report.get("people") or []) if p.get("user") != "(unattributed)"][:8]
+    people_card = ""
+    if people:
+        pmax = max((p.get("spent_usd", 0) for p in people), default=1) or 1
+        prows = "".join(
+            f'<tr><td>{_e(p.get("user"))}</td>'
+            f'<td class=mono style="font-size:12px">{_e(p.get("top_model"))}</td>'
+            f'<td style="text-align:right">{money(p.get("spent_usd",0))}</td>'
+            f'<td class=muted style="text-align:right;font-size:12px">{p.get("share",0)*100:.0f}%</td>'
+            f'<td style="width:110px"><div style="height:6px;border-radius:4px;background:#eee;overflow:hidden">'
+            f'<span style="display:block;height:100%;width:{(p.get("spent_usd",0)/pmax)*100:.0f}%;background:#13203a"></span></div></td></tr>'
+            for p in people)
+        people_card = (f'<div class=card><h3 style="margin:.2em 0 .6em">Spend by engineer '
+                       f'<span class=muted style="font-weight:400;font-size:13px">· team-fidelity (user→cost)</span></h3>'
+                       f'<table class=tbl style="width:100%"><thead><tr>'
+                       f'<th style="text-align:left">Engineer</th><th style="text-align:left">Top model</th>'
+                       f'<th style="text-align:right">Spend</th><th style="text-align:right">Share</th><th></th>'
+                       f'</tr></thead><tbody>{prows}</tbody></table></div>')
+
     # Backlog estimate (optional)
     est_card = ""
     if est:
@@ -459,7 +479,9 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                     f'<table class=tbl style="width:100%;margin-top:8px"><tbody>{erows}</tbody></table></div>')
 
     grid = (f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">{spend_card}{fc_card}</div>'
-            f'<div style="margin-top:16px">{save_card}</div>' + (f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""))
+            f'<div style="margin-top:16px">{save_card}</div>'
+            + (f'<div style="margin-top:16px">{people_card}</div>' if people_card else "")
+            + (f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""))
     # Sync status — when the data last refreshed and whether it's automatic.
     conn = conn or {}
     asy = conn.get("auto_sync_hours") or 0
