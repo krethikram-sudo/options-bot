@@ -459,6 +459,23 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     spend_card = (f'<div class=card>{spark_hdr}'
                   f'<table class=tbl style="width:100%"><tbody>{trows}</tbody></table></div>')
 
+    # Spend by work type (FinOps view)
+    cls = report.get("class_spend") or []
+    clsmax = max((c.get("spent_usd", 0) for c in cls), default=1) or 1
+    crows = "".join(
+        f'<tr><td>{_e(c.get("task_class"))}</td>'
+        f'<td class=muted style="text-align:right;font-size:12px">{c.get("tickets",0)}</td>'
+        f'<td style="text-align:right">{money(c.get("spent_usd",0))}</td>'
+        f'<td class=muted style="text-align:right;font-size:12px">{c.get("share",0)*100:.0f}%</td>'
+        f'<td style="width:90px"><div style="height:6px;border-radius:4px;background:#eee;overflow:hidden">'
+        f'<span style="display:block;height:100%;width:{(c.get("spent_usd",0)/clsmax)*100:.0f}%;background:#13203a"></span></div></td></tr>'
+        for c in cls) or '<tr><td colspan=5 class=muted>No work-type spend yet.</td></tr>'
+    class_card = (f'<div class=card><h3 style="margin:.2em 0 .6em">Spend by work type</h3>'
+                  f'<table class=tbl style="width:100%"><thead><tr>'
+                  f'<th style="text-align:left">Work type</th><th style="text-align:right">Tickets</th>'
+                  f'<th style="text-align:right">Spend</th><th style="text-align:right">Share</th><th></th>'
+                  f'</tr></thead><tbody>{crows}</tbody></table></div>')
+
     # Forecast + accuracy
     acc = ""
     if cal.get("n_evaluated", 0) > 0:
@@ -517,7 +534,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                     f'<table class=tbl style="width:100%;margin-top:8px"><tbody>{erows}</tbody></table></div>')
 
     grid = (f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">{spend_card}{fc_card}</div>'
-            f'<div style="margin-top:16px">{save_card}</div>'
+            f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">{class_card}{save_card}</div>'
             + (f'<div style="margin-top:16px">{people_card}</div>' if people_card else "")
             + (f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""))
     # Sync status — when the data last refreshed and whether it's automatic.
@@ -539,6 +556,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                '<span style="flex:1"></span>'
                '<span class=muted style="font-size:12.5px">Export CSV:</span>'
                '<a href="/app/outlay/export.csv?view=tickets">tickets</a>'
+               '<a href="/app/outlay/export.csv?view=classes">work types</a>'
                '<a href="/app/outlay/export.csv?view=people">engineers</a>'
                '<a href="/app/outlay/export.csv?view=savings">savings</a></div>')
     bstrip = ""

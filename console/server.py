@@ -654,14 +654,14 @@ async def app_outlay_budgets_delete(request: Request):
 
 @app.get("/app/outlay/export.csv")
 def app_outlay_export(request: Request, view: str = "tickets"):
-    """Download a CSV slice of the report (tickets / people / savings) for finance."""
+    """Download a CSV slice of the report (tickets/people/classes/savings) for finance."""
     acct, redir = _require(request)
     if redir:
         return redir
     report = store.get_outlay_report(acct["id"])
     if not report:
         return _redirect("/app/outlay")
-    if view not in ("tickets", "people", "savings"):
+    if view not in ("tickets", "people", "classes", "savings"):
         view = "tickets"
     csv_text = outlay_app.report_csv(report, view)
     return PlainTextResponse(csv_text, media_type="text/csv", headers={
