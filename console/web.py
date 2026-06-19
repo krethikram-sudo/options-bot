@@ -418,8 +418,60 @@ def outlay_page(account: dict, report: dict | None) -> str:
 
     grid = (f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">{spend_card}{fc_card}</div>'
             f'<div style="margin-top:16px">{save_card}</div>' + (f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""))
-    body = kpis + grid + '<div style="margin-top:16px">' + _outlay_connect(collapsed=True) + '</div>'
+    estlink = '<div style="margin:-4px 0 16px"><a href="/app/outlay/estimate">Estimate your backlog →</a></div>'
+    body = kpis + estlink + grid + '<div style="margin-top:16px">' + _outlay_connect(collapsed=True) + '</div>'
     return page("Spend", body, account, active="/app/outlay")
+
+
+def estimate_backlog_page(account: dict, report: dict | None) -> str:
+    """Budget planned work against the cost model learned from connected history."""
+    if not (report and report.get("_raw")):
+        body = ('<div class=hero><h1>Estimate your backlog.</h1>'
+                '<p class=muted>Budget planned work before it\'s built. Connect your data on the '
+                '<a href="/app/outlay">Spend</a> tab first so Outlay can learn your cost model — then '
+                'paste a backlog here.</p></div>'
+                '<div class=card><a class="btn" href="/app/outlay">Go to Spend →</a></div>')
+        return page("Estimate", body, account, active="/app/outlay")
+
+    form = """<div class=card><h3 style="margin:.2em 0 .4em">Paste a planned backlog</h3>
+      <p class=muted style="margin:.2em 0 .8em">A JSON list of items — each with a <b>title</b>, and ideally
+        <b>requirements</b>, <b>design_docs</b>, and/or story <b>points</b>. The more scope you give, the tighter the estimate.</p>
+      <textarea id=ol_plan rows=6 placeholder='{"items":[{"id":"PROJ-1","title":"Add SSO","requirements":"SAML + SCIM, multi-tenant, audit log","points":8}]}'></textarea>
+      <button class="btn" style="margin-top:10px" onclick="estRun(this)">Estimate</button>
+      <script>function estRun(btn){btn.classList.add('loading');btn.disabled=true;
+        fetch('/app/outlay/estimate/run',{method:'POST',headers:{'content-type':'application/json'},
+          body:JSON.stringify({planned:document.getElementById('ol_plan').value})})
+        .then(function(r){return r.json();}).then(function(d){if(d.ok){location.reload();}else{
+          btn.classList.remove('loading');btn.disabled=false;alert(d.error||'Could not estimate.');}})
+        .catch(function(){btn.classList.remove('loading');btn.disabled=false;alert('Network error.');});}
+      </script></div>"""
+
+    est = report.get("estimate")
+    result = ""
+    if est:
+        rows = ""
+        for e in est.get("items", []):
+            if e.get("costable"):
+                val = money(e.get("expected_usd", 0))
+                band = f'{money(e.get("low_usd", 0))}–{money(e.get("high_usd", 0))}'
+                typ = _e(e.get("task_class")) + (f' · {_e(e.get("complexity_tier"))}' if e.get("complexity_tier") else "")
+                conf = _e(e.get("confidence"))
+            else:
+                val, band, typ, conf = "—", "no history", _e(e.get("task_class")), "declined"
+            rows += (f'<tr><td class=mono>{_e(e.get("id"))}</td><td>{typ}</td>'
+                     f'<td style="text-align:right">{val}</td><td class=muted style="font-size:12px">{band}</td>'
+                     f'<td class=muted style="font-size:12px">{conf}</td></tr>')
+        tighten = ('<p class=muted style="font-size:12.5px;margin-top:8px">To tighten the estimate, add: '
+                   + _e("; ".join(est.get("tighten", []))) + '</p>') if est.get("tighten") else ""
+        result = (f'<div class=card style="margin-top:16px"><h3 style="margin:.2em 0 .4em">Backlog estimate</h3>'
+                  f'<div style="font-size:28px;font-weight:700">{money(est.get("expected_usd", 0))}</div>'
+                  f'<div class=muted>likely {money(est.get("low_usd", 0))}–{money(est.get("high_usd", 0))} · '
+                  f'{est.get("items_costed", 0)} estimated, {est.get("items_unknown", 0)} declined</div>'
+                  f'<table class=tbl style="width:100%;margin-top:10px"><thead><tr>'
+                  f'<th style="text-align:left">Item</th><th style="text-align:left">Type</th>'
+                  f'<th style="text-align:right">Estimate</th><th style="text-align:left">Range</th>'
+                  f'<th style="text-align:left">Confidence</th></tr></thead><tbody>{rows}</tbody></table>{tighten}</div>')
+    return page("Estimate", form + result, account, active="/app/outlay")
 
 
 # --------------------------------------------------------------------------- #
