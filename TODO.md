@@ -38,8 +38,18 @@ Live URLs:
 
 ## 🆕 Outlay (active brand/site)
 
-Outlay = the spend-attribution + forecasting product; ModelPilot routing is the embedded
-optimization engine within it. Marketing site rebranded to **Outlay** and moved to the brand domain.
+Outlay = the spend-attribution + forecasting product. **Routing/optimization (the ModelPilot
+engine) is parked for now** — we lead with the core value prop (see AI spend mapped to work,
+forecast it, budget it) and add routing back later. Marketing site rebranded to **Outlay**.
+
+- [x] **Parked routing/optimization in the console (reversible).** Removed the routing surfaces from
+      the customer UI: nav is now just **Spend + Settings** (Configuration + Billing tabs hidden); `/app`
+      (routing home) redirects to Spend; the dashboard's "Savings opportunity" KPI + "route down with proof"
+      card are gone (replaced KPI with "Open work items"); savings CSV link removed. Pilots run **free** —
+      trial-expiry billing gate disabled. All engine/brain code + the routes are left intact, so bringing
+      routing back is a one-PR revert. Post-login (password/SSO/member/signup) all land on Spend. 121 tests
+      pass. **Follow-up:** the marketing site still sells routing ("Outlay bends spend down", autopilot) —
+      decide whether to de-emphasize that copy to match the parked scope.
 
 - [x] Site live on **https://outlay-ai.com** (Cloudflare Pages custom domain; registered at Cloudflare,
       apex + www CNAME → `modelpilot.pages.dev`). Canonical/OG flipped to outlay-ai.com, extensionless

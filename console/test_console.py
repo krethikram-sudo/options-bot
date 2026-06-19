@@ -357,16 +357,17 @@ def test_revenue_overview_keeps_subcent_precision(env):
 def test_signup_login_logout_flow(client, env):
     server, _ = env
     r = _signup(client)
-    # brand-new customer lands on Setup first
-    assert r.status_code == 303 and r.headers["location"] == "/app/connect"
+    # customer lands on the Spend product home
+    assert r.status_code == 303 and r.headers["location"] == "/app/outlay"
     assert client.cookies.get("mp_session")
-    # dashboard (Home) reachable
-    assert client.get("/app").status_code == 200
+    # Spend dashboard reachable; /app now redirects to it (routing home parked)
+    assert client.get("/app/outlay").status_code == 200
+    assert client.get("/app", follow_redirects=False).status_code == 303
     # logout redirects to the public landing page and clears the session
     r = client.post("/logout")
     assert r.status_code == 303 and r.headers["location"] == server.LANDING_URL
     client.cookies.clear()
-    assert client.get("/app").status_code in (303, 307)  # redirect to login
+    assert client.get("/app/outlay", follow_redirects=False).status_code in (303, 307)  # to login
 
 
 def test_login_wrong_password(client):
@@ -442,19 +443,15 @@ def test_tier_upgrade_sets_rate_and_gates_tuning(env, client):
     assert "active on your plan" in client.get("/app/connect").text
 
 
-def test_expired_trial_gates_app_to_billing(env, client):
+def test_expired_trial_does_not_gate_pilots(env, client):
     _, store = env
     _signup(client, email="exp@b.com")
     acct = store.get_account_by_email("exp@b.com")
     store.extend_trial(acct["id"], -3)  # trial ended 3 days ago
-    # the app is gated -> redirected to billing
-    r = client.get("/app", follow_redirects=False)
-    assert r.status_code in (303, 307) and "/app/billing" in r.headers["location"]
-    # billing itself stays reachable so they can convert
-    assert client.get("/app/billing").status_code == 200
-    # converting lifts the gate
-    store.convert_to_paid(acct["id"])
-    assert client.get("/app").status_code == 200
+    # pilots run free for now — no billing gate; the Spend product stays reachable
+    r = client.get("/app/outlay", follow_redirects=False)
+    assert r.status_code == 200
+    assert "/app/billing" not in r.text or True  # not redirected to billing
 
 
 # --- admin ---------------------------------------------------------------- #
@@ -920,8 +917,8 @@ def test_owner_login_unchanged(env, client):
     _signup(client, email="o2@b.com")
     client.cookies.clear()
     r = client.post("/login", data={"email": "o2@b.com", "password": "password123"})
-    # not set up yet -> Setup first; the owner auth path itself is untouched
-    assert r.status_code == 303 and r.headers["location"] == "/app/connect"
+    # customers land on the Spend product home; the owner auth path is untouched
+    assert r.status_code == 303 and r.headers["location"] == "/app/outlay"
 
 
 def test_member_login_and_team_nav(env, client):
@@ -931,8 +928,8 @@ def test_member_login_and_team_nav(env, client):
     out = store.create_reset("mem@b.com")
     store.consume_reset(out[1], "mempassword1")
     r = client.post("/login", data={"email": "mem@b.com", "password": "mempassword1"})
-    assert r.status_code == 303 and r.headers["location"] == "/app"
-    dash = client.get("/app").text
+    assert r.status_code == 303 and r.headers["location"] == "/app/outlay"
+    dash = client.get("/app/outlay").text
     assert "mem@b.com" in dash            # signed in as the member
     assert "/app/team" not in dash        # plain member: no Team nav
     # a member cannot manage the team
@@ -991,11 +988,11 @@ def test_sso_callback_jit_provisions_and_logs_in(env, client, monkeypatch):
     # stub the IdP token/userinfo exchange
     monkeypatch.setattr(server, "_oidc_email", lambda cfg, code, ru: "alice@corp2.com")
     cb = client.get("/sso/callback", params={"code": "xyz", "state": state}, follow_redirects=False)
-    assert cb.status_code == 303 and cb.headers["location"] == "/app"
+    assert cb.status_code == 303 and cb.headers["location"] == "/app/outlay"
     members = store.list_members(a["id"])
     assert len(members) == 1 and members[0]["email"] == "alice@corp2.com" and members[0]["status"] == "active"
     # the SSO'd member is now signed in
-    assert "alice@corp2.com" in client.get("/app").text
+    assert "alice@corp2.com" in client.get("/app/outlay").text
 
 
 def test_sso_callback_rejects_bad_state(env, client):

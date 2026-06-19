@@ -235,11 +235,9 @@ def _fmt_date(ts) -> str:
 
 def page(title: str, body: str, account: dict | None = None, active: str = "") -> str:
     if account:
-        # Customer-first: a few clear destinations. Logs live inside Home,
-        # Team/SSO inside Settings — reached contextually, not as top-level tabs.
-        items = [("/app", "Home"), ("/app/outlay", "Spend"),
-                 ("/app/connect", "Configuration"),
-                 ("/app/settings", "Settings"), ("/app/billing", "Billing")]
+        # Routing/optimization surfaces (Configuration, Billing) are parked for now;
+        # the product is spend attribution + forecasting. Team/SSO live in Settings.
+        items = [("/app/outlay", "Spend"), ("/app/settings", "Settings")]
         links = "".join(f'<a class="{"on" if active == href else ""}" href="{href}">{_e(label)}</a>'
                         for href, label in items)
         admin = ""
@@ -433,13 +431,14 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     cov = sp.get("ticket_coverage", 0.0)
     savings = sum(r.get("projected_savings_usd", 0) for r in recs)
     cov_color = "#0f6b4f" if cov >= 0.6 else "#b45309"
+    open_items = fc.get("items_costed", 0) + fc.get("items_unclassified", 0)
     kpis = (
         '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0 0 18px">'
         + _kpi("AI spend", money(sp.get("total_usd", 0)), _trend_delta(history or []), sub_raw=True)
         + _kpi("Mapped to a ticket", f"{cov*100:.0f}%", money(sp.get("attributed_to_ticket_usd", 0)) + " attributed", cov_color)
         + _kpi("Forecast · open work", money(fc.get("expected_usd", 0)),
                f"likely {money(fc.get('low_usd', 0))}–{money(fc.get('high_usd', 0))}")
-        + _kpi("Savings opportunity", money(savings), f"{len(recs)} work type(s)", "#0f6b4f")
+        + _kpi("Open work items", str(open_items), f"{fc.get('items_costed', 0)} costed from history")
         + "</div>")
 
     # Spend by ticket
@@ -487,16 +486,9 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                f'<div class=muted>likely {money(fc.get("low_usd",0))}–{money(fc.get("high_usd",0))} · '
                f'{fc.get("items_costed",0)} items costed, {fc.get("items_unclassified",0)} without history</div>{acc}</div>')
 
-    # Savings recs
-    rrows = "".join(
-        f'<tr><td>{_e(r.get("task_class"))}</td>'
-        f'<td class=mono style="font-size:12px">{_e(r.get("incumbent_model"))} → {_e(r.get("candidate_model"))}</td>'
-        f'<td style="text-align:right;font-weight:600;color:#0a4f3a">{money(r.get("projected_savings_usd",0))}</td>'
-        f'<td><span class="pill {"ok" if r.get("confidence")=="validated" else "warn"}">'
-        f'{"validated" if r.get("confidence")=="validated" else "needs validation"}</span></td></tr>'
-        for r in recs) or '<tr><td colspan=4 class=muted>No downgrade opportunities found.</td></tr>'
-    save_card = (f'<div class=card><h3 style="margin:.2em 0 .6em">Optimization — route down with proof</h3>'
-                 f'<table class=tbl style="width:100%"><tbody>{rrows}</tbody></table></div>')
+    # Routing/optimization recommendations are parked for now — the product is
+    # spend attribution + forecasting. (The engine still computes recs; we just
+    # don't surface the "route down" card. Re-add when routing returns.)
 
     # Spend by engineer (from Anthropic/Cursor user attribution)
     people = [p for p in (report.get("people") or []) if p.get("user") != "(unattributed)"][:8]
@@ -534,7 +526,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                     f'<table class=tbl style="width:100%;margin-top:8px"><tbody>{erows}</tbody></table></div>')
 
     grid = (f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">{spend_card}{fc_card}</div>'
-            f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">{class_card}{save_card}</div>'
+            f'<div style="margin-top:16px">{class_card}</div>'
             + (f'<div style="margin-top:16px">{people_card}</div>' if people_card else "")
             + (f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""))
     # Sync status — when the data last refreshed and whether it's automatic.
@@ -557,8 +549,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                '<span class=muted style="font-size:12.5px">Export CSV:</span>'
                '<a href="/app/outlay/export.csv?view=tickets">tickets</a>'
                '<a href="/app/outlay/export.csv?view=classes">work types</a>'
-               '<a href="/app/outlay/export.csv?view=people">engineers</a>'
-               '<a href="/app/outlay/export.csv?view=savings">savings</a></div>')
+               '<a href="/app/outlay/export.csv?view=people">engineers</a></div>')
     bstrip = ""
     if statuses:
         over = [s for s in statuses if s["status"] == "over"]
