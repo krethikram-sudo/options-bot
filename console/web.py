@@ -335,15 +335,49 @@ def _outlay_connect(error: str = "", collapsed: bool = False) -> str:
     </details>"""
 
 
-def _kpi(label: str, value: str, sub: str = "", color: str = "") -> str:
+def _sparkline(values: list[float], w: int = 120, h: int = 28, color: str = "#13203a") -> str:
+    """A tiny inline SVG sparkline of recent spend snapshots. Empty if <2 points."""
+    vals = [float(v) for v in values if v is not None]
+    if len(vals) < 2:
+        return ""
+    lo, hi = min(vals), max(vals)
+    span = (hi - lo) or 1.0
+    n = len(vals)
+    pts = " ".join(
+        f"{(i/(n-1))*w:.1f},{h - ((v-lo)/span)*(h-4) - 2:.1f}" for i, v in enumerate(vals))
+    last_x = w
+    last_y = h - ((vals[-1]-lo)/span)*(h-4) - 2
+    return (f'<svg width="{w}" height="{h}" viewBox="0 0 {w} {h}" style="display:block">'
+            f'<polyline points="{pts}" fill="none" stroke="{color}" stroke-width="1.5" '
+            f'stroke-linejoin="round" stroke-linecap="round"/>'
+            f'<circle cx="{last_x-0.5:.1f}" cy="{last_y:.1f}" r="2" fill="{color}"/></svg>')
+
+
+def _trend_delta(history: list[dict]) -> str:
+    """'↑ 12% vs last sync' / '↓ 8% vs last sync' from the last two snapshots."""
+    if not history or len(history) < 2:
+        return "this window"
+    cur, prev = history[-1].get("total_usd", 0), history[-2].get("total_usd", 0)
+    if prev <= 0:
+        return "this window"
+    pct = (cur - prev) / prev * 100
+    if abs(pct) < 0.5:
+        return "flat vs last sync"
+    arrow, color = ("↑", "#b3261e") if pct > 0 else ("↓", "#0f6b4f")
+    return f'<span style="color:{color}">{arrow} {abs(pct):.0f}% vs last sync</span>'
+
+
+def _kpi(label: str, value: str, sub: str = "", color: str = "", sub_raw: bool = False) -> str:
     style = f' style="color:{color}"' if color else ""
-    sub = f'<div class=muted style="font-size:12px;margin-top:2px">{_e(sub)}</div>' if sub else ""
+    sub_html = sub if sub_raw else _e(sub)
+    sub = f'<div class=muted style="font-size:12px;margin-top:2px">{sub_html}</div>' if sub else ""
     return (f'<div class=card style="padding:16px 18px"><div class=muted '
             f'style="font-size:11px;letter-spacing:.04em;text-transform:uppercase">{_e(label)}</div>'
             f'<div style="font-size:26px;font-weight:700;margin-top:6px"{style}>{value}</div>{sub}</div>')
 
 
-def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None = None) -> str:
+def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None = None,
+                history: list[dict] | None = None, conn: dict | None = None) -> str:
     if not report:
         intro = ('<div class=hero><h1>Your AI spend, on your roadmap.</h1>'
                  '<p class=muted>Connect your data and Outlay maps every dollar to the work that drove it, '
@@ -363,7 +397,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     cov_color = "#0f6b4f" if cov >= 0.6 else "#b45309"
     kpis = (
         '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0 0 18px">'
-        + _kpi("AI spend", money(sp.get("total_usd", 0)), "this window")
+        + _kpi("AI spend", money(sp.get("total_usd", 0)), _trend_delta(history or []), sub_raw=True)
         + _kpi("Mapped to a ticket", f"{cov*100:.0f}%", money(sp.get("attributed_to_ticket_usd", 0)) + " attributed", cov_color)
         + _kpi("Forecast · open work", money(fc.get("expected_usd", 0)),
                f"likely {money(fc.get('low_usd', 0))}–{money(fc.get('high_usd', 0))}")
@@ -379,7 +413,12 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
         f'<td style="width:120px"><div style="height:6px;border-radius:4px;background:#eee;overflow:hidden">'
         f'<span style="display:block;height:100%;width:{(t.get("cost_usd",0)/maxc)*100:.0f}%;background:#13203a"></span></div></td></tr>'
         for t in tickets) or '<tr><td colspan=4 class=muted>No ticket-attributed spend yet.</td></tr>'
-    spend_card = (f'<div class=card><h3 style="margin:.2em 0 .6em">Where your AI spend went</h3>'
+    spark = _sparkline([h.get("total_usd", 0) for h in (history or [])])
+    spark_hdr = (f'<div style="display:flex;justify-content:space-between;align-items:center;margin:.2em 0 .6em">'
+                 f'<h3 style="margin:0">Where your AI spend went</h3>'
+                 f'<span title="Spend over your last {len(history or [])} refreshes">{spark}</span></div>'
+                 if spark else '<h3 style="margin:.2em 0 .6em">Where your AI spend went</h3>')
+    spend_card = (f'<div class=card>{spark_hdr}'
                   f'<table class=tbl style="width:100%"><tbody>{trows}</tbody></table></div>')
 
     # Forecast + accuracy
@@ -420,6 +459,15 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
 
     grid = (f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">{spend_card}{fc_card}</div>'
             f'<div style="margin-top:16px">{save_card}</div>' + (f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""))
+    # Sync status — when the data last refreshed and whether it's automatic.
+    conn = conn or {}
+    asy = conn.get("auto_sync_hours") or 0
+    cadence = {24: "auto-syncs daily", 168: "auto-syncs weekly"}.get(asy, "manual sync")
+    last = _fmt_date(conn.get("synced_at")) if conn.get("synced_at") else (
+        _fmt_date(report.get("_generated_ts")) if report.get("_generated_ts") else "—")
+    sync_line = (f'<div class=muted style="font-size:12.5px;margin:-2px 0 12px">'
+                 f'Last refreshed <b>{last}</b> · {cadence} · '
+                 f'<a href="/app/outlay/connect">manage connection →</a></div>')
     estlink = ('<div style="margin:-4px 0 16px"><a href="/app/outlay/estimate">Estimate your backlog →</a>'
                '<a href="/app/outlay/budgets" style="margin-left:16px">Budgets &amp; guardrails →</a></div>')
     bstrip = ""
@@ -436,7 +484,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
             bstrip = (f'<div class=card style="border-left:4px solid #0f6b4f;margin-bottom:16px">'
                       f'<b style="color:#0f6b4f">✓ All {len(statuses)} budgets on track</b> — '
                       f'<a href="/app/outlay/budgets">budgets →</a></div>')
-    body = kpis + bstrip + estlink + grid + '<div style="margin-top:16px">' + _outlay_connect(collapsed=True) + '</div>'
+    body = kpis + sync_line + bstrip + estlink + grid + '<div style="margin-top:16px">' + _outlay_connect(collapsed=True) + '</div>'
     return page("Spend", body, account, active="/app/outlay")
 
 
