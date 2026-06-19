@@ -222,8 +222,8 @@ CREATE TABLE IF NOT EXISTS outlay_connections (
     account_id INTEGER PRIMARY KEY,   -- one connection config per account (upserted)
     github_owner TEXT,
     github_repo TEXT,
-    github_token TEXT,                -- read-only PAT; TODO encrypt at rest
-    anthropic_key TEXT,               -- admin key; TODO encrypt at rest
+    github_token TEXT,                -- read-only PAT; encrypted at rest (secret_box)
+    anthropic_key TEXT,               -- admin key; encrypted at rest (secret_box)
     synced_at REAL
 );
 CREATE TABLE IF NOT EXISTS outlay_budgets (
@@ -632,9 +632,11 @@ def save_outlay_connection(account_id: int, github_owner: str | None = None,
     def _txt(v):  # non-secret: blank clears
         return (v.strip() if isinstance(v, str) else v) or None
 
-    def _sec(v, key):  # secret: blank preserves
+    def _sec(v, key):  # secret: blank preserves (cur is already decrypted)
         return (v or "").strip() or cur.get(key)
 
+    from . import secret_box
+    enc = secret_box.encrypt
     conn = connect(path)
     try:
         conn.execute(
@@ -643,23 +645,32 @@ def save_outlay_connection(account_id: int, github_owner: str | None = None,
             " jira_base_url, jira_email, jira_token, jira_jql, linear_key, synced_at)"
             " VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
             (account_id, _txt(tracker) or cur.get("tracker") or "github",
-             _txt(github_owner), _txt(github_repo), _sec(github_token, "github_token"),
-             _sec(anthropic_key, "anthropic_key"),
-             _txt(jira_base_url), _txt(jira_email), _sec(jira_token, "jira_token"),
-             _txt(jira_jql), _sec(linear_key, "linear_key"), cur.get("synced_at")))
+             _txt(github_owner), _txt(github_repo), enc(_sec(github_token, "github_token")),
+             enc(_sec(anthropic_key, "anthropic_key")),
+             _txt(jira_base_url), _txt(jira_email), enc(_sec(jira_token, "jira_token")),
+             _txt(jira_jql), enc(_sec(linear_key, "linear_key")), cur.get("synced_at")))
         conn.commit()
     finally:
         conn.close()
 
 
+_OUTLAY_SECRETS = ("github_token", "anthropic_key", "jira_token", "linear_key")
+
+
 def get_outlay_connection(account_id: int, path: str | None = None) -> dict | None:
+    from . import secret_box
     conn = connect(path)
     try:
         r = conn.execute("SELECT * FROM outlay_connections WHERE account_id=?",
                          (account_id,)).fetchone()
     finally:
         conn.close()
-    return dict(r) if r else None
+    if not r:
+        return None
+    d = dict(r)
+    for k in _OUTLAY_SECRETS:  # decrypt for use (and to preserve on re-save)
+        d[k] = secret_box.decrypt(d.get(k))
+    return d
 
 
 def mark_outlay_synced(account_id: int, path: str | None = None,
