@@ -1344,6 +1344,26 @@ def test_outlay_cursor_key_encrypted_at_rest(env, client):
         assert raw["cursor_key"].startswith("enc:") and "key_supersecret" not in raw["cursor_key"]
 
 
+def test_outlay_class_spend_and_dashboard(env, client):
+    _, store = env
+    _signup(client, email="cls@x.com")
+    fix = _fixtures()
+    assert client.post("/app/outlay/run", json={
+        "issues": (fix / "github_issues.json").read_text(),
+        "usage": (fix / "anthropic_usage.json").read_text()}).json()["ok"]
+    rep = store.get_outlay_report(store.get_account_by_email("cls@x.com")["id"])
+    cs = rep.get("class_spend")
+    assert cs and cs[0]["spent_usd"] >= cs[-1]["spent_usd"]      # sorted desc
+    assert all(0 <= c["share"] <= 1 and c["tickets"] >= 1 for c in cs)
+
+    page = client.get("/app/outlay").text
+    assert "Spend by work type" in page
+    # CSV export for work types
+    r = client.get("/app/outlay/export.csv?view=classes")
+    assert r.status_code == 200 and r.text.splitlines()[0] == "work_type,tickets,spend_usd,share_pct"
+    assert len(r.text.splitlines()) > 1
+
+
 def test_outlay_budget_alert_emails_owner(env, client, monkeypatch):
     from console import notify
     calls = []

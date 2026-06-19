@@ -129,6 +129,7 @@ def _report(work, result, stats, size_models, planned_items=None, window_days: i
     data = to_dict(result, stats, fc, find_anomalies(result, stats), recs,
                    calibration=cal, window_days=window_days)
     data["people"] = _people_spend(result)  # per-engineer spend rollup
+    data["class_spend"] = class_spend(data)  # spend by work type (FinOps view)
     data["_model"] = _serialize_model(stats, size_models)  # for the backlog estimator
     if planned_items:
         data["estimate"] = _serialize_plan(estimate_plan(planned_items, stats, size_models))
@@ -186,6 +187,26 @@ def _project_key(ticket_id) -> str:
     GitHub issue numbers have no prefix, so they roll up under the empty key."""
     s = str(ticket_id or "")
     return s.rsplit("-", 1)[0] if "-" in s else ""
+
+
+def class_spend(report: dict) -> list[dict]:
+    """Spend grouped by work type (feature / bugfix / refactor / …), biggest first
+    — the core FinOps view, and the same axis the savings recs act on."""
+    if not report:
+        return []
+    total = (report.get("spend", {}) or {}).get("total_usd", 0.0)
+    agg: dict[str, dict] = {}
+    for t in report.get("tickets", []):
+        tc = t.get("task_class") or "unknown"
+        a = agg.setdefault(tc, {"task_class": tc, "spent_usd": 0.0, "tickets": 0})
+        a["spent_usd"] += t.get("cost_usd", 0.0)
+        a["tickets"] += 1
+    out = []
+    for a in sorted(agg.values(), key=lambda x: x["spent_usd"], reverse=True):
+        out.append({"task_class": a["task_class"], "spent_usd": round(a["spent_usd"], 2),
+                    "tickets": a["tickets"],
+                    "share": round(a["spent_usd"] / total, 4) if total else 0.0})
+    return out
 
 
 def project_spend(report: dict) -> list[dict]:
@@ -251,6 +272,11 @@ def report_csv(report: dict, view: str = "tickets") -> str:
         for p in report.get("people", []):
             w.writerow([p.get("user"), p.get("spent_usd"), round(p.get("share", 0) * 100, 1),
                         p.get("top_model"), p.get("events")])
+    elif view == "classes":
+        w.writerow(["work_type", "tickets", "spend_usd", "share_pct"])
+        for c in report.get("class_spend", []):
+            w.writerow([c.get("task_class"), c.get("tickets"), c.get("spent_usd"),
+                        round(c.get("share", 0) * 100, 1)])
     elif view == "savings":
         w.writerow(["work_type", "from_model", "to_model", "projected_savings_usd", "confidence"])
         for r in report.get("recommendations", []):
