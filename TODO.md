@@ -79,6 +79,10 @@ optimization engine within it. Marketing site rebranded to **Outlay** and moved 
       spend snapshot (`outlay_history`); the Spend dashboard now shows a "↑/↓ % vs last sync" delta on the
       AI-spend KPI, an inline SVG sparkline of recent spend, and a "Last refreshed · cadence" status line.
       Estimate re-saves don't pollute history. +tests (108 pass).
+- [x] **Accuracy panel** (`/app/outlay/accuracy`) — answers the #1 customer question head-on: leads with
+      the *measured* leave-one-out error on the customer's own closed tickets (MdAPE, within-p90, n + coverage),
+      per-work-type breakdown with over/under bias, and the size-conditioning win. Honest empty/early-read
+      states (no fake number; "directional" banner under n=12). Linked from the dashboard. +tests (110 pass).
   - **Outlay product loop is feature-complete for a pilot.** Remaining is deployment + go-to-market
     (below). **Needs `fly deploy` to go live.**
 

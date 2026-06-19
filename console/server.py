@@ -606,6 +606,14 @@ async def app_outlay_budgets_delete(request: Request):
     return _redirect("/app/outlay/budgets")
 
 
+@app.get("/app/outlay/accuracy", response_class=HTMLResponse)
+def app_outlay_accuracy(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    return _html(web.accuracy_page(acct, store.get_outlay_report(acct["id"])))
+
+
 @app.get("/app/outlay/estimate", response_class=HTMLResponse)
 def app_outlay_estimate(request: Request):
     acct, redir = _require(request)
