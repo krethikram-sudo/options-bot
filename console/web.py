@@ -959,6 +959,33 @@ def _anomaly_card(report: dict, threshold: float = 3.0, muted=None, controls: bo
             f'more than its peers — the place to look first, not an average everyone pays.</p>{tuner}</div>')
 
 
+def _model_card(report: dict) -> str:
+    """Spend + token usage per model — the FinOps 'cost-per-token across models'
+    view. Reads cost_fidelity.by_model (cost, events, and the token split that
+    makes the cache-aware number defensible)."""
+    cf = (report or {}).get("cost_fidelity") or {}
+    bm = cf.get("by_model") or {}
+    if not bm:
+        return ""
+    mx = max((m.get("outlay_usd", 0) for m in bm.values()), default=1) or 1
+    rows = ""
+    for name, m in bm.items():
+        tok = m.get("tokens") or {}
+        total_tok = sum(int(tok.get(k, 0)) for k in ("input", "output", "cache_read", "cache_write"))
+        cr = int(tok.get("cache_read", 0))
+        cache_pct = f" · {cr / total_tok * 100:.0f}% cache" if total_tok else ""
+        rows += (f'<div class=erow><span class=nm>{_e(name)} '
+                 f'<small>· {m.get("events", 0):,} calls · {total_tok / 1e6:.1f}M tokens{cache_pct}</small></span>'
+                 f'<span class=amt>{money(m.get("outlay_usd", 0))}</span>'
+                 f'<div class=ebar><span style="width:{max(2, m.get("outlay_usd", 0) / mx * 100):.0f}%;'
+                 f'background:var(--grn)"></span></div></div>')
+    return (f'<div class=ocard><div class=dh>Spend by model'
+            f'<a class=sub href="/app/outlay/export.csv?view=models">export →</a></div>{rows}'
+            f'<p class=muted style="font-size:12px;margin-top:10px">Each model priced per token class '
+            f'(input / output / cache read / cache write) — cache reads bill at ~1/10th, which is why the '
+            f'per-model number is far below a naive token count.</p></div>')
+
+
 def _sample_strip(report: dict) -> str:
     """Banner shown while viewing the worked sample dataset rather than real spend."""
     if not report.get("_sample"):
@@ -1273,6 +1300,8 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     _athr, _amuted = _anomaly_prefs(conn)
     anomaly_card = _anomaly_card(report, _athr, _amuted, controls=True)
     anomaly_row = f'<div style="margin-top:16px">{anomaly_card}</div>' if anomaly_card else ""
+    model_card = _model_card(report)
+    model_row = f'<div style="margin-top:16px">{model_card}</div>' if model_card else ""
 
     # Attribution-only grid — forecast/estimate now live on Overview and their
     # own pages, so Spend stays focused on "where every dollar went".
@@ -1281,11 +1310,11 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
         # detail; per-engineer (individual-name) detail is an engineering concern.
         g1 = f'<div class=ogrid>{team_card or class_card}{spend_card}</div>'
         extra = f'<div style="margin-top:16px">{class_card}</div>' if team_card else ""
-        grid = g1 + extra + anomaly_row
+        grid = g1 + extra + model_row + anomaly_row
     else:
         g1 = f'<div class=ogrid>{spend_card}{class_card}</div>'
         g2 = (f'<div style="margin-top:16px">{people_card}</div>' if people_card else "")
-        grid = g1 + g2 + anomaly_row
+        grid = g1 + g2 + model_row + anomaly_row
 
     if persona == "finance":
         olinks = ('<div class=olinks>'

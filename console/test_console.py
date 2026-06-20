@@ -2071,6 +2071,23 @@ def test_anomaly_tuning_mute_and_threshold(env, client, monkeypatch):
     assert store.get_anomaly_prefs(acct["id"])[0] == 3.0
 
 
+def test_spend_by_model_card_and_csv(env, client):
+    """Cost-per-token across models (a FinOps table-stake): a 'Spend by model' card
+    with per-model token split, plus a CSV export view."""
+    _signup(client, email="bm@x.com")
+    client.post("/app/outlay/sample", follow_redirects=True)
+    sp = client.get("/app/outlay").text
+    assert "Spend by model" in sp and "view=models" in sp
+    csv = client.get("/app/outlay/export.csv", params={"view": "models"})
+    assert csv.status_code == 200
+    assert csv.text.splitlines()[0] == ("model,calls,spend_usd,input_tokens,output_tokens,"
+                                        "cache_read_tokens,cache_write_tokens")
+    assert len(csv.text.splitlines()) > 1
+    from console import outlay_app
+    bm = outlay_app.sample_report()["cost_fidelity"]["by_model"]
+    assert bm and all("tokens" in m for m in bm.values())   # per-model token splits
+
+
 def test_coachmark_engine_and_connect_walkthrough(env, client):
     """The first-party contextual coachmark engine loads on every app page, and the
     Connect page carries the walkthrough that targets the real controls."""

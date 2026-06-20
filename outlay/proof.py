@@ -94,6 +94,12 @@ class CostFidelity:
                     "outlay_usd": round(mf.outlay_usd, 2),
                     "naive_usd": round(mf.naive_usd, 2),
                     "inflation_factor": round(mf.naive_usd / mf.outlay_usd, 2) if mf.outlay_usd else 0.0,
+                    "tokens": {
+                        "input": mf.input_tokens,
+                        "output": mf.output_tokens,
+                        "cache_read": mf.cache_read_tokens,
+                        "cache_write": mf.cache_write_tokens,
+                    },
                 }
                 for m, mf in sorted(self.by_model.items(), key=lambda kv: kv[1].outlay_usd, reverse=True)
             },
