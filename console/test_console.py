@@ -357,12 +357,12 @@ def test_revenue_overview_keeps_subcent_precision(env):
 def test_signup_login_logout_flow(client, env):
     server, _ = env
     r = _signup(client)
-    # customer lands on the Spend product home
-    assert r.status_code == 303 and r.headers["location"] == "/app/outlay"
+    # customer lands on the role-aware Overview (product home)
+    assert r.status_code == 303 and r.headers["location"] == "/app"
     assert client.cookies.get("mp_session")
-    # Spend dashboard reachable; /app now redirects to it (routing home parked)
+    # Overview + Spend both reachable
+    assert client.get("/app").status_code == 200
     assert client.get("/app/outlay").status_code == 200
-    assert client.get("/app", follow_redirects=False).status_code == 303
     # logout redirects to the public landing page and clears the session
     r = client.post("/logout")
     assert r.status_code == 303 and r.headers["location"] == server.LANDING_URL
@@ -917,8 +917,8 @@ def test_owner_login_unchanged(env, client):
     _signup(client, email="o2@b.com")
     client.cookies.clear()
     r = client.post("/login", data={"email": "o2@b.com", "password": "password123"})
-    # customers land on the Spend product home; the owner auth path is untouched
-    assert r.status_code == 303 and r.headers["location"] == "/app/outlay"
+    # customers land on the Overview product home; the owner auth path is untouched
+    assert r.status_code == 303 and r.headers["location"] == "/app"
 
 
 def test_member_login_and_team_nav(env, client):
@@ -928,7 +928,7 @@ def test_member_login_and_team_nav(env, client):
     out = store.create_reset("mem@b.com")
     store.consume_reset(out[1], "mempassword1")
     r = client.post("/login", data={"email": "mem@b.com", "password": "mempassword1"})
-    assert r.status_code == 303 and r.headers["location"] == "/app/outlay"
+    assert r.status_code == 303 and r.headers["location"] == "/app"
     dash = client.get("/app/outlay").text
     assert "mem@b.com" in dash            # signed in as the member
     assert "/app/team" not in dash        # plain member: no Team nav
@@ -988,7 +988,7 @@ def test_sso_callback_jit_provisions_and_logs_in(env, client, monkeypatch):
     # stub the IdP token/userinfo exchange
     monkeypatch.setattr(server, "_oidc_email", lambda cfg, code, ru: "alice@corp2.com")
     cb = client.get("/sso/callback", params={"code": "xyz", "state": state}, follow_redirects=False)
-    assert cb.status_code == 303 and cb.headers["location"] == "/app/outlay"
+    assert cb.status_code == 303 and cb.headers["location"] == "/app"
     members = store.list_members(a["id"])
     assert len(members) == 1 and members[0]["email"] == "alice@corp2.com" and members[0]["status"] == "active"
     # the SSO'd member is now signed in
@@ -1196,6 +1196,29 @@ def test_outlay_empty_then_run_then_dashboard(env, client):
     assert r.status_code == 200
     assert "Where your AI spend went" in r.text
     assert "Mapped to a ticket" in r.text
+
+
+def test_overview_is_role_aware_home(env, client):
+    _signup(client, email="ov@x.com")
+    # empty Overview: first-run home with the connect CTA, not a redirect
+    r = client.get("/app")
+    assert r.status_code == 200
+    assert "Connect your sources" in r.text and "Overview" in r.text
+
+    # populate via sample data, then Overview shows the glance (KPIs + forecast + Explore)
+    client.post("/app/outlay/sample", follow_redirects=True)
+    home = client.get("/app").text
+    assert "AI spend · window" in home          # a headline KPI
+    assert "Forecast · open work" in home        # the forecast card
+    assert "Explore" in home                      # the hub into deeper areas
+    assert "/app/outlay/budgets" in home          # jump-offs present
+
+    # the forecast band card and backlog estimate moved OFF the slimmed Spend page
+    # (the headline forecast KPI stays; the p10–p90 band card does not)
+    spend = client.get("/app/outlay").text
+    assert "Where your AI spend went" in spend       # attribution stays
+    assert "expected from open scope" not in spend    # forecast band card → Overview
+    assert "Backlog estimate" not in spend            # estimate card → Estimate page
 
 
 def test_outlay_run_rejects_bad_data(env, client):

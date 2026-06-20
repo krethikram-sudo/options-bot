@@ -218,9 +218,9 @@ def _is_set_up(account: dict) -> bool:
 
 
 def _post_auth_dest(account: dict) -> str:
-    """Everyone lands on Spend (the Outlay product home). The vendor /admin pages
-    are parked with routing and reachable by direct URL when needed."""
-    return "/app/outlay"
+    """Everyone lands on the role-aware Overview (the Outlay product home). The vendor
+    /admin pages are parked with routing and reachable by direct URL when needed."""
+    return "/app"
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -278,7 +278,7 @@ async def signup(request: Request):
                                     company=f.get("company", ""), consent=True)
     except store.StoreError as e:
         return _html(web.auth_form("signup", str(e), f.get("email", "")), 400)
-    resp = _redirect("/app/outlay")  # brand-new customer -> Spend product home
+    resp = _redirect("/app")  # brand-new customer -> Overview (product home)
     _set_session(resp, acct)
     return resp
 
@@ -318,7 +318,7 @@ async def login(request: Request):
     member = store.authenticate_member(f.get("email", ""), f.get("password", ""))
     if member:  # invited teammate
         org = store.get_account(member["account_id"])
-        resp = _redirect("/app/outlay")
+        resp = _redirect("/app")
         _set_session(resp, org, member["role"], member["id"], platform_role="customer")
         _audit(org["id"], "login", actor=member["email"], detail=f"member · role {member['role']}")
         return resp
@@ -449,21 +449,16 @@ def app_dashboard(request: Request):
     acct, redir = _require(request)
     if redir:
         return redir
-    # Routing/optimization is parked for now — Spend is the product home. (To bring
-    # the routing console back, remove this redirect; the render below still works.)
-    return _redirect("/app/outlay")
-    plan = store.get_plan(acct["id"])  # noqa: F841 — preserved for reversibility
-    trial = store.trial_status(acct["id"])
-    settings = store.get_settings(acct["id"])
-    bill = store.bill_estimate(acct["id"])
-    cycle = store.savings_summary(acct["id"], since=bill["cycle_start"])
-    lifetime = store.savings_summary(acct["id"])
-    cats = store.savings_by_category(acct["id"], since=bill["cycle_start"])
-    proof = store.proof_summary(acct["id"])
-    deps = store.deployments_for(acct["id"])
-    budget = store.budget_status(acct["id"])
-    return _html(web.dashboard(acct, plan, trial, settings, cycle, lifetime, bill,
-                               deps[0] if deps else {"deployment_id": "—"}, cats, proof, budget))
+    # The role-aware Overview is the product home: a concise glance (KPIs, budget,
+    # forecast) with jump-offs into the deeper areas. Attribution detail is on Spend.
+    report = store.get_outlay_report(acct["id"])
+    budgets = store.list_outlay_budgets(acct["id"])
+    statuses = outlay_app.budget_statuses(report, budgets) if report else []
+    hist = store.outlay_history(acct["id"]) if report else []
+    persona = store.get_persona(acct["id"], acct.get("member_id", 0) or 0)
+    return _html(web.overview_page(acct, report, statuses, hist,
+                                   store.get_outlay_connection(acct["id"]),
+                                   has_budget=bool(budgets), persona=persona))
 
 
 @app.get("/app/estimate", response_class=HTMLResponse)
@@ -1575,7 +1570,7 @@ def sso_callback(request: Request):
     except store.StoreError:
         return _redirect("/login?sso=failed")
     org = store.get_account(account_id)
-    resp = _redirect("/app/outlay")
+    resp = _redirect("/app")
     _set_session(resp, org, member["role"], member["id"], platform_role="customer")
     _audit(account_id, "login", actor=email, detail=f"SSO · role {member['role']}")
     return resp
