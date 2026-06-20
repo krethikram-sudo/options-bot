@@ -100,6 +100,13 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — webhook delivery reliability (retry + delivery log)
+- [x] Delivery was fire-and-forget with swallowed errors — a dropped webhook was invisible. Now:
+- [x] **Retry with backoff** — `deliver_event` attempts up to 3× (0s/1s/3s) on failure or non-2xx, per webhook.
+- [x] **Delivery log** — every outcome recorded in `webhook_deliveries` (status/attempts/HTTP code/error);
+      `recent_webhook_deliveries` surfaces the last 10 as a "Recent deliveries" table on the Configuration page,
+      so a failing endpoint is visible (delivered/failed badge, tries, HTTP code/error). 310 tests.
+
 ### 2026-06-20 — API key expiry (rotating keys for enterprise)
 - [x] Keys were all-or-nothing and never expired; enterprises require rotation. Added optional expiry:
       `api_keys.expires_at`; `create_api_key(..., expires_in_days=)`; `resolve_api_key` rejects expired keys

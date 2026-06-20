@@ -1167,6 +1167,41 @@ def test_webhook_create_match_sign_deliver(env):
     assert b'"event":"budget.over"' in body and headers["x-outlay-event"] == "budget.over"
 
 
+def test_webhook_delivery_retries_and_logs(env):
+    _, store = env
+    a = store.create_account("whr@b.com", "password123")
+    store.create_webhook(a["id"], "https://x.test/hook", "all")
+
+    # a flaky endpoint: fails twice (500), then succeeds — retried, recorded delivered
+    calls = {"n": 0}
+    def flaky(url, body, headers):
+        calls["n"] += 1
+        return 500 if calls["n"] < 3 else 200
+    store.deliver_event(a["id"], "budget.over", {"x": 1}, post_fn=flaky, sleep_fn=lambda s: None)
+    assert calls["n"] == 3
+    d = store.recent_webhook_deliveries(a["id"])
+    assert len(d) == 1 and d[0]["status"] == "delivered" and d[0]["attempts"] == 3
+
+    # a persistently-down endpoint: exhausts attempts, recorded failed with the error
+    def dead(url, body, headers):
+        raise OSError("connection refused")
+    store.deliver_event(a["id"], "budget.over", {"x": 2}, post_fn=dead, sleep_fn=lambda s: None)
+    latest = store.recent_webhook_deliveries(a["id"])[0]
+    assert latest["status"] == "failed" and latest["attempts"] == 3
+    assert "refused" in (latest["error"] or "")
+
+
+def test_webhook_delivery_log_visible_on_connect(env, client):
+    _, store = env
+    _signup(client, email="whlog@b.com")
+    acct = store.get_account_by_email("whlog@b.com")
+    store.create_webhook(acct["id"], "https://x.test/h", "all")
+    store.deliver_event(acct["id"], "budget.warn", {}, post_fn=lambda *a: 503,
+                        sleep_fn=lambda s: None)
+    page = client.get("/app/connect").text
+    assert "Recent deliveries" in page and "failed" in page and "HTTP 503" in page
+
+
 def test_webhook_event_filtering(env):
     _, store = env
     a = store.create_account("wh2@b.com", "password123")

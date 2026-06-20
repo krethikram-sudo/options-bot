@@ -202,6 +202,18 @@ CREATE TABLE IF NOT EXISTS webhooks (
     created_at REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_webhook_acct ON webhooks(account_id);
+CREATE TABLE IF NOT EXISTS webhook_deliveries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL,
+    webhook_id INTEGER NOT NULL,
+    event_type TEXT NOT NULL,
+    status TEXT NOT NULL,                        -- 'delivered' | 'failed'
+    attempts INTEGER NOT NULL DEFAULT 1,
+    status_code INTEGER,                         -- HTTP status of the last attempt, if any
+    error TEXT,                                  -- short error from the last failed attempt
+    created_at REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_whd_acct ON webhook_deliveries(account_id, id);
 CREATE TABLE IF NOT EXISTS sso_configs (
     account_id INTEGER PRIMARY KEY REFERENCES accounts(id),
     enabled INTEGER NOT NULL DEFAULT 0,
@@ -2205,36 +2217,92 @@ def sign_payload(secret: str, body: bytes) -> str:
     return "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
 
 
+WEBHOOK_MAX_ATTEMPTS = 3
+WEBHOOK_BACKOFF = (0.0, 1.0, 3.0)  # seconds before attempts 1, 2, 3
+
+
+def record_webhook_delivery(account_id: int, webhook_id: int, event_type: str, status: str,
+                            attempts: int = 1, status_code=None, error: str = "",
+                            path: str | None = None, now: float | None = None) -> None:
+    """Persist the outcome of a webhook delivery so a dropped event is visible
+    (not silently swallowed) — surfaced in the webhooks UI."""
+    conn = connect(path)
+    try:
+        conn.execute(
+            "INSERT INTO webhook_deliveries(account_id, webhook_id, event_type, status, attempts,"
+            " status_code, error, created_at) VALUES(?,?,?,?,?,?,?,?)",
+            (account_id, webhook_id, event_type, status, attempts, status_code,
+             (error or "")[:200], now or time.time()))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def recent_webhook_deliveries(account_id: int, limit: int = 10, path: str | None = None) -> list[dict]:
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT * FROM webhook_deliveries WHERE account_id=? ORDER BY id DESC LIMIT ?",
+            (account_id, int(limit))).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
 def deliver_event(account_id: int, event_type: str, data: dict, path: str | None = None,
-                  post_fn=None) -> int:
+                  post_fn=None, sleep_fn=None) -> int:
     """Fire `event_type` to the account's subscribed webhooks (HMAC-signed,
-    best-effort, off-thread). Returns how many were dispatched. `post_fn` (tests)
-    receives (url, body_bytes, headers) synchronously instead of HTTP."""
+    off-thread). Retries up to WEBHOOK_MAX_ATTEMPTS with backoff on failure / non-2xx,
+    and records each delivery's final outcome so drops are visible. Returns how many
+    webhooks were dispatched. `post_fn` (tests) receives (url, body_bytes, headers)
+    synchronously and may return an HTTP status int or raise to simulate failure."""
     hooks = _matching_webhooks(account_id, event_type, path)
     if not hooks:
         return 0
     body = json.dumps({"event": event_type, "ts": time.time(), "data": data},
                       separators=(",", ":")).encode()
+    _sleep = sleep_fn if sleep_fn is not None else time.sleep
 
-    def _send(url, secret):
+    def _attempt(url, secret):
+        """One delivery attempt → (ok, status_code, error)."""
         headers = {"content-type": "application/json", "user-agent": "Outlay-Webhook",
                    "x-outlay-event": event_type, "x-outlay-signature": sign_payload(secret, body)}
         if post_fn is not None:
-            post_fn(url, body, headers)
-            return
+            try:
+                code = post_fn(url, body, headers)
+            except Exception as e:  # noqa: BLE001 — capture, then retry/record
+                return False, None, str(e)[:200]
+            code = code if isinstance(code, int) else 200
+            return (200 <= code < 300), code, ""
         import urllib.request
         req = urllib.request.Request(url, data=body, headers=headers, method="POST")
         try:
-            urllib.request.urlopen(req, timeout=5).close()
-        except Exception:  # noqa: BLE001 — delivery is best-effort
-            pass
+            resp = urllib.request.urlopen(req, timeout=5)
+            code = getattr(resp, "status", 200)
+            resp.close()
+            return (200 <= code < 300), code, ""
+        except Exception as e:  # noqa: BLE001 — capture, then retry/record
+            code = getattr(e, "code", None)
+            return False, code, str(e)[:200]
+
+    def _send(wid, url, secret):
+        ok, code, err = False, None, ""
+        for i in range(WEBHOOK_MAX_ATTEMPTS):
+            if i and _sleep:
+                _sleep(WEBHOOK_BACKOFF[min(i, len(WEBHOOK_BACKOFF) - 1)])
+            ok, code, err = _attempt(url, secret)
+            if ok:
+                break
+        record_webhook_delivery(account_id, wid, event_type,
+                                "delivered" if ok else "failed",
+                                attempts=i + 1, status_code=code, error=err, path=path)
 
     for w in hooks:
         if post_fn is not None:
-            _send(w["url"], w["secret"])
+            _send(w["id"], w["url"], w["secret"])
         else:
             import threading
-            threading.Thread(target=_send, args=(w["url"], w["secret"]), daemon=True).start()
+            threading.Thread(target=_send, args=(w["id"], w["url"], w["secret"]), daemon=True).start()
     return len(hooks)
 
 
