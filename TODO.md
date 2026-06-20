@@ -100,6 +100,19 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — product experience: navigable IA + guided connect
+- [x] **Role-aware grouped sidebar (IA restructure)** (PR #83). Replaced the thin 2-item sidebar
+      (Spend / Settings) with a real, navigable product IA grouped into **Analyze** (Spend, Accuracy,
+      Budgets, Estimate), **Sources** (Connect), and **Workspace** (Team, Settings, Activity). The
+      Analyze group reorders by persona — finance leads with Budgets, engineering with Estimate —
+      without hiding anything. Persona is attached to the account in `_current()` so *every* page render
+      is role-aware, and each sub-page now highlights its own nav item. ⚠️ live on `fly deploy`.
+- [x] **Guided step-based connect flow** (PR #84). Replaced the wall-of-forms Connect page (all three
+      trackers + every field at once) with a guided 3-step flow: (1) pick tracker — GitHub/Jira/Linear
+      tiles, only the selected tracker's fields revealed; (2) connect AI usage — Anthropic/Cursor keys,
+      with a callout that Bedrock/Vertex/OpenAI-Azure import via export on the Spend tab; (3) auto-sync.
+      Same POST contract + `sync()` requirements, no backend change. 132 tests pass. ⚠️ live on `fly deploy`.
+
 ### 2026-06-19 (eve) — brand-domain launch + pilot funnel + product polish
 - [x] **In-app pilot-request form + admin leads inbox** (PR #61). Landing CTAs go to
       `app.outlay-ai.com/pilot-request` (a console-hosted form: name/email/company/tools/message, honeypot
