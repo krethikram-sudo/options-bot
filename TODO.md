@@ -101,6 +101,14 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 ## ✅ Done
 
 ### 2026-06-20 — product experience: navigable IA + guided connect + Overview home
+- [x] **Overview trend + movers, Team page on the design system** (PR #88). Overview gained a
+      **Spend-trend** card (larger sparkline of total spend over recent refreshes + Δ vs last sync) and a
+      **Top movers** card (biggest change by team/cost-center or work type between the two latest refreshes;
+      falls back to "Top spend drivers" before there's history). Snapshots now persist a compact per-category
+      **breakdown** (new `outlay_history` column + migration) so movers are real; the sample loader seeds a
+      short backdated history so the demo shows a genuine trend. The **Team** page was rebuilt on the product
+      design system (ohead/ocard) — owner/member rows with inline role + remove, a prominent invite form, a
+      role legend, and a seat count; SSO/SCIM unchanged. 136 console tests pass. ⚠️ live on `fly deploy`.
 - [x] **Role-aware Overview home + slimmed Spend** (PR #86). Added an Overview as the product home
       (`/app`, was a redirect to Spend): the role-aware first screen — headline KPIs, budget status,
       the p10–p90 forecast band, and an "Explore" hub whose order is persona-aware (finance → Budgets
