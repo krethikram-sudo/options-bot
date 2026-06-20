@@ -228,6 +228,16 @@ pre{background:var(--paper2);color:var(--navy);padding:16px;border-radius:10px;o
 .ob-dot{color:#cbd5e1}
 .ob-label{color:var(--ink)}
 .ob-done .ob-label{color:#94a3b8;text-decoration:line-through}
+.coach-spot{position:fixed;z-index:9998;border-radius:9px;pointer-events:none;
+  box-shadow:0 0 0 9999px rgba(8,16,24,.55),0 0 0 2px var(--grn) inset;
+  transition:top .2s,left .2s,width .2s,height .2s}
+.coach-tip{position:fixed;z-index:9999;width:320px;max-width:calc(100vw - 24px);background:#fff;
+  border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 40px -16px rgba(8,16,24,.45);
+  padding:14px 16px;font-size:13.5px;outline:none}
+.coach-h{font-weight:700;font-size:15px;color:var(--ink);margin-bottom:5px}
+.coach-b{color:var(--muted);line-height:1.5;margin-bottom:12px}
+.coach-f{display:flex;align-items:center;gap:8px}
+.coach-step{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
 a.nm{text-decoration:none;color:var(--ink)}
 a.nm:hover{color:var(--grn-d);text-decoration:none}
 a.nm .drill{color:var(--faint);font-size:12px;opacity:0;transition:opacity .12s}
@@ -387,6 +397,94 @@ def _sidenav(account: dict, active: str) -> str:
     return home + grp("Analyze", analyze) + grp("Sources", sources) + grp("Workspace", workspace)
 
 
+# In-house contextual coachmark engine — first-party, zero dependencies, no
+# third-party script (a privacy/security feature, per the onboarding research).
+# Spotlights the real control the user needs next; WCAG 2.2 SC 1.4.13-compliant
+# (Esc-dismissable, keyboard-operable, persistent until dismissed). Non-blocking:
+# the highlighted control stays clickable so users learn by doing.
+_COACH_JS = r"""
+window.Coach=(function(){
+  var steps=[],i=0,box,tip,on=false,prevFocus=null;
+  function q(s){try{return document.querySelector(s);}catch(e){return null;}}
+  function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+  function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+  function place(){
+    var st=steps[i],t=st.target?q(st.target):null;
+    if(st.target&&!t){return adv(1);}
+    if(t){
+      var r=t.getBoundingClientRect(),pad=6;
+      box.style.display='block';
+      box.style.top=(r.top-pad)+'px';box.style.left=(r.left-pad)+'px';
+      box.style.width=(r.width+2*pad)+'px';box.style.height=(r.height+2*pad)+'px';
+      try{t.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){}
+      var w=320, below=r.bottom+12, above=r.top-12;
+      var top=(below+180<window.innerHeight)?below:Math.max(12,above-160);
+      tip.style.left=clamp(r.left,12,window.innerWidth-w-12)+'px';
+      tip.style.top=top+'px';tip.style.transform='';
+    }else{
+      box.style.display='none';
+      tip.style.left='50%';tip.style.top='90px';tip.style.transform='translateX(-50%)';
+    }
+  }
+  function render(){
+    var st=steps[i],last=i===steps.length-1;
+    tip.innerHTML='<div class=coach-h>'+esc(st.title)+'</div>'+
+      '<div class=coach-b>'+(st.text||'')+'</div>'+
+      '<div class=coach-f><span class=coach-step>'+(i+1)+' / '+steps.length+'</span>'+
+      '<span style="flex:1"></span>'+
+      '<button type=button data-coach=skip class="btn sec sm">Skip</button>'+
+      (i>0?'<button type=button data-coach=back class="btn sec sm">Back</button>':'')+
+      '<button type=button data-coach=next class="btn sm">'+(last?'Done':'Next')+'</button></div>';
+  }
+  function adv(d){var n=i+d;if(n<0)n=0;if(n>=steps.length){return stop();}i=n;place();render();}
+  function key(e){if(!on)return;if(e.key==='Escape'){stop();}else if(e.key==='ArrowRight'){adv(1);}else if(e.key==='ArrowLeft'){adv(-1);}}
+  function stop(){on=false;document.removeEventListener('keydown',key,true);
+    window.removeEventListener('resize',place);window.removeEventListener('scroll',place,true);
+    if(box)box.remove();if(tip)tip.remove();box=tip=null;
+    if(prevFocus&&prevFocus.focus){try{prevFocus.focus();}catch(e){}}}
+  function build(){
+    box=document.createElement('div');box.className='coach-spot';
+    tip=document.createElement('div');tip.className='coach-tip';
+    tip.setAttribute('role','dialog');tip.setAttribute('aria-modal','false');tip.tabIndex=-1;
+    document.body.appendChild(box);document.body.appendChild(tip);
+    tip.addEventListener('click',function(e){var a=e.target.closest('[data-coach]');if(!a)return;
+      var k=a.getAttribute('data-coach');if(k==='skip')stop();else if(k==='back')adv(-1);else adv(1);});
+  }
+  function start(list){if(!list||!list.length)return;if(on)stop();
+    steps=list;i=0;on=true;prevFocus=document.activeElement;build();place();render();
+    document.addEventListener('keydown',key,true);
+    window.addEventListener('resize',place);window.addEventListener('scroll',place,true);
+    setTimeout(function(){if(tip)tip.focus();},60);}
+  return {start:start,stop:stop};
+})();
+"""
+
+
+# The "Connect your sources" walkthrough — spotlights the real tracker tiles, the
+# AI-usage key field, and the run button. Auto-starts on ?tour=connect (from a
+# "Show me how" entry point); also exposed as window.startConnectTour().
+_CONNECT_TOUR_JS = r"""
+<script>(function(){
+  function run(){
+    if(!window.Coach)return;
+    window.Coach.start([
+      {target:'.srcgrid',title:'Step 1 — Pick your tracker',
+       text:'Choose where your work lives (GitHub, Jira, or Linear). Only the selected tracker’s fields appear below.'},
+      {target:'input[name=anthropic_key]',title:'Step 2 — Connect your AI usage',
+       text:'Paste a read-only Anthropic admin key (or a Cursor key). Running on Bedrock / Vertex / OpenAI? Those import on the Spend tab.'},
+      {target:'#ob-sync',title:'Step 3 — Run your first audit',
+       text:'Click here to pull your data and see every dollar mapped to the work that drove it.'}
+    ]);
+  }
+  window.startConnectTour=run;
+  if(new URLSearchParams(location.search).get('tour')==='connect'){
+    if(document.readyState!=='loading')setTimeout(run,300);
+    else document.addEventListener('DOMContentLoaded',function(){setTimeout(run,300);});
+  }
+})();</script>
+"""
+
+
 def page(title: str, body: str, account: dict | None = None, active: str = "", bare: bool = False) -> str:
     if account:
         links = _sidenav(account, active)
@@ -449,6 +547,7 @@ var els=[].slice.call(d.querySelectorAll('.card,.hero'));
 els.forEach(function(c,i){{c.classList.add('reveal');c.style.setProperty('--rd',Math.min(i*55,330)+'ms');}});
 var io=new IntersectionObserver(function(es){{es.forEach(function(e){{if(e.isIntersecting){{e.target.classList.add('in');io.unobserve(e.target);}}}});}},{{threshold:.06}});
 els.forEach(function(c){{io.observe(c);}});}})();</script>
+<script>{_COACH_JS}</script>
 </body></html>"""
 
 
@@ -1351,7 +1450,7 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
       </form>
       <div class=ocard style="margin-top:16px">
         <p class=muted style="margin:0 0 12px;font-size:13.5px">{synced}</p>
-        <button class="btn" onclick="outlaySync(this)">Sync now &amp; run the audit</button>
+        <button class="btn" id=ob-sync onclick="outlaySync(this)">Sync now &amp; run the audit</button>
         <a class="btn sec" href="/app/outlay" style="margin-left:8px">View Spend →</a>
         <script>function outlaySync(btn){{btn.classList.add('loading');btn.disabled=true;
           fetch('/app/outlay/sync',{{method:'POST'}}).then(function(r){{return r.json();}}).then(function(d){{
@@ -1373,7 +1472,7 @@ bob@acme.com, Growth
           <button class="btn sec" style="margin-top:12px">Save team map</button>
         </form>
       </div>"""
-    return page("Connect", form, account, active="/app/outlay/connect")
+    return page("Connect", form + _CONNECT_TOUR_JS, account, active="/app/outlay/connect")
 
 
 def estimate_backlog_page(account: dict, report: dict | None) -> str:

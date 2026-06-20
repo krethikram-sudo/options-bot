@@ -2071,6 +2071,17 @@ def test_anomaly_tuning_mute_and_threshold(env, client, monkeypatch):
     assert store.get_anomaly_prefs(acct["id"])[0] == 3.0
 
 
+def test_coachmark_engine_and_connect_walkthrough(env, client):
+    """The first-party contextual coachmark engine loads on every app page, and the
+    Connect page carries the walkthrough that targets the real controls."""
+    _signup(client, email="coach@x.com")
+    assert "window.Coach=" in client.get("/app").text           # first-party, app-wide
+    conn = client.get("/app/outlay/connect", params={"tour": "connect"}).text
+    assert "startConnectTour" in conn and "get('tour')==='connect'" in conn
+    # it targets controls that actually exist on the page
+    assert "class=srcgrid" in conn and "id=ob-sync" in conn and "name=anthropic_key" in conn
+
+
 def test_scope_drilldown_from_spend(env, client):
     """Clicking a work-type / team row drills into the tickets behind it."""
     _signup(client, email="dr@x.com")
