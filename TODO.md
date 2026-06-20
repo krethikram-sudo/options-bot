@@ -100,6 +100,12 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — runaway-ticket anomalies: surface + alert (PR #107)
+- [x] The engine flagged tickets ≥3× their work-type median but the console never showed or alerted on them.
+      Now: an amber anomaly strip on Overview + a "Runaway tickets" card on Spend (cost vs class median, ratio
+      badge), and a new sync/run emails the owner on newly-detected outliers + fires an `anomaly.detected`
+      webhook, de-duped on ticket id (standing outlier not re-emailed; re-spike re-alerts). 286 tests.
+
 ### 2026-06-20 — identity→team mapping: cost-center allocation works (PR #105)
 - [x] **Real gap closed:** the console never built an IdentityGraph, so team/cost-center allocation (the
       finance lead view + the low-coverage fallback) silently failed on synced data. Added `domain_to_team`
