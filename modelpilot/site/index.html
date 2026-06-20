@@ -300,7 +300,9 @@ epic Q3-stability <span class="w">on pace $22k · over</span></code>
     <h2>A different category, on purpose.</h2>
     <p>FinOps suites allocate cloud bills. Observability tools trace API calls. Native consoles cap per
        seat. <b style="color:var(--ink)">None attribute AI spend to the work you plan, or budget it by
-       scope</b> — because they live at the infrastructure layer and can't see your roadmap.</p>
+       scope</b> — because they live at the infrastructure layer and can't see your roadmap. And the ones
+       that <i>compute</i> from tokens price cache reads at full rate, so their per-team numbers can run
+       <a href="/#math">several times too high</a>.</p>
   </div>
   <div class="cmp-wrap">
     <table class="cmp">
@@ -332,6 +334,20 @@ epic Q3-stability <span class="w">on pace $22k · over</span></code>
           <td><span class="n">~</span><span class="sub">account budgets/alerts</span></td>
           <td><span class="n">✗</span></td>
           <td><span class="n">~</span><span class="sub">per-seat caps</span></td>
+        </tr>
+        <tr>
+          <td class="feat">Cache-aware costing (per token class)</td>
+          <td class="us"><span class="y">✓</span><span class="sub">cache reads at ~0.1×</span></td>
+          <td><span class="n">~</span><span class="sub">reads the bill, can't attribute</span></td>
+          <td><span class="n">✗</span><span class="sub">tokens at a flat rate</span></td>
+          <td><span class="n">~</span><span class="sub">provider total only</span></td>
+        </tr>
+        <tr>
+          <td class="feat">Reconciled to the provider invoice</td>
+          <td class="us"><span class="y">✓</span><span class="sub">Anthropic, Bedrock, Vertex, OpenAI</span></td>
+          <td><span class="y">✓</span><span class="sub">it is the bill</span></td>
+          <td><span class="n">✗</span></td>
+          <td><span class="y">✓</span><span class="sub">single provider</span></td>
         </tr>
         <tr>
           <td class="feat">Forecast accuracy back-tested on your own work</td>
