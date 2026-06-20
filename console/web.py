@@ -668,9 +668,12 @@ def _onboarding(conn: dict | None, report: dict | None, has_budget: bool, person
         return ""
     pct = int(round(done / total * 100))
     rows = ""
-    for label, d, href, cta, _tour in steps:
+    for label, d, href, cta, tour in steps:
+        # Connect-flow steps launch the contextual walkthrough (?tour=connect),
+        # so clicking the checklist item guides the user through the real controls.
+        link = f"{href}?tour=connect" if tour == "connect" else href
         mark = ('<span class=ob-tick>✓</span>' if d else '<span class=ob-dot>○</span>')
-        action = "" if d else f'<a href="{href}" class="btn sec sm" style="margin-left:auto">{cta}</a>'
+        action = "" if d else f'<a href="{link}" class="btn sec sm" style="margin-left:auto">{cta}</a>'
         cls = " ob-done" if d else ""
         rows += (f'<div class="ob-row{cls}">{mark}<span class=ob-label>{_e(label)}</span>{action}</div>')
     return (
@@ -1134,9 +1137,10 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
                 'that drove it, forecasts the quarter, estimates planned work, and holds it to budget. '
                 'Prompts never leave your tools.</p></div>')
         cta = ('<div class="row" style="margin:0 0 22px">'
-               '<a class="btn" href="/app/outlay/connect">Connect your sources →</a>'
+               '<a class="btn" href="/app/outlay/connect?tour=connect">Connect your sources →</a>'
                '<form method=post action="/app/outlay/sample" style="margin:0">'
-               '<button class="btn sec">See it with sample data</button></form></div>')
+               '<button class="btn sec">See it with sample data</button></form>'
+               '<a class="btn sec" href="/app/outlay/connect?tour=connect">Show me how</a></div>')
         return page("Home", chooser + intro + cta + checklist + _outlay_connect(),
                     account, active="/app")
 
@@ -1190,9 +1194,10 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                 'that drove it, forecasts the quarter, estimates planned work, and holds it to budget. '
                 'Prompts never leave your tools.</p></div>')
         cta = ('<div class="row" style="margin:0 0 22px">'
-               '<a class="btn" href="/app/outlay/connect">Connect your sources →</a>'
+               '<a class="btn" href="/app/outlay/connect?tour=connect">Connect your sources →</a>'
                '<form method=post action="/app/outlay/sample" style="margin:0">'
-               '<button class="btn sec">See it with sample data</button></form></div>')
+               '<button class="btn sec">See it with sample data</button></form>'
+               '<a class="btn sec" href="/app/outlay/connect?tour=connect">Show me how</a></div>')
         return page("Spend", chooser + intro + cta + checklist + _outlay_connect(),
                     account, active="/app/outlay")
 
@@ -1385,7 +1390,9 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
         return (f'<div class=srctile><input type=radio name=tracker id=trk-{value} value={value}{chk(value)}>'
                 f'<label for=trk-{value}>{_e(title)}<small>{_e(sub)}</small></label></div>')
 
-    form = f"""<div class=ohead><h1>Connect your sources <span class=muted>· read-only</span></h1>
+    form = f"""<div class=ohead><h1>Connect your sources <span class=muted>· read-only</span>
+        <button type=button class="btn sec sm" style="margin-left:10px;vertical-align:middle"
+          onclick="window.startConnectTour&amp;&amp;window.startConnectTour()">Show me how</button></h1>
       <p>Two things to connect: your <b>tracker</b> (so spend maps to tickets, sprints, and people) and your
         <b>AI usage</b> (the spend itself). Read-only tokens, metadata only — prompts never leave your tools.</p></div>
       {err_banner}
