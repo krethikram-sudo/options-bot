@@ -100,6 +100,17 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — raise ticket coverage without behavior change (PRs #102, #103)
+- [x] **Recover branch→ticket link from PRs/commits** (#102). `outlay/link.py`: `parse_closing_refs`
+      ("Closes #123" / "fixes PROJ-45" / bare keys) + `link_branches` stamps each PR's head branch onto the
+      issue it closes, so events on non-ticket-named branches attribute at BRANCH fidelity. `parse_github_issues`
+      auto-links a combined issues+PRs export.
+- [x] **Live PR puller** (#103). `GitHubIssuesClient.fetch_pulls`/`pull(link_prs=True)` fetches PRs and links
+      branches automatically for connected accounts (best-effort, paginated). Flows through sync + dogfood.
+- [x] **Low-coverage diagnostic** (#103). When ticket coverage < 50%, the Spend page explains why (from the
+      fidelity breakdown) and the cheapest fix (connect PRs / add identity map). Reframes the ICP risk from
+      "must name branches after tickets" to "your PRs reference issues" — the GitHub/GitLab default. 282 tests.
+
 ### 2026-06-20 — QA hardening: no confidently-wrong numbers (PR #100)
 - [x] **Fallback pricing surfaced** — unknown model ids (e.g. a model launched after our last rate update)
       no longer silently price as Sonnet/gpt-4o. `pricing.model_is_known`; report carries `pricing_fidelity`;
