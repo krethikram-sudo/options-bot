@@ -196,6 +196,14 @@ pre{background:var(--paper2);color:var(--navy);padding:16px;border-radius:10px;o
   padding:3px 10px;margin:0 6px 6px 0;font-size:12.5px;color:var(--body)}
 .chip .mono{font-family:var(--mono);color:var(--ink)}
 .bcard{background:#fff;border:1px solid var(--line);border-radius:13px;padding:15px 17px;margin-top:12px}
+.exrow{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;padding:11px 2px;border-top:1px solid var(--line);text-decoration:none}
+.exrow:first-of-type{border-top:none}
+.exrow:hover{text-decoration:none}
+.exrow .nm{font-weight:600;color:var(--ink);font-size:14px}
+.exrow:hover .nm{color:var(--grn-d)}
+.exrow .exd{grid-column:1;font-size:12.5px;color:var(--muted);line-height:1.45}
+.exrow .exarr{grid-row:1/3;color:var(--muted);font-weight:600;align-self:center}
+.exrow:hover .exarr{color:var(--grn-d)}
 .cstep{display:flex;gap:11px;align-items:flex-start;margin:22px 0 10px}
 .cstep:first-child{margin-top:4px}
 .cnum{flex:none;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center}
@@ -347,7 +355,8 @@ def _sidenav(account: dict, active: str) -> str:
             for href, text in items)
         return f'<div class=navgrp>{label}</div>{rows}'
 
-    return grp("Analyze", analyze) + grp("Sources", sources) + grp("Workspace", workspace)
+    home = f'<a class="{"on" if active == "/app" else ""}" href="/app">Overview</a>'
+    return home + grp("Analyze", analyze) + grp("Sources", sources) + grp("Workspace", workspace)
 
 
 def page(title: str, body: str, account: dict | None = None, active: str = "", bare: bool = False) -> str:
@@ -591,6 +600,158 @@ def _persona_chooser() -> str:
         + '</div></div>')
 
 
+def _kpicard(label, value, sub, grn=False) -> str:
+    return (f'<div class=kpi><div class=l>{_e(label)}</div>'
+            f'<div class="v{" grn" if grn else ""}">{value}</div><div class=s>{sub}</div></div>')
+
+
+def _kpis_row(report: dict, history: list[dict] | None, persona: str) -> str:
+    """The four headline KPIs — shared by Overview and Spend. Order is role-aware:
+    finance leads spend→forecast, engineering leads spend→coverage."""
+    sp = report.get("spend", {})
+    fc = report.get("forecast", {})
+    cov = sp.get("ticket_coverage", 0.0)
+    open_items = fc.get("items_costed", 0) + fc.get("items_unclassified", 0)
+    spend_kpi = _kpicard("AI spend · window", money(sp.get("total_usd", 0)), _trend_delta(history or []))
+    cov_kpi = _kpicard("Mapped to a ticket", f"{cov*100:.0f}%",
+                       money(sp.get("attributed_to_ticket_usd", 0)) + " attributed", grn=cov >= 0.6)
+    fc_kpi = _kpicard("Forecast · open work", money(fc.get("expected_usd", 0)),
+                      f"likely {money(fc.get('low_usd', 0))}–{money(fc.get('high_usd', 0))}")
+    open_kpi = _kpicard("Open work items", str(open_items),
+                        f"{fc.get('items_costed', 0)} costed from history")
+    order = (spend_kpi + fc_kpi + cov_kpi + open_kpi) if persona == "finance" \
+        else (spend_kpi + cov_kpi + fc_kpi + open_kpi)
+    return '<div class=kpis>' + order + '</div>'
+
+
+def _forecast_card(report: dict) -> str:
+    """The p10–p90 forecast band for open work, with measured-accuracy callout."""
+    fc = report.get("forecast", {})
+    cal = report.get("calibration") or {}
+    acc = ""
+    if cal.get("n_evaluated", 0) > 0:
+        acc = (f'<div class=okbox><b>Forecast accuracy (measured):</b> median estimate within '
+               f'~{cal.get("mdape",0)*100:.0f}% of actual on your closed tickets (leave-one-out). '
+               f'<a href="/app/outlay/accuracy">details →</a></div>')
+    return (f'<div class=ocard><div class=dh>Forecast · open work</div>'
+            f'<div class=bignum><span class=v>{money(fc.get("expected_usd",0))}</span>'
+            f'<span class=of>expected from open scope</span></div>'
+            f'<div class=band><span style="left:13%;width:74%"></span></div>'
+            f'<div class=bandlab><span>p10 · {money(fc.get("low_usd",0))}</span>'
+            f'<span>p90 · {money(fc.get("high_usd",0))}</span></div>'
+            f'<div class=muted style="font-size:12.5px;margin-top:8px">{fc.get("items_costed",0)} items '
+            f'costed, {fc.get("items_unclassified",0)} without history.</div>{acc}</div>')
+
+
+def _budget_strip(statuses: list[dict] | None) -> str:
+    """One-line budget status banner (over / warn / all-on-track)."""
+    if not statuses:
+        return ""
+    over = [s for s in statuses if s["status"] == "over"]
+    warn = [s for s in statuses if s["status"] == "warn"]
+    if over or warn:
+        tone, tag = ("over", "over") if over else ("warn", "warn")
+        bg = {"over": "var(--red-l)", "warn": "var(--amber-l)"}[tone]
+        col = {"over": "var(--red)", "warn": "var(--amber)"}[tone]
+        parts = ([f"{len(over)} over budget"] if over else []) + ([f"{len(warn)} at warn"] if warn else [])
+        return (f'<div class=ostrip style="background:{bg}"><span><span class="otag {tag}">budget</span> '
+                f'<b style="color:{col}">{" · ".join(parts)}</b></span>'
+                f'<a href="/app/outlay/budgets">review budgets →</a></div>')
+    return (f'<div class=ostrip style="background:var(--grn-l)">'
+            f'<span><span class="otag ok">budget</span> <b style="color:var(--grn-d)">'
+            f'All {len(statuses)} on track</b></span>'
+            f'<a href="/app/outlay/budgets">manage budgets →</a></div>')
+
+
+def _sample_strip(report: dict) -> str:
+    """Banner shown while viewing the worked sample dataset rather than real spend."""
+    if not report.get("_sample"):
+        return ""
+    return ('<div class=ostrip style="background:#eef2fb;border:1px solid #d3def5">'
+            '<span><b style="color:#2451b3">Sample data</b> — a worked example so you can see the '
+            'product end-to-end, not your real spend. <a href="/app/outlay/connect">Connect your sources →</a></span>'
+            '<form method=post action="/app/outlay/clear" style="margin:0">'
+            '<button class="btn sec sm">Clear sample data</button></form></div>')
+
+
+def _sync_line(report: dict, conn: dict | None) -> str:
+    """The 'last refreshed · cadence · manage connection' footer line."""
+    conn = conn or {}
+    asy = conn.get("auto_sync_hours") or 0
+    cadence = {24: "auto-syncs daily", 168: "auto-syncs weekly"}.get(asy, "manual sync")
+    last = _fmt_date(conn.get("synced_at")) if conn.get("synced_at") else (
+        _fmt_date(report.get("_generated_ts")) if report.get("_generated_ts") else "—")
+    sync_err = ('<span style="color:var(--red)"> · ⚠ last sync failed — '
+                '<a href="/app/outlay/connect" style="color:var(--red)">fix connection →</a></span>'
+                if conn.get("last_sync_error") else
+                ' · <a href="/app/outlay/connect">manage connection →</a>')
+    return f'<div class=syncline>Last refreshed <b>{last}</b> · {cadence}{sync_err}</div>'
+
+
+def _explore_card(persona: str) -> str:
+    """Overview's hub: short, role-ordered jump-offs into the deeper product areas."""
+    dest = {
+        "spend": ("/app/outlay", "Spend attribution",
+                  "Where every dollar went — by ticket, work type, team, and engineer."),
+        "accuracy": ("/app/outlay/accuracy", "Forecast accuracy",
+                     "How close the forecast lands on your own closed tickets."),
+        "budgets": ("/app/outlay/budgets", "Budgets & guardrails",
+                    "Set limits by scope and get warned before you overspend."),
+        "estimate": ("/app/outlay/estimate", "Estimate planned work",
+                     "Price a backlog before you build it, from your learned cost model."),
+    }
+    order = (["spend", "budgets", "accuracy", "estimate"] if persona == "finance"
+             else ["spend", "estimate", "accuracy", "budgets"])
+    rows = ""
+    for key in order:
+        href, title, desc = dest[key]
+        rows += (f'<a class=exrow href="{href}"><span class=nm>{_e(title)}</span>'
+                 f'<span class=exd>{_e(desc)}</span><span class=exarr>→</span></a>')
+    return f'<div class=ocard><div class=dh>Explore</div>{rows}</div>'
+
+
+def overview_page(account: dict, report: dict | None, statuses: list[dict] | None = None,
+                  history: list[dict] | None = None, conn: dict | None = None,
+                  has_budget: bool = False, persona: str = "") -> str:
+    """The role-aware home — the first screen after sign-in. A concise glance
+    (KPIs, budget status, forecast) with jump-offs into the deeper areas; the
+    attribution detail lives on the Spend page."""
+    chooser = _persona_chooser() if persona not in ("finance", "eng") else ""
+    checklist = _onboarding(conn, report, has_budget, persona)
+    if not report:
+        if persona == "finance":
+            intro = (
+                '<div class=ohead><h1>Put your AI spend on a budget.</h1>'
+                '<p>Connect your AI usage and your tracker — read-only — and Outlay shows total AI spend, '
+                'forecasts the quarter against budget, breaks it down by team and project, and alerts you '
+                '<b>before</b> you overspend. Nothing sensitive leaves your environment.</p></div>')
+        else:
+            intro = (
+                '<div class=ohead><h1>Your AI spend, on your roadmap.</h1>'
+                '<p>Connect your tracker and AI usage — read-only — and Outlay maps every dollar to the work '
+                'that drove it, forecasts the quarter, estimates planned work, and holds it to budget. '
+                'Prompts never leave your tools.</p></div>')
+        cta = ('<div class="row" style="margin:0 0 22px">'
+               '<a class="btn" href="/app/outlay/connect">Connect your sources →</a>'
+               '<form method=post action="/app/outlay/sample" style="margin:0">'
+               '<button class="btn sec">See it with sample data</button></form></div>')
+        return page("Home", chooser + intro + cta + checklist + _outlay_connect(),
+                    account, active="/app")
+
+    if persona == "finance":
+        head = ('<div class=ohead><h1>Your AI spend at a glance</h1>'
+                '<p>Total spend, the forecast against budget, and where to look next.</p></div>')
+    else:
+        head = ('<div class=ohead><h1>AI spend at a glance</h1>'
+                '<p>The headline numbers, your budget status, and where to dig in.</p></div>')
+
+    body = (chooser + head + _persona_switch(persona) + _sample_strip(report) + checklist
+            + _budget_strip(statuses) + _kpis_row(report, history, persona) + _recon_strip(report)
+            + '<div class=ogrid style="margin-top:16px">' + _forecast_card(report)
+            + _explore_card(persona) + '</div>' + _sync_line(report, conn))
+    return page("Home", body, account, active="/app")
+
+
 def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None = None,
                 history: list[dict] | None = None, conn: dict | None = None,
                 has_budget: bool = False, persona: str = "") -> str:
@@ -617,33 +778,18 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                     account, active="/app/outlay")
 
     sp = report.get("spend", {})
-    fc = report.get("forecast", {})
-    cal = report.get("calibration") or {}
-    est = report.get("estimate")
     cov = sp.get("ticket_coverage", 0.0)
-    open_items = fc.get("items_costed", 0) + fc.get("items_unclassified", 0)
 
     if persona == "finance":
-        ohead = ('<div class=ohead><h1>Your AI spend, on budget</h1>'
-                 '<p>Total spend, the quarter forecast against budget, and where it\'s going by team and project.</p></div>')
+        ohead = ('<div class=ohead><h1>Where your AI spend goes</h1>'
+                 '<p>Every dollar attributed — by team and cost-center, work type, and ticket. '
+                 'Forecast and budget live on <a href="/app">Overview</a>.</p></div>')
     else:
-        ohead = ('<div class=ohead><h1>AI spend, on your roadmap</h1>'
-                 '<p>Every dollar mapped to the work that drove it — forecast, estimated, and held to budget.</p></div>')
+        ohead = ('<div class=ohead><h1>Where your AI spend goes</h1>'
+                 '<p>Every dollar mapped to the work that drove it — by ticket, work type, and engineer. '
+                 'Forecast and estimates live on <a href="/app">Overview</a>.</p></div>')
 
-    def _kpicard(label, value, sub, grn=False):
-        return (f'<div class=kpi><div class=l>{_e(label)}</div>'
-                f'<div class="v{" grn" if grn else ""}">{value}</div><div class=s>{sub}</div></div>')
-    spend_kpi = _kpicard("AI spend · window", money(sp.get("total_usd", 0)), _trend_delta(history or []))
-    cov_kpi = _kpicard("Mapped to a ticket", f"{cov*100:.0f}%",
-                       money(sp.get("attributed_to_ticket_usd", 0)) + " attributed", grn=cov >= 0.6)
-    fc_kpi = _kpicard("Forecast · open work", money(fc.get("expected_usd", 0)),
-                      f"likely {money(fc.get('low_usd', 0))}–{money(fc.get('high_usd', 0))}")
-    open_kpi = _kpicard("Open work items", str(open_items),
-                        f"{fc.get('items_costed', 0)} costed from history")
-    if persona == "finance":
-        kpis = '<div class=kpis>' + spend_kpi + fc_kpi + cov_kpi + open_kpi + '</div>'
-    else:
-        kpis = '<div class=kpis>' + spend_kpi + cov_kpi + fc_kpi + open_kpi + '</div>'
+    kpis = _kpis_row(report, history, persona)
 
     def _erow(name, sub, amount, bar_pct, color="var(--grn)"):
         sub_html = f' <small>· {_e(sub)}</small>' if sub else ""
@@ -661,21 +807,6 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     spark = _sparkline([h.get("total_usd", 0) for h in (history or [])])
     sub = f'<span class=sub title="Spend over your last {len(history or [])} refreshes">{spark}</span>' if spark else ""
     spend_card = (f'<div class=ocard><div class=dh>Where your AI spend went{sub}</div>{trows}</div>')
-
-    # Forecast card with p10–p90 band
-    acc = ""
-    if cal.get("n_evaluated", 0) > 0:
-        acc = (f'<div class=okbox><b>Forecast accuracy (measured):</b> median estimate within '
-               f'~{cal.get("mdape",0)*100:.0f}% of actual on your closed tickets (leave-one-out). '
-               f'<a href="/app/outlay/accuracy">details →</a></div>')
-    fc_card = (f'<div class=ocard><div class=dh>Forecast · open work</div>'
-               f'<div class=bignum><span class=v>{money(fc.get("expected_usd",0))}</span>'
-               f'<span class=of>expected from open scope</span></div>'
-               f'<div class=band><span style="left:13%;width:74%"></span></div>'
-               f'<div class=bandlab><span>p10 · {money(fc.get("low_usd",0))}</span>'
-               f'<span>p90 · {money(fc.get("high_usd",0))}</span></div>'
-               f'<div class=muted style="font-size:12.5px;margin-top:8px">{fc.get("items_costed",0)} items '
-               f'costed, {fc.get("items_unclassified",0)} without history.</div>{acc}</div>')
 
     # Spend by work type
     cls = report.get("class_spend") or []
@@ -712,49 +843,18 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
         team_card = (f'<div class=ocard><div class=dh>Spend by team / cost-center'
                      f'<span class=sub>allocation</span></div>{trows}</div>')
 
-    # Backlog estimate (optional)
-    est_card = ""
-    if est:
-        emax = max((e.get("expected_usd", 0) for e in est.get("items", [])), default=1) or 1
-        erows = "".join(
-            _erow(e.get("id"),
-                  e.get("task_class") + (" · " + e.get("complexity_tier") if e.get("complexity_tier") else "") +
-                  (" · " + e.get("confidence") if e.get("confidence") else ""),
-                  money(e.get("expected_usd", 0)), e.get("expected_usd", 0) / emax * 100)
-            for e in est.get("items", []) if e.get("costable"))
-        est_card = (f'<div class=ocard><div class=dh>Backlog estimate '
-                    f'<a class=sub href="/app/outlay/estimate">re-estimate →</a></div>'
-                    f'<div class=bignum><span class=v>{money(est.get("expected_usd",0))}</span>'
-                    f'<span class=of>likely {money(est.get("low_usd",0))}–{money(est.get("high_usd",0))}</span></div>'
-                    f'<div class=muted style="font-size:12.5px;margin:2px 0 12px">{est.get("items_costed",0)} '
-                    f'estimated, {est.get("items_unknown",0)} declined.</div>{erows}</div>')
-
+    # Attribution-only grid — forecast/estimate now live on Overview and their
+    # own pages, so Spend stays focused on "where every dollar went".
     if persona == "finance":
-        # Finance leads with the forecast + team/cost-center allocation, then work-type;
-        # per-engineer (individual-name) detail is an engineering concern, omitted here.
-        g1 = f'<div class=ogrid>{fc_card}{team_card or class_card}</div>'
+        # Finance leads with team/cost-center allocation, then work-type, then ticket
+        # detail; per-engineer (individual-name) detail is an engineering concern.
+        g1 = f'<div class=ogrid>{team_card or class_card}{spend_card}</div>'
         extra = f'<div style="margin-top:16px">{class_card}</div>' if team_card else ""
-        g2 = extra + f'<div style="margin-top:16px">{spend_card}</div>'
-        g3 = f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""
-        grid = g1 + g2 + g3
+        grid = g1 + extra
     else:
-        g1 = f'<div class=ogrid>{spend_card}{fc_card}</div>'
-        g2 = (f'<div class=ogrid style="margin-top:16px">{class_card}{people_card}</div>' if people_card
-              else f'<div style="margin-top:16px">{class_card}</div>')
-        g3 = f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""
-        grid = g1 + g2 + g3
-
-    # Sync status
-    conn = conn or {}
-    asy = conn.get("auto_sync_hours") or 0
-    cadence = {24: "auto-syncs daily", 168: "auto-syncs weekly"}.get(asy, "manual sync")
-    last = _fmt_date(conn.get("synced_at")) if conn.get("synced_at") else (
-        _fmt_date(report.get("_generated_ts")) if report.get("_generated_ts") else "—")
-    sync_err = ('<span style="color:var(--red)"> · ⚠ last sync failed — '
-                '<a href="/app/outlay/connect" style="color:var(--red)">fix connection →</a></span>'
-                if conn.get("last_sync_error") else
-                ' · <a href="/app/outlay/connect">manage connection →</a>')
-    sync_line = f'<div class=syncline>Last refreshed <b>{last}</b> · {cadence}{sync_err}</div>'
+        g1 = f'<div class=ogrid>{spend_card}{class_card}</div>'
+        g2 = (f'<div style="margin-top:16px">{people_card}</div>' if people_card else "")
+        grid = g1 + g2
 
     if persona == "finance":
         olinks = ('<div class=olinks>'
@@ -776,35 +876,9 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                   '<a href="/app/outlay/export.csv?view=classes">work types</a>'
                   '<a href="/app/outlay/export.csv?view=people">engineers</a></div>')
 
-    bstrip = ""
-    if statuses:
-        over = [s for s in statuses if s["status"] == "over"]
-        warn = [s for s in statuses if s["status"] == "warn"]
-        if over or warn:
-            tone, tag = ("over", "over") if over else ("warn", "warn")
-            bg = {"over": "var(--red-l)", "warn": "var(--amber-l)"}[tone]
-            col = {"over": "var(--red)", "warn": "var(--amber)"}[tone]
-            parts = ([f"{len(over)} over budget"] if over else []) + ([f"{len(warn)} at warn"] if warn else [])
-            bstrip = (f'<div class=ostrip style="background:{bg}"><span><span class="otag {tag}">budget</span> '
-                      f'<b style="color:{col}">{" · ".join(parts)}</b></span>'
-                      f'<a href="/app/outlay/budgets">review budgets →</a></div>')
-        else:
-            bstrip = (f'<div class=ostrip style="background:var(--grn-l)">'
-                      f'<span><span class="otag ok">budget</span> <b style="color:var(--grn-d)">'
-                      f'All {len(statuses)} on track</b></span>'
-                      f'<a href="/app/outlay/budgets">manage budgets →</a></div>')
-
-    sample = ""
-    if report.get("_sample"):
-        sample = ('<div class=ostrip style="background:#eef2fb;border:1px solid #d3def5">'
-                  '<span><b style="color:#2451b3">Sample data</b> — a worked example so you can see the '
-                  'product end-to-end, not your real spend. <a href="/app/outlay/connect">Connect your sources →</a></span>'
-                  '<form method=post action="/app/outlay/clear" style="margin:0">'
-                  '<button class="btn sec sm">Clear sample data</button></form></div>')
-
-    body = (chooser + ohead + _persona_switch(persona) + sample + checklist + bstrip + kpis
-            + _recon_strip(report) + sync_line + olinks + grid
-            + '<div style="margin-top:18px">' + _outlay_connect(collapsed=True) + '</div>')
+    body = (chooser + ohead + _persona_switch(persona) + _sample_strip(report) + checklist
+            + _budget_strip(statuses) + kpis + _recon_strip(report) + _sync_line(report, conn)
+            + olinks + grid)
     return page("Spend", body, account, active="/app/outlay")
 
 
