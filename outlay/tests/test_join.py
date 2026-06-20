@@ -78,3 +78,16 @@ def test_unresolvable_branch_degrades_not_crashes():
     eng = JoinEngine(WORK)
     res = eng.join(_ev(branch="scratch/experiment"))
     assert res.fidelity == FidelityTier.INVOICE
+
+
+def test_version_branches_do_not_fabricate_tickets():
+    """A release/version-shaped branch must NOT match the case-insensitive PROJ-123
+    pattern and invent a ticket (e.g. `release-2.3` → "RELEASE-2")."""
+    r = TicketResolver(source="github")
+    for b in ("release-2.3", "v1-2", "ver-3", "rc-1", "hotfix-9", "sprint-5", "v1.2.3"):
+        assert r.from_branch(b) is None, b
+    # real keys still resolve — including under a release/hotfix path segment
+    assert r.from_branch("release/PROJ-1") == "PROJ-1"
+    assert r.from_branch("hotfix/PROJ-123") == "PROJ-123"
+    assert r.from_branch("feature/123-add-auth") == "GH-123"
+    assert r.from_branch("feat/proj-9") == "PROJ-9"

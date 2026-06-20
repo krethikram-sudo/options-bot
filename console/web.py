@@ -588,6 +588,23 @@ def _recon_strip(report: dict) -> str:
             f'<span class=muted style="font-size:12px">{_e(source_label)}</span></div>')
 
 
+def _pricing_warn(report: dict) -> str:
+    """Honest flag when some spend was priced by nearest-tier fallback (an
+    unrecognized model id). For a finance product, an estimated number must never
+    masquerade as exact — so we name it and the dollar amount. Hidden below 0.5%."""
+    pf = (report or {}).get("pricing_fidelity") or {}
+    usd, share = pf.get("fallback_usd", 0.0), pf.get("fallback_share", 0.0)
+    if not usd or share < 0.005:
+        return ""
+    models = ", ".join(pf.get("models", [])[:4]) or "unrecognized model(s)"
+    return (f'<div class=ostrip style="background:var(--amber-l)">'
+            f'<span><span class="otag warn">pricing</span> '
+            f'<b style="color:var(--amber)">{money(usd)} ({share*100:.0f}%)</b> was priced at the nearest '
+            f'tier — these model ids aren\'t in our price book yet: <b>{_e(models)}</b>. '
+            f'Reconciliation against your invoice will catch any gap.</span>'
+            f'<span class=muted style="font-size:12px">tell us to add exact rates</span></div>')
+
+
 def _persona_card(value: str, title: str, desc: str) -> str:
     return (f'<form method=post action="/app/persona" style="margin:0">'
             f'<input type=hidden name=persona value="{value}">'
@@ -896,7 +913,8 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     fidelity = f'<div style="margin-top:16px">{fidelity}</div>' if fidelity else ""
 
     body = (chooser + head + _persona_switch(persona) + _sample_strip(report) + checklist
-            + _budget_strip(statuses) + _kpis_row(report, history, persona) + _recon_strip(report)
+            + _budget_strip(statuses) + _kpis_row(report, history, persona)
+            + _recon_strip(report) + _pricing_warn(report)
             + fidelity + tm_row
             + '<div class=ogrid style="margin-top:16px">' + _forecast_card(report)
             + _explore_card(persona) + '</div>' + _sync_line(report, conn))
@@ -1028,8 +1046,8 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                   '<a href="/app/outlay/export.csv?view=people">engineers</a></div>')
 
     body = (chooser + ohead + _persona_switch(persona) + _sample_strip(report) + checklist
-            + _budget_strip(statuses) + kpis + _recon_strip(report) + _sync_line(report, conn)
-            + olinks + grid)
+            + _budget_strip(statuses) + kpis + _recon_strip(report) + _pricing_warn(report)
+            + _sync_line(report, conn) + olinks + grid)
     return page("Spend", body, account, active="/app/outlay")
 
 
