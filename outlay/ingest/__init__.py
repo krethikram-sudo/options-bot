@@ -20,6 +20,7 @@ admin APIs.
 from .anthropic_admin import (
     AnthropicAdminClient,
     parse_admin_usage_report,
+    parse_cost_report,
 )
 from .anthropic_usage import parse_anthropic_usage
 from .bedrock import (
@@ -50,6 +51,7 @@ __all__ = [
     "LinearClient",
     "PLANNERS",
     "parse_admin_usage_report",
+    "parse_cost_report",
     "AnthropicAdminClient",
     "parse_claude_code_transcript",
     "parse_claude_code_dir",

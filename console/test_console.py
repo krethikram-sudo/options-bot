@@ -1885,3 +1885,33 @@ def test_outlay_run_accepts_bedrock_logs(env, client):
     assert r.status_code == 200 and r.json()["ok"] is True, r.text
     r = client.get("/app/outlay")
     assert r.status_code == 200 and "AI spend" in r.text
+
+
+def test_outlay_sync_reconciles_to_cost_report(env, client):
+    """When Anthropic is the sole usage source, sync pulls the Cost Report and
+    attaches a reconciliation block (computed vs billed)."""
+    from console import outlay_app
+    import json
+    fix = _fixtures()
+    issues = json.loads((fix / "github_issues.json").read_text())["issues"]
+    admin = json.loads((fix / "anthropic_admin_report.json").read_text())
+
+    def t(method, url, headers, body):
+        if "api.github.com" in url:
+            return issues
+        if "cost_report" in url:
+            return {"data": [{"results": [{"amount": "999.00", "currency": "USD"}]}]}
+        return admin
+
+    conn = {"tracker": "github", "github_owner": "acme", "github_repo": "web",
+            "github_token": "ghp", "anthropic_key": "sk-ant-admin-x"}
+    report = outlay_app.sync(conn, transport=t)
+    rec = report.get("reconciliation")
+    assert rec and rec["source"] == "anthropic_cost_report"
+    assert rec["invoice_usd"] == 999.0
+    assert "computed_usd" in rec and "delta_pct" in rec
+    # the dashboard renders the reconciliation strip
+    from console import web
+    html = web.outlay_page({"email": "u@x.com", "role": "customer", "team_role": "owner",
+                            "display_email": "u@x.com"}, report, persona="finance")
+    assert "reconciled" in html and "Anthropic Cost Report" in html

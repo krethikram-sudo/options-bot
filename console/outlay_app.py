@@ -373,8 +373,17 @@ def sync(conn: dict, window_days: int = 30, transport=None) -> dict:
                 raise ValueError("Add a GitHub repo + read-only token.")
             work = GitHubIssuesClient(token=gh, transport=transport).pull(owner, repo)
         events = []
+        invoice_usd = None
         if ak:
-            events += AnthropicAdminClient(api_key=ak, transport=transport).pull(starting_at)
+            client = AnthropicAdminClient(api_key=ak, transport=transport)
+            events += client.pull(starting_at)
+            # Reconcile against Anthropic's own billed figure — but only when
+            # Anthropic is the sole usage source, so the comparison is apples-to-apples.
+            if not ck:
+                try:
+                    invoice_usd = client.pull_cost(starting_at)
+                except Exception:  # noqa: BLE001 — reconciliation is best-effort, never fail the sync
+                    invoice_usd = None
         if ck:
             start_ms, end_ms = int(since.timestamp() * 1000), int(now.timestamp() * 1000)
             events += CursorAdminClient(api_key=ck, transport=transport).pull(start_ms, end_ms)
@@ -384,4 +393,15 @@ def sync(conn: dict, window_days: int = 30, transport=None) -> dict:
         raise ValueError(f"Couldn't sync from your sources: {e}") from e
 
     result, stats, size_models = _fit(work, events)
-    return _report(work, result, stats, size_models, None, window_days)
+    report = _report(work, result, stats, size_models, None, window_days)
+    if invoice_usd is not None and invoice_usd > 0:
+        computed = (report.get("spend") or {}).get("total_usd", 0.0)
+        report["reconciliation"] = {
+            "source": "anthropic_cost_report",
+            "invoice_usd": round(invoice_usd, 2),
+            "computed_usd": round(computed, 2),
+            "delta_usd": round(computed - invoice_usd, 2),
+            "delta_pct": round((computed - invoice_usd) / invoice_usd * 100, 1),
+            "window_days": window_days,
+        }
+    return report
