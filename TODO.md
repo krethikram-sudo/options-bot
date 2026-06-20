@@ -100,6 +100,14 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — identity→team mapping: cost-center allocation works (PR #105)
+- [x] **Real gap closed:** the console never built an IdentityGraph, so team/cost-center allocation (the
+      finance lead view + the low-coverage fallback) silently failed on synced data. Added `domain_to_team`
+      to the engine; `outlay_app.identity_graph(text)` parses `email/keyid/@domain -> Team` maps; persisted
+      per-account (`identity_map`); a "Map people to teams" editor on Connect; import + sync apply it; the
+      low-coverage diagnostic links to it. Anthropic usage parser now reads top-level user/branch/session.
+      284 tests. Verified: ticketless usage allocates to Platform/Growth/Engineering (incl. domain rule).
+
 ### 2026-06-20 — raise ticket coverage without behavior change (PRs #102, #103)
 - [x] **Recover branch→ticket link from PRs/commits** (#102). `outlay/link.py`: `parse_closing_refs`
       ("Closes #123" / "fixes PROJ-45" / bare keys) + `link_branches` stamps each PR's head branch onto the
