@@ -20,7 +20,8 @@ from outlay.attribute import attribute
 from outlay.backtest import backtest
 from outlay.forecast import class_stats, find_anomalies, forecast_roadmap
 from outlay.ingest import (parse_anthropic_usage, parse_bedrock_log_text,
-                            parse_github_issues, parse_vertex_log_text)
+                            parse_github_issues, parse_openai_usage_text,
+                            parse_vertex_log_text)
 from outlay.recommend import recommend
 from outlay.serialize import to_dict
 from outlay.size import fit_size_models
@@ -50,6 +51,14 @@ def _looks_like_vertex(usage) -> bool:
     return "publishers/anthropic" in head or ('"jsonPayload"' in head and '"model_id"' in head)
 
 
+def _looks_like_openai(usage) -> bool:
+    """OpenAI/Azure usage carries gpt-* / o1 / o3 model ids or an input_cached_tokens field."""
+    text = usage if isinstance(usage, str) else json.dumps(usage)
+    head = (text or "").strip()[:2000]
+    return ('"gpt-' in head or '"o1' in head or '"o3' in head
+            or "input_cached_tokens" in head)
+
+
 def _parse_usage(usage):
     """Parse pasted/uploaded AI usage, auto-detecting the source: AWS Bedrock
     invocation logs, Google Vertex (Claude) logs, or Anthropic per-call usage JSON."""
@@ -64,6 +73,11 @@ def _parse_usage(usage):
             return parse_bedrock_log_text(text)
         except Exception as e:  # noqa: BLE001
             raise ValueError(f"Couldn't read the Bedrock invocation logs: {e}") from e
+    if _looks_like_openai(usage):
+        try:
+            return parse_openai_usage_text(text)
+        except Exception as e:  # noqa: BLE001
+            raise ValueError(f"Couldn't read the OpenAI usage data: {e}") from e
     up = _tmp(usage)
     try:
         return parse_anthropic_usage(up)

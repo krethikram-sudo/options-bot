@@ -29,6 +29,11 @@ from .bedrock import (
     parse_bedrock_log_text,
 )
 from .claude_code import parse_claude_code_dir, parse_claude_code_transcript
+from .openai_usage import (
+    parse_openai_usage,
+    parse_openai_usage_file,
+    parse_openai_usage_text,
+)
 from .vertex import (
     parse_vertex_log_file,
     parse_vertex_log_text,
@@ -68,4 +73,7 @@ __all__ = [
     "parse_vertex_logs",
     "parse_vertex_log_text",
     "parse_vertex_log_file",
+    "parse_openai_usage",
+    "parse_openai_usage_text",
+    "parse_openai_usage_file",
 ]
