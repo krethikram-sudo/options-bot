@@ -551,6 +551,41 @@ def _check_anomalies(account_id: int, report: dict) -> None:
     store.set_alerted_anomalies(account_id, ids)
 
 
+# Alert once auto-sync has failed this many times in a row (a single blip is
+# usually transient; a standing failure means a token was revoked / data is stale).
+_SYNC_FAIL_ALERT_AT = 2
+_SYNC_ALERT_COOLDOWN = 12 * 3600  # don't re-alert more than every 12h while broken
+
+
+def _alert_sync_failure(account_id: int, fails: int, message: str, now: float | None = None) -> None:
+    """On a *persistent* auto-sync failure, tell the owner once (email + Slack) so
+    stale data never goes unnoticed. De-duped via sync_alerted_at so a connection
+    that stays broken doesn't re-alert every cron tick."""
+    if fails < _SYNC_FAIL_ALERT_AT:
+        return
+    import time
+    conn = store.get_outlay_connection(account_id) or {}
+    now = now or time.time()
+    last = conn.get("sync_alerted_at") or 0
+    if last and now - last < _SYNC_ALERT_COOLDOWN:
+        return
+    since = ""
+    if conn.get("synced_at"):
+        from datetime import datetime, timezone
+        since = datetime.fromtimestamp(conn["synced_at"], timezone.utc).strftime("%b %d, %Y")
+    acct = store.get_account(account_id)
+    email = (acct or {}).get("email")
+    if email:
+        try:
+            notify.send_sync_failure_alert(email, fails, last_error=message, since=since, product="Outlay")
+        except Exception:  # noqa: BLE001 — alerting must never break the sync sweep
+            pass
+    _slack_notify(account_id,
+                  f":warning: *Auto-sync failing* — {fails} attempts in a row. Spend data is going "
+                  f"stale{f' (last good {since})' if since else ''}. Fix the connection.")
+    store.mark_outlay_sync_alerted(account_id, now=now)
+
+
 _AUTO_SYNC_CHOICES = (0, 24, 168)  # off · daily · weekly
 
 
@@ -575,7 +610,8 @@ def _run_due_syncs(now: float | None = None, transport=None) -> dict:
         try:
             report = outlay_app.sync(conn, transport=transport)
         except Exception as e:  # noqa: BLE001 — keep sweeping other accounts
-            store.mark_outlay_sync_error(account_id, str(e), now=now)
+            fails = store.mark_outlay_sync_error(account_id, str(e), now=now)
+            _alert_sync_failure(account_id, fails, str(e), now=now)
             failed += 1
             continue
         store.save_outlay_report(account_id, report)

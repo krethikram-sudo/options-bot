@@ -303,6 +303,8 @@ _MIGRATIONS = [
     "ALTER TABLE outlay_connections ADD COLUMN anomaly_threshold REAL",  # runaway flag multiple (default 3x)
     "ALTER TABLE outlay_connections ADD COLUMN muted_tickets TEXT",  # JSON: ticket ids muted from anomalies
     "ALTER TABLE outlay_connections ADD COLUMN slack_webhook TEXT",  # Slack/Teams incoming webhook for alerts
+    "ALTER TABLE outlay_connections ADD COLUMN sync_fail_count INTEGER NOT NULL DEFAULT 0",  # consecutive auto-sync failures
+    "ALTER TABLE outlay_connections ADD COLUMN sync_alerted_at REAL",  # last stale/failed-sync alert sent (de-dupe)
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -974,24 +976,45 @@ def get_outlay_connection(account_id: int, path: str | None = None) -> dict | No
 
 def mark_outlay_synced(account_id: int, path: str | None = None,
                        now: float | None = None) -> None:
-    """Record a successful sync: stamp synced_at + last_attempt_at, clear any error."""
+    """Record a successful sync: stamp synced_at + last_attempt_at, clear any error
+    and the consecutive-failure / alert state (the pipeline is healthy again)."""
     ts = now or time.time()
     conn = connect(path)
     try:
         conn.execute("UPDATE outlay_connections SET synced_at=?, last_attempt_at=?,"
-                     " last_sync_error=NULL WHERE account_id=?", (ts, ts, account_id))
+                     " last_sync_error=NULL, sync_fail_count=0, sync_alerted_at=NULL"
+                     " WHERE account_id=?", (ts, ts, account_id))
         conn.commit()
     finally:
         conn.close()
 
 
 def mark_outlay_sync_error(account_id: int, message: str, path: str | None = None,
-                           now: float | None = None) -> None:
-    """Record a failed sync attempt so the UI can surface why refreshing stopped."""
+                           now: float | None = None) -> int:
+    """Record a failed sync attempt so the UI can surface why refreshing stopped.
+    Increments the consecutive-failure counter and returns its new value so callers
+    can alert once a failure persists (vs. a single transient blip)."""
     conn = connect(path)
     try:
-        conn.execute("UPDATE outlay_connections SET last_attempt_at=?, last_sync_error=?"
-                     " WHERE account_id=?", (now or time.time(), (message or "")[:300], account_id))
+        conn.execute("UPDATE outlay_connections SET last_attempt_at=?, last_sync_error=?,"
+                     " sync_fail_count=COALESCE(sync_fail_count,0)+1 WHERE account_id=?",
+                     (now or time.time(), (message or "")[:300], account_id))
+        conn.commit()
+        row = conn.execute("SELECT sync_fail_count FROM outlay_connections WHERE account_id=?",
+                           (account_id,)).fetchone()
+        return row["sync_fail_count"] if row else 0
+    finally:
+        conn.close()
+
+
+def mark_outlay_sync_alerted(account_id: int, path: str | None = None,
+                             now: float | None = None) -> None:
+    """Stamp when we last alerted about a stale/failing sync, so we don't re-spam
+    the owner every cron tick while the connection stays broken."""
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE outlay_connections SET sync_alerted_at=? WHERE account_id=?",
+                     (now or time.time(), account_id))
         conn.commit()
     finally:
         conn.close()

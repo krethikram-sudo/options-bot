@@ -1498,6 +1498,73 @@ def test_run_due_syncs_records_per_account_error(env, client):
     assert store.get_outlay_connection(acct["id"])["last_sync_error"]
 
 
+def test_sync_fail_count_increments_and_clears(env):
+    _, store = env
+    a = store.create_account("fc@x.com", "password123")
+    store.save_outlay_connection(a["id"], github_owner="acme", github_repo="web",
+                                 github_token="ghp_x", auto_sync_hours=24)
+    assert store.mark_outlay_sync_error(a["id"], "boom") == 1
+    assert store.mark_outlay_sync_error(a["id"], "boom again") == 2
+    assert store.get_outlay_connection(a["id"])["sync_fail_count"] == 2
+    # a success resets the counter + the alert de-dupe stamp
+    store.mark_outlay_sync_alerted(a["id"])
+    assert store.get_outlay_connection(a["id"])["sync_alerted_at"]
+    store.mark_outlay_synced(a["id"])
+    conn = store.get_outlay_connection(a["id"])
+    assert conn["sync_fail_count"] == 0 and conn["sync_alerted_at"] is None
+
+
+def test_repeated_sync_failure_alerts_owner_once(env, monkeypatch):
+    from console import server
+    _, store = env
+    a = store.create_account("alertme@x.com", "password123")
+    store.save_outlay_connection(a["id"], github_owner="acme", github_repo="web",
+                                 github_token="ghp_x", auto_sync_hours=24)
+    sent = []
+    monkeypatch.setattr(server.notify, "send_sync_failure_alert",
+                        lambda *a, **k: sent.append((a, k)) or True)
+    slacks = []
+    monkeypatch.setattr(server, "_slack_notify", lambda aid, text: slacks.append(text))
+
+    # first failure: below threshold → no alert
+    server._run_due_syncs(transport=_fake_transport())
+    assert sent == [] and slacks == []
+    # second consecutive failure: crosses threshold → exactly one alert (email + Slack)
+    server._run_due_syncs(transport=_fake_transport())
+    assert len(sent) == 1 and len(slacks) == 1
+    assert store.get_outlay_connection(a["id"])["sync_alerted_at"]
+    # third failure still inside the cooldown → not re-alerted (no spam)
+    server._run_due_syncs(transport=_fake_transport())
+    assert len(sent) == 1 and len(slacks) == 1
+
+
+def test_staleness_banner_surfaces_on_dashboard(env, client):
+    import time
+    _, store = env
+    _signup(client, email="stale@x.com")
+    acct = store.get_account_by_email("stale@x.com")
+    client.post("/app/outlay/sample", follow_redirects=True)
+
+    # healthy + fresh → no banner
+    store.save_outlay_connection(acct["id"], github_owner="acme", github_repo="web",
+                                 github_token="ghp_x", auto_sync_hours=24)
+    store.mark_outlay_synced(acct["id"])
+    healthy = client.get("/app/outlay").text
+    assert "refresh window" not in healthy and "Auto-sync has failed" not in healthy
+
+    # data older than 2× its daily window → amber staleness banner
+    old = time.time() - 3 * 24 * 3600
+    store.mark_outlay_synced(acct["id"], now=old)
+    page = client.get("/app/outlay").text
+    assert "older than its daily refresh window" in page
+
+    # standing auto-sync failures → red "auto-sync has failed" banner
+    store.mark_outlay_sync_error(acct["id"], "bad token")
+    store.mark_outlay_sync_error(acct["id"], "bad token")
+    page = client.get("/app/outlay").text
+    assert "Auto-sync has failed 2 times" in page and "last good numbers" in page
+
+
 def test_outlay_onboarding_checklist_shows_and_completes(env, client):
     _, store = env
     _signup(client, email="onb@x.com")
