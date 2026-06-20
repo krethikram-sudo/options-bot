@@ -100,6 +100,18 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — reconciliation depth + Compare polish
+- [x] **Multi-provider reconciliation** (PRs #96, #97). Reconciliation ("computed vs billed · within N%")
+      was Anthropic-only; now spans every provider. Added cost-report parsers — `parse_bedrock_cost`
+      (AWS Cost Explorer), `parse_vertex_cost` (GCP Cloud Billing, nets credits), `parse_openai_costs`
+      (OpenAI Costs API) — with fixtures/tests; a generic `reconcile()` and `parse_cost_export()` auto-detector;
+      a provider-aware recon strip; and an optional "Provider cost export" paste on import so any provider
+      reconciles from the export the customer already pulls (no extra keys). Live signed pullers (AWS SigV4 /
+      GCP OAuth) remain the creds-gated follow-up. 270 tests pass.
+- [x] **Compare polish: the costing wedge** (PR #98). Landing Compare section + full /compare page gained
+      "Cache-aware costing (per token class)" and "Reconciled to the provider invoice" rows; copy now calls out
+      that token-computed tools overstate cache-heavy workloads (7.4× on our own usage). Marketing auto-deploys.
+
 ### 2026-06-20 — real-data proof (dogfood)
 - [x] **Proof on the marketing site + leading the audit readout** (PR #94). Added a "The math" section
       (+ nav link) to outlay-ai.com showing naive $2,516 vs Outlay cache-aware $340 (7.4×, 98% cache reads),
