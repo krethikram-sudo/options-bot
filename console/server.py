@@ -105,6 +105,53 @@ def _key_deployment(request: Request) -> tuple[str | None, str | None]:
     return resolved["deployment_id"], None
 
 
+# --- Public API auth + rate limiting (the /api/v1/* read endpoints) ---------- #
+# In-process fixed-window limiter, keyed by API key. The console runs as a single
+# Fly machine, so in-memory is sufficient and keeps us dependency-free; it fails
+# open across restarts (acceptable for a read-only export API). Tune via env.
+import threading as _threading
+
+_API_RATE_LIMIT = int(os.environ.get("OUTLAY_API_RATE_LIMIT", "120"))  # requests/window
+_API_RATE_WINDOW = int(os.environ.get("OUTLAY_API_RATE_WINDOW", "60"))  # seconds
+_rate_state: dict = {}
+_rate_lock = _threading.Lock()
+
+
+def _rate_ok(key_id, now: float | None = None) -> tuple[bool, int]:
+    """Fixed-window counter for one API key. Returns (allowed, retry_after_secs)."""
+    if _API_RATE_LIMIT <= 0:
+        return True, 0
+    import time
+    now = now or time.time()
+    win = int(now // _API_RATE_WINDOW)
+    with _rate_lock:
+        slot = _rate_state.get(key_id)
+        if not slot or slot[0] != win:
+            _rate_state[key_id] = [win, 1]
+            return True, 0
+        if slot[1] >= _API_RATE_LIMIT:
+            retry = int((win + 1) * _API_RATE_WINDOW - now) + 1
+            return False, max(1, retry)
+        slot[1] += 1
+        return True, 0
+
+
+def _api_auth(request: Request):
+    """Resolve + rate-limit a public API request. Returns (resolved, error_response):
+    on success (resolved, None); on failure (None, JSONResponse) with 401 or 429."""
+    auth = request.headers.get("authorization", "")
+    tok = auth[7:].strip() if auth[:7].lower() == "bearer " else request.headers.get("x-modelpilot-key", "")
+    resolved = store.resolve_api_key(tok) if tok else None
+    if not resolved:
+        return None, JSONResponse({"error": "invalid api key"}, status_code=401)
+    ok, retry = _rate_ok(resolved.get("key_id"))
+    if not ok:
+        return None, JSONResponse(
+            {"error": "rate limit exceeded", "retry_after": retry},
+            status_code=429, headers={"Retry-After": str(retry)})
+    return resolved, None
+
+
 def _current(request: Request) -> dict | None:
     tok = request.cookies.get(COOKIE)
     if not tok:
@@ -1016,11 +1063,9 @@ def api_v1_spend(request: Request):
     """Token-authed spend export for BI/warehouse pipelines. Bearer (or
     x-modelpilot-key) API key → the account's latest report as FOCUS-aligned rows.
     Read-only; returns the same attributed numbers shown in the console."""
-    auth = request.headers.get("authorization", "")
-    tok = auth[7:].strip() if auth[:7].lower() == "bearer " else request.headers.get("x-modelpilot-key", "")
-    resolved = store.resolve_api_key(tok) if tok else None
-    if not resolved:
-        return JSONResponse({"error": "invalid api key"}, status_code=401)
+    resolved, err = _api_auth(request)
+    if err:
+        return err
     report = store.get_outlay_report(resolved["account_id"])
     conn = store.get_outlay_connection(resolved["account_id"])
     if not report:
@@ -1040,11 +1085,9 @@ def api_v1_data_quality(request: Request):
     """Token-authed trust summary — coverage, reconciliation, pricing fidelity, and
     freshness rolled into one good/fair/poor verdict. Lightweight (no rows), so a
     pipeline can gate or a monitor can alert on data confidence."""
-    auth = request.headers.get("authorization", "")
-    tok = auth[7:].strip() if auth[:7].lower() == "bearer " else request.headers.get("x-modelpilot-key", "")
-    resolved = store.resolve_api_key(tok) if tok else None
-    if not resolved:
-        return JSONResponse({"error": "invalid api key"}, status_code=401)
+    resolved, err = _api_auth(request)
+    if err:
+        return err
     report = store.get_outlay_report(resolved["account_id"])
     conn = store.get_outlay_connection(resolved["account_id"])
     return JSONResponse({"account_id": resolved["account_id"],
@@ -1064,11 +1107,9 @@ def api_v1_audit(request: Request, since: int = 0, limit: int = 1000):
     """Token-authed audit-log export for SIEM ingestion (Splunk/Datadog/etc).
     Bearer/x-modelpilot-key API key → security events in ascending id order. Poll
     incrementally with `?since=<next_since>` to fetch only new events, gap-free."""
-    auth = request.headers.get("authorization", "")
-    tok = auth[7:].strip() if auth[:7].lower() == "bearer " else request.headers.get("x-modelpilot-key", "")
-    resolved = store.resolve_api_key(tok) if tok else None
-    if not resolved:
-        return JSONResponse({"error": "invalid api key"}, status_code=401)
+    resolved, err = _api_auth(request)
+    if err:
+        return err
     rows = store.audit_events(resolved["account_id"], since_id=since, limit=limit)
     events = [{"id": r["id"], "ts": _audit_iso(r["ts"]), "actor": r.get("actor") or "",
                "action": r.get("action") or "", "detail": r.get("detail") or ""} for r in rows]

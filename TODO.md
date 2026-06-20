@@ -100,6 +100,13 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — API hardening: per-key rate limiting on /api/v1/*
+- [x] The public token-authed endpoints were unthrottled — a leaked key could hammer them. Added an in-process
+      fixed-window limiter keyed by API key (default 120 req / 60s, env-tunable `OUTLAY_API_RATE_LIMIT` /
+      `_WINDOW`). Over the limit → structured `429` + `Retry-After`. Auth is checked first (bad key still 401).
+- [x] Refactored the repeated bearer-extract/resolve into one `_api_auth(request)` → `(resolved, error)` used by
+      `/api/v1/spend`, `/api/v1/audit`, `/api/v1/data-quality`. Documented the limit on the API page. 307 tests.
+
 ### 2026-06-20 — scheduled monthly finance close pack (FOCUS CSV attached)
 - [x] Month-end close is a recurring finance workflow — automated the delivery of the artifact they need.
 - [x] **`console/close_pack.py`** (mirrors `spend_digest.py`): `build_close_pack` (period summary + top cost
