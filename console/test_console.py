@@ -1682,6 +1682,59 @@ def test_outlay_csv_export(env, client):
     assert "/app/outlay/export.csv?view=people" in client.get("/app/outlay").text
 
 
+def test_data_quality_verdict_engine():
+    import time
+    from console import outlay_app
+    now = time.time()
+    good_report = {"spend": {"total_usd": 100.0, "ticket_coverage": 0.9},
+                   "reconciliation": {"delta_pct": 2.0, "source": "anthropic"}}
+    fresh = {"synced_at": now, "auto_sync_hours": 24}
+    dq = outlay_app.data_quality(good_report, fresh, now=now)
+    assert dq["score"] == "good"
+    assert {c["key"] for c in dq["checks"]} == {"coverage", "reconciliation", "pricing", "freshness"}
+
+    # low coverage drags the verdict to poor
+    bad = {"spend": {"total_usd": 100.0, "ticket_coverage": 0.3}}
+    assert outlay_app.data_quality(bad, fresh, now=now)["score"] == "poor"
+
+    # a far-off invoice → reconciliation poor
+    off = {"spend": {"total_usd": 100.0, "ticket_coverage": 0.95},
+           "reconciliation": {"delta_pct": 40.0, "source": "aws"}}
+    assert outlay_app.data_quality(off, fresh, now=now)["score"] == "poor"
+
+    # repeated sync failure → freshness poor even with good attribution
+    stale = {"synced_at": now - 10 * 86400, "auto_sync_hours": 24, "sync_fail_count": 3}
+    assert outlay_app.data_quality(good_report, stale, now=now)["score"] == "poor"
+
+    # 'na' checks never drag the score down (no invoice, no spend yet)
+    empty = outlay_app.data_quality({"spend": {"total_usd": 0}}, None, now=now)
+    assert empty["score"] in ("good", "na")
+    assert any(c["status"] == "na" for c in empty["checks"])
+
+
+def test_data_quality_api_and_badge(env, client):
+    _, store = env
+    _signup(client, email="dq@x.com")
+    acct = store.get_account_by_email("dq@x.com")
+    dep = store.deployments_for(acct["id"])[0]["deployment_id"]
+    key = store.create_api_key(acct["id"], dep, "dq")["full_key"]
+
+    # token-authed verdict endpoint: 401 without a key
+    assert client.get("/api/v1/data-quality").status_code == 401
+    r = client.get("/api/v1/data-quality", headers={"Authorization": f"Bearer {key}"})
+    assert r.status_code == 200 and r.json()["account_id"] == acct["id"]
+    assert "score" in r.json() and "checks" in r.json()
+
+    # with sample data the spend API embeds the data_quality block
+    client.post("/app/outlay/sample", follow_redirects=True)
+    spend = client.get("/api/v1/spend", headers={"Authorization": f"Bearer {key}"}).json()
+    assert "data_quality" in spend and spend["data_quality"]["score"] in ("good", "fair", "poor")
+    # ...and the Spend page shows the at-a-glance confidence badge
+    assert "Data confidence:" in client.get("/app/outlay").text
+    # API page documents the endpoint
+    assert "GET /api/v1/data-quality" in client.get("/app/api").text
+
+
 def test_audit_export_csv_and_siem_api(env, client):
     _, store = env
     _signup(client, email="siem@x.com")

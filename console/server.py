@@ -1017,14 +1017,33 @@ def api_v1_spend(request: Request):
     if not resolved:
         return JSONResponse({"error": "invalid api key"}, status_code=401)
     report = store.get_outlay_report(resolved["account_id"])
+    conn = store.get_outlay_connection(resolved["account_id"])
     if not report:
         return JSONResponse({"account_id": resolved["account_id"], "period": None,
-                             "currency": "USD", "total_usd": 0.0, "rows": []})
+                             "currency": "USD", "total_usd": 0.0,
+                             "data_quality": outlay_app.data_quality({}, conn), "rows": []})
     rows = outlay_app.focus_rows(report)
     total = round(sum(float(r.get("BilledCost") or 0) for r in rows), 6)
     period = {"start": rows[0]["ChargePeriodStart"], "end": rows[0]["ChargePeriodEnd"]} if rows else None
     return JSONResponse({"account_id": resolved["account_id"], "period": period,
-                         "currency": "USD", "total_usd": total, "rows": rows})
+                         "currency": "USD", "total_usd": total,
+                         "data_quality": outlay_app.data_quality(report, conn), "rows": rows})
+
+
+@app.get("/api/v1/data-quality")
+def api_v1_data_quality(request: Request):
+    """Token-authed trust summary — coverage, reconciliation, pricing fidelity, and
+    freshness rolled into one good/fair/poor verdict. Lightweight (no rows), so a
+    pipeline can gate or a monitor can alert on data confidence."""
+    auth = request.headers.get("authorization", "")
+    tok = auth[7:].strip() if auth[:7].lower() == "bearer " else request.headers.get("x-modelpilot-key", "")
+    resolved = store.resolve_api_key(tok) if tok else None
+    if not resolved:
+        return JSONResponse({"error": "invalid api key"}, status_code=401)
+    report = store.get_outlay_report(resolved["account_id"])
+    conn = store.get_outlay_connection(resolved["account_id"])
+    return JSONResponse({"account_id": resolved["account_id"],
+                         **outlay_app.data_quality(report or {}, conn)})
 
 
 def _audit_iso(ts) -> str:

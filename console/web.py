@@ -999,6 +999,41 @@ def _sample_strip(report: dict) -> str:
             '<button class="btn sec sm">Clear sample data</button></form></div>')
 
 
+def _data_quality_badge(report: dict, conn: dict | None) -> str:
+    """A single 'can I trust these numbers?' verdict — Good / Fair / Poor — with the
+    contributing checks one click away. The individual signals already render as
+    strips below; this is the at-a-glance rollup finance asked for. Hidden until
+    there's real spend to judge."""
+    if not (report or {}).get("spend", {}).get("total_usd", 0):
+        return ""
+    from . import outlay_app  # lazy: outlay_app never imports web
+    dq = outlay_app.data_quality(report, conn or {})
+    score = dq.get("score", "na")
+    if score == "na":
+        return ""
+    tone = {"good": ("var(--grn-d)", "var(--grn-l)", "Good"),
+            "fair": ("var(--amber)", "var(--amber-l)", "Fair"),
+            "poor": ("var(--red)", "var(--red-l)", "Poor")}[score]
+    mark = {"good": "✓", "fair": "•", "poor": "⚠"}[score]
+    rows = ""
+    for c in dq.get("checks", []):
+        st = c.get("status", "na")
+        dot = {"good": "var(--grn-d)", "fair": "var(--amber)",
+               "poor": "var(--red)", "na": "var(--mut)"}.get(st, "var(--mut)")
+        lab = "n/a" if st == "na" else st
+        rows += (f'<li style="margin:4px 0"><span style="color:{dot};font-weight:600">●</span> '
+                 f'<b>{_e(c.get("label",""))}</b> — <span class=muted>{_e(c.get("detail",""))}</span> '
+                 f'<span style="color:{dot};font-size:11px;text-transform:uppercase">{lab}</span></li>')
+    return (f'<details class=dqbadge style="margin:0 0 14px">'
+            f'<summary style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;'
+            f'padding:5px 11px;border-radius:999px;background:{tone[1]};color:{tone[0]};'
+            f'font-size:13px;font-weight:600;list-style:none">'
+            f'{mark} Data confidence: {tone[2]}<span class=muted style="font-weight:400;font-size:12px">'
+            f'· what\'s this?</span></summary>'
+            f'<ul style="margin:10px 0 0;padding-left:4px;list-style:none;font-size:13px">{rows}</ul>'
+            f'</details>')
+
+
 def _staleness_banner(report: dict, conn: dict | None) -> str:
     """Loud, top-of-page banner when the numbers may be stale — the #1 silent
     failure for a spend tool is data that quietly stopped updating. Fires when
@@ -1382,7 +1417,8 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
 
     body = (chooser + ohead + _persona_switch(persona) + _staleness_banner(report, conn)
             + _sample_strip(report) + checklist
-            + _budget_strip(statuses) + kpis + _recon_strip(report) + _pricing_warn(report)
+            + _budget_strip(statuses) + _data_quality_badge(report, conn)
+            + kpis + _recon_strip(report) + _pricing_warn(report)
             + cov_diag + _sync_line(report, conn) + olinks + grid)
     return page("Spend", body, account, active="/app/outlay")
 
@@ -2572,6 +2608,25 @@ def api_page(account: dict, keys: list[dict], deployments: list[dict],
       <pre>{_e(curl_audit)}</pre>
       <p class="small muted" style="margin-bottom:6px"><b>Response</b></p>
       <pre>{_e(resp_audit)}</pre>
+    </div>
+
+    <div class=card style="margin-top:16px">
+      <h2 style="margin-top:0"><code>GET /api/v1/data-quality</code></h2>
+      <p class="small muted">A lightweight trust verdict — ticket coverage, invoice reconciliation, pricing
+      fidelity, and data freshness rolled into one <code>good</code> / <code>fair</code> / <code>poor</code>
+      score (no rows). Gate a pipeline or alert a monitor on data confidence.</p>
+      <pre>{{
+  "account_id": 42,
+  "score": "fair",
+  "checks": [
+    {{"key": "coverage",       "label": "Ticket coverage",      "status": "good", "detail": "…"}},
+    {{"key": "reconciliation", "label": "Invoice reconciliation","status": "fair", "detail": "…"}},
+    {{"key": "pricing",        "label": "Pricing fidelity",     "status": "good", "detail": "…"}},
+    {{"key": "freshness",      "label": "Data freshness",       "status": "good", "detail": "…"}}
+  ]
+}}</pre>
+      <p class="small muted">The same block is embedded in <code>/api/v1/spend</code> under
+      <code>data_quality</code>.</p>
     </div>
 
     <div class=card style="margin-top:16px">
