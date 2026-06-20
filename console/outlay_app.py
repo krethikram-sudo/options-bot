@@ -456,6 +456,54 @@ def budget_statuses(report: dict, budgets: list[dict]) -> list[dict]:
     return out
 
 
+# FOCUS (FinOps Open Cost & Usage Specification) — the neutral, community standard
+# for normalized cost+usage data. We emit FOCUS-aligned rows (standard column names)
+# at the ticket grain with team/work-type Tags, so finance can load Outlay's spend
+# into any FOCUS-aware FinOps/BI tool. (Aligned, not formally certified-conformant.)
+FOCUS_COLUMNS = [
+    "BilledCost", "EffectiveCost", "BillingCurrency",
+    "BillingPeriodStart", "BillingPeriodEnd", "ChargePeriodStart", "ChargePeriodEnd",
+    "ProviderName", "ServiceCategory", "ServiceName", "ChargeCategory",
+    "ChargeDescription", "ResourceId", "ResourceName", "Tags",
+]
+
+
+def focus_rows(report: dict, window_days: int = 30) -> list[dict]:
+    """Per-ticket spend as FOCUS-aligned charge rows."""
+    from datetime import datetime, timedelta, timezone
+    report = report or {}
+    wd = report.get("window_days") or window_days or 30
+    end = datetime.now(timezone.utc).replace(microsecond=0)
+    start = end - timedelta(days=wd)
+    si, ei = start.isoformat(), end.isoformat()
+    out: list[dict] = []
+    for t in report.get("tickets", []):
+        cost = round(t.get("cost_usd", 0.0), 6)
+        out.append({
+            "BilledCost": cost, "EffectiveCost": cost, "BillingCurrency": "USD",
+            "BillingPeriodStart": si, "BillingPeriodEnd": ei,
+            "ChargePeriodStart": si, "ChargePeriodEnd": ei,
+            "ProviderName": "", "ServiceCategory": "AI and Machine Learning",
+            "ServiceName": "LLM API", "ChargeCategory": "Usage",
+            "ChargeDescription": f"{t.get('task_class') or 'unknown'} · {t.get('status') or ''}".strip(" ·"),
+            "ResourceId": t.get("ticket_id"), "ResourceName": t.get("ticket_id"),
+            "Tags": json.dumps({"team": t.get("team_id") or "unassigned",
+                                "work_type": t.get("task_class") or "unknown"}),
+        })
+    return out
+
+
+def report_focus_csv(report: dict, window_days: int = 30) -> str:
+    import csv
+    import io
+    buf = io.StringIO()
+    w = csv.DictWriter(buf, fieldnames=FOCUS_COLUMNS)
+    w.writeheader()
+    for r in focus_rows(report, window_days):
+        w.writerow(r)
+    return buf.getvalue()
+
+
 def report_csv(report: dict, view: str = "tickets") -> str:
     """Serialize a slice of the report to CSV for finance/sheets export.
     view: tickets (spend per ticket) | people (spend per engineer) | savings."""

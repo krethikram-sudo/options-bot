@@ -100,6 +100,18 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — FOCUS export + BI/warehouse API (requirements gap, table-stake)
+- [x] Requirements research flagged "Data warehouse / BI export" and "API for integration" as MISSING
+      table-stakes for enterprise FinOps. Closed both:
+- [x] **FOCUS-aligned CSV export** — `/app/outlay/export.focus.csv` emits per-ticket charge rows using
+      FinOps Open Cost & Usage Spec (FOCUS) column names (`BilledCost`, `EffectiveCost`, `ServiceCategory`
+      = "AI and Machine Learning", `ChargeCategory` = "Usage", `Tags` = {team, work_type}, billing/charge
+      periods) so finance can load Outlay's attributed spend into any FOCUS-aware FinOps/BI tool. Aligned,
+      not formally certified-conformant (labelled as such). Linked from the finance Spend view.
+- [x] **Token-authed `GET /api/v1/spend`** — Bearer/x-modelpilot-key API key → the account's latest report
+      as `{account_id, period, currency, total_usd, rows: <FOCUS rows>}` for warehouse/BI pipelines. 401
+      without a valid key; read-only; same attributed numbers as the console. 296 tests.
+
 ### 2026-06-20 — in-house setup-guidance (Proposal A, PRs #115-117)
 - [x] Built after deep research (5-angle) found third-party DAPs (Pendo/Appcues/WalkMe/etc.) inject DOM-reading
       scripts + ship behavior to a vendor cloud — incompatible with our privacy pitch (polyfill.io/Magecart

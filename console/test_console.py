@@ -1549,6 +1549,46 @@ def test_outlay_csv_export(env, client):
     assert "/app/outlay/export.csv?view=people" in client.get("/app/outlay").text
 
 
+def test_outlay_focus_export_and_spend_api(env, client):
+    _, store = env
+    _signup(client, email="focus@x.com")
+    acct = store.get_account_by_email("focus@x.com")
+
+    # no report yet → session export redirects, API returns an empty (but valid) shape
+    assert client.get("/app/outlay/export.focus.csv", follow_redirects=False).status_code in (302, 303, 307)
+    dep = store.deployments_for(acct["id"])[0]["deployment_id"]
+    key = store.create_api_key(acct["id"], dep, "bi")["full_key"]
+    empty = client.get("/api/v1/spend", headers={"Authorization": f"Bearer {key}"})
+    assert empty.status_code == 200 and empty.json()["rows"] == [] and empty.json()["total_usd"] == 0.0
+
+    client.post("/app/outlay/sample", follow_redirects=True)
+
+    # FOCUS CSV uses the spec's column names and carries team/work-type Tags
+    r = client.get("/app/outlay/export.focus.csv")
+    assert r.status_code == 200 and "text/csv" in r.headers["content-type"]
+    assert "outlay-focus.csv" in r.headers["content-disposition"]
+    header = r.text.splitlines()[0]
+    for col in ("BilledCost", "EffectiveCost", "BillingCurrency", "ServiceCategory",
+                "ChargeCategory", "ResourceId", "Tags"):
+        assert col in header
+    assert len(r.text.splitlines()) > 1  # header + at least one charge row
+
+    # token-authed BI endpoint: 401 without a key, rows + total with one
+    assert client.get("/api/v1/spend").status_code == 401
+    assert client.get("/api/v1/spend", headers={"Authorization": "Bearer mp_live_nope"}).status_code == 401
+    ok = client.get("/api/v1/spend", headers={"Authorization": f"Bearer {key}"})
+    assert ok.status_code == 200
+    data = ok.json()
+    assert data["account_id"] == acct["id"] and data["currency"] == "USD"
+    assert data["total_usd"] > 0 and len(data["rows"]) > 0
+    assert data["period"]["start"] and data["period"]["end"]
+    assert data["rows"][0]["ServiceCategory"] == "AI and Machine Learning"
+
+    # finance persona surfaces the FOCUS export link on Spend
+    store.set_persona(acct["id"], "finance", 0)
+    assert "export.focus.csv" in client.get("/app/outlay").text
+
+
 def test_outlay_sample_data_load_and_clear(env, client):
     _, store = env
     _signup(client, email="samp@x.com")
