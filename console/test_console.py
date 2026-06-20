@@ -1682,14 +1682,57 @@ def test_outlay_csv_export(env, client):
     assert "/app/outlay/export.csv?view=people" in client.get("/app/outlay").text
 
 
+def test_audit_export_csv_and_siem_api(env, client):
+    _, store = env
+    _signup(client, email="siem@x.com")
+    acct = store.get_account_by_email("siem@x.com")
+    store.record_audit(acct["id"], "login", actor="siem@x.com")
+    store.record_audit(acct["id"], "connection.save", actor="siem@x.com", detail="tracker=github")
+
+    # CSV download (admin session) with ISO timestamps
+    csv = client.get("/app/audit/export.csv")
+    assert csv.status_code == 200 and "text/csv" in csv.headers["content-type"]
+    assert "outlay-audit.csv" in csv.headers["content-disposition"]
+    lines = csv.text.splitlines()
+    assert lines[0] == "id,timestamp,actor,action,detail"
+    assert any("connection.save" in ln and "tracker=github" in ln for ln in lines[1:])
+    assert any("T" in ln.split(",")[1] for ln in lines[1:])  # ISO-8601 timestamp column
+
+    # token-authed SIEM API: 401 without a key
+    assert client.get("/api/v1/audit").status_code == 401
+    dep = store.deployments_for(acct["id"])[0]["deployment_id"]
+    key = store.create_api_key(acct["id"], dep, "siem")["full_key"]
+    r = client.get("/api/v1/audit", headers={"Authorization": f"Bearer {key}"})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["account_id"] == acct["id"] and data["count"] >= 2
+    assert data["events"][0]["id"] < data["events"][-1]["id"]  # ascending
+    assert data["events"][-1]["id"] == data["next_since"]
+
+    # incremental polling: since=next_since returns nothing new...
+    empty = client.get("/api/v1/audit", params={"since": data["next_since"]},
+                       headers={"Authorization": f"Bearer {key}"}).json()
+    assert empty["count"] == 0 and empty["next_since"] == data["next_since"]
+    # ...until a new event lands
+    store.record_audit(acct["id"], "member.invite", actor="siem@x.com")
+    more = client.get("/api/v1/audit", params={"since": data["next_since"]},
+                      headers={"Authorization": f"Bearer {key}"}).json()
+    assert more["count"] == 1 and more["events"][0]["action"] == "member.invite"
+
+    # discoverable: Activity page links the CSV + the API
+    page = client.get("/app/audit").text
+    assert "/app/audit/export.csv" in page and "/api/v1/audit" in page
+
+
 def test_api_reference_page_documents_spend_endpoint(env, client):
     _, store = env
     _signup(client, email="apidocs@x.com")
     page = client.get("/app/api")
     assert page.status_code == 200
     txt = page.text
-    # documents the endpoint, auth, the FOCUS shape, and the CSV exports
+    # documents both endpoints, auth, the FOCUS shape, and the CSV exports
     assert "GET /api/v1/spend" in txt
+    assert "GET /api/v1/audit" in txt
     assert "Authorization: Bearer" in txt
     assert "ServiceCategory" in txt and "Tags" in txt
     assert "/app/outlay/export.focus.csv" in txt

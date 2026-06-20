@@ -1027,6 +1027,51 @@ def api_v1_spend(request: Request):
                          "currency": "USD", "total_usd": total, "rows": rows})
 
 
+def _audit_iso(ts) -> str:
+    from datetime import datetime, timezone
+    try:
+        return datetime.fromtimestamp(float(ts), timezone.utc).isoformat()
+    except (TypeError, ValueError, OSError):
+        return ""
+
+
+@app.get("/api/v1/audit")
+def api_v1_audit(request: Request, since: int = 0, limit: int = 1000):
+    """Token-authed audit-log export for SIEM ingestion (Splunk/Datadog/etc).
+    Bearer/x-modelpilot-key API key → security events in ascending id order. Poll
+    incrementally with `?since=<next_since>` to fetch only new events, gap-free."""
+    auth = request.headers.get("authorization", "")
+    tok = auth[7:].strip() if auth[:7].lower() == "bearer " else request.headers.get("x-modelpilot-key", "")
+    resolved = store.resolve_api_key(tok) if tok else None
+    if not resolved:
+        return JSONResponse({"error": "invalid api key"}, status_code=401)
+    rows = store.audit_events(resolved["account_id"], since_id=since, limit=limit)
+    events = [{"id": r["id"], "ts": _audit_iso(r["ts"]), "actor": r.get("actor") or "",
+               "action": r.get("action") or "", "detail": r.get("detail") or ""} for r in rows]
+    next_since = events[-1]["id"] if events else int(since or 0)
+    return JSONResponse({"account_id": resolved["account_id"],
+                         "next_since": next_since, "count": len(events), "events": events})
+
+
+@app.get("/app/audit/export.csv")
+def app_audit_export(request: Request):
+    """Download the full audit trail as CSV (admin session) — for an offline record
+    or a one-off SIEM/GRC import."""
+    acct, redir = _require_team_admin(request)
+    if redir:
+        return redir
+    import csv
+    import io
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["id", "timestamp", "actor", "action", "detail"])
+    for r in store.audit_events(acct["id"], since_id=0, limit=5000):
+        w.writerow([r["id"], _audit_iso(r["ts"]), r.get("actor") or "",
+                    r.get("action") or "", r.get("detail") or ""])
+    return PlainTextResponse(buf.getvalue(), media_type="text/csv",
+                             headers={"content-disposition": 'attachment; filename="outlay-audit.csv"'})
+
+
 @app.get("/app/outlay/close-report.html", response_class=HTMLResponse)
 def app_outlay_close_report(request: Request):
     """A printable finance close report — the VP-ready audit readout for the current
