@@ -2025,6 +2025,23 @@ def test_parse_cost_export_autodetects_provider():
     assert outlay_app.parse_cost_export("not json or recognizable") == (0.0, "")
 
 
+def test_coverage_diagnostic_explains_low_coverage(env, client):
+    """When ticket coverage is low, the Spend page tells the customer WHY and the
+    cheapest fix (connect PRs) — not just a low number."""
+    from console import web
+    low = {"spend": {"total_usd": 1000.0, "ticket_coverage": 0.2,
+                     "by_fidelity_usd": {"call": 0, "branch": 200.0, "team": 600.0, "invoice": 200.0}}}
+    diag = web._coverage_diag(low)
+    assert "Lift your ticket coverage" in diag
+    assert "Connect your PRs" in diag and "identity map" in diag
+    # healthy coverage → no nag
+    assert web._coverage_diag({"spend": {"total_usd": 1000.0, "ticket_coverage": 0.8,
+                                         "by_fidelity_usd": {"branch": 800.0}}}) == ""
+    # and it renders on the Spend page for a low-coverage report
+    acct = {"email": "u@x.com", "role": "customer", "team_role": "owner", "display_email": "u@x.com"}
+    assert "Lift your ticket coverage" in web.outlay_page(acct, low, persona="eng")
+
+
 def test_unknown_model_pricing_is_flagged_not_silent(env, client):
     """An unrecognized model id is priced by nearest-tier fallback — the report must
     flag it (dollar + share) and the dashboard must warn, never present it as exact."""

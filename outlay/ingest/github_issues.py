@@ -139,5 +139,39 @@ class GitHubIssuesClient:
             page += 1
         return {"issues": merged}
 
-    def pull(self, owner: str, repo: str, **kw) -> list[WorkItem]:
-        return parse_github_issues(self.fetch(owner, repo, **kw))
+    def fetch_pulls(self, owner: str, repo: str, state: str = "all",
+                    page_size: int = 100) -> list[dict]:
+        """Fetch pull requests (head ref + title/body) so closing references can
+        recover the branch→ticket link for branches that don't name a ticket."""
+        out: list[dict] = []
+        page = 1
+        while True:
+            params = {"state": state, "per_page": page_size, "page": page}
+            url = f"{self.base_url}/repos/{owner}/{repo}/pulls?{urlencode(params)}"
+            rows = get_json(url, self._headers(), self._transport)
+            if isinstance(rows, dict):
+                rows = rows.get("pulls") or rows.get("data") or []
+            for r in rows:
+                head = r.get("head")
+                ref = head.get("ref") if isinstance(head, dict) else r.get("head_ref")
+                out.append({"number": r.get("number"), "head_ref": ref,
+                            "title": r.get("title", ""), "body": r.get("body") or ""})
+            if len(rows) < page_size:
+                break
+            page += 1
+        return out
+
+    def pull(self, owner: str, repo: str, link_prs: bool = True, **kw) -> list[WorkItem]:
+        """Pull issues, and (by default) link in pull-request branches so events on
+        non-ticket-named branches still attribute. The PR fetch is best-effort —
+        a token without PR scope, or a repo with none, never fails the whole sync."""
+        items = parse_github_issues(self.fetch(owner, repo, **kw))
+        if link_prs:
+            try:
+                pulls = self.fetch_pulls(owner, repo, state=kw.get("state", "all"))
+            except Exception:  # noqa: BLE001 — PR linkage is an enhancement, not required
+                pulls = []
+            if pulls:
+                from ..link import link_branches
+                link_branches(items, pulls, source="github")
+        return items
