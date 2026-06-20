@@ -1682,6 +1682,29 @@ def test_outlay_csv_export(env, client):
     assert "/app/outlay/export.csv?view=people" in client.get("/app/outlay").text
 
 
+def test_api_reference_page_documents_spend_endpoint(env, client):
+    _, store = env
+    _signup(client, email="apidocs@x.com")
+    page = client.get("/app/api")
+    assert page.status_code == 200
+    txt = page.text
+    # documents the endpoint, auth, the FOCUS shape, and the CSV exports
+    assert "GET /api/v1/spend" in txt
+    assert "Authorization: Bearer" in txt
+    assert "ServiceCategory" in txt and "Tags" in txt
+    assert "/app/outlay/export.focus.csv" in txt
+    # nav exposes the page for an admin
+    assert 'href="/app/api"' in client.get("/app/outlay").text
+
+    # creating a key from the API page reveals it once and stays on the API page
+    r = client.post("/app/keys", data={"name": "bi", "from": "api"})
+    assert r.status_code == 200 and "shown once" in r.text and "mp_live_" in r.text
+    assert "GET /api/v1/spend" in r.text  # rendered the API page, not Configuration
+    # the example now uses the customer's real key prefix
+    prefix = store.list_api_keys(store.get_account_by_email("apidocs@x.com")["id"])[0]["prefix"]
+    assert prefix in client.get("/app/api").text
+
+
 def test_outlay_focus_export_and_spend_api(env, client):
     _, store = env
     _signup(client, email="focus@x.com")

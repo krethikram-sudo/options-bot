@@ -100,6 +100,13 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — in-console API reference (makes the BI/warehouse API discoverable)
+- [x] Shipped `/api/v1/spend` (#122) but a customer with a key had no way to discover or use it. Added a
+      first-class **API page** (`/app/api`, owner/admin; nav → Sources → API): documents `GET /api/v1/spend`
+      with a copy-paste `curl` (pre-filled with the customer's real key prefix), the JSON response shape, a
+      FOCUS row-field table, 401/empty-shape behavior, and direct CSV-export links. Key create/revoke is
+      inline (reuses `_api_keys_section` with a `from=api` return) and reveals the new key right there. 302 tests.
+
 ### 2026-06-20 — data retention controls + complete account erasure (DPA/procurement)
 - [x] Enterprise security review / DPA needs data-minimization + right-to-erasure. Built:
 - [x] **Account-settable retention window** — `accounts.retention_days` (forever / 30 / 90 / 180 / 365),

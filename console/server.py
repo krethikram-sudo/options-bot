@@ -1239,6 +1239,21 @@ def _connect_html(acct: dict, new_key: str = ""):
     return _html(web.connect_page(acct, deps, brain, console, keys, new_key, hooks))
 
 
+def _api_html(acct: dict, new_key: str = ""):
+    base = os.environ.get("CONSOLE_BASE_URL", "https://app.outlay-ai.com")
+    return _html(web.api_page(acct, store.list_api_keys(acct["id"]),
+                              store.deployments_for(acct["id"]), base_url=base, new_key=new_key))
+
+
+@app.get("/app/api", response_class=HTMLResponse)
+def app_api(request: Request):
+    """Developer reference for the read-only spend API + exports (owner/admin only)."""
+    acct, redir = _require_team_admin(request)
+    if redir:
+        return redir
+    return _api_html(acct)
+
+
 @app.post("/app/webhooks")
 async def create_webhook(request: Request):
     acct, redir = _require(request)
@@ -1286,7 +1301,10 @@ async def create_key(request: Request):
         new_key = store.create_api_key(acct["id"], dep, f.get("name", ""))["full_key"]
     except store.StoreError:
         pass
-    return _connect_html(acct, new_key)  # show the key once (never recoverable)
+    # show the key once (never recoverable), on whichever surface created it
+    if f.get("from") == "api":
+        return _api_html(acct, new_key)
+    return _connect_html(acct, new_key)
 
 
 @app.post("/app/keys/revoke")
@@ -1299,7 +1317,7 @@ async def revoke_key(request: Request):
         store.revoke_api_key(int(f.get("key_id", "0")), acct["id"])
     except ValueError:
         pass
-    return _redirect("/app/connect")
+    return _redirect("/app/api" if f.get("from") == "api" else "/app/connect")
 
 
 @app.post("/app/deployments")

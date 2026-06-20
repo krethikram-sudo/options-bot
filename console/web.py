@@ -379,6 +379,8 @@ def _sidenav(account: dict, active: str) -> str:
         analyze = [spend, accuracy, budgets, estimate]
 
     sources = [("/app/outlay/connect", "Connect")]
+    if is_admin:
+        sources.append(("/app/api", "API"))
 
     workspace: list[tuple[str, str]] = []
     if is_admin:
@@ -2406,8 +2408,12 @@ def _danger_zone(account: dict, delete_error: bool = False) -> str:
     </div>"""
 
 
-def _api_keys_section(keys: list[dict], deployments: list[dict], new_key: str = "") -> str:
+def _api_keys_section(keys: list[dict], deployments: list[dict], new_key: str = "",
+                      from_page: str = "") -> str:
     reveal = ""
+    # Where the create/revoke POSTs should send the user back to (Configuration by
+    # default; the API reference when the section is embedded there).
+    ret = f'<input type=hidden name=from value="{_e(from_page)}">' if from_page else ""
     if new_key:
         reveal = (f'<div class="note"><b>Your new API key (shown once — copy it now):</b><br>'
                   f'<code style="word-break:break-all">{_e(new_key)}</code></div>')
@@ -2419,7 +2425,7 @@ def _api_keys_section(keys: list[dict], deployments: list[dict], new_key: str = 
         last = _fmt_date(k["last_used_at"]) if k.get("last_used_at") else "never"
         action = ("" if revoked else
                   f'<form method=post action="/app/keys/revoke" style="margin:0">'
-                  f'<input type=hidden name=key_id value="{k["id"]}">'
+                  f'<input type=hidden name=key_id value="{k["id"]}">{ret}'
                   f'<button class="btn sec sm">Revoke</button></form>')
         rows += (f"<tr><td>{_e(k.get('name') or 'key')}</td>"
                  f"<td><code>{_e(k['prefix'])}…</code></td><td>{status}</td>"
@@ -2439,7 +2445,7 @@ def _api_keys_section(keys: list[dict], deployments: list[dict], new_key: str = 
     <div class=card style="margin-top:12px">
       <form method=post action="/app/keys" class=row style="gap:8px">
         <input name=name placeholder="key name (e.g. prod)" style="max-width:200px">
-        <select name=deployment_id>{dep_opts}</select>
+        <select name=deployment_id>{dep_opts}</select>{ret}
         <button class=btn>Create API key</button>
       </form>
     </div>"""
@@ -2473,6 +2479,88 @@ def _webhooks_section(webhooks: list[dict]) -> str:
         <button class=btn>Add webhook</button>
       </form>
     </div>"""
+
+
+_FOCUS_FIELD_DOCS = [
+    ("BilledCost / EffectiveCost", "Attributed spend for the charge row (USD)."),
+    ("BillingCurrency", "Always USD today."),
+    ("ChargePeriodStart / End", "The window the charge covers (your report's lookback)."),
+    ("ServiceCategory / ServiceName", '"AI and Machine Learning" / "LLM API".'),
+    ("ChargeCategory", '"Usage".'),
+    ("ResourceId / ResourceName", "The ticket / work item the spend is attributed to."),
+    ("Tags", 'JSON: {"team": …, "work_type": …} — your cost-center + work-type allocation.'),
+]
+
+
+def api_page(account: dict, keys: list[dict], deployments: list[dict],
+             base_url: str = "", new_key: str = "") -> str:
+    """Developer reference for the read-only spend API + exports. Makes the BI/
+    warehouse endpoint discoverable and copy-paste usable, with the customer's own
+    key-management inline. Owner/admin only (keys are sensitive)."""
+    base = (base_url or "https://app.outlay-ai.com").rstrip("/")
+    sample_key = "mp_live_…"
+    if keys:
+        # Show their real prefix in the examples so copy-paste needs only the secret.
+        sample_key = (keys[0].get("prefix") or "mp_live_") + "…"
+    cols = "".join(f"<tr><td><code>{_e(name)}</code></td><td class='small muted'>{_e(desc)}</td></tr>"
+                   for name, desc in _FOCUS_FIELD_DOCS)
+    curl = (f"curl -s {base}/api/v1/spend \\\n"
+            f"  -H 'Authorization: Bearer {sample_key}'")
+    resp = ('{\n'
+            '  "account_id": 42,\n'
+            '  "period": {"start": "2026-05-21T00:00:00+00:00",\n'
+            '             "end":   "2026-06-20T00:00:00+00:00"},\n'
+            '  "currency": "USD",\n'
+            '  "total_usd": 4821.55,\n'
+            '  "rows": [\n'
+            '    {"BilledCost": 312.40, "EffectiveCost": 312.40, "BillingCurrency": "USD",\n'
+            '     "ServiceCategory": "AI and Machine Learning", "ServiceName": "LLM API",\n'
+            '     "ChargeCategory": "Usage", "ResourceId": "PLAT-1284",\n'
+            '     "Tags": "{\\"team\\": \\"platform\\", \\"work_type\\": \\"feature\\"}"}\n'
+            '  ]\n'
+            '}')
+    body = f"""
+    <h1>API &amp; data export</h1>
+    <p class=muted style="max-width:62ch">Pull your attributed AI spend into a data warehouse, BI tool, or a
+    script — read-only, and the same numbers you see in the console. Rows use
+    <a href="https://focus.finops.org/" target=_blank rel=noopener>FOCUS</a> (the FinOps Open Cost &amp;
+    Usage Spec) column names, so they load into any FOCUS-aware tool.</p>
+
+    <div class=card>
+      <h2 style="margin-top:0">Authentication</h2>
+      <p class="small muted">Create a key below, then send it as a bearer token on every request. Keys are
+      shown once, hashed at rest, and revocable. The <code>x-modelpilot-key: &lt;key&gt;</code> header works too.</p>
+    </div>
+
+    <div class=card style="margin-top:16px">
+      <h2 style="margin-top:0"><code>GET /api/v1/spend</code></h2>
+      <p class="small muted">The latest report as FOCUS-aligned charge rows (one per attributed ticket),
+      plus the period and total.</p>
+      <pre>{_e(curl)}</pre>
+      <p class="small muted" style="margin-bottom:6px"><b>Response</b></p>
+      <pre>{_e(resp)}</pre>
+      <p class="small muted" style="margin-top:14px;margin-bottom:6px"><b>Row fields</b></p>
+      <div class=card style="padding:0"><table><thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+        <tbody>{cols}</tbody></table></div>
+      <p class="small muted" style="margin-top:12px">Returns <code>401</code> if the key is missing, invalid,
+      or revoked. Before your first sync the response is a valid empty shape
+      (<code>total_usd: 0, rows: []</code>).</p>
+    </div>
+
+    <div class=card style="margin-top:16px">
+      <h2 style="margin-top:0">CSV exports</h2>
+      <p class="small muted">Prefer a file? Download from the Spend page, or link directly (these need a
+      signed-in session, not an API key):</p>
+      <ul class="small">
+        <li><a href="/app/outlay/export.focus.csv">/app/outlay/export.focus.csv</a> — FOCUS rows (same as the API).</li>
+        <li><a href="/app/outlay/export.csv?view=tickets">/app/outlay/export.csv?view=tickets</a> — spend per ticket.</li>
+        <li><code>?view=</code> also accepts <code>classes</code>, <code>people</code>, <code>models</code>, <code>savings</code>.</li>
+      </ul>
+    </div>
+
+    {_api_keys_section(keys or [], deployments, new_key, from_page="api")}
+    """
+    return page("API", body, account, "/app/api")
 
 
 def connect_page(account: dict, deployments: list[dict], brain_url: str, console_url: str,
