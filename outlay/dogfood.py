@@ -24,6 +24,7 @@ from .forecast import class_stats, find_anomalies, forecast_roadmap
 from .ingest import GitHubIssuesClient, parse_claude_code_dir
 from .join import JoinEngine
 from .policy import build_policy
+from .proof import cost_fidelity, format_cost_fidelity
 from .recommend import recommend
 from .report import render
 from .size import fit_size_models
@@ -45,11 +46,14 @@ def build_report(events, work, window_days: int = 30, *, as_json: bool = False,
     recs = recommend(result, horizon_scale=30.0 / max(window_days, 1))
     calibration = backtest(result, work)
 
+    fidelity = cost_fidelity(events)
+
     if as_json or as_html:
         from .serialize import to_dict
         data = to_dict(result, stats, fc, find_anomalies(result, stats), recs,
                        calibration=calibration, policy=build_policy(recs),
                        window_days=window_days)
+        data["cost_fidelity"] = fidelity.as_dict()
         if as_html:
             from .readout import render_html
             return render_html(data, company=company)
@@ -59,6 +63,8 @@ def build_report(events, work, window_days: int = 30, *, as_json: bool = False,
     parts = [
         render(result, stats, fc, find_anomalies(result, stats), recs,
                policy=build_policy(recs), window_days=window_days),
+        # The substantiated proof: cache-aware vs naive costing on *your* real usage.
+        "\n" + format_cost_fidelity(fidelity),
         # Measured forecast accuracy on *your* history — class-mean vs size-conditioned.
         "\n" + format_calibration(calibration),
         f">>> TICKET COVERAGE: {result.ticket_coverage:.0%}   "
@@ -69,9 +75,20 @@ def build_report(events, work, window_days: int = 30, *, as_json: bool = False,
     return "\n".join(parts)
 
 
+def cost_proof_report(events, *, as_json: bool = False) -> str:
+    """Just the cost-fidelity proof — no tracker/issues needed, so it runs on
+    nothing but local Claude Code transcripts. This is the number that holds even
+    when a repo's branch workflow can't exercise ticket attribution."""
+    cf = cost_fidelity(events)
+    if as_json:
+        import json as _json
+        return _json.dumps(cf.as_dict(), indent=2)
+    return format_cost_fidelity(cf)
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Outlay real-data dogfood")
-    p.add_argument("--repo", required=True, help="owner/name of the GitHub repo")
+    p.add_argument("--repo", help="owner/name of the GitHub repo (omit with --proof-only)")
     p.add_argument("--claude-code", default=os.path.expanduser("~/.claude/projects"),
                    help="path to Claude Code transcripts (default ~/.claude/projects)")
     p.add_argument("--state", default="all", choices=["all", "open", "closed"])
@@ -80,9 +97,22 @@ def main(argv: list[str] | None = None) -> int:
                    help="emit the report as machine-readable JSON")
     p.add_argument("--html", action="store_true", dest="as_html",
                    help="emit a VP-ready printable HTML audit readout")
+    p.add_argument("--proof-only", action="store_true", dest="proof_only",
+                   help="just the cost-fidelity proof from local transcripts (no repo/token needed)")
     p.add_argument("--company", default=None, help="company/team name for the HTML readout")
     args = p.parse_args(argv)
 
+    # Proof-only path: cost fidelity from local transcripts, no tracker required.
+    if args.proof_only:
+        events = parse_claude_code_dir(args.claude_code)
+        if not events:
+            print(f"(no Claude Code transcripts found under {args.claude_code})")
+            return 1
+        print(cost_proof_report(events, as_json=args.as_json))
+        return 0
+
+    if not args.repo:
+        p.error("--repo is required (or pass --proof-only)")
     owner, _, repo = args.repo.partition("/")
     if not owner or not repo:
         p.error("--repo must be 'owner/name'")
