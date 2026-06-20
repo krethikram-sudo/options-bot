@@ -533,6 +533,16 @@ def test_customer_cannot_access_admin(client):
     assert client.get("/admin").status_code == 403
 
 
+def test_run_maintenance_bundle_records_run(env, client):
+    from console import server, store
+    _signup(client, email="maint@x.com")
+    client.post("/app/outlay/sample", follow_redirects=True)
+    # the shared maintenance bundle runs all sub-sweeps and stamps the cron run
+    result = server._run_maintenance()
+    assert set(result) >= {"sent", "close_pack", "webhooks", "retention"}
+    assert store.get_cron_runs()["digest-due"]["last_run_at"]
+
+
 def test_cron_health_tracking_and_surfaces(env, client):
     import time
     server, store = env

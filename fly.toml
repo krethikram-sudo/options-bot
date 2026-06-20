@@ -19,6 +19,13 @@ primary_region = "iad"
   CONSOLE_PORT = "8700"
   CONSOLE_BASE_URL = "https://app.outlay-ai.com"
   CONSOLE_SECURE_COOKIES = "1"
+  # In-process schedulers — this is a single always-on machine, so it self-drives
+  # every background sweep (no external cron). Both are idempotent + cadence-guarded;
+  # only genuinely-due work fires. Verify freshness anytime at /admin/health.
+  #   OUTLAY_AUTOSYNC_EVERY_MIN     auto-sync connected sources + staleness/failure alerts
+  #   OUTLAY_MAINTENANCE_EVERY_MIN  weekly digest, monthly close pack, webhook redelivery, retention purge
+  OUTLAY_AUTOSYNC_EVERY_MIN = "60"
+  OUTLAY_MAINTENANCE_EVERY_MIN = "60"
 
 # Secrets (NEVER put these in this file — set with `fly secrets set ...`):
 #   CONSOLE_SECRET           required — signs session cookies; set once, keep stable
