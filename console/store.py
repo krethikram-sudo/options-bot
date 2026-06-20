@@ -88,7 +88,8 @@ CREATE TABLE IF NOT EXISTS settings (
     risk TEXT NOT NULL DEFAULT 'balanced',
     monthly_budget REAL NOT NULL DEFAULT 0,       -- 0 = no cap (dollars of model spend/cycle)
     budget_alert_pct REAL NOT NULL DEFAULT 0.8,
-    autopilot_pct INTEGER NOT NULL DEFAULT 100    -- gradual rollout: % of eligible traffic to auto-route in autopilot
+    autopilot_pct INTEGER NOT NULL DEFAULT 100,   -- gradual rollout: % of eligible traffic to auto-route in autopilot
+    persona TEXT NOT NULL DEFAULT ''              -- '' (unset) | 'finance' | 'eng' : which product experience to show
 );
 CREATE TABLE IF NOT EXISTS plans (
     account_id INTEGER PRIMARY KEY REFERENCES accounts(id),
@@ -281,6 +282,7 @@ _MIGRATIONS = [
     "ALTER TABLE outlay_connections ADD COLUMN last_sync_error TEXT",
     "ALTER TABLE outlay_connections ADD COLUMN last_attempt_at REAL",
     "ALTER TABLE pilot_requests ADD COLUMN title TEXT",
+    "ALTER TABLE settings ADD COLUMN persona TEXT NOT NULL DEFAULT ''",
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -1045,6 +1047,22 @@ def get_settings(account_id: int, path: str | None = None) -> dict:
             conn.commit()
             row = conn.execute("SELECT * FROM settings WHERE account_id=?", (account_id,)).fetchone()
         return dict(row)
+    finally:
+        conn.close()
+
+
+PERSONAS = ("finance", "eng")
+
+
+def set_persona(account_id: int, persona: str, path: str | None = None) -> None:
+    """Which product experience to show: 'finance' or 'eng'."""
+    if persona not in PERSONAS:
+        raise StoreError(f"persona must be one of {PERSONAS}")
+    get_settings(account_id, path)  # ensure the row exists
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE settings SET persona=? WHERE account_id=?", (persona, account_id))
+        conn.commit()
     finally:
         conn.close()
 

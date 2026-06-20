@@ -540,9 +540,22 @@ def app_outlay(request: Request):
     budgets = store.list_outlay_budgets(acct["id"])
     statuses = outlay_app.budget_statuses(report, budgets) if report else []
     hist = store.outlay_history(acct["id"]) if report else []
+    persona = store.get_settings(acct["id"]).get("persona", "")
     return _html(web.outlay_page(acct, report, statuses, hist,
                                  store.get_outlay_connection(acct["id"]),
-                                 has_budget=bool(budgets)))
+                                 has_budget=bool(budgets), persona=persona))
+
+
+@app.post("/app/persona")
+async def app_set_persona(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    p = (f.get("persona") or "").strip()
+    if p in ("finance", "eng"):
+        store.set_persona(acct["id"], p)
+    return _redirect("/app/outlay")
 
 
 @app.post("/app/outlay/run")

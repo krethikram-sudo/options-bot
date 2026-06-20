@@ -440,7 +440,7 @@ def _kpi(label: str, value: str, sub: str = "", color: str = "", sub_raw: bool =
             f'<div style="font-size:26px;font-weight:700;margin-top:6px"{style}>{value}</div>{sub}</div>')
 
 
-def _onboarding(conn: dict | None, report: dict | None, has_budget: bool) -> str:
+def _onboarding(conn: dict | None, report: dict | None, has_budget: bool, persona: str = "") -> str:
     """A first-run checklist that disappears once the customer is set up. Each step
     reflects real state so it doubles as a 'what's left' guide during a pilot."""
     conn = conn or {}
@@ -474,21 +474,56 @@ def _onboarding(conn: dict | None, report: dict | None, has_budget: bool) -> str
             f'<span class=muted style="font-size:12px">~10 minutes with read-only tokens</span></div>{rows}</div>')
 
 
+def _persona_card(value: str, title: str, desc: str) -> str:
+    return (f'<form method=post action="/app/persona" style="margin:0">'
+            f'<input type=hidden name=persona value="{value}">'
+            f'<button class=bcard style="width:100%;text-align:left;cursor:pointer">'
+            f'<b style="font-size:15px;color:var(--ink)">{_e(title)}</b>'
+            f'<div class=muted style="font-size:13px;margin-top:6px;line-height:1.5">{_e(desc)}</div>'
+            f'<div style="margin-top:12px;color:var(--grn-d);font-weight:600;font-size:13px">Use this view →</div>'
+            f'</button></form>')
+
+
+def _persona_chooser() -> str:
+    """First-run: let the customer pick the experience tailored to their role."""
+    return (
+        '<div class=ocard style="margin-bottom:18px">'
+        '<div class=dh>How will you use Outlay? '
+        '<span class=sub>Pick the view that fits your role — you can switch anytime in Settings.</span></div>'
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class=cols-2>'
+        + _persona_card("finance", "Finance / FinOps",
+                        "Total AI spend, the quarter forecast vs budget, spend by team and project, "
+                        "and alerts before you overspend.")
+        + _persona_card("eng", "Engineering leader",
+                        "Spend by epic, sprint, and engineer, anomaly flags on runaway tickets, and "
+                        "estimates for planned work before you build it.")
+        + '</div></div>')
+
+
 def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None = None,
                 history: list[dict] | None = None, conn: dict | None = None,
-                has_budget: bool = False) -> str:
-    checklist = _onboarding(conn, report, has_budget)
+                has_budget: bool = False, persona: str = "") -> str:
+    chooser = _persona_chooser() if persona not in ("finance", "eng") else ""
+    checklist = _onboarding(conn, report, has_budget, persona)
     if not report:
-        intro = (
-            '<div class=ohead><h1>Your AI spend, on your roadmap.</h1>'
-            '<p>Connect your tracker and AI usage — read-only — and Outlay maps every dollar to the work '
-            'that drove it, forecasts the quarter, estimates planned work, and holds it to budget. '
-            'Prompts never leave your tools.</p></div>'
-            '<div class="row" style="margin:0 0 22px">'
-            '<a class="btn" href="/app/outlay/connect">Connect your sources →</a>'
-            '<form method=post action="/app/outlay/sample" style="margin:0">'
-            '<button class="btn sec">See it with sample data</button></form></div>')
-        return page("Spend", intro + checklist + _outlay_connect(), account, active="/app/outlay")
+        if persona == "finance":
+            intro = (
+                '<div class=ohead><h1>Put your AI spend on a budget.</h1>'
+                '<p>Connect your AI usage and your tracker — read-only — and Outlay shows total AI spend, '
+                'forecasts the quarter against budget, breaks it down by team and project, and alerts you '
+                '<b>before</b> you overspend. Nothing sensitive leaves your environment.</p></div>')
+        else:
+            intro = (
+                '<div class=ohead><h1>Your AI spend, on your roadmap.</h1>'
+                '<p>Connect your tracker and AI usage — read-only — and Outlay maps every dollar to the work '
+                'that drove it, forecasts the quarter, estimates planned work, and holds it to budget. '
+                'Prompts never leave your tools.</p></div>')
+        cta = ('<div class="row" style="margin:0 0 22px">'
+               '<a class="btn" href="/app/outlay/connect">Connect your sources →</a>'
+               '<form method=post action="/app/outlay/sample" style="margin:0">'
+               '<button class="btn sec">See it with sample data</button></form></div>')
+        return page("Spend", chooser + intro + cta + checklist + _outlay_connect(),
+                    account, active="/app/outlay")
 
     sp = report.get("spend", {})
     fc = report.get("forecast", {})
@@ -497,8 +532,12 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     cov = sp.get("ticket_coverage", 0.0)
     open_items = fc.get("items_costed", 0) + fc.get("items_unclassified", 0)
 
-    ohead = ('<div class=ohead><h1>AI spend, on your roadmap</h1>'
-             '<p>Every dollar mapped to the work that drove it — forecast, estimated, and held to budget.</p></div>')
+    if persona == "finance":
+        ohead = ('<div class=ohead><h1>Your AI spend, on budget</h1>'
+                 '<p>Total spend, the quarter forecast against budget, and where it\'s going by team and project.</p></div>')
+    else:
+        ohead = ('<div class=ohead><h1>AI spend, on your roadmap</h1>'
+                 '<p>Every dollar mapped to the work that drove it — forecast, estimated, and held to budget.</p></div>')
 
     def _kpicard(label, value, sub, grn=False):
         return (f'<div class=kpi><div class=l>{_e(label)}</div>'
@@ -637,7 +676,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                   '<form method=post action="/app/outlay/clear" style="margin:0">'
                   '<button class="btn sec sm">Clear sample data</button></form></div>')
 
-    body = (ohead + sample + checklist + bstrip + kpis + sync_line + olinks + grid
+    body = (chooser + ohead + sample + checklist + bstrip + kpis + sync_line + olinks + grid
             + '<div style="margin-top:18px">' + _outlay_connect(collapsed=True) + '</div>')
     return page("Spend", body, account, active="/app/outlay")
 
