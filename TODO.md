@@ -100,6 +100,19 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — in-house setup-guidance (Proposal A, PRs #115-117)
+- [x] Built after deep research (5-angle) found third-party DAPs (Pendo/Appcues/WalkMe/etc.) inject DOM-reading
+      scripts + ship behavior to a vendor cloud — incompatible with our privacy pitch (polyfill.io/Magecart
+      precedent). Chose first-party checklist + contextual coachmarks (NN/g best practice). Research kit lives
+      in chat; recommendation = no third-party script (now a security selling point).
+- [x] **Checklist spine** (#115): endowed-progress (account step pre-checked → bar never 0%), progress bar,
+      role-aware (finance adds "Map people to teams"), each step deep-links the real control.
+- [x] **Coachmark engine + Connect walkthrough** (#116): ~60-line vanilla, zero-dep, WCAG 2.2 SC 1.4.13
+      (Esc/arrow-key/role=dialog/focus-restore), non-blocking spotlight; spotlights tracker tiles → AI-key field
+      → run button; auto-starts on ?tour=connect.
+- [x] **"Show me how" entry points** (#117): empty-state CTA, checklist connect steps, Connect header button.
+      293 tests.
+
 ### 2026-06-20 — drill-down, anomaly tuning, finance close report (PRs #111-113)
 - [x] **Drill-down** (#111): team & work-type rows on Spend link to `/app/outlay/scope` — the tickets behind
       that scope, biggest first, runaway outliers flagged, CSV export.
