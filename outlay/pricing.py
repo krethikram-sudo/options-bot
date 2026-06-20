@@ -74,34 +74,52 @@ _FALLBACK = RATES["claude-sonnet-4-6"]
 _OPENAI_FALLBACK = OPENAI_RATES["gpt-4o"]
 
 
-def rate_for(model: str) -> ModelRate:
-    """Resolve a model id to its rate, tolerating minor id drift (date suffixes,
-    `anthropic.` provider prefixes from Bedrock-style ids). OpenAI ids resolve to
-    the separate OpenAI table."""
+def _resolve(model: str) -> tuple[ModelRate, bool]:
+    """Resolve a model id to (rate, known). `known=False` means no exact rate was
+    found and we fell back to a nearest-tier estimate — the caller should surface
+    that so an unrecognized model never silently mis-costs the bill."""
     if model in RATES:
-        return RATES[model]
+        return RATES[model], True
     if model in OPENAI_RATES:
-        return OPENAI_RATES[model]
-    norm = model.replace("anthropic.", "")
+        return OPENAI_RATES[model], True
+    norm = (model or "").replace("anthropic.", "")
     # Strip a trailing -YYYYMMDD date snapshot if present.
     for known in RATES:
         if norm == known or norm.startswith(known + "-"):
-            return RATES[known]
+            return RATES[known], True
     for known in OPENAI_RATES:
         if norm == known or norm.startswith(known + "-"):
-            return OPENAI_RATES[known]
+            return OPENAI_RATES[known], True
     # An OpenAI-family id we don't have an exact rate for → OpenAI fallback, not Claude.
     if norm.startswith(("gpt", "o1", "o3", "o4", "chatgpt")):
-        return _OPENAI_FALLBACK
-    return _FALLBACK
+        return _OPENAI_FALLBACK, False
+    return _FALLBACK, False
+
+
+def rate_for(model: str) -> ModelRate:
+    """Resolve a model id to its rate, tolerating minor id drift (date suffixes,
+    `anthropic.` provider prefixes from Bedrock-style ids). OpenAI ids resolve to
+    the separate OpenAI table. Unknown ids fall back to a nearest-tier rate — use
+    `model_is_known` to detect that case and surface it."""
+    return _resolve(model)[0]
+
+
+def model_is_known(model: str) -> bool:
+    """True iff `model` resolves to an exact rate (not a nearest-tier fallback)."""
+    return _resolve(model)[1]
 
 
 def cost_usd(event: UsageEvent) -> float:
-    """Normalized cost of a single usage event, in USD."""
+    """Normalized cost of a single usage event, in USD. Token counts are clamped at
+    zero — a negative count is nonsensical data and must never *reduce* the bill."""
     r = rate_for(event.model)
+    it = max(0, event.input_tokens)
+    ot = max(0, event.output_tokens)
+    cr = max(0, event.cache_read_tokens)
+    cw = max(0, event.cache_write_tokens)
     return (
-        event.input_tokens * r.input_per_m
-        + event.output_tokens * r.output_per_m
-        + event.cache_read_tokens * r.cache_read_per_m
-        + event.cache_write_tokens * r.cache_write_per_m
+        it * r.input_per_m
+        + ot * r.output_per_m
+        + cr * r.cache_read_per_m
+        + cw * r.cache_write_per_m
     ) / 1_000_000.0

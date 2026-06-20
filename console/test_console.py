@@ -2025,6 +2025,39 @@ def test_parse_cost_export_autodetects_provider():
     assert outlay_app.parse_cost_export("not json or recognizable") == (0.0, "")
 
 
+def test_unknown_model_pricing_is_flagged_not_silent(env, client):
+    """An unrecognized model id is priced by nearest-tier fallback — the report must
+    flag it (dollar + share) and the dashboard must warn, never present it as exact."""
+    from console import outlay_app, web
+    issues = '{"issues":[{"id":1,"number":1,"title":"x","state":"closed","labels":[]}]}'
+    usage = ('[{"id":"e1","model":"claude-opus-5-1","input_tokens":1000000,"output_tokens":500000},'
+             '{"id":"e2","model":"claude-opus-4-8","input_tokens":100,"output_tokens":50}]')
+    rep = outlay_app.build_report(issues, usage)
+    pf = rep.get("pricing_fidelity")
+    assert pf and pf["fallback_usd"] > 0 and "claude-opus-5-1" in pf["models"]
+    assert "nearest tier" in web._pricing_warn(rep)
+    # all-known usage → no pricing warning
+    known = '[{"id":"e","model":"claude-opus-4-8","input_tokens":1000,"output_tokens":500}]'
+    assert outlay_app.build_report(issues, known).get("pricing_fidelity") is None
+
+
+def test_non_usd_cost_export_is_refused_not_miscompared(env):
+    """A EUR/GBP cost export must not reconcile against a USD-computed total."""
+    from console import outlay_app
+    eur_aws = '{"ResultsByTime":[{"Total":{"UnblendedCost":{"Amount":"100","Unit":"EUR"}},"Groups":[]}]}'
+    eur_oai = '{"data":[{"results":[{"amount":{"value":100,"currency":"eur"}}]}]}'
+    assert outlay_app.parse_cost_export(eur_aws) == (0.0, "non_usd")
+    assert outlay_app.parse_cost_export(eur_oai) == (0.0, "non_usd")
+    # USD still works
+    usd = '{"ResultsByTime":[{"Total":{"UnblendedCost":{"Amount":"100","Unit":"USD"}},"Groups":[]}]}'
+    assert outlay_app.parse_cost_export(usd) == (100.0, "aws_cost_explorer")
+    # a non-USD export attached on a run does not produce a (wrong) reconciliation
+    rep = {"spend": {"total_usd": 50.0}}
+    amt, src = outlay_app.parse_cost_export(eur_aws)
+    outlay_app.reconcile(rep, amt, src)
+    assert "reconciliation" not in rep
+
+
 def test_run_with_cost_export_reconciles(env, client):
     _, store = env
     _signup(client, email="rec@x.com")

@@ -4,7 +4,7 @@ wrong, so it gets the most coverage."""
 from datetime import datetime
 
 from outlay.models import UsageEvent
-from outlay.pricing import cost_usd, rate_for
+from outlay.pricing import cost_usd, model_is_known, rate_for
 
 
 def _ev(model="claude-sonnet-4-6", **tok):
@@ -41,3 +41,21 @@ def test_rate_fallback_and_normalization():
     # Bedrock-style prefix + unknown date suffix still resolve.
     assert rate_for("anthropic.claude-opus-4-8").tier == 2
     assert rate_for("totally-unknown-model").model == "claude-sonnet-4-6"
+
+
+def test_model_is_known_flags_fallback_pricing():
+    # exact / drift-tolerant ids are known...
+    assert model_is_known("claude-opus-4-8")
+    assert model_is_known("anthropic.claude-opus-4-8-20260101")
+    assert model_is_known("gpt-4o")
+    # ...future/foreign ids are NOT — so the report can surface estimated pricing
+    assert not model_is_known("claude-opus-5-1")
+    assert not model_is_known("gpt-5")
+    assert not model_is_known("gemini-2.5-pro")
+    assert not model_is_known("")
+
+
+def test_negative_token_counts_clamp_to_zero():
+    # nonsensical negative data must never *reduce* the bill
+    assert cost_usd(_ev(model="claude-opus-4-8", input_tokens=-1_000_000, output_tokens=1_000_000)) == 25.0
+    assert cost_usd(_ev(model="claude-opus-4-8", input_tokens=-5, output_tokens=-5)) == 0.0

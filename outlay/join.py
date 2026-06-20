@@ -59,6 +59,15 @@ DEFAULT_BRANCH_PATTERNS: list[str] = [
     r"(?:^|[/_-])#?(\d+)(?:[-_/]|$)",      # feature/123-... or fix/#123
 ]
 
+# A branch's final segment that is a release-management / version convention
+# (word + number, e.g. `release-2.3`, `v1-2`, `hotfix-9`, `sprint-5`) — never a
+# ticket. Matched case-insensitively against the last path segment only.
+_VERSION_REF = re.compile(
+    r"^(?:release|hotfix|version|ver|rc|v|sprint|milestone|wip|draft|tmp|temp|poc|spike)"
+    r"[-_]?\d+(?:[._-]\d+)*$",
+    re.IGNORECASE,
+)
+
 
 @dataclass
 class TicketResolver:
@@ -85,6 +94,12 @@ class TicketResolver:
 
     def from_branch(self, branch: Optional[str]) -> Optional[str]:
         if not branch:
+            return None
+        # A release-management / version-shaped *last segment* (e.g. `release-2.3`,
+        # `v1-2`, `hotfix-9`, `rc-1`, `sprint-5`) is not a ticket — don't fabricate
+        # one. A real key elsewhere in the path (e.g. `hotfix/PROJ-123`) still wins,
+        # because only the final segment is checked here.
+        if _VERSION_REF.match(branch.rsplit("/", 1)[-1]):
             return None
         for rx in self._compiled:
             m = rx.search(branch)

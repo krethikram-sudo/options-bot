@@ -89,6 +89,30 @@ def _parse_usage(usage):
         os.unlink(up)
 
 
+def _pricing_fidelity(events) -> Optional[dict]:
+    """Spend that was priced by *nearest-tier fallback* because the model id wasn't
+    in our price book — e.g. a model that launched after our last rate update. We
+    surface it so an unrecognized model never silently mis-costs the bill (and the
+    customer knows which rates to ask us to add). None when everything was priced
+    from an exact rate."""
+    from outlay.pricing import cost_usd, model_is_known
+    fb: dict[str, float] = {}
+    fb_usd = total = 0.0
+    for e in events:
+        c = cost_usd(e)
+        total += c
+        if not model_is_known(e.model):
+            fb_usd += c
+            fb[e.model] = fb.get(e.model, 0.0) + c
+    if fb_usd <= 0:
+        return None
+    return {
+        "fallback_usd": round(fb_usd, 2),
+        "fallback_share": round(fb_usd / total, 4) if total else 0.0,
+        "models": sorted(fb, key=fb.get, reverse=True)[:8],
+    }
+
+
 def reconcile(report: dict, invoice_usd, source: str, window_days: int = 30) -> dict:
     """Attach a reconciliation block: our token-normalized total vs the provider's
     own *billed* figure. The same shape for every provider, so finance sees one
@@ -122,6 +146,12 @@ def parse_cost_export(text):
     text = (text if isinstance(text, str) else json.dumps(text or "")).strip()
     if not text:
         return 0.0, ""
+    # We don't do FX. If the export declares a non-USD currency, refuse rather than
+    # silently compare a EUR/GBP invoice against a USD-computed total.
+    import re as _re
+    codes = {c.lower() for c in _re.findall(r'"(?:currency|Unit)"\s*:\s*"([A-Za-z]{3})"', text)}
+    if codes and not codes <= {"usd"}:
+        return 0.0, "non_usd"
     head = text[:2000]
     if "ResultsByTime" in head or "UnblendedCost" in head:
         return parse_bedrock_cost_text(text), "aws_cost_explorer"
@@ -252,6 +282,9 @@ def _report(work, result, stats, size_models, planned_items=None, window_days: i
     # the headline spend number is the correct one, surfaced in-product (Overview).
     if events:
         data["cost_fidelity"] = cost_fidelity(events).as_dict()
+        pf = _pricing_fidelity(events)
+        if pf:
+            data["pricing_fidelity"] = pf  # unrecognized models priced by nearest tier
     if planned_items:
         data["estimate"] = _serialize_plan(estimate_plan(planned_items, stats, size_models))
     return data
