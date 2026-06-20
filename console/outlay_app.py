@@ -19,7 +19,8 @@ from typing import Optional
 from outlay.attribute import attribute
 from outlay.backtest import backtest
 from outlay.forecast import class_stats, find_anomalies, forecast_roadmap
-from outlay.ingest import parse_anthropic_usage, parse_bedrock_log_text, parse_github_issues
+from outlay.ingest import (parse_anthropic_usage, parse_bedrock_log_text,
+                            parse_github_issues, parse_vertex_log_text)
 from outlay.recommend import recommend
 from outlay.serialize import to_dict
 from outlay.size import fit_size_models
@@ -41,13 +42,27 @@ def _looks_like_bedrock(usage) -> bool:
     return "ModelInvocationLog" in head or '"modelId"' in head
 
 
+def _looks_like_vertex(usage) -> bool:
+    """Google Vertex (Anthropic) request-response logs carry a publishers/anthropic
+    path or a Cloud Logging `jsonPayload`/`resource.labels.model_id` shape."""
+    text = usage if isinstance(usage, str) else json.dumps(usage)
+    head = (text or "").strip()[:2000]
+    return "publishers/anthropic" in head or ('"jsonPayload"' in head and '"model_id"' in head)
+
+
 def _parse_usage(usage):
     """Parse pasted/uploaded AI usage, auto-detecting the source: AWS Bedrock
-    invocation logs (JSON or JSONL export) or Anthropic per-call usage JSON."""
+    invocation logs, Google Vertex (Claude) logs, or Anthropic per-call usage JSON."""
+    text = usage if isinstance(usage, str) else json.dumps(usage)
+    if _looks_like_vertex(usage):
+        try:
+            return parse_vertex_log_text(text)
+        except Exception as e:  # noqa: BLE001 — clean message for the UI
+            raise ValueError(f"Couldn't read the Vertex logs: {e}") from e
     if _looks_like_bedrock(usage):
         try:
-            return parse_bedrock_log_text(usage if isinstance(usage, str) else json.dumps(usage))
-        except Exception as e:  # noqa: BLE001 — clean message for the UI
+            return parse_bedrock_log_text(text)
+        except Exception as e:  # noqa: BLE001
             raise ValueError(f"Couldn't read the Bedrock invocation logs: {e}") from e
     up = _tmp(usage)
     try:

@@ -1967,3 +1967,14 @@ def test_sso_login_is_audited(env, client, monkeypatch):
     audit = store.list_audit(a["id"])
     assert any(e["action"] == "login" and "SSO" in (e["detail"] or "") and e["actor"] == "bob@corp4.com"
                for e in audit)
+
+
+def test_outlay_run_accepts_vertex_logs(env, client):
+    """The paste/run path auto-detects a Google Vertex (Claude) log export."""
+    _signup(client)
+    fix = _fixtures()
+    issues = (fix / "github_issues.json").read_text()
+    vertex = (fix / "vertex_logs.jsonl").read_text()
+    r = client.post("/app/outlay/run", json={"issues": issues, "usage": vertex})
+    assert r.status_code == 200 and r.json()["ok"] is True, r.text
+    assert "AI spend" in client.get("/app/outlay").text
