@@ -484,6 +484,19 @@ def _persona_card(value: str, title: str, desc: str) -> str:
             f'</button></form>')
 
 
+def _persona_switch(persona: str) -> str:
+    """Small affordance to flip between the finance and engineering views."""
+    if persona not in ("finance", "eng"):
+        return ""
+    cur = "Finance" if persona == "finance" else "Engineering"
+    other, label = ("eng", "Engineering") if persona == "finance" else ("finance", "Finance")
+    return (f'<div class=syncline style="margin:-4px 0 16px">Viewing as <b>{cur}</b> · '
+            f'<form method=post action="/app/persona" style="display:inline;margin:0">'
+            f'<input type=hidden name=persona value="{other}">'
+            f'<button class="btn sec sm" style="padding:2px 9px;font-size:12px">Switch to {label} view</button>'
+            f'</form></div>')
+
+
 def _persona_chooser() -> str:
     """First-run: let the customer pick the experience tailored to their role."""
     return (
@@ -542,15 +555,17 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     def _kpicard(label, value, sub, grn=False):
         return (f'<div class=kpi><div class=l>{_e(label)}</div>'
                 f'<div class="v{" grn" if grn else ""}">{value}</div><div class=s>{sub}</div></div>')
-    kpis = ('<div class=kpis>'
-            + _kpicard("AI spend · window", money(sp.get("total_usd", 0)), _trend_delta(history or []))
-            + _kpicard("Mapped to a ticket", f"{cov*100:.0f}%",
+    spend_kpi = _kpicard("AI spend · window", money(sp.get("total_usd", 0)), _trend_delta(history or []))
+    cov_kpi = _kpicard("Mapped to a ticket", f"{cov*100:.0f}%",
                        money(sp.get("attributed_to_ticket_usd", 0)) + " attributed", grn=cov >= 0.6)
-            + _kpicard("Forecast · open work", money(fc.get("expected_usd", 0)),
-                       f"likely {money(fc.get('low_usd', 0))}–{money(fc.get('high_usd', 0))}")
-            + _kpicard("Open work items", str(open_items),
-                       f"{fc.get('items_costed', 0)} costed from history")
-            + '</div>')
+    fc_kpi = _kpicard("Forecast · open work", money(fc.get("expected_usd", 0)),
+                      f"likely {money(fc.get('low_usd', 0))}–{money(fc.get('high_usd', 0))}")
+    open_kpi = _kpicard("Open work items", str(open_items),
+                        f"{fc.get('items_costed', 0)} costed from history")
+    if persona == "finance":
+        kpis = '<div class=kpis>' + spend_kpi + fc_kpi + cov_kpi + open_kpi + '</div>'
+    else:
+        kpis = '<div class=kpis>' + spend_kpi + cov_kpi + fc_kpi + open_kpi + '</div>'
 
     def _erow(name, sub, amount, bar_pct, color="var(--grn)"):
         sub_html = f' <small>· {_e(sub)}</small>' if sub else ""
@@ -622,11 +637,19 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                     f'<div class=muted style="font-size:12.5px;margin:2px 0 12px">{est.get("items_costed",0)} '
                     f'estimated, {est.get("items_unknown",0)} declined.</div>{erows}</div>')
 
-    g1 = f'<div class=ogrid>{spend_card}{fc_card}</div>'
-    g2 = (f'<div class=ogrid style="margin-top:16px">{class_card}{people_card}</div>' if people_card
-          else f'<div style="margin-top:16px">{class_card}</div>')
-    g3 = f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""
-    grid = g1 + g2 + g3
+    if persona == "finance":
+        # Finance leads with the forecast and work-type/cost rollups; per-engineer
+        # detail is an engineering concern (and individual-name spend), so it's omitted here.
+        g1 = f'<div class=ogrid>{fc_card}{class_card}</div>'
+        g2 = f'<div style="margin-top:16px">{spend_card}</div>'
+        g3 = f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""
+        grid = g1 + g2 + g3
+    else:
+        g1 = f'<div class=ogrid>{spend_card}{fc_card}</div>'
+        g2 = (f'<div class=ogrid style="margin-top:16px">{class_card}{people_card}</div>' if people_card
+              else f'<div style="margin-top:16px">{class_card}</div>')
+        g3 = f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""
+        grid = g1 + g2 + g3
 
     # Sync status
     conn = conn or {}
@@ -640,15 +663,25 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                 ' · <a href="/app/outlay/connect">manage connection →</a>')
     sync_line = f'<div class=syncline>Last refreshed <b>{last}</b> · {cadence}{sync_err}</div>'
 
-    olinks = ('<div class=olinks>'
-              '<a href="/app/outlay/accuracy">How accurate is this? →</a>'
-              '<a href="/app/outlay/estimate">Estimate your backlog →</a>'
-              '<a href="/app/outlay/budgets">Budgets &amp; guardrails →</a>'
-              '<span class=sp></span>'
-              '<span class=muted style="font-size:12.5px">Export CSV:</span>'
-              '<a href="/app/outlay/export.csv?view=tickets">tickets</a>'
-              '<a href="/app/outlay/export.csv?view=classes">work types</a>'
-              '<a href="/app/outlay/export.csv?view=people">engineers</a></div>')
+    if persona == "finance":
+        olinks = ('<div class=olinks>'
+                  '<a href="/app/outlay/budgets">Budgets &amp; guardrails →</a>'
+                  '<a href="/app/outlay/accuracy">How accurate is this? →</a>'
+                  '<a href="/app/outlay/estimate">Estimate planned work →</a>'
+                  '<span class=sp></span>'
+                  '<span class=muted style="font-size:12.5px">Export CSV:</span>'
+                  '<a href="/app/outlay/export.csv?view=tickets">by ticket</a>'
+                  '<a href="/app/outlay/export.csv?view=classes">by work type</a></div>')
+    else:
+        olinks = ('<div class=olinks>'
+                  '<a href="/app/outlay/accuracy">How accurate is this? →</a>'
+                  '<a href="/app/outlay/estimate">Estimate your backlog →</a>'
+                  '<a href="/app/outlay/budgets">Budgets &amp; guardrails →</a>'
+                  '<span class=sp></span>'
+                  '<span class=muted style="font-size:12.5px">Export CSV:</span>'
+                  '<a href="/app/outlay/export.csv?view=tickets">tickets</a>'
+                  '<a href="/app/outlay/export.csv?view=classes">work types</a>'
+                  '<a href="/app/outlay/export.csv?view=people">engineers</a></div>')
 
     bstrip = ""
     if statuses:
@@ -676,7 +709,8 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                   '<form method=post action="/app/outlay/clear" style="margin:0">'
                   '<button class="btn sec sm">Clear sample data</button></form></div>')
 
-    body = (chooser + ohead + sample + checklist + bstrip + kpis + sync_line + olinks + grid
+    body = (chooser + ohead + _persona_switch(persona) + sample + checklist + bstrip + kpis
+            + sync_line + olinks + grid
             + '<div style="margin-top:18px">' + _outlay_connect(collapsed=True) + '</div>')
     return page("Spend", body, account, active="/app/outlay")
 

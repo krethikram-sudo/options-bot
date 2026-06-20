@@ -88,8 +88,13 @@ CREATE TABLE IF NOT EXISTS settings (
     risk TEXT NOT NULL DEFAULT 'balanced',
     monthly_budget REAL NOT NULL DEFAULT 0,       -- 0 = no cap (dollars of model spend/cycle)
     budget_alert_pct REAL NOT NULL DEFAULT 0.8,
-    autopilot_pct INTEGER NOT NULL DEFAULT 100,   -- gradual rollout: % of eligible traffic to auto-route in autopilot
-    persona TEXT NOT NULL DEFAULT ''              -- '' (unset) | 'finance' | 'eng' : which product experience to show
+    autopilot_pct INTEGER NOT NULL DEFAULT 100    -- gradual rollout: % of eligible traffic to auto-route in autopilot
+);
+CREATE TABLE IF NOT EXISTS personas (
+    account_id INTEGER NOT NULL,
+    member_id INTEGER NOT NULL DEFAULT 0,         -- 0 = the account owner; else members.id
+    persona TEXT NOT NULL DEFAULT '',             -- 'finance' | 'eng' : which experience this person sees
+    PRIMARY KEY (account_id, member_id)
 );
 CREATE TABLE IF NOT EXISTS plans (
     account_id INTEGER PRIMARY KEY REFERENCES accounts(id),
@@ -282,7 +287,6 @@ _MIGRATIONS = [
     "ALTER TABLE outlay_connections ADD COLUMN last_sync_error TEXT",
     "ALTER TABLE outlay_connections ADD COLUMN last_attempt_at REAL",
     "ALTER TABLE pilot_requests ADD COLUMN title TEXT",
-    "ALTER TABLE settings ADD COLUMN persona TEXT NOT NULL DEFAULT ''",
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -1054,14 +1058,27 @@ def get_settings(account_id: int, path: str | None = None) -> dict:
 PERSONAS = ("finance", "eng")
 
 
-def set_persona(account_id: int, persona: str, path: str | None = None) -> None:
-    """Which product experience to show: 'finance' or 'eng'."""
-    if persona not in PERSONAS:
-        raise StoreError(f"persona must be one of {PERSONAS}")
-    get_settings(account_id, path)  # ensure the row exists
+def get_persona(account_id: int, member_id: int = 0, path: str | None = None) -> str:
+    """The chosen experience ('finance'|'eng'|'') for this person (member_id 0 = owner)."""
     conn = connect(path)
     try:
-        conn.execute("UPDATE settings SET persona=? WHERE account_id=?", (persona, account_id))
+        row = conn.execute("SELECT persona FROM personas WHERE account_id=? AND member_id=?",
+                           (account_id, member_id)).fetchone()
+        return (row["persona"] if row else "") or ""
+    finally:
+        conn.close()
+
+
+def set_persona(account_id: int, persona: str, member_id: int = 0, path: str | None = None) -> None:
+    """Set this person's experience (per member — finance and eng are separate logins)."""
+    if persona not in PERSONAS:
+        raise StoreError(f"persona must be one of {PERSONAS}")
+    conn = connect(path)
+    try:
+        conn.execute(
+            "INSERT INTO personas(account_id, member_id, persona) VALUES(?,?,?) "
+            "ON CONFLICT(account_id, member_id) DO UPDATE SET persona=excluded.persona",
+            (account_id, member_id, persona))
         conn.commit()
     finally:
         conn.close()
