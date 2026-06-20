@@ -624,9 +624,9 @@ def _coverage_diag(report: dict) -> str:
                  f'which recovers the link automatically, no branch renaming. '
                  f'<a href="/app/outlay/connect">Connect →</a></li>')
     if inv_usd > 0:
-        recs += (f'<li><b>{money(inv_usd)}</b> had no team or ticket signal. Add an identity map '
-                 f'(API key / email → team) so at least team allocation lands. '
-                 f'<a href="/app/outlay/connect">Set up →</a></li>')
+        recs += (f'<li><b>{money(inv_usd)}</b> had no team or ticket signal. Map people to teams '
+                 f'(email / API-key id → team) so at least cost-center allocation lands. '
+                 f'<a href="/app/outlay/connect#teams">Set up →</a></li>')
     if not recs:
         return ""
     return (f'<div class=ocard style="border-color:var(--amber);background:var(--amber-l)">'
@@ -1095,6 +1095,7 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
     jbase = _e(conn.get("jira_base_url") or "")
     jemail = _e(conn.get("jira_email") or "")
     jjql = _e(conn.get("jira_jql") or "")
+    idmap = _e(conn.get("identity_map") or "")
     sset = lambda k: "✓ saved" if conn.get(k) else "not set"  # noqa: E731
     chk = lambda v: " checked" if tracker == v else ""         # noqa: E731
     asy = conn.get("auto_sync_hours") or 0
@@ -1185,6 +1186,19 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
               alert(d.error||'Sync failed.');}}}})
           .catch(function(){{btn.classList.remove('loading');btn.disabled=false;alert('Network error.');}});}}
         </script>
+      </div>
+      <div class=ocard style="margin-top:16px" id=teams>
+        <div class=dh>Map people to teams <span class=sub>for cost-center allocation</span></div>
+        <p class=muted style="margin:-4px 0 10px;font-size:13.5px">Optional but powerful: map each engineer's
+          email (or API-key id) to a team, so spend allocates by cost-center even when your tickets don't
+          carry a team. One per line — <code>alice@acme.com, Platform</code> — or map a whole domain with
+          <code>@acme.com, Internal</code>. This is what fills the finance "Spend by team" view.</p>
+        <form method=post action="/app/outlay/identity">
+          <textarea name=identity_map rows=5 placeholder="alice@acme.com, Platform
+bob@acme.com, Growth
+@contractor.com, External">{idmap}</textarea>
+          <button class="btn sec" style="margin-top:12px">Save team map</button>
+        </form>
       </div>"""
     return page("Connect", form, account, active="/app/outlay/connect")
 

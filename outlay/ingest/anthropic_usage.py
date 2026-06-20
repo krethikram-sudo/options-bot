@@ -69,9 +69,9 @@ def parse_anthropic_usage(data: Union[str, Path, list, dict]) -> list[UsageEvent
                     usage.get("cache_creation_input_tokens", 0) or 0
                 ),
                 api_key_id=meta.get("api_key_id") or rec.get("api_key_id"),
-                user=meta.get("user"),
-                branch=meta.get("branch"),
-                session_id=meta.get("session_id"),
+                user=meta.get("user") or rec.get("user") or rec.get("actor"),
+                branch=meta.get("branch") or rec.get("branch"),
+                session_id=meta.get("session_id") or rec.get("session_id"),
                 explicit_ticket=meta.get("ticket"),
             )
         )

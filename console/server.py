@@ -597,7 +597,8 @@ async def app_outlay_run(request: Request):
     if not issues or not usage:
         return JSONResponse({"ok": False, "error": "Paste both the tracker and AI-usage JSON."})
     try:
-        report = outlay_app.build_report(issues, usage, planned)
+        report = outlay_app.build_report(issues, usage, planned,
+                                         identity_text=store.get_outlay_identity_map(acct["id"]))
     except ValueError as e:
         return JSONResponse({"ok": False, "error": str(e)})
     except Exception:  # noqa: BLE001
@@ -658,6 +659,20 @@ def app_outlay_connect(request: Request):
     if redir:
         return redir
     return _html(web.outlay_connect_page(acct, store.get_outlay_connection(acct["id"])))
+
+
+@app.post("/app/outlay/identity")
+async def app_outlay_identity_save(request: Request):
+    """Save the identity→team map (one `identifier, team` per line) that drives
+    cost-center allocation when tickets don't carry a team."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    store.set_outlay_identity_map(acct["id"], (f.get("identity_map") or "").strip() or None)
+    _audit(acct["id"], "identity.save",
+           actor=acct.get("display_email") or acct.get("email", ""))
+    return _redirect("/app/outlay/connect#teams")
 
 
 @app.post("/app/outlay/connect")
