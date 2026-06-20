@@ -2025,6 +2025,24 @@ def test_parse_cost_export_autodetects_provider():
     assert outlay_app.parse_cost_export("not json or recognizable") == (0.0, "")
 
 
+def test_scope_drilldown_from_spend(env, client):
+    """Clicking a work-type / team row drills into the tickets behind it."""
+    _signup(client, email="dr@x.com")
+    client.post("/app/outlay/sample", follow_redirects=True)
+    spend = client.get("/app/outlay").text
+    assert "/app/outlay/scope?type=class&id=" in spend     # rows are clickable
+
+    r = client.get("/app/outlay/scope", params={"type": "class", "id": "bugfix"})
+    assert r.status_code == 200
+    assert "work type" in r.text and "Tickets" in r.text and "Back to Spend" in r.text
+    # a bogus type degrades to team, never errors
+    assert client.get("/app/outlay/scope", params={"type": "evil", "id": "x"}).status_code == 200
+    # requires auth
+    client.cookies.clear()
+    assert client.get("/app/outlay/scope", params={"type": "class", "id": "bugfix"},
+                      follow_redirects=False).status_code in (302, 303, 307)
+
+
 def test_weekly_digest_builds_and_respects_cadence(env, client, monkeypatch):
     from console import spend_digest, store, notify
     _signup(client, email="dig@x.com")
