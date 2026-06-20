@@ -2516,7 +2516,7 @@ def _api_keys_section(keys: list[dict], deployments: list[dict], new_key: str = 
     </div>"""
 
 
-def _webhooks_section(webhooks: list[dict]) -> str:
+def _webhooks_section(webhooks: list[dict], deliveries: list[dict] | None = None) -> str:
     from .store import WEBHOOK_EVENTS
     rows = ""
     for w in webhooks or []:
@@ -2529,11 +2529,12 @@ def _webhooks_section(webhooks: list[dict]) -> str:
              f"<th>Signing secret</th><th></th></tr></thead><tbody>{rows}</tbody></table></div>"
              if rows else "<div class=card><p class='small muted'>No webhooks yet.</p></div>")
     opts = "".join(f'<option value="{e}">{e}</option>' for e in WEBHOOK_EVENTS)
+    log = _webhook_delivery_log(deliveries)
     return f"""
     <h2>Webhooks</h2>
     <p class="small muted">Get notified of events (budget thresholds, tuning proposals, account
     changes). We POST JSON signed with <code>X-Outlay-Signature: sha256=…</code> (HMAC of the body
-    with the webhook's signing secret).</p>
+    with the webhook's signing secret). Failed deliveries are retried with backoff and logged below.</p>
     {table}
     <div class=card style="margin-top:12px">
       <form method=post action="/app/webhooks" class=row style="gap:8px">
@@ -2543,7 +2544,30 @@ def _webhooks_section(webhooks: list[dict]) -> str:
         </select>
         <button class=btn>Add webhook</button>
       </form>
-    </div>"""
+    </div>
+    {log}"""
+
+
+def _webhook_delivery_log(deliveries: list[dict] | None) -> str:
+    """Recent delivery outcomes, so a dropped webhook is visible instead of silent."""
+    if not deliveries:
+        return ""
+    rows = ""
+    for d in deliveries:
+        ok = d.get("status") == "delivered"
+        badge = ('<span class="badge paid">delivered</span>' if ok
+                 else '<span class="badge suspended">failed</span>')
+        code = d.get("status_code")
+        detail = (f"HTTP {code}" if code else "") + (
+            f" · {_e(d.get('error') or '')}" if (not ok and d.get("error")) else "")
+        att = d.get("attempts") or 1
+        rows += (f"<tr><td class='small muted'>{_fmt_date(d.get('created_at'))}</td>"
+                 f"<td><span class='otag ex'>{_e(d.get('event_type') or '')}</span></td>"
+                 f"<td>{badge}</td><td class='small muted'>{att} attempt{'s' if att != 1 else ''}</td>"
+                 f"<td class='small muted'>{detail}</td></tr>")
+    return (f'<h3 style="margin-top:18px">Recent deliveries</h3>'
+            f'<div class=card style="padding:0"><table><thead><tr><th>When</th><th>Event</th>'
+            f'<th>Status</th><th>Tries</th><th>Detail</th></tr></thead><tbody>{rows}</tbody></table></div>')
 
 
 _FOCUS_FIELD_DOCS = [
@@ -2675,7 +2699,8 @@ def api_page(account: dict, keys: list[dict], deployments: list[dict],
 
 def connect_page(account: dict, deployments: list[dict], brain_url: str, console_url: str,
                  keys: list[dict] | None = None, new_key: str = "",
-                 webhooks: list[dict] | None = None) -> str:
+                 webhooks: list[dict] | None = None,
+                 deliveries: list[dict] | None = None) -> str:
     dep = deployments[0]["deployment_id"] if deployments else "—"
     dep_rows = ""
     for d in deployments:
@@ -2725,7 +2750,7 @@ client = Anthropic(base_url="http://127.0.0.1:8400")  # your key stays local</pr
       </form>
     </div>
     {_api_keys_section(keys or [], deployments, new_key)}
-    {_webhooks_section(webhooks or [])}
+    {_webhooks_section(webhooks or [], deliveries)}
     {_tuning_capture_section(account)}"""
     return page("Configuration", body, account, "/app/connect")
 

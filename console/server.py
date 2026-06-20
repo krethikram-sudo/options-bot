@@ -1346,7 +1346,8 @@ def _connect_html(acct: dict, new_key: str = ""):
     console = os.environ.get("CONSOLE_BASE_URL", "https://app.outlay-ai.com")
     keys = store.list_api_keys(acct["id"])
     hooks = store.list_webhooks(acct["id"])
-    return _html(web.connect_page(acct, deps, brain, console, keys, new_key, hooks))
+    deliveries = store.recent_webhook_deliveries(acct["id"])
+    return _html(web.connect_page(acct, deps, brain, console, keys, new_key, hooks, deliveries))
 
 
 def _api_html(acct: dict, new_key: str = ""):
