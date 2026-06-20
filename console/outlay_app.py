@@ -174,8 +174,47 @@ def _parse(issues, usage):
     return work, _parse_usage(usage)
 
 
-def _fit(work, events):
-    result = attribute(events, work)
+_DOMAIN_RE = __import__("re").compile(r"^[\w.-]+\.[a-z]{2,}$", __import__("re").I)
+
+
+def identity_graph(text):
+    """Parse a customer's identity map (one `identifier, team` / `identifier -> team`
+    per line) into an `IdentityGraph`. An identifier with a leading `@` or a bare
+    `acme.com` maps a whole email **domain**; anything else is an exact user/email
+    or API-key id. Powers team / cost-center allocation when tickets don't carry a
+    team — the finance lead view and the low-coverage fallback."""
+    from outlay.join import IdentityGraph
+    u2t: dict[str, str] = {}
+    d2t: dict[str, str] = {}
+    k2u: dict[str, str] = {}
+    for raw in (text or "").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "->" in line:
+            ident, team = line.split("->", 1)
+        elif "," in line:
+            ident, team = line.split(",", 1)
+        elif "\t" in line:
+            ident, team = line.split("\t", 1)
+        else:
+            continue
+        ident, team = ident.strip(), team.strip()
+        if not ident or not team:
+            continue
+        if ident.startswith("@"):
+            d2t[ident[1:].lower()] = team
+        elif "@" not in ident and _DOMAIN_RE.match(ident):
+            d2t[ident.lower()] = team
+        else:
+            u2t[ident] = team
+            k2u[ident] = ident  # so a key-identified event (no email) also resolves
+    return IdentityGraph(key_to_user=k2u, user_to_team=u2t, domain_to_team=d2t)
+
+
+def _fit(work, events, identity=None):
+    from outlay.join import JoinEngine
+    result = attribute(events, work, engine=JoinEngine(work, identity=identity))
     return result, class_stats(result), fit_size_models(result, work)
 
 
@@ -302,10 +341,14 @@ def estimate_with_model(model: dict, planned) -> dict:
         os.unlink(pp)
 
 
-def build_report(issues, usage, planned: Optional[object] = None, window_days: int = 30) -> dict:
-    """Run the pipeline on uploaded JSON and return the serialized report."""
+def build_report(issues, usage, planned: Optional[object] = None, window_days: int = 30,
+                 identity_text: Optional[str] = None) -> dict:
+    """Run the pipeline on uploaded JSON and return the serialized report.
+
+    `identity_text` (optional) maps identifiers/domains → teams so spend allocates
+    by cost-center even when the tracker doesn't tag tickets with a team."""
     work, events = _parse(issues, usage)
-    result, stats, size_models = _fit(work, events)
+    result, stats, size_models = _fit(work, events, identity=identity_graph(identity_text))
     planned_items = None
     if planned:
         pp = _tmp(planned)
@@ -504,6 +547,6 @@ def sync(conn: dict, window_days: int = 30, transport=None) -> dict:
     except Exception as e:  # noqa: BLE001 — network / auth → clean message
         raise ValueError(f"Couldn't sync from your sources: {e}") from e
 
-    result, stats, size_models = _fit(work, events)
+    result, stats, size_models = _fit(work, events, identity=identity_graph(conn.get("identity_map")))
     report = _report(work, result, stats, size_models, None, window_days, events=events)
     return reconcile(report, invoice_usd, "anthropic_cost_report", window_days)

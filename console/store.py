@@ -296,6 +296,7 @@ _MIGRATIONS = [
     "ALTER TABLE outlay_connections ADD COLUMN last_attempt_at REAL",
     "ALTER TABLE pilot_requests ADD COLUMN title TEXT",
     "ALTER TABLE outlay_history ADD COLUMN breakdown TEXT",  # JSON: top team/class spend per snapshot → movers
+    "ALTER TABLE outlay_connections ADD COLUMN identity_map TEXT",  # JSON: identifier/domain → team
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -734,6 +735,35 @@ def outlay_history(account_id: int, limit: int = 12, path: str | None = None) ->
             d["breakdown"] = {}
         out.append(d)
     return out
+
+
+def set_outlay_identity_map(account_id: int, identity_map: str | None,
+                            path: str | None = None) -> None:
+    """Persist the per-account identity→team map (JSON text). Upserts the
+    connection row so it works even for paste-only customers with no live sync."""
+    conn = connect(path)
+    try:
+        exists = conn.execute("SELECT 1 FROM outlay_connections WHERE account_id=?",
+                              (account_id,)).fetchone()
+        if exists:
+            conn.execute("UPDATE outlay_connections SET identity_map=? WHERE account_id=?",
+                         (identity_map, account_id))
+        else:
+            conn.execute("INSERT INTO outlay_connections(account_id, identity_map) VALUES(?,?)",
+                         (account_id, identity_map))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_outlay_identity_map(account_id: int, path: str | None = None) -> str | None:
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT identity_map FROM outlay_connections WHERE account_id=?",
+                          (account_id,)).fetchone()
+    finally:
+        conn.close()
+    return (row["identity_map"] if row else None) or None
 
 
 def save_outlay_connection(account_id: int, github_owner: str | None = None,

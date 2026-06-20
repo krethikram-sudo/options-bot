@@ -2025,6 +2025,38 @@ def test_parse_cost_export_autodetects_provider():
     assert outlay_app.parse_cost_export("not json or recognizable") == (0.0, "")
 
 
+def test_identity_map_parses_users_domains_keys():
+    from console import outlay_app
+    ig = outlay_app.identity_graph(
+        "alice@acme.com, Platform\n@contractor.com -> External\nkeyid-7, Growth\n# a comment\n\n")
+    assert ig.user_to_team == {"alice@acme.com": "Platform", "keyid-7": "Growth"}
+    assert ig.domain_to_team == {"contractor.com": "External"}
+    assert ig.key_to_user.get("keyid-7") == "keyid-7"   # key-identified events resolve too
+
+
+def test_identity_map_drives_team_allocation_end_to_end(env, client):
+    """A saved identity map makes team / cost-center allocation work on real data —
+    the finance lead view and the low-coverage fallback."""
+    _, store = env
+    _signup(client, email="fin@x.com")
+    # save the map (email + domain), then import usage with users but NO tickets
+    client.post("/app/outlay/identity", data={
+        "identity_map": "alice@acme.com, Platform\n@acme.com, Engineering"}, follow_redirects=True)
+    acct = store.get_account_by_email("fin@x.com")
+    assert "Platform" in (store.get_outlay_identity_map(acct["id"]) or "")
+    usage = ('[{"id":"e1","model":"claude-opus-4-8","input_tokens":200000,"output_tokens":50000,"user":"alice@acme.com"},'
+             '{"id":"e2","model":"claude-opus-4-8","input_tokens":100000,"output_tokens":20000,"user":"bob@acme.com"}]')
+    r = client.post("/app/outlay/run", json={"issues": '{"issues":[]}', "usage": usage})
+    assert r.json()["ok"] is True
+    rep = store.get_outlay_report(acct["id"])
+    teams = {t["team"] for t in rep.get("team_spend", [])}
+    assert "Platform" in teams           # exact email → Platform
+    assert "Engineering" in teams        # bob via @acme.com domain rule
+    assert "(unassigned)" not in teams   # everyone mapped
+    # the editor round-trips the saved map
+    assert "alice@acme.com, Platform" in client.get("/app/outlay/connect").text
+
+
 def test_coverage_diagnostic_explains_low_coverage(env, client):
     """When ticket coverage is low, the Spend page tells the customer WHY and the
     cheapest fix (connect PRs) — not just a low number."""
@@ -2033,7 +2065,7 @@ def test_coverage_diagnostic_explains_low_coverage(env, client):
                      "by_fidelity_usd": {"call": 0, "branch": 200.0, "team": 600.0, "invoice": 200.0}}}
     diag = web._coverage_diag(low)
     assert "Lift your ticket coverage" in diag
-    assert "Connect your PRs" in diag and "identity map" in diag
+    assert "Connect your PRs" in diag and "Map people to teams" in diag
     # healthy coverage → no nag
     assert web._coverage_diag({"spend": {"total_usd": 1000.0, "ticket_coverage": 0.8,
                                          "by_fidelity_usd": {"branch": 800.0}}}) == ""

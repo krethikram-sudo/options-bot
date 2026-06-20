@@ -34,6 +34,7 @@ class IdentityGraph:
 
     key_to_user: dict[str, str] = field(default_factory=dict)
     user_to_team: dict[str, str] = field(default_factory=dict)
+    domain_to_team: dict[str, str] = field(default_factory=dict)
 
     def user_for(self, event: UsageEvent) -> Optional[str]:
         if event.user:
@@ -44,8 +45,15 @@ class IdentityGraph:
 
     def team_for(self, event: UsageEvent) -> Optional[str]:
         user = self.user_for(event)
-        if user and user in self.user_to_team:
+        if not user:
+            return None
+        if user in self.user_to_team:
             return self.user_to_team[user]
+        # Fall back to an email-domain rule, so a whole team maps in one line.
+        if "@" in user:
+            dom = user.rsplit("@", 1)[-1].lower()
+            if dom in self.domain_to_team:
+                return self.domain_to_team[dom]
         return None
 
 
