@@ -1945,3 +1945,25 @@ def test_audit_page_blocked_for_members(env, client):
     client.post("/logout")
     client.post("/login", data={"email": "mem@co.com", "password": "memberpass1"})
     assert client.get("/app/audit").status_code == 403
+
+
+def test_login_page_has_sso_entry_and_messages(env, client):
+    """The login page offers a 'Use SSO' entry and surfaces SSO error states."""
+    r = client.get("/login")
+    assert r.status_code == 200 and "company SSO" in r.text and 'action="/sso/start"' in r.text
+    assert "single sign-on for that email domain" in client.get("/login?sso=unknown").text
+
+
+def test_sso_login_is_audited(env, client, monkeypatch):
+    server, store = env
+    a = store.create_account("o@corp4.com", "password123")
+    store.set_sso(a["id"], enabled=True, domain="corp4.com", client_id="c", client_secret="s",
+                  auth_url="https://idp/auth", token_url="https://idp/tok", userinfo_url="https://idp/ui")
+    r = client.get("/sso/start", params={"email": "bob@corp4.com"}, follow_redirects=False)
+    import urllib.parse
+    state = urllib.parse.unquote(r.headers["location"].split("state=")[-1])
+    monkeypatch.setattr(server, "_oidc_email", lambda cfg, code, ru: "bob@corp4.com")
+    client.get("/sso/callback", params={"code": "xyz", "state": state}, follow_redirects=False)
+    audit = store.list_audit(a["id"])
+    assert any(e["action"] == "login" and "SSO" in (e["detail"] or "") and e["actor"] == "bob@corp4.com"
+               for e in audit)

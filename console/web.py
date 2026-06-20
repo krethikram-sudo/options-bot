@@ -1206,6 +1206,15 @@ def auth_form(kind: str, error: str = "", email: str = "") -> str:
                '</label></div>') if is_signup else ""
     beta = ('<p class="small muted center" style="margin-top:10px">Outlay is in early access — '
             'we move fast and value your feedback.</p>') if is_signup else ""
+    sso = ('' if is_signup else
+           '<div class=field style="margin-top:18px;border-top:1px solid var(--line);padding-top:16px">'
+           '<label class=row style="gap:0;font-weight:600;font-size:13px;color:var(--muted)">'
+           'Or sign in with your company SSO</label>'
+           '<form method=get action="/sso/start" style="display:flex;gap:8px;margin-top:6px">'
+           '<input name=email type=email required placeholder="you@company.com" '
+           'style="flex:1">'
+           '<button class="btn sec" type=submit style="white-space:nowrap">Use SSO</button>'
+           '</form></div>')
     sub = "Create account" if is_signup else "Sign in"
     alt = ('Already have an account? <a href="/login">Sign in</a>' if is_signup
            else 'New here? <a href="/signup">Start a free trial</a> · '
@@ -1224,6 +1233,7 @@ def auth_form(kind: str, error: str = "", email: str = "") -> str:
         {consent}
         <button class="btn" style="width:100%">{_e(sub)}</button>
       </form>
+      {sso}
       {beta}
       <p class="small center muted" style="margin-top:14px">{alt}</p>
     </div></div>"""
