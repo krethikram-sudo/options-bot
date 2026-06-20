@@ -204,6 +204,15 @@ pre{background:var(--paper2);color:var(--navy);padding:16px;border-radius:10px;o
 .exrow .exd{grid-column:1;font-size:12.5px;color:var(--muted);line-height:1.45}
 .exrow .exarr{grid-row:1/3;color:var(--muted);font-weight:600;align-self:center}
 .exrow:hover .exarr{color:var(--grn-d)}
+.trow{display:flex;align-items:center;gap:10px;padding:11px 2px;border-top:1px solid var(--line)}
+.trow:first-child{border-top:none}
+.trow .nm{flex:1;font-weight:600;color:var(--ink);font-size:14px}
+.trow .nm small{font-weight:400;color:var(--muted)}
+.trow-act{display:flex;gap:6px;align-items:center;margin:0}
+.trow select{padding:7px 9px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff}
+.rolelegend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.rolelegend b{color:var(--ink)}
+@media(max-width:560px){.trow{flex-wrap:wrap}.trow .nm{flex-basis:100%}}
 .cstep{display:flex;gap:11px;align-items:flex-start;margin:22px 0 10px}
 .cstep:first-child{margin-top:4px}
 .cnum{flex:none;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center}
@@ -688,6 +697,85 @@ def _sync_line(report: dict, conn: dict | None) -> str:
     return f'<div class=syncline>Last refreshed <b>{last}</b> · {cadence}{sync_err}</div>'
 
 
+def _trend_card(history: list[dict] | None) -> str:
+    """Spend over recent refreshes — a bigger sparkline than the KPI, with the
+    delta vs the last refresh. Empty until there are at least two snapshots."""
+    hist = history or []
+    vals = [h.get("total_usd", 0.0) for h in hist]
+    spark = _sparkline(vals, w=300, h=56, color="#0f6b4f")
+    if not spark:  # < 2 points
+        return ""
+    cur = vals[-1]
+    lo, hi = min(vals), max(vals)
+    delta = _trend_delta(hist)
+    return (f'<div class=ocard><div class=dh>Spend trend'
+            f'<span class=sub>last {len(vals)} refreshes</span></div>'
+            f'<div class=bignum><span class=v>{money(cur)}</span>'
+            f'<span class=of>{delta}</span></div>'
+            f'<div style="margin:10px 0 4px">{spark}</div>'
+            f'<div class=bandlab><span>low · {money(lo)}</span><span>high · {money(hi)}</span></div></div>')
+
+
+def _movers(history: list[dict] | None):
+    """Biggest category changes between the two most recent refreshes. Prefers the
+    team/cost-center axis when present, else work type. None until two snapshots
+    carry a breakdown (older snapshots predate the breakdown column)."""
+    snaps = [h for h in (history or []) if h.get("breakdown")]
+    if len(snaps) < 2:
+        return None
+    cur, prev = snaps[-1]["breakdown"], snaps[-2]["breakdown"]
+    axis = "team" if cur.get("team") else "class"
+    c, p = cur.get(axis, {}) or {}, prev.get(axis, {}) or {}
+    rows = []
+    for name in set(c) | set(p):
+        now_v, was_v = float(c.get(name, 0.0)), float(p.get(name, 0.0))
+        delta = now_v - was_v
+        if abs(delta) < 0.005:
+            continue
+        rows.append({"name": name, "axis": axis, "now": now_v, "delta": delta,
+                     "pct": (delta / was_v * 100) if was_v else None})
+    rows.sort(key=lambda r: abs(r["delta"]), reverse=True)
+    return rows[:3] or None
+
+
+def _movers_card(history: list[dict] | None, report: dict) -> str:
+    """Top movers (Δ since last refresh) when we have history; otherwise the largest
+    current spend drivers — always populated, never a dead card."""
+    movers = _movers(history)
+    if movers:
+        axis_label = "team" if movers[0]["axis"] == "team" else "work type"
+        rows = ""
+        for m in movers:
+            up = m["delta"] > 0
+            arrow, col = ("↑", "var(--amber)") if up else ("↓", "var(--grn-d)")
+            pct = f' {arrow} {abs(m["pct"]):.0f}%' if m["pct"] is not None else f' {arrow} new'
+            rows += (f'<div class=erow><span class=nm>{_e(m["name"])}</span>'
+                     f'<span class=amt>{money(m["now"])}'
+                     f'<span style="color:{col};font-weight:600;font-size:12px">{pct}</span></span>'
+                     f'<div class=ebar><span style="width:0"></span></div></div>')
+        return (f'<div class=ocard><div class=dh>Top movers'
+                f'<span class=sub>Δ by {axis_label} vs last refresh</span></div>{rows}</div>')
+    # Fallback: largest spend drivers from the current report (no delta yet)
+    teams = [t for t in (report.get("team_spend") or []) if t.get("team") != "(unassigned)"]
+    if teams:
+        items = [(t["team"], t.get("spent_usd", 0.0)) for t in teams[:3]]
+        axis_label = "team"
+    else:
+        items = [(c["task_class"], c.get("spent_usd", 0.0)) for c in (report.get("class_spend") or [])[:3]]
+        axis_label = "work type"
+    if not items:
+        return ""
+    mx = max((v for _, v in items), default=1) or 1
+    rows = "".join(
+        f'<div class=erow><span class=nm>{_e(n)}</span><span class=amt>{money(v)}</span>'
+        f'<div class=ebar><span style="width:{max(2,min(100,v/mx*100)):.0f}%;background:var(--grn)"></span></div></div>'
+        for n, v in items)
+    return (f'<div class=ocard><div class=dh>Top spend drivers'
+            f'<span class=sub>largest by {axis_label} this window</span></div>{rows}'
+            f'<p class=muted style="font-size:12px;margin-top:10px">Movement vs the previous refresh '
+            f'appears here once you have two syncs of history.</p></div>')
+
+
 def _explore_card(persona: str) -> str:
     """Overview's hub: short, role-ordered jump-offs into the deeper product areas."""
     dest = {
@@ -745,8 +833,20 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
         head = ('<div class=ohead><h1>AI spend at a glance</h1>'
                 '<p>The headline numbers, your budget status, and where to dig in.</p></div>')
 
+    # Trend + movers row — lay out as a pair when both are present, else a single
+    # full-width card (the trend card is empty until there are two refreshes).
+    trend, movers = _trend_card(history), _movers_card(history, report)
+    cards = [c for c in (trend, movers) if c]
+    if len(cards) == 2:
+        tm_row = '<div class=ogrid style="margin-top:16px">' + cards[0] + cards[1] + '</div>'
+    elif cards:
+        tm_row = '<div style="margin-top:16px">' + cards[0] + '</div>'
+    else:
+        tm_row = ""
+
     body = (chooser + head + _persona_switch(persona) + _sample_strip(report) + checklist
             + _budget_strip(statuses) + _kpis_row(report, history, persona) + _recon_strip(report)
+            + tm_row
             + '<div class=ogrid style="margin-top:16px">' + _forecast_card(report)
             + _explore_card(persona) + '</div>' + _sync_line(report, conn))
     return page("Home", body, account, active="/app")
@@ -1963,40 +2063,51 @@ def _sso_section(sso: dict, scim_token: str = "") -> str:
 def team_page(account: dict, members: list[dict], invite_link: str = "",
               sso: dict | None = None, scim_token: str = "") -> str:
     from .store import TEAM_ROLES
-    invite_note = (f'<div class="note">Invite sent. Share this set-password link (valid 1h): '
-                   f'<a href="{_e(invite_link)}">{_e(invite_link)}</a></div>' if invite_link else "")
-    rows = (f'<tr><td>{_e(account["email"])}</td><td><span class="badge paid">owner</span></td>'
-            f'<td class="small muted">account owner</td><td></td></tr>')
+    invite_note = (f'<div class=okbox style="margin-bottom:16px"><b>Invite sent.</b> Share this '
+                   f'set-password link (valid 1 hour): <a href="{_e(invite_link)}">{_e(invite_link)}</a></div>'
+                   if invite_link else "")
+    active = [m for m in members if m["status"] == "active"]
+    seats = 1 + len(active)  # owner + active members
+
+    owner_row = (f'<div class=trow><span class=nm>{_e(account["email"])} '
+                 f'<span class="otag ok">owner</span><small> · account owner</small></span></div>')
+    rows = owner_row
     for m in members:
         opts = "".join(f'<option value="{r}"{" selected" if m["role"]==r else ""}>{r}</option>'
                        for r in TEAM_ROLES)
-        status = "" if m["status"] == "active" else f' <span class="badge trial">{_e(m["status"])}</span>'
-        rows += f"""<tr><td>{_e(m['email'])}{status}</td>
-          <td><form method=post action="/app/team/role" class=row style="gap:6px">
+        pending = ("" if m["status"] == "active"
+                   else f' <span class="otag warn">{_e(m["status"])}</span>')
+        rows += f"""<div class=trow>
+          <span class=nm>{_e(m['email'])}{pending}<small> · joined {_fmt_date(m.get('created_at'))}</small></span>
+          <form method=post action="/app/team/role" class=trow-act>
             <input type=hidden name=member_id value="{m['id']}">
-            <select name=role>{opts}</select><button class="btn sec sm">Save</button></form></td>
-          <td class="small muted">{_fmt_date(m.get('created_at'))}</td>
-          <td><form method=post action="/app/team/remove" style="margin:0">
+            <select name=role>{opts}</select><button class="btn sec sm">Save</button></form>
+          <form method=post action="/app/team/remove" class=trow-act style="margin:0">
             <input type=hidden name=member_id value="{m['id']}">
-            <button class="btn sec sm">Remove</button></form></td></tr>"""
+            <button class="btn sec sm">Remove</button></form></div>"""
     role_opts = "".join(f'<option value="{r}">{r}</option>' for r in TEAM_ROLES)
-    body = f"""
-    <h1>Team</h1>
-    <p class=muted>Invite teammates and set their access. Roles: <b>admin</b> (everything),
-    <b>billing</b> (dashboard + billing), <b>member</b> (dashboard, logs, connect — read-only).</p>
-    {invite_note}
-    <div class=card style="padding:0"><table>
-      <thead><tr><th>Member</th><th>Role</th><th>Joined</th><th></th></tr></thead>
-      <tbody>{rows}</tbody></table></div>
-    <div class=card style="margin-top:12px">
-      <form method=post action="/app/team/invite" class=row style="gap:8px">
-        <input name=email type=email placeholder="teammate@company.com" required style="min-width:240px">
-        <select name=role>{role_opts}</select>
-        <button class=btn>Invite</button>
+
+    head = ('<div class=ohead><h1>Team &amp; access</h1>'
+            '<p>Invite teammates, set their access, and connect SSO. Everyone shares this workspace\'s '
+            'spend, forecasts, and budgets.</p></div>')
+    members_card = (f'<div class=ocard><div class=dh>Members'
+                    f'<span class=sub>{seats} with access</span></div>{rows}</div>')
+    invite_card = f"""<div class=ocard style="margin-top:16px"><div class=dh>Invite a teammate</div>
+      <form method=post action="/app/team/invite" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+        <label class=fld style="flex:1;min-width:240px"><span>Work email</span>
+          <input name=email type=email placeholder="teammate@company.com" required></label>
+        <label class=fld style="min-width:150px"><span>Role</span>
+          <select name=role>{role_opts}</select></label>
+        <button class=btn>Send invite</button>
       </form>
-      <p class="small muted" style="margin-top:8px">They'll get a link to set a password and sign in.</p>
-    </div>
-    {_sso_section(sso or {}, scim_token)}"""
+      <div class=rolelegend>
+        <span><b>admin</b> — full access, including team &amp; billing</span>
+        <span><b>billing</b> — dashboards + billing</span>
+        <span><b>member</b> — dashboards, logs &amp; connect (read-only)</span>
+      </div>
+      <p class=muted style="font-size:12.5px;margin-top:6px">They'll get a link to set a password and sign in.</p>
+    </div>"""
+    body = head + invite_note + members_card + invite_card + _sso_section(sso or {}, scim_token)
     return page("Team", body, account, "/app/team")
 
 

@@ -615,7 +615,21 @@ async def app_outlay_sample(request: Request):
         return redir
     report = outlay_app.sample_report()
     store.save_outlay_report(acct["id"], report)
-    store.record_outlay_snapshot(acct["id"], report)
+    # Seed a short synthetic history (backdated) so the worked example shows a real
+    # spend trend + movers, not a single point. Clearly flagged as sample data.
+    import time
+    now = time.time()
+    for i, f in enumerate((0.78, 0.86, 0.93)):
+        snap = {
+            "spend": {"total_usd": (report.get("spend") or {}).get("total_usd", 0.0) * f},
+            "forecast": {"expected_usd": (report.get("forecast") or {}).get("expected_usd", 0.0) * f},
+            "team_spend": [{"team": t["team"], "spent_usd": t.get("spent_usd", 0.0) * f}
+                           for t in (report.get("team_spend") or [])],
+            "class_spend": [{"task_class": c["task_class"], "spent_usd": c.get("spent_usd", 0.0) * f}
+                            for c in (report.get("class_spend") or [])],
+        }
+        store.record_outlay_snapshot(acct["id"], snap, now=now - (3 - i) * 86400)
+    store.record_outlay_snapshot(acct["id"], report, now=now)
     return _redirect("/app/outlay")
 
 

@@ -295,6 +295,7 @@ _MIGRATIONS = [
     "ALTER TABLE outlay_connections ADD COLUMN last_sync_error TEXT",
     "ALTER TABLE outlay_connections ADD COLUMN last_attempt_at REAL",
     "ALTER TABLE pilot_requests ADD COLUMN title TEXT",
+    "ALTER TABLE outlay_history ADD COLUMN breakdown TEXT",  # JSON: top team/class spend per snapshot → movers
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -698,10 +699,18 @@ def record_outlay_snapshot(account_id: int, report: dict, path: str | None = Non
     powers the dashboard's trend delta and sparkline. Not called on estimate re-saves."""
     total = (report.get("spend", {}) or {}).get("total_usd", 0.0)
     fc = (report.get("forecast", {}) or {}).get("expected_usd", 0.0)
+    # Capture a compact per-category breakdown so we can show real movement
+    # (Δ vs the previous refresh) on the Overview, not just a total.
+    breakdown = json.dumps({
+        "team": {t["team"]: t.get("spent_usd", 0.0)
+                 for t in (report.get("team_spend") or []) if t.get("team") != "(unassigned)"},
+        "class": {c["task_class"]: c.get("spent_usd", 0.0)
+                  for c in (report.get("class_spend") or [])},
+    })
     conn = connect(path)
     try:
-        conn.execute("INSERT INTO outlay_history(account_id, ts, total_usd, forecast_usd)"
-                     " VALUES(?,?,?,?)", (account_id, now or time.time(), total, fc))
+        conn.execute("INSERT INTO outlay_history(account_id, ts, total_usd, forecast_usd, breakdown)"
+                     " VALUES(?,?,?,?,?)", (account_id, now or time.time(), total, fc, breakdown))
         conn.commit()
     finally:
         conn.close()
@@ -712,11 +721,19 @@ def outlay_history(account_id: int, limit: int = 12, path: str | None = None) ->
     conn = connect(path)
     try:
         rows = conn.execute(
-            "SELECT ts, total_usd, forecast_usd FROM outlay_history WHERE account_id=?"
+            "SELECT ts, total_usd, forecast_usd, breakdown FROM outlay_history WHERE account_id=?"
             " ORDER BY ts DESC LIMIT ?", (account_id, limit)).fetchall()
     finally:
         conn.close()
-    return [dict(r) for r in reversed(rows)]
+    out = []
+    for r in reversed(rows):
+        d = dict(r)
+        try:
+            d["breakdown"] = json.loads(d.get("breakdown") or "") or {}
+        except (ValueError, TypeError):
+            d["breakdown"] = {}
+        out.append(d)
+    return out
 
 
 def save_outlay_connection(account_id: int, github_owner: str | None = None,
