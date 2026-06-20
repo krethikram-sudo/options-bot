@@ -459,6 +459,9 @@ def _outlay_connect(error: str = "", collapsed: bool = False) -> str:
           <textarea id=ol_issues rows=4 placeholder='{{"issues":[ ... ]}}'></textarea></label>
         <label class=fld><span>AI usage — Anthropic usage JSON <span class=muted style="font-weight:400">or Bedrock / Vertex / OpenAI exports</span></span>
           <textarea id=ol_usage rows=4 placeholder='Anthropic: [ {{"id":"e1","model":"claude-...","input_tokens":...}} ]   ·   Bedrock: {{"modelId":"...","input":{{"inputTokenCount":...}}, ...}} per line'></textarea></label>
+        <label class=fld><span>Provider cost export (optional) — reconcile to your invoice
+            <span class=muted style="font-weight:400">AWS Cost Explorer / GCP Cloud Billing / OpenAI Costs (auto-detected)</span></span>
+          <textarea id=ol_cost rows=3 placeholder='AWS: {{"ResultsByTime":[ ... ]}}   ·   OpenAI: {{"data":[{{"results":[{{"amount":{{"value":...}}}}]}}]}}'></textarea></label>
         <label class=fld><span>Planned backlog (optional) — JSON</span>
           <textarea id=ol_planned rows=3 placeholder='{{"items":[{{"id":"PROJ-1","title":"Add SSO","requirements":"...","points":8}}]}}'></textarea></label>
       </div>
@@ -468,6 +471,7 @@ def _outlay_connect(error: str = "", collapsed: bool = False) -> str:
         fetch('/app/outlay/run',{{method:'POST',headers:{{'content-type':'application/json'}},
           body:JSON.stringify({{issues:document.getElementById('ol_issues').value,
             usage:document.getElementById('ol_usage').value,
+            cost_export:document.getElementById('ol_cost').value,
             planned:document.getElementById('ol_planned').value}})}})
         .then(function(r){{return r.json();}}).then(function(d){{
           if(d.ok){{location.reload();}}else{{btn.classList.remove('loading');btn.disabled=false;

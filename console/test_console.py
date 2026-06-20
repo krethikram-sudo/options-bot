@@ -2025,6 +2025,24 @@ def test_parse_cost_export_autodetects_provider():
     assert outlay_app.parse_cost_export("not json or recognizable") == (0.0, "")
 
 
+def test_run_with_cost_export_reconciles(env, client):
+    _, store = env
+    _signup(client, email="rec@x.com")
+    fix = _fixtures()
+    # paste a provider cost export alongside usage → reconciliation attaches
+    aws = '{"ResultsByTime":[{"Total":{"UnblendedCost":{"Amount":"500.00"}},"Groups":[]}]}'
+    r = client.post("/app/outlay/run", json={
+        "issues": (fix / "github_issues.json").read_text(),
+        "usage": (fix / "anthropic_usage.json").read_text(),
+        "cost_export": aws})
+    assert r.json()["ok"] is True
+    rep = store.get_outlay_report(store.get_account_by_email("rec@x.com")["id"])
+    rec = rep.get("reconciliation")
+    assert rec and rec["source"] == "aws_cost_explorer" and rec["invoice_usd"] == 500.0
+    # the Overview strip names AWS, not Anthropic
+    assert "AWS Cost Explorer" in client.get("/app").text
+
+
 def test_audit_log_records_and_renders(env, client):
     """Security events are recorded; owners see the audit page, members 403."""
     server, store = env
