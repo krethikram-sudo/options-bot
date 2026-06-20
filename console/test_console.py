@@ -305,11 +305,77 @@ def test_delete_account_cascade(env):
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     store.record_meter(dep, baseline_cost=10.0, actual_cost=6.0)
     store.convert_to_paid(a["id"])
+    # ingested Outlay data + a cancel-reason feedback row exist before deletion
+    store.save_outlay_connection(a["id"], github_owner="o", github_repo="r", github_token="t")
+    store.save_outlay_report(a["id"], {"spend": {"total_usd": 1.0}})
+    store.record_outlay_snapshot(a["id"], {"spend": {"total_usd": 1.0}})
+    store.record_feedback(a["id"], "cancel", comment="too pricey")
     store.delete_account(a["id"])
     assert store.get_account(a["id"]) is None
     assert store.get_account_by_email("del@y.com") is None
     assert store.deployments_for(a["id"]) == []
     assert store.savings_summary(a["id"])["savings"] == 0.0
+    # all ingested Outlay data is gone (incl. encrypted connection creds)
+    assert store.get_outlay_report(a["id"]) is None
+    assert store.outlay_history(a["id"]) == []
+    assert store.get_outlay_connection(a["id"]) is None
+    # feedback is anonymized (account link severed), not deleted — signal survives
+    fb = store.list_feedback()
+    assert any(f["comment"] == "too pricey" and f["account_id"] is None for f in fb)
+
+
+def test_outlay_retention_window_purges_old_snapshots(env):
+    import time
+    _, store = env
+    a = store.create_account("ret@y.com", "password123")
+    now = time.time()
+    # three snapshots: 200d, 100d, 1d old
+    for age in (200, 100, 1):
+        store.record_outlay_snapshot(a["id"], {"spend": {"total_usd": age}}, now=now - age * 86400)
+    assert len(store.outlay_history(a["id"], limit=50)) == 3
+    # 90-day retention drops the 200d + 100d snapshots
+    store.set_retention_days(a["id"], 90)
+    assert store.purge_outlay_history(a["id"], 90, now=now) == 2
+    hist = store.outlay_history(a["id"], limit=50)
+    assert len(hist) == 1 and hist[0]["total_usd"] == 1
+
+    # a fresh snapshot enforces the window inline (no cron needed): a stale row that
+    # slipped in (e.g. retention set later) is trimmed the next time data refreshes
+    store.record_outlay_snapshot(a["id"], {"spend": {"total_usd": 9}}, now=now - 150 * 86400)
+    store.record_outlay_snapshot(a["id"], {"spend": {"total_usd": 5}}, now=now)  # current refresh
+    vals = {h["total_usd"] for h in store.outlay_history(a["id"], limit=50)}
+    assert 9 not in vals and 5 in vals  # the 150d row was purged on the new write
+    # the daily sweep enforces it across accounts too
+    a2 = store.create_account("ret2@y.com", "password123")
+    store.record_outlay_snapshot(a2["id"], {"spend": {"total_usd": 7}}, now=now - 120 * 86400)
+    store.set_retention_days(a2["id"], 90)
+    out = store.purge_due_outlay_history(now=now)
+    assert out["rows_purged"] >= 1 and store.outlay_history(a2["id"]) == []
+
+
+def test_outlay_retention_and_purge_routes(env, client):
+    _, store = env
+    _signup(client, email="purge@y.com")
+    acct = store.get_account_by_email("purge@y.com")
+    client.post("/app/outlay/sample", follow_redirects=True)
+    assert store.get_outlay_report(acct["id"]) is not None
+
+    # retention control surfaces on Settings + saving it sticks
+    page = client.get("/app/settings").text
+    assert "Data retention" in page and 'action="/app/retention"' in page
+    client.post("/app/retention", data={"retention_days": "90"}, follow_redirects=True)
+    assert store.get_retention_days(acct["id"]) == 90
+
+    # purge needs the typed confirmation
+    r = client.post("/app/outlay/purge", data={"confirm": "nope"})
+    assert "purge_error=1" in r.headers["location"]
+    assert store.get_outlay_report(acct["id"]) is not None
+    # correct confirmation wipes report + history, keeps the connection
+    store.save_outlay_connection(acct["id"], github_owner="o", github_repo="r", github_token="t")
+    client.post("/app/outlay/purge", data={"confirm": "delete"}, follow_redirects=True)
+    assert store.get_outlay_report(acct["id"]) is None
+    assert store.outlay_history(acct["id"]) == []
+    assert store.get_outlay_connection(acct["id"]) is not None
 
 
 def test_delete_account_requires_email_confirmation(env, client):

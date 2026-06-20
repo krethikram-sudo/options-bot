@@ -2303,16 +2303,56 @@ def mode_toggle(current: str, paid: bool = False) -> str:
 # --------------------------------------------------------------------------- #
 
 def settings_page(account: dict, settings: dict, saved: bool = False,
-                  delete_error: bool = False, twofa: str = "") -> str:
+                  delete_error: bool = False, twofa: str = "",
+                  retention_days: int = 0, purged: bool = False, purge_error: bool = False) -> str:
     # Routing-mode / routing-policy / model-spend-budget cards are parked along with
     # the optimization engine — Settings now covers account, team, and security only.
     # (Budgets for the spend product live at /app/outlay/budgets.) The /app/settings
     # POST route still accepts the legacy fields, so this is a UI-only change.
     saved_note = '<div class="note">Settings saved.</div>' if saved else ""
     body = (f"<h1>Settings</h1>{saved_note}"
-            f"{_settings_links(account)}{_digest_section(account)}{_twofa_section(account, twofa)}"
+            f"{_settings_links(account)}{_digest_section(account)}"
+            f"{_retention_section(account, retention_days, purged, purge_error)}"
+            f"{_twofa_section(account, twofa)}"
             f"{_danger_zone(account, delete_error)}")
     return page("Settings", body, account, "/app/settings")
+
+
+def _retention_section(account: dict, retention_days: int = 0, purged: bool = False,
+                       purge_error: bool = False) -> str:
+    """Data retention window + on-demand erasure of ingested spend data — owner only.
+    A standard enterprise procurement / DPA requirement (data minimization)."""
+    if account.get("team_role") != "owner":
+        return ""
+    opts = [(0, "Keep forever"), (30, "30 days"), (90, "90 days"),
+            (180, "180 days"), (365, "1 year")]
+    sel = "".join(f'<option value="{d}"{" selected" if d == (retention_days or 0) else ""}>{label}</option>'
+                  for d, label in opts)
+    purged_note = ('<div class="note">Ingested spend data wiped.</div>' if purged else "")
+    perr = ('<div class="note warn">Type <b>delete</b> to confirm.</div>' if purge_error else "")
+    return f"""
+    <div class=card style="margin-top:16px" id=retention>
+      <div class=label>Data retention</div>
+      <p class="small muted" style="margin:.2em 0 .8em">How long Outlay keeps your spend-history
+        snapshots. Older snapshots are purged automatically; your current report and connection are
+        unaffected. (Prompts and raw usage never leave your environment in the first place.)</p>
+      {purged_note}
+      <form method=post action="/app/retention" style="display:flex;gap:10px;align-items:center">
+        <select name=retention_days style="padding:7px 10px;border:1px solid var(--line);border-radius:8px">{sel}</select>
+        <button class="btn sec sm">Save</button>
+      </form>
+      <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+      <div class=label>Erase ingested data</div>
+      <p class="small muted" style="margin:.2em 0 .8em">Delete your current spend report and all history
+        snapshots now. Your connection stays so you can re-sync. This cannot be undone.</p>
+      {perr}
+      <form method=post action="/app/outlay/purge" style="display:flex;gap:10px;align-items:center"
+            onsubmit="return confirm('Erase all ingested spend data (report + history)? This cannot be undone.')">
+        <input name=confirm autocomplete=off placeholder="type: delete"
+               style="padding:7px 10px;border:1px solid var(--line);border-radius:8px">
+        <button class="btn sec sm" style="color:#b00020;border-color:#e3b3b3">Erase data</button>
+      </form>
+    </div>"""
 
 
 def _digest_section(account: dict) -> str:
