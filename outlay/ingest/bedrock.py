@@ -189,3 +189,47 @@ def parse_bedrock_log_file(path: Union[str, Path],
                            user_map: Optional[dict] = None) -> list[UsageEvent]:
     """Read a Bedrock invocation-log export (.json or .jsonl) and parse it."""
     return parse_bedrock_log_text(Path(path).read_text(), user_map=user_map)
+
+
+def parse_bedrock_cost(payload) -> float:
+    """Sum an AWS **Cost Explorer** `get_cost_and_usage` response into a USD total —
+    AWS's own billed figure for Bedrock, the truth source we reconcile against.
+
+    Walks `ResultsByTime`, summing each period's `Total.UnblendedCost.Amount` and,
+    when the query was grouped (e.g. by usage type / service), each group's
+    `Metrics.UnblendedCost.Amount`. Falls back to `BlendedCost` if unblended is
+    absent. Tolerant of a raw list of period dicts too."""
+    def _amount(metrics: dict) -> float:
+        m = (metrics or {}).get("UnblendedCost") or (metrics or {}).get("BlendedCost") or {}
+        try:
+            return float(m.get("Amount", 0) or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    if isinstance(payload, dict):
+        periods = payload.get("ResultsByTime", [])
+    elif isinstance(payload, list):
+        periods = payload
+    else:
+        periods = []
+    total = 0.0
+    for period in periods:
+        if not isinstance(period, dict):
+            continue
+        groups = period.get("Groups") or []
+        if groups:  # grouped query → sum the groups (Total is usually empty then)
+            for g in groups:
+                total += _amount(g.get("Metrics"))
+        else:
+            total += _amount(period.get("Total"))
+    return round(total, 2)
+
+
+def parse_bedrock_cost_text(text: str) -> float:
+    text = (text or "").strip()
+    if not text:
+        return 0.0
+    try:
+        return parse_bedrock_cost(json.loads(text))
+    except json.JSONDecodeError:
+        return 0.0

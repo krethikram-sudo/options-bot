@@ -19,9 +19,10 @@ from typing import Optional
 from outlay.attribute import attribute
 from outlay.backtest import backtest
 from outlay.forecast import class_stats, find_anomalies, forecast_roadmap
-from outlay.ingest import (parse_anthropic_usage, parse_bedrock_log_text,
-                            parse_github_issues, parse_openai_usage_text,
-                            parse_vertex_log_text)
+from outlay.ingest import (parse_anthropic_usage, parse_bedrock_cost_text,
+                            parse_bedrock_log_text, parse_github_issues,
+                            parse_openai_costs_text, parse_openai_usage_text,
+                            parse_vertex_cost_text, parse_vertex_log_text)
 from outlay.proof import cost_fidelity
 from outlay.recommend import recommend
 from outlay.serialize import to_dict
@@ -86,6 +87,49 @@ def _parse_usage(usage):
         raise ValueError(f"Couldn't read the AI-usage data: {e}") from e
     finally:
         os.unlink(up)
+
+
+def reconcile(report: dict, invoice_usd, source: str, window_days: int = 30) -> dict:
+    """Attach a reconciliation block: our token-normalized total vs the provider's
+    own *billed* figure. The same shape for every provider, so finance sees one
+    'computed vs billed · within N%' line regardless of where the spend ran. A
+    non-positive/absent invoice is a no-op (we never show a bogus 0% reconciliation)."""
+    try:
+        invoice_usd = float(invoice_usd)
+    except (TypeError, ValueError):
+        return report
+    if invoice_usd <= 0:
+        return report
+    computed = (report.get("spend") or {}).get("total_usd", 0.0)
+    report["reconciliation"] = {
+        "source": source,
+        "invoice_usd": round(invoice_usd, 2),
+        "computed_usd": round(computed, 2),
+        "delta_usd": round(computed - invoice_usd, 2),
+        "delta_pct": round((computed - invoice_usd) / invoice_usd * 100, 1),
+        "window_days": window_days,
+    }
+    return report
+
+
+def parse_cost_export(text):
+    """Auto-detect and sum a pasted *provider cost/billing export* into (usd, source).
+
+    Lets a customer reconcile any provider by pasting the cost export they can
+    already pull from their console — AWS Cost Explorer, GCP Cloud Billing (BigQuery
+    export), or the OpenAI Costs API — no extra keys. Returns (0.0, "") when the
+    text is empty or unrecognized."""
+    text = (text if isinstance(text, str) else json.dumps(text or "")).strip()
+    if not text:
+        return 0.0, ""
+    head = text[:2000]
+    if "ResultsByTime" in head or "UnblendedCost" in head:
+        return parse_bedrock_cost_text(text), "aws_cost_explorer"
+    if '"credits"' in head or "BigQuery" in head or ('"cost"' in head and '"service"' in head):
+        return parse_vertex_cost_text(text), "gcp_cloud_billing"
+    if "organization.costs" in head or ('"amount"' in head and '"value"' in head):
+        return parse_openai_costs_text(text), "openai_costs"
+    return 0.0, ""
 
 
 def _parse(issues, usage):
@@ -429,14 +473,4 @@ def sync(conn: dict, window_days: int = 30, transport=None) -> dict:
 
     result, stats, size_models = _fit(work, events)
     report = _report(work, result, stats, size_models, None, window_days, events=events)
-    if invoice_usd is not None and invoice_usd > 0:
-        computed = (report.get("spend") or {}).get("total_usd", 0.0)
-        report["reconciliation"] = {
-            "source": "anthropic_cost_report",
-            "invoice_usd": round(invoice_usd, 2),
-            "computed_usd": round(computed, 2),
-            "delta_usd": round(computed - invoice_usd, 2),
-            "delta_pct": round((computed - invoice_usd) / invoice_usd * 100, 1),
-            "window_days": window_days,
-        }
-    return report
+    return reconcile(report, invoice_usd, "anthropic_cost_report", window_days)

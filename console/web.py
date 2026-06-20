@@ -559,21 +559,29 @@ def _recon_strip(report: dict) -> str:
     inv = rec.get("invoice_usd")
     if not inv:
         return ""
+    # Provider-aware labels — reconciliation now spans every connector.
+    src = rec.get("source", "")
+    provider, source_label = {
+        "anthropic_cost_report": ("Anthropic", "Anthropic Cost Report"),
+        "aws_cost_explorer": ("AWS", "AWS Cost Explorer"),
+        "gcp_cloud_billing": ("Google Cloud", "GCP Cloud Billing"),
+        "openai_costs": ("OpenAI", "OpenAI Costs API"),
+    }.get(src, ("provider", "provider cost report"))
     comp = rec.get("computed_usd", 0.0)
     dp = rec.get("delta_pct", 0.0)
     within = abs(dp) <= 5
     tone, bg, col = (("ok", "var(--grn-l)", "var(--grn-d)") if within
                      else ("warn", "var(--amber-l)", "var(--amber)"))
     if within:
-        msg = f"within {abs(dp):.0f}% of your Anthropic invoice"
+        msg = f"within {abs(dp):.0f}% of your {provider} invoice"
     else:
-        msg = (f"{abs(dp):.0f}% {'over' if dp > 0 else 'under'} the invoice — "
+        msg = (f"{abs(dp):.0f}% {'over' if dp > 0 else 'under'} the {provider} invoice — "
                f"likely uncovered usage or pricing drift")
     return (f'<div class=ostrip style="background:{bg}"><span>'
             f'<span class="otag {tone}">reconciled</span> '
             f'computed <b>{money(comp)}</b> vs billed <b>{money(inv)}</b> · '
             f'<b style="color:{col}">{msg}</b></span>'
-            f'<span class=muted style="font-size:12px">Anthropic Cost Report</span></div>')
+            f'<span class=muted style="font-size:12px">{_e(source_label)}</span></div>')
 
 
 def _persona_card(value: str, title: str, desc: str) -> str:

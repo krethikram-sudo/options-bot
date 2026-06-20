@@ -1,0 +1,6 @@
+{
+  "rows": [
+    {"service": {"description": "Vertex AI"}, "sku": {"description": "Claude Sonnet input"}, "cost": 120.00, "credits": [{"name": "Committed use discount", "amount": -5.00}]},
+    {"service": {"description": "Vertex AI"}, "sku": {"description": "Claude Sonnet output"}, "cost": 230.00, "credits": []}
+  ]
+}

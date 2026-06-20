@@ -1,0 +1,10 @@
+{
+  "object": "page",
+  "data": [
+    {"object": "bucket", "start_time": 1717200000, "end_time": 1717286400,
+     "results": [{"object": "organization.costs.result", "amount": {"value": 210.50, "currency": "usd"}, "line_item": "gpt-4o"}]},
+    {"object": "bucket", "start_time": 1717286400, "end_time": 1717372800,
+     "results": [{"object": "organization.costs.result", "amount": {"value": 129.50, "currency": "usd"}, "line_item": "gpt-4o-mini"}]}
+  ],
+  "has_more": false
+}

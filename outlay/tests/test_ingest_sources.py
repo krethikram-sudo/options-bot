@@ -255,3 +255,35 @@ def test_openai_azure_deployment_map_and_team():
     ident = IdentityGraph(user_to_team={"ops@acme.com": "ops"})
     res = attribute(events, [], engine=JoinEngine([], identity=ident))
     assert "ops" in {r.team_id for r in res.rows if r.team_id}
+
+
+# ---- Provider cost reports: the reconciliation truth sources ----
+
+def test_bedrock_cost_explorer_parse():
+    from outlay.ingest import parse_bedrock_cost
+    import json
+    # totals + grouped periods both sum; blended falls back when unblended absent
+    assert parse_bedrock_cost(json.loads((FIX / "aws_cost_explorer.json").read_text())) == 340.0
+    grouped = {"ResultsByTime": [{"Total": {}, "Groups": [
+        {"Metrics": {"UnblendedCost": {"Amount": "10.0"}}},
+        {"Metrics": {"BlendedCost": {"Amount": "5.0"}}}]}]}
+    assert parse_bedrock_cost(grouped) == 15.0
+    assert parse_bedrock_cost({}) == 0.0
+
+
+def test_vertex_cloud_billing_parse_nets_credits():
+    from outlay.ingest import parse_vertex_cost
+    import json
+    # 120 - 5 + 230 = 345 (credits are negative)
+    assert parse_vertex_cost(json.loads((FIX / "gcp_billing_export.json").read_text())) == 345.0
+    assert parse_vertex_cost([{"cost": "12.50", "credits": [{"amount": "-2.50"}]}]) == 10.0
+    assert parse_vertex_cost({"data": []}) == 0.0
+
+
+def test_openai_costs_parse():
+    from outlay.ingest import parse_openai_costs
+    import json
+    assert parse_openai_costs(json.loads((FIX / "openai_costs.json").read_text())) == 340.0
+    # flat amount variant + a list of rows
+    assert parse_openai_costs([{"amount": 1.25}, {"cost": "2.75"}]) == 4.0
+    assert parse_openai_costs({}) == 0.0

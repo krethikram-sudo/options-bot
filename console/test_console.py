@@ -1997,6 +1997,34 @@ def test_outlay_sync_reconciles_to_cost_report(env, client):
     assert "reconciled" in html and "Anthropic Cost Report" in html
 
 
+def test_reconcile_is_generic_across_providers(env):
+    from console import outlay_app
+    base = {"spend": {"total_usd": 100.0}}
+    # within 5% → ok; provider label flows through to the strip
+    r = outlay_app.reconcile(dict(base), 98.0, "aws_cost_explorer", 30)
+    rec = r["reconciliation"]
+    assert rec["source"] == "aws_cost_explorer" and rec["invoice_usd"] == 98.0
+    assert rec["computed_usd"] == 100.0 and abs(rec["delta_pct"] - 2.04) < 0.1
+    from console import web
+    strip = web._recon_strip(r)
+    assert "AWS Cost Explorer" in strip and "AWS invoice" in strip
+    # non-positive / bogus invoice → no reconciliation block (never a fake 0%)
+    assert "reconciliation" not in outlay_app.reconcile(dict(base), 0, "openai_costs")
+    assert "reconciliation" not in outlay_app.reconcile(dict(base), None, "openai_costs")
+
+
+def test_parse_cost_export_autodetects_provider():
+    from console import outlay_app
+    aws = '{"ResultsByTime":[{"Total":{"UnblendedCost":{"Amount":"340.00"}},"Groups":[]}]}'
+    gcp = '{"rows":[{"service":{"description":"Vertex AI"},"cost":345.0,"credits":[]}]}'
+    oai = '{"data":[{"results":[{"amount":{"value":340.0,"currency":"usd"}}]}]}'
+    assert outlay_app.parse_cost_export(aws) == (340.0, "aws_cost_explorer")
+    assert outlay_app.parse_cost_export(gcp) == (345.0, "gcp_cloud_billing")
+    assert outlay_app.parse_cost_export(oai) == (340.0, "openai_costs")
+    assert outlay_app.parse_cost_export("") == (0.0, "")
+    assert outlay_app.parse_cost_export("not json or recognizable") == (0.0, "")
+
+
 def test_audit_log_records_and_renders(env, client):
     """Security events are recorded; owners see the audit page, members 403."""
     server, store = env
