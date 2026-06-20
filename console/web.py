@@ -293,15 +293,49 @@ def _fmt_date(ts) -> str:
     return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%b %-d, %Y")
 
 
+def _sidenav(account: dict, active: str) -> str:
+    """Role-aware product navigation.
+
+    The IA is grouped: ANALYZE (the spend/forecast surfaces a user works in daily),
+    SOURCES (where data comes in), and WORKSPACE (team/settings/activity admin).
+    Persona (finance/eng) only reorders the ANALYZE group so each role sees its
+    primary surface first — finance leads with budgets, engineering with estimates —
+    without hiding anything. Team/Activity are owner/admin-only."""
+    persona = (account.get("persona") or "").lower()
+    is_admin = account.get("team_role") in ("owner", "admin")
+
+    spend = ("/app/outlay", "Spend")
+    accuracy = ("/app/outlay/accuracy", "Accuracy")
+    budgets = ("/app/outlay/budgets", "Budgets")
+    estimate = ("/app/outlay/estimate", "Estimate")
+    if persona == "eng":
+        analyze = [spend, accuracy, estimate, budgets]
+    elif persona == "finance":
+        analyze = [spend, budgets, accuracy, estimate]
+    else:
+        analyze = [spend, accuracy, budgets, estimate]
+
+    sources = [("/app/outlay/connect", "Connect")]
+
+    workspace: list[tuple[str, str]] = []
+    if is_admin:
+        workspace.append(("/app/team", "Team"))
+    workspace.append(("/app/settings", "Settings"))
+    if is_admin:
+        workspace.append(("/app/audit", "Activity"))
+
+    def grp(label: str, items: list[tuple[str, str]]) -> str:
+        rows = "".join(
+            f'<a class="{"on" if active == href else ""}" href="{href}">{_e(text)}</a>'
+            for href, text in items)
+        return f'<div class=navgrp>{label}</div>{rows}'
+
+    return grp("Analyze", analyze) + grp("Sources", sources) + grp("Workspace", workspace)
+
+
 def page(title: str, body: str, account: dict | None = None, active: str = "", bare: bool = False) -> str:
     if account:
-        # Routing/optimization surfaces (Configuration, Billing) are parked for now;
-        # the product is spend attribution + forecasting. Team/SSO live in Settings.
-        items = [("/app/outlay", "Spend"), ("/app/settings", "Settings")]
-        if account.get("team_role") in ("owner", "admin"):
-            items.append(("/app/audit", "Activity"))   # audit log — owners/admins only
-        links = "".join(f'<a class="{"on" if active == href else ""}" href="{href}">{_e(label)}</a>'
-                        for href, label in items)
+        links = _sidenav(account, active)
         # Routing-era vendor Overview/Review are parked; keep just the leads inbox.
         admin = ""
         if account.get("role") == "admin":
@@ -834,7 +868,7 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
           .catch(function(){{btn.classList.remove('loading');btn.disabled=false;alert('Network error.');}});}}
         </script>
       </div>"""
-    return page("Connect", form, account, active="/app/outlay")
+    return page("Connect", form, account, active="/app/outlay/connect")
 
 
 def estimate_backlog_page(account: dict, report: dict | None) -> str:
@@ -847,7 +881,7 @@ def estimate_backlog_page(account: dict, report: dict | None) -> str:
         body = (head + '<div class=ocard><p class=muted style="margin:0 0 12px">Connect your data on the '
                 '<a href="/app/outlay">Spend</a> tab first so Outlay can learn your cost model — then '
                 'estimate a backlog here.</p><a class="btn" href="/app/outlay">Go to Spend →</a></div>')
-        return page("Estimate", body, account, active="/app/outlay")
+        return page("Estimate", body, account, active="/app/outlay/estimate")
 
     form = """<div class=ocard><div class=dh>Paste a planned backlog</div>
       <p class=muted style="margin:-4px 0 10px;font-size:13.5px">A JSON list of items — each with a <b>title</b>, and ideally
@@ -886,7 +920,7 @@ def estimate_backlog_page(account: dict, report: dict | None) -> str:
                   f'<span class=of>likely {money(est.get("low_usd", 0))}–{money(est.get("high_usd", 0))}</span></div>'
                   f'<div class=muted style="font-size:12.5px;margin:2px 0 12px">{est.get("items_costed", 0)} '
                   f'estimated, {est.get("items_unknown", 0)} declined.</div>{rows}{tighten}</div>')
-    return page("Estimate", head + form + result, account, active="/app/outlay")
+    return page("Estimate", head + form + result, account, active="/app/outlay/estimate")
 
 
 def _pct(x, digits: int = 0) -> str:
@@ -911,7 +945,7 @@ def accuracy_page(account: dict, report: dict | None) -> str:
                 'tickets yet to measure accuracy. Connect data on the <a href="/app/outlay">Spend</a> tab '
                 'and let a few tickets close — accuracy appears here automatically once there\'s history '
                 'to back-test.</p></div>')
-        return page("Accuracy", body, account, active="/app/outlay")
+        return page("Accuracy", body, account, active="/app/outlay/accuracy")
 
     mdape, within = cal.get("mdape", 0), cal.get("within_p90", 0)
     low = (f'<div class=flagbox style="margin-bottom:16px"><b>Early read — {n} ticket(s) evaluated.</b> '
@@ -956,7 +990,7 @@ def accuracy_page(account: dict, report: dict | None) -> str:
     foot = ('<p class=muted style="font-size:12.5px;margin-top:16px">Method: leave-one-out back-test over '
             'closed, ticket-attributed work. We never score a ticket using its own cost. As more work '
             'closes, the sample grows and this number sharpens — re-checked on every sync.</p>')
-    return page("Accuracy", head + low + kpis + by_class + size_card + foot, account, active="/app/outlay")
+    return page("Accuracy", head + low + kpis + by_class + size_card + foot, account, active="/app/outlay/accuracy")
 
 
 def budgets_page(account: dict, report: dict | None, statuses: list[dict],
@@ -1008,7 +1042,7 @@ def budgets_page(account: dict, report: dict | None, statuses: list[dict],
     head = ('<div class=ohead><h1>Budgets &amp; guardrails</h1>'
             '<p>Set a budget by scope; Outlay projects your spend to the period and flags it '
             '<b>before</b> you go over — not at month-end.</p></div>')
-    return page("Budgets", head + note + rows + pref + add, account, active="/app/outlay")
+    return page("Budgets", head + note + rows + pref + add, account, active="/app/outlay/budgets")
 
 
 def pilot_request_page(error: str = "", values: dict | None = None) -> str:

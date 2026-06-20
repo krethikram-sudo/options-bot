@@ -128,6 +128,12 @@ def _current(request: Request) -> dict | None:
         acct["team_role"] = "owner"
         acct["member_id"] = 0
         acct["display_email"] = acct["email"]
+    # Persona (finance/eng) drives the role-aware lens *and* nav ordering, so make
+    # it available to every page() render — not just the Spend page.
+    try:
+        acct["persona"] = store.get_persona(acct["id"], acct.get("member_id", 0) or 0)
+    except Exception:  # noqa: BLE001 — persona is a lens, never a hard dependency
+        acct["persona"] = ""
     return acct
 
 
