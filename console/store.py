@@ -305,6 +305,7 @@ _MIGRATIONS = [
     "ALTER TABLE outlay_connections ADD COLUMN slack_webhook TEXT",  # Slack/Teams incoming webhook for alerts
     "ALTER TABLE outlay_connections ADD COLUMN sync_fail_count INTEGER NOT NULL DEFAULT 0",  # consecutive auto-sync failures
     "ALTER TABLE outlay_connections ADD COLUMN sync_alerted_at REAL",  # last stale/failed-sync alert sent (de-dupe)
+    "ALTER TABLE accounts ADD COLUMN retention_days INTEGER NOT NULL DEFAULT 0",  # 0 = keep history forever; else purge snapshots older than N days
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -595,10 +596,17 @@ def delete_account(account_id: int, path: str | None = None) -> None:
             placeholders = ",".join("?" for _ in deps)
             conn.execute(f"DELETE FROM meter WHERE deployment_id IN ({placeholders})", deps)
             conn.execute(f"DELETE FROM proofs WHERE deployment_id IN ({placeholders})", deps)
-        # tables keyed directly by account_id
+        # tables keyed directly by account_id (incl. all ingested Outlay data, audit
+        # log, personas, OTP codes, and feedback — full erasure for DPA/right-to-be-forgotten)
         for tbl in ("api_keys", "request_logs", "proposals", "webhooks", "budget_alerts",
-                    "resets", "members", "sso_configs", "settings", "plans", "deployments"):
+                    "resets", "members", "sso_configs", "settings", "plans",
+                    "personas", "audit_log", "otp_codes",
+                    "outlay_reports", "outlay_history", "outlay_connections", "outlay_budgets",
+                    "deployments"):
             conn.execute(f"DELETE FROM {tbl} WHERE account_id=?", (account_id,))
+        # Feedback is anonymized, not deleted: severing the account link satisfies
+        # erasure while preserving the aggregate cancel-reason signal (no PII in it).
+        conn.execute("UPDATE feedback SET account_id=NULL WHERE account_id=?", (account_id,))
         conn.execute("DELETE FROM accounts WHERE id=?", (account_id,))
         conn.commit()
     finally:
@@ -716,10 +724,18 @@ def record_outlay_snapshot(account_id: int, report: dict, path: str | None = Non
         "class": {c["task_class"]: c.get("spent_usd", 0.0)
                   for c in (report.get("class_spend") or [])},
     })
+    ts = now or time.time()
     conn = connect(path)
     try:
         conn.execute("INSERT INTO outlay_history(account_id, ts, total_usd, forecast_usd, breakdown)"
-                     " VALUES(?,?,?,?,?)", (account_id, now or time.time(), total, fc, breakdown))
+                     " VALUES(?,?,?,?,?)", (account_id, ts, total, fc, breakdown))
+        # Enforce the account's retention window inline so it holds even without the
+        # cron (a pilot that set 90-day retention shouldn't accumulate forever).
+        row = conn.execute("SELECT retention_days FROM accounts WHERE id=?", (account_id,)).fetchone()
+        rd = (row["retention_days"] if row else 0) or 0
+        if rd:
+            conn.execute("DELETE FROM outlay_history WHERE account_id=? AND ts < ?",
+                         (account_id, ts - rd * 86400))
         conn.commit()
     finally:
         conn.close()
@@ -743,6 +759,76 @@ def outlay_history(account_id: int, limit: int = 12, path: str | None = None) ->
             d["breakdown"] = {}
         out.append(d)
     return out
+
+
+RETENTION_CHOICES = (0, 30, 90, 180, 365)  # 0 = keep forever; else purge snapshots older than N days
+
+
+def set_retention_days(account_id: int, days: int, path: str | None = None) -> None:
+    """Set how long spend-history snapshots are kept (0 = forever). Data minimization
+    is a standard enterprise procurement / DPA requirement."""
+    days = days if days in RETENTION_CHOICES else 0
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE accounts SET retention_days=? WHERE id=?", (days, account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_retention_days(account_id: int, path: str | None = None) -> int:
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT retention_days FROM accounts WHERE id=?", (account_id,)).fetchone()
+        return (row["retention_days"] if row else 0) or 0
+    finally:
+        conn.close()
+
+
+def purge_outlay_history(account_id: int, retention_days: int, path: str | None = None,
+                         now: float | None = None) -> int:
+    """Delete spend snapshots older than the retention window. No-op when retention
+    is 'forever' (0). Returns the number of rows removed."""
+    if not retention_days:
+        return 0
+    cutoff = (now or time.time()) - retention_days * 86400
+    conn = connect(path)
+    try:
+        cur = conn.execute("DELETE FROM outlay_history WHERE account_id=? AND ts < ?",
+                           (account_id, cutoff))
+        conn.commit()
+        return cur.rowcount or 0
+    finally:
+        conn.close()
+
+
+def purge_due_outlay_history(path: str | None = None, now: float | None = None) -> dict:
+    """Enforce every account's retention window (cron). Resilient: returns a summary."""
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT id, retention_days FROM accounts WHERE retention_days > 0").fetchall()
+    finally:
+        conn.close()
+    accounts, purged = 0, 0
+    for r in rows:
+        n = purge_outlay_history(r["id"], r["retention_days"], path=path, now=now)
+        if n:
+            accounts += 1
+            purged += n
+    return {"accounts": accounts, "rows_purged": purged}
+
+
+def purge_outlay_data(account_id: int, path: str | None = None) -> None:
+    """Right-to-erasure for ingested spend data: wipe the current report and all
+    history snapshots. Leaves the connection config so the customer can re-sync."""
+    conn = connect(path)
+    try:
+        conn.execute("DELETE FROM outlay_reports WHERE account_id=?", (account_id,))
+        conn.execute("DELETE FROM outlay_history WHERE account_id=?", (account_id,))
+        conn.commit()
+    finally:
+        conn.close()
 
 
 ANOMALY_THRESHOLD_DEFAULT = 3.0

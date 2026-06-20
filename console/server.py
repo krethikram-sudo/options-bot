@@ -648,7 +648,10 @@ async def app_outlay_digest_due(request: Request):
         return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
     from . import spend_digest
     summary = await asyncio.to_thread(spend_digest.run_due_digests)
-    return JSONResponse({"ok": True, **summary})
+    # Piggyback retention enforcement on the daily sweep — purge history past each
+    # account's window (belt-and-suspenders to the inline purge on snapshot write).
+    retention = await asyncio.to_thread(store.purge_due_outlay_history)
+    return JSONResponse({"ok": True, **summary, "retention": retention})
 
 
 @app.post("/app/digest")
@@ -663,6 +666,47 @@ async def app_digest_toggle(request: Request):
            actor=acct.get("display_email") or acct.get("email", ""),
            detail=f"weekly={'on' if f.get('weekly') else 'off'}")
     return _redirect("/app/settings#digest")
+
+
+@app.post("/app/retention")
+async def app_retention(request: Request):
+    """Owner sets the spend-history retention window (data minimization)."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    if acct.get("team_role") != "owner":
+        return _redirect("/app/settings")
+    f = await _form(request)
+    try:
+        days = int(f.get("retention_days") or 0)
+    except (TypeError, ValueError):
+        days = 0
+    store.set_retention_days(acct["id"], days)
+    # Apply immediately so an existing backlog of snapshots is trimmed on save.
+    if days:
+        store.purge_outlay_history(acct["id"], days)
+    _audit(acct["id"], "retention.set",
+           actor=acct.get("display_email") or acct.get("email", ""),
+           detail=f"days={days or 'forever'}")
+    return _redirect("/app/settings?saved=1#retention")
+
+
+@app.post("/app/outlay/purge")
+async def app_outlay_purge(request: Request):
+    """Right-to-erasure: wipe ingested spend data (report + history) on demand.
+    Owner only; the connection config stays so the customer can re-sync."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    if acct.get("team_role") != "owner":
+        return _redirect("/app/settings")
+    f = await _form(request)
+    if f.get("confirm", "").strip().lower() != "delete":
+        return _redirect("/app/settings?purge_error=1#retention")
+    store.purge_outlay_data(acct["id"])
+    _audit(acct["id"], "outlay.purge",
+           actor=acct.get("display_email") or acct.get("email", ""), detail="report+history")
+    return _redirect("/app/settings?purged=1#retention")
 
 
 @app.get("/app/outlay", response_class=HTMLResponse)
@@ -1078,7 +1122,10 @@ def settings_get(request: Request):
     return _html(web.settings_page(acct, store.get_settings(acct["id"]),
                                    saved=request.query_params.get("saved") == "1",
                                    delete_error=request.query_params.get("delete_error") == "1",
-                                   twofa=request.query_params.get("twofa", "")))
+                                   twofa=request.query_params.get("twofa", ""),
+                                   retention_days=store.get_retention_days(acct["id"]),
+                                   purged=request.query_params.get("purged") == "1",
+                                   purge_error=request.query_params.get("purge_error") == "1"))
 
 
 # --- two-factor authentication -------------------------------------------- #
@@ -1131,7 +1178,7 @@ async def account_delete(request: Request):
     # Confirm by typing the account email — guards against accidental deletion.
     if f.get("confirm_email", "").strip().lower() != (acct.get("email") or "").lower():
         return _redirect("/app/settings?delete_error=1")
-    # Capture the why (survives deletion — feedback isn't cascade-deleted). Most valuable signal.
+    # Capture the why (survives deletion — feedback is anonymized, not deleted). Most valuable signal.
     reason = (f.get("reason") or "").strip()
     if reason:
         try:

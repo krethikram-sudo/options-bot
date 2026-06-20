@@ -100,6 +100,18 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — data retention controls + complete account erasure (DPA/procurement)
+- [x] Enterprise security review / DPA needs data-minimization + right-to-erasure. Built:
+- [x] **Account-settable retention window** — `accounts.retention_days` (forever / 30 / 90 / 180 / 365),
+      control on Settings. Enforced three ways: inline on each snapshot write (no cron needed), on save
+      (trims existing backlog), and in the daily cron sweep (`purge_due_outlay_history`).
+- [x] **On-demand erasure** — `/app/outlay/purge` (type-"delete" confirm) wipes the current report + all
+      history snapshots; the connection stays so the customer can re-sync.
+- [x] **Fixed `delete_account`** — it silently left ALL Outlay data (incl. *encrypted connection creds*),
+      personas, audit_log, and OTP codes orphaned. Now purges every account-keyed table; feedback is
+      anonymized (account link severed) rather than deleted so the cancel-reason signal survives. 301 tests.
+- [ ] Follow-up (marketing): note configurable retention + on-demand erasure on `security.html`.
+
 ### 2026-06-20 — sync-staleness surfacing + repeated-failure alerting (#1 silent-failure)
 - [x] The audit's #1 customer-trust risk = data that quietly stopped updating (token rotated, cron down)
       while finance keeps trusting the numbers. Closed the silent path end-to-end:
