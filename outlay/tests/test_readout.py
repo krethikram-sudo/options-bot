@@ -39,6 +39,24 @@ def test_render_html_is_standalone_and_branded():
     assert "Forecast for open work" in html
 
 
+def test_readout_leads_with_cost_fidelity_when_present():
+    from outlay.proof import cost_fidelity
+    events = parse_anthropic_usage(FIX / "anthropic_usage.json")
+    data = _fixture_dict()
+    data["cost_fidelity"] = cost_fidelity(events).as_dict()
+    html = render_html(data, company="Acme Corp")
+    # the banner leads the page (before the KPI grid) and states the proof
+    assert "overstated" in html and "cache reads" in html
+    assert "Naive token-count tracker" in html
+    assert html.index("Naive token-count tracker") < html.index('class="kpis"')
+
+
+def test_readout_hides_fidelity_when_immaterial():
+    # no cost_fidelity in the payload → no banner (also covers low-cache case)
+    html = render_html(_fixture_dict(), company="Acme Corp")
+    assert "overstated" not in html and "Naive token-count tracker" not in html
+
+
 def test_html_escapes_company_name():
     html = render_html(_fixture_dict(), company='Ac<me> & "Co"')
     assert "Ac<me>" not in html

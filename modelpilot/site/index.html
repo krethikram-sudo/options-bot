@@ -28,6 +28,7 @@
     <a href="/#how">How it works</a>
     <a href="/#owners">For eng &amp; finance</a>
     <a href="/#proof">Attribution</a>
+    <a href="/#math">The math</a>
     <a href="/#estimate">Estimate</a>
     <a href="/#compare">Compare</a>
     <a href="/#pricing">Pricing</a>
@@ -183,6 +184,40 @@ epic Q3-stability <span class="w">on pace $22k · over</span></code>
       <div class="s"><div class="v">On pace</div><div class="d">Guardrails project the end-of-period total at the current burn rate, so a lead acts <b>before</b> overspend — not after.</div></div>
       <div class="s"><div class="v">Measured, not promised</div><div class="d">Every forecast is back-tested on your own closed tickets (leave-one-out), and we show the error and the sample size — never a vendor benchmark.</div></div>
       <div class="s"><div class="v">Metadata only</div><div class="d">Attribution runs on categories, token counts, and ticket IDs. Prompt content, model outputs, and keys never leave your environment.</div></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- THE MATH / COST FIDELITY -->
+<section id="math" class="paper"><div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">The math</div>
+    <h2>The same usage, costed two ways.</h2>
+    <p>Agentic coding re-sends a large cached prefix every turn, so <b>cache-read tokens</b> — billed at
+       roughly a tenth of base input — dominate the count. Price every token at the base rate, the way most
+       spend tools and spreadsheets do, and the number balloons. We costed our <b>own</b> Claude Code usage
+       both ways.</p>
+  </div>
+  <div class="proofgrid">
+    <div class="pcard">
+      <div class="ph"><span class="t">Our build · ~$340 of real Claude usage</span><span class="tag ex">measured</span></div>
+      <div class="pbody">
+        <div class="dual">
+          <div class="r"><span>Naive token-count tracker</span><b class="num">$2,516</b></div>
+          <div class="track"><span style="width:100%;background:var(--red)"></span></div>
+          <div class="r"><span>Outlay · cache-aware (correct)</span><b class="num">$340</b></div>
+          <div class="track"><span style="width:13.5%;background:var(--grn)"></span></div>
+        </div>
+        <p class="muted" style="font-size:12.5px;margin:14px 0 0">Measured on our own build sessions:
+          <b>98%</b> of input-side tokens were cache reads, so the naive method overstates by <b>7.4×</b>.
+          Reproduce it yourself: <code>python -m outlay.dogfood --proof-only</code>.</p>
+      </div>
+    </div>
+    <div class="statlist">
+      <div class="s"><div class="v">Cache reads are most of your bill</div><div class="d">On agentic workloads, cache reads are the large majority of tokens — and they bill at ~10× less. Costing them right is the difference between a real number and fiction.</div></div>
+      <div class="s"><div class="v">Per token class, per model</div><div class="d">Input, output, cache read, and cache write are priced separately, per model — across Anthropic, AWS Bedrock, Google Vertex, and OpenAI / Azure.</div></div>
+      <div class="s"><div class="v">Reconciled to the invoice</div><div class="d">The cache-aware total is checked against the provider's billed figure — so finance trusts the number, not a token estimate.</div></div>
+      <div class="s"><div class="v">Shows up the moment you connect</div><div class="d">Your own cache-aware-vs-naive gap appears on your dashboard as soon as real usage lands — no proxy, no setup.</div></div>
     </div>
   </div>
 </div></section>
