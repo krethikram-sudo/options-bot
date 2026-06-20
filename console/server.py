@@ -151,6 +151,14 @@ def _require_team_admin(request: Request):
     return acct, None
 
 
+def _audit(account_id: int, action: str, actor: str = "", detail: str = "") -> None:
+    """Record a security-relevant event; never let an audit write break the request."""
+    try:
+        store.record_audit(account_id, action, actor=actor, detail=detail)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def _redirect(url: str):
     return RedirectResponse(url, status_code=303)
 
@@ -291,12 +299,14 @@ async def login(request: Request):
             return resp
         resp = _redirect(_post_auth_dest(acct))  # Setup first if not set up, else Home
         _set_session(resp, acct, "owner", 0)
+        _audit(acct["id"], "login", actor=acct["email"], detail="owner · password")
         return resp
     member = store.authenticate_member(f.get("email", ""), f.get("password", ""))
     if member:  # invited teammate
         org = store.get_account(member["account_id"])
         resp = _redirect("/app/outlay")
         _set_session(resp, org, member["role"], member["id"], platform_role="customer")
+        _audit(org["id"], "login", actor=member["email"], detail=f"member · role {member['role']}")
         return resp
     return _html(web.auth_form("login", "Wrong email or password (or account suspended).",
                                f.get("email", "")), 401)
@@ -328,6 +338,7 @@ async def verify_2fa(request: Request):
         resp = _redirect(_post_auth_dest(acct))
         _set_session(resp, acct, "owner", 0)
         resp.delete_cookie(PENDING_2FA_COOKIE)
+        _audit(acct["id"], "login", actor=acct["email"], detail="owner · password + 2FA")
         return resp
     return _html(web.twofa_verify_form("That code didn't match or has expired."), 401)
 
@@ -344,7 +355,10 @@ async def verify_2fa_resend(request: Request):
 
 
 @app.post("/logout")
-def logout():
+def logout(request: Request):
+    acct = _current(request)
+    if acct:
+        _audit(acct["id"], "logout", actor=acct.get("display_email") or acct.get("email", ""))
     resp = _redirect(LANDING_URL)
     resp.delete_cookie(COOKIE)
     return resp
@@ -628,6 +642,9 @@ async def app_outlay_connect_save(request: Request):
         jira_jql=f.get("jira_jql"), linear_key=f.get("linear_key"),
         cursor_key=f.get("cursor_key"),
         auto_sync_hours=_auto_sync_hours(f.get("auto_sync_hours")))
+    _audit(acct["id"], "connection.save",
+           actor=acct.get("display_email") or acct.get("email", ""),
+           detail=f"tracker={f.get('tracker') or 'github'}")
     return _redirect("/app/outlay/connect")
 
 
@@ -1027,6 +1044,14 @@ def team_get(request: Request):
                                store.get_sso(acct["id"]), request.query_params.get("scim_token", "")))
 
 
+@app.get("/app/audit", response_class=HTMLResponse)
+def app_audit(request: Request):
+    acct, redir = _require_team_admin(request)
+    if redir:
+        return redir
+    return _html(web.audit_page(acct, store.list_audit(acct["id"])))
+
+
 @app.post("/app/team/invite")
 async def team_invite(request: Request):
     acct, redir = _require_team_admin(request)
@@ -1037,6 +1062,8 @@ async def team_invite(request: Request):
         m = store.create_member(acct["id"], f.get("email", ""), f.get("role", "member"))
     except store.StoreError:
         return _redirect("/app/team")
+    _audit(acct["id"], "member.invite", actor=acct.get("display_email") or acct.get("email", ""),
+           detail=f"{m['email']} as {f.get('role', 'member')}")
     out = store.create_reset(m["email"])
     token = out[1] if out else ""
     if token:
@@ -1057,6 +1084,8 @@ async def team_role(request: Request):
     f = await _form(request)
     try:
         store.set_member_role(int(f.get("member_id", "0")), acct["id"], f.get("role", "member"))
+        _audit(acct["id"], "member.role", actor=acct.get("display_email") or acct.get("email", ""),
+               detail=f"member #{f.get('member_id')} -> {f.get('role', 'member')}")
     except (ValueError, store.StoreError):
         pass
     return _redirect("/app/team")
@@ -1070,6 +1099,8 @@ async def team_remove(request: Request):
     f = await _form(request)
     try:
         store.remove_member(int(f.get("member_id", "0")), acct["id"])
+        _audit(acct["id"], "member.remove", actor=acct.get("display_email") or acct.get("email", ""),
+               detail=f"member #{f.get('member_id')}")
     except ValueError:
         pass
     return _redirect("/app/team")

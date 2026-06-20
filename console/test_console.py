@@ -1915,3 +1915,33 @@ def test_outlay_sync_reconciles_to_cost_report(env, client):
     html = web.outlay_page({"email": "u@x.com", "role": "customer", "team_role": "owner",
                             "display_email": "u@x.com"}, report, persona="finance")
     assert "reconciled" in html and "Anthropic Cost Report" in html
+
+
+def test_audit_log_records_and_renders(env, client):
+    """Security events are recorded; owners see the audit page, members 403."""
+    server, store = env
+    # a fresh login should record an audit entry
+    _signup(client, email="boss@co.com")
+    client.post("/logout")
+    client.post("/login", data={"email": "boss@co.com", "password": "password123"})
+    acct = store.get_account_by_email("boss@co.com")
+    actions = {e["action"] for e in store.list_audit(acct["id"])}
+    assert "login" in actions and "logout" in actions
+    # saving a connection is audited
+    client.post("/app/outlay/connect", data={"tracker": "github", "github_owner": "acme",
+                "github_repo": "web", "github_token": "ghp_x"})
+    assert "connection.save" in {e["action"] for e in store.list_audit(acct["id"])}
+    # owner sees the audit page
+    r = client.get("/app/audit")
+    assert r.status_code == 200 and "audit log" in r.text.lower() and "connection.save" in r.text
+
+
+def test_audit_page_blocked_for_members(env, client):
+    server, store = env
+    _signup(client, email="own@co.com")
+    client.post("/app/team/invite", data={"email": "mem@co.com", "role": "member"})
+    out = store.create_reset("mem@co.com")  # set the member's password via reset
+    client.post("/reset", data={"token": out[1], "password": "memberpass1"})
+    client.post("/logout")
+    client.post("/login", data={"email": "mem@co.com", "password": "memberpass1"})
+    assert client.get("/app/audit").status_code == 403

@@ -96,6 +96,14 @@ CREATE TABLE IF NOT EXISTS personas (
     persona TEXT NOT NULL DEFAULT '',             -- 'finance' | 'eng' : which experience this person sees
     PRIMARY KEY (account_id, member_id)
 );
+CREATE TABLE IF NOT EXISTS audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts REAL NOT NULL,
+    account_id INTEGER NOT NULL,
+    actor TEXT,                                   -- email of the person who acted
+    action TEXT NOT NULL,                         -- e.g. 'login', 'connection.save', 'member.invite'
+    detail TEXT                                   -- freeform context (who/what)
+);
 CREATE TABLE IF NOT EXISTS plans (
     account_id INTEGER PRIMARY KEY REFERENCES accounts(id),
     plan TEXT NOT NULL DEFAULT 'trial',         -- 'trial' | 'paid'
@@ -1053,6 +1061,31 @@ def get_settings(account_id: int, path: str | None = None) -> dict:
         return dict(row)
     finally:
         conn.close()
+
+
+def record_audit(account_id: int, action: str, actor: str = "", detail: str = "",
+                 path: str | None = None, now: float | None = None) -> None:
+    """Append a security-relevant event to the account's audit trail."""
+    conn = connect(path)
+    try:
+        conn.execute(
+            "INSERT INTO audit_log(ts, account_id, actor, action, detail) VALUES(?,?,?,?,?)",
+            (now or time.time(), account_id, (actor or "")[:200], (action or "")[:80],
+             (detail or "")[:500]))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def list_audit(account_id: int, limit: int = 200, path: str | None = None) -> list[dict]:
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT * FROM audit_log WHERE account_id=? ORDER BY ts DESC, id DESC LIMIT ?",
+            (account_id, limit)).fetchall()
+    finally:
+        conn.close()
+    return [dict(r) for r in rows]
 
 
 PERSONAS = ("finance", "eng")

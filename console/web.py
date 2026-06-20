@@ -298,6 +298,8 @@ def page(title: str, body: str, account: dict | None = None, active: str = "", b
         # Routing/optimization surfaces (Configuration, Billing) are parked for now;
         # the product is spend attribution + forecasting. Team/SSO live in Settings.
         items = [("/app/outlay", "Spend"), ("/app/settings", "Settings")]
+        if account.get("team_role") in ("owner", "admin"):
+            items.append(("/app/audit", "Activity"))   # audit log — owners/admins only
         links = "".join(f'<a class="{"on" if active == href else ""}" href="{href}">{_e(label)}</a>'
                         for href, label in items)
         # Routing-era vendor Overview/Review are parked; keep just the leads inbox.
@@ -1037,6 +1039,27 @@ def pilot_request_page(error: str = "", values: dict | None = None) -> str:
         'No spam.</p>'
         '</form>')
     return page("Request a pilot", body, bare=True)
+
+
+def audit_page(account: dict, entries: list[dict]) -> str:
+    """Owner/admin audit trail — security-relevant activity, newest first."""
+    head = ('<div class=ohead><h1>Activity &amp; audit log</h1>'
+            '<p>Security-relevant events on your account — sign-ins, connection changes, and team '
+            'changes. Newest first.</p></div>')
+    if not entries:
+        return page("Activity", head + '<div class=ocard><p class=muted style="margin:0">'
+                    'No activity recorded yet.</p></div>', account, active="/app/audit")
+    rows = ""
+    for e in entries:
+        rows += (f'<tr><td class=muted style="white-space:nowrap">{_fmt_date(e.get("ts"))}</td>'
+                 f'<td style="font-size:13.5px">{_e(e.get("actor") or "—")}</td>'
+                 f'<td><span class="otag ex">{_e(e.get("action") or "")}</span></td>'
+                 f'<td class=muted style="font-size:13px">{_e(e.get("detail") or "")}</td></tr>')
+    table = (f'<div class=ocard><div class=dh>Recent activity '
+             f'<span class=sub>{len(entries)} events</span></div>'
+             f'<table><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Detail</th></tr></thead>'
+             f'<tbody>{rows}</tbody></table></div>')
+    return page("Activity", head + table, account, active="/app/audit")
 
 
 def leads_page(account: dict, leads: list[dict]) -> str:
