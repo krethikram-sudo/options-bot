@@ -479,6 +479,13 @@ def report_csv(report: dict, view: str = "tickets") -> str:
         for r in report.get("recommendations", []):
             w.writerow([r.get("task_class"), r.get("incumbent_model"), r.get("candidate_model"),
                         r.get("projected_savings_usd"), r.get("confidence")])
+    elif view == "models":
+        w.writerow(["model", "calls", "spend_usd", "input_tokens", "output_tokens",
+                    "cache_read_tokens", "cache_write_tokens"])
+        for name, m in ((report.get("cost_fidelity") or {}).get("by_model") or {}).items():
+            tok = m.get("tokens") or {}
+            w.writerow([name, m.get("events"), m.get("outlay_usd"), tok.get("input"),
+                        tok.get("output"), tok.get("cache_read"), tok.get("cache_write")])
     else:  # tickets
         w.writerow(["ticket_id", "task_class", "status", "cost_usd", "rework_iterations", "team_id"])
         for t in report.get("tickets", []):
