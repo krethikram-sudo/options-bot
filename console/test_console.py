@@ -1199,7 +1199,67 @@ def test_webhook_delivery_log_visible_on_connect(env, client):
     store.deliver_event(acct["id"], "budget.warn", {}, post_fn=lambda *a: 503,
                         sleep_fn=lambda s: None)
     page = client.get("/app/connect").text
-    assert "Recent deliveries" in page and "failed" in page and "HTTP 503" in page
+    assert "Recent deliveries" in page and "retrying" in page and "HTTP 503" in page
+
+
+def test_webhook_durable_redelivery(env):
+    import time
+    _, store = env
+    a = store.create_account("whd2@b.com", "password123")
+    store.create_webhook(a["id"], "https://x.test/hook", "all")
+
+    # initial dispatch fails (endpoint down) → recorded 'failed' with a payload + next_attempt_at
+    store.deliver_event(a["id"], "budget.over", {"v": 1}, post_fn=lambda *a: 500,
+                        sleep_fn=lambda s: None)
+    d = store.recent_webhook_deliveries(a["id"])[0]
+    assert d["status"] == "failed" and d["payload"] and d["next_attempt_at"]
+    did = d["id"]
+
+    # not yet due → the sweep does nothing
+    assert store.redeliver_due_webhooks(now=time.time())["redelivered"] == 0
+
+    # due + endpoint recovered → redelivered (one attempt, marked delivered)
+    later = time.time() + 2 * 3600
+    out = store.redeliver_due_webhooks(now=later, post_fn=lambda *a: 200)
+    assert out["due"] == 1 and out["redelivered"] == 1
+    after = [x for x in store.recent_webhook_deliveries(a["id"]) if x["id"] == did][0]
+    assert after["status"] == "delivered" and after["next_attempt_at"] is None
+    # a delivered row is not picked up again
+    assert store.redeliver_due_webhooks(now=later + 99999, post_fn=lambda *a: 200)["due"] == 0
+
+
+def test_webhook_redelivery_gives_up_after_max_attempts(env):
+    import time
+    _, store = env
+    a = store.create_account("whd3@b.com", "password123")
+    store.create_webhook(a["id"], "https://x.test/hook", "all")
+    store.deliver_event(a["id"], "budget.over", {}, post_fn=lambda *a: 500, sleep_fn=lambda s: None)
+    did = store.recent_webhook_deliveries(a["id"])[0]["id"]
+    # keep failing across many sweeps until it's given up ('dead')
+    t = time.time()
+    for _ in range(12):
+        t += 2 * 24 * 3600
+        store.redeliver_due_webhooks(now=t, post_fn=lambda *a: 500)
+        row = [x for x in store.recent_webhook_deliveries(a["id"]) if x["id"] == did][0]
+        if row["status"] == "dead":
+            break
+    row = [x for x in store.recent_webhook_deliveries(a["id"]) if x["id"] == did][0]
+    assert row["status"] == "dead" and row["next_attempt_at"] is None
+    assert row["attempts"] >= store.WEBHOOK_MAX_TOTAL_ATTEMPTS
+    # a dead delivery is never retried again
+    assert store.redeliver_due_webhooks(now=t + 10 ** 7, post_fn=lambda *a: 200)["due"] == 0
+
+
+def test_webhook_redelivery_dead_when_webhook_deleted(env):
+    import time
+    _, store = env
+    a = store.create_account("whd4@b.com", "password123")
+    wid = store.create_webhook(a["id"], "https://x.test/hook", "all")["id"]
+    store.deliver_event(a["id"], "budget.over", {}, post_fn=lambda *a: 500, sleep_fn=lambda s: None)
+    store.delete_webhook(wid, a["id"])
+    out = store.redeliver_due_webhooks(now=time.time() + 2 * 3600, post_fn=lambda *a: 200)
+    assert out["dead"] == 1 and out["redelivered"] == 0
+    assert store.recent_webhook_deliveries(a["id"])[0]["status"] == "dead"
 
 
 def test_webhook_event_filtering(env):
