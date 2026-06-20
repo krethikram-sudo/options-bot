@@ -1724,7 +1724,7 @@ def test_outlay_connect_page_has_all_trackers(env, client):
     _signup(client, email="trk@x.com")
     r = client.get("/app/outlay/connect")
     assert r.status_code == 200
-    for t in ("GitHub Issues", "Jira", "Linear"):
+    for t in ("GitHub", "Jira", "Linear"):
         assert t in r.text
     # save a jira tracker selection
     client.post("/app/outlay/connect", data={"tracker": "jira",

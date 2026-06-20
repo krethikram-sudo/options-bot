@@ -196,6 +196,23 @@ pre{background:var(--paper2);color:var(--navy);padding:16px;border-radius:10px;o
   padding:3px 10px;margin:0 6px 6px 0;font-size:12.5px;color:var(--body)}
 .chip .mono{font-family:var(--mono);color:var(--ink)}
 .bcard{background:#fff;border:1px solid var(--line);border-radius:13px;padding:15px 17px;margin-top:12px}
+.cstep{display:flex;gap:11px;align-items:flex-start;margin:22px 0 10px}
+.cstep:first-child{margin-top:4px}
+.cnum{flex:none;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.cstep b{font-size:15px;color:var(--ink)}
+.cmut{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.5}
+.srcgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 2px}
+.srctile{position:relative}
+.srctile input{position:absolute;opacity:0;width:0;height:0}
+.srctile label{display:block;border:1px solid var(--line);border-radius:11px;padding:12px 13px;cursor:pointer;font-weight:600;font-size:14px;color:var(--ink);transition:border-color .12s,background .12s,box-shadow .12s}
+.srctile label small{display:block;font-weight:400;font-size:11.5px;color:var(--muted);margin-top:3px}
+.srctile label:hover{border-color:var(--grn)}
+.srctile input:checked+label{border-color:var(--grn);background:var(--grn-l);box-shadow:0 0 0 3px rgba(15,107,79,.12)}
+.srctile input:focus-visible+label{border-color:var(--grn);box-shadow:0 0 0 3px rgba(15,107,79,.25)}
+.srcpanel{display:none;margin-top:12px}
+.srcpanel.on{display:block}
+.hintbox{background:var(--paper2);border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.55}
+@media(max-width:560px){.srcgrid{grid-template-columns:1fr}}
 """
 
 
@@ -801,7 +818,7 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
     jemail = _e(conn.get("jira_email") or "")
     jjql = _e(conn.get("jira_jql") or "")
     sset = lambda k: "✓ saved" if conn.get(k) else "not set"  # noqa: E731
-    opt = lambda v: " selected" if tracker == v else ""        # noqa: E731
+    chk = lambda v: " checked" if tracker == v else ""         # noqa: E731
     asy = conn.get("auto_sync_hours") or 0
     aopt = lambda v: " selected" if asy == v else ""           # noqa: E731
     synced = (f'Last synced {_fmt_date(conn.get("synced_at"))}.'
@@ -812,50 +829,73 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
     err_banner = (f'<div class=ostrip style="background:var(--red-l)"><span><span class="otag over">sync</span> '
                   f'<b style="color:var(--red)">Last sync failed.</b> {_e(err)}</span></div>'
                   if err else "")
+
+    def _tile(value: str, title: str, sub: str) -> str:
+        return (f'<div class=srctile><input type=radio name=tracker id=trk-{value} value={value}{chk(value)}>'
+                f'<label for=trk-{value}>{_e(title)}<small>{_e(sub)}</small></label></div>')
+
     form = f"""<div class=ohead><h1>Connect your sources <span class=muted>· read-only</span></h1>
-      <p>Outlay pulls live from your tracker and AI usage with read-only tokens — metadata only,
-        prompts never leave your tools. Or paste exports on the <a href="/app/outlay">Spend</a> tab.</p></div>
+      <p>Two things to connect: your <b>tracker</b> (so spend maps to tickets, sprints, and people) and your
+        <b>AI usage</b> (the spend itself). Read-only tokens, metadata only — prompts never leave your tools.</p></div>
       {err_banner}
       <form method=post action="/app/outlay/connect" class=ocard>
-        <label class=fld><span>Tracker</span><select name=tracker>
-          <option value=github{opt('github')}>GitHub Issues</option>
-          <option value=jira{opt('jira')}>Jira</option>
-          <option value=linear{opt('linear')}>Linear</option></select></label>
 
-        <h3 style="margin:1em 0 .6em">GitHub Issues</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <label class=fld><span>Owner</span><input name=github_owner value="{owner}" placeholder="acme"></label>
-          <label class=fld><span>Repo</span><input name=github_repo value="{repo}" placeholder="web"></label>
+        <div class=cstep><span class=cnum>1</span><div><b>Choose your tracker</b>
+          <span class=cmut>Where your work lives — Outlay maps spend to its tickets, epics, and teams.</span></div></div>
+        <div class=srcgrid>
+          {_tile('github', 'GitHub', 'Issues & PRs')}
+          {_tile('jira', 'Jira', 'Projects & epics')}
+          {_tile('linear', 'Linear', 'Issues & cycles')}
         </div>
-        <label class=fld style="margin-top:12px"><span>Read-only token ({sset('github_token')})</span>
-          <input name=github_token type=password placeholder="ghp_… (leave blank to keep)"></label>
 
-        <h3 style="margin:1em 0 .6em">Jira</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <label class=fld><span>Base URL</span><input name=jira_base_url value="{jbase}" placeholder="https://acme.atlassian.net"></label>
-          <label class=fld><span>Email</span><input name=jira_email value="{jemail}" placeholder="you@acme.dev"></label>
+        <div class=srcpanel data-when=github>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <label class=fld><span>Owner</span><input name=github_owner value="{owner}" placeholder="acme"></label>
+            <label class=fld><span>Repo</span><input name=github_repo value="{repo}" placeholder="web"></label>
+          </div>
+          <label class=fld style="margin-top:12px"><span>Read-only token ({sset('github_token')})</span>
+            <input name=github_token type=password placeholder="ghp_… (leave blank to keep)"></label>
         </div>
-        <label class=fld style="margin-top:12px"><span>API token ({sset('jira_token')})</span>
-          <input name=jira_token type=password placeholder="(leave blank to keep)"></label>
-        <label class=fld style="margin-top:12px"><span>JQL (optional)</span>
-          <input name=jira_jql value="{jjql}" placeholder="project = ENG AND updated >= -90d"></label>
 
-        <h3 style="margin:1em 0 .6em">Linear</h3>
-        <label class=fld><span>API key ({sset('linear_key')})</span>
-          <input name=linear_key type=password placeholder="lin_… (leave blank to keep)"></label>
+        <div class=srcpanel data-when=jira>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <label class=fld><span>Base URL</span><input name=jira_base_url value="{jbase}" placeholder="https://acme.atlassian.net"></label>
+            <label class=fld><span>Email</span><input name=jira_email value="{jemail}" placeholder="you@acme.dev"></label>
+          </div>
+          <label class=fld style="margin-top:12px"><span>API token ({sset('jira_token')})</span>
+            <input name=jira_token type=password placeholder="(leave blank to keep)"></label>
+          <label class=fld style="margin-top:12px"><span>JQL (optional)</span>
+            <input name=jira_jql value="{jjql}" placeholder="project = ENG AND updated >= -90d"></label>
+        </div>
 
-        <h3 style="margin:1em 0 .6em">AI usage <span class=muted style="font-weight:400">· connect one or both</span></h3>
+        <div class=srcpanel data-when=linear>
+          <label class=fld><span>API key ({sset('linear_key')})</span>
+            <input name=linear_key type=password placeholder="lin_… (leave blank to keep)"></label>
+        </div>
+
+        <div class=cstep><span class=cnum>2</span><div><b>Connect your AI usage</b>
+          <span class=cmut>At least one. This is the spend Outlay attributes and forecasts.</span></div></div>
         <label class=fld><span>Anthropic admin API key ({sset('anthropic_key')})</span>
           <input name=anthropic_key type=password placeholder="sk-ant-admin… (leave blank to keep)"></label>
         <label class=fld style="margin-top:12px"><span>Cursor admin API key ({sset('cursor_key')})</span>
           <input name=cursor_key type=password placeholder="key_… (Cursor team admin; leave blank to keep)"></label>
+        <div class=hintbox>Running on <b>AWS Bedrock</b>, <b>Google Vertex</b>, or <b>OpenAI / Azure</b>?
+          Export your usage and drop it in on the <a href="/app/outlay">Spend</a> tab — the format is auto-detected.
+          Live cloud pull for those is coming.</div>
 
-        <h3 style="margin:1em 0 .6em">Auto-sync</h3>
-        <label class=fld><span>Keep the audit fresh automatically</span><select name=auto_sync_hours>
+        <div class=cstep><span class=cnum>3</span><div><b>Keep it fresh</b>
+          <span class=cmut>Re-pull on a schedule so the audit and forecast stay current.</span></div></div>
+        <label class=fld><span>Auto-sync</span><select name=auto_sync_hours>
           <option value=0{aopt(0)}>Off — sync manually</option>
           <option value=24{aopt(24)}>Daily</option>
           <option value=168{aopt(168)}>Weekly</option></select></label>
-        <button class="btn sec" style="margin-top:16px">Save connection</button>
+
+        <button class="btn sec" style="margin-top:18px">Save connection</button>
+        <script>(function(){{var f=document.currentScript.closest('form');if(!f)return;
+          function reveal(){{var r=f.querySelector('input[name=tracker]:checked'),v=r?r.value:'';
+            [].forEach.call(f.querySelectorAll('.srcpanel'),function(p){{p.classList.toggle('on',p.dataset.when===v);}});}}
+          [].forEach.call(f.querySelectorAll('input[name=tracker]'),function(i){{i.addEventListener('change',reveal);}});
+          reveal();}})();</script>
       </form>
       <div class=ocard style="margin-top:16px">
         <p class=muted style="margin:0 0 12px;font-size:13.5px">{synced}</p>
