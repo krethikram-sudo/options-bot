@@ -1992,9 +1992,27 @@ def settings_page(account: dict, settings: dict, saved: bool = False,
     # POST route still accepts the legacy fields, so this is a UI-only change.
     saved_note = '<div class="note">Settings saved.</div>' if saved else ""
     body = (f"<h1>Settings</h1>{saved_note}"
-            f"{_settings_links(account)}{_twofa_section(account, twofa)}"
+            f"{_settings_links(account)}{_digest_section(account)}{_twofa_section(account, twofa)}"
             f"{_danger_zone(account, delete_error)}")
     return page("Settings", body, account, "/app/settings")
+
+
+def _digest_section(account: dict) -> str:
+    """Toggle the weekly spend digest email (on by default)."""
+    on = account.get("digest_weekly", 1) in (1, True, "1")
+    checked = " checked" if on else ""
+    return f"""
+    <div class=card style="margin-top:16px" id=digest>
+      <div class=label>Weekly spend digest</div>
+      <p class="small muted" style="margin:.2em 0 .8em">A short Monday email — total AI spend and the
+        week-over-week trend, top team &amp; work type, budget status, and any runaway tickets.
+        Sent to the account owner ({_e(account.get("email", ""))}).</p>
+      <form method=post action="/app/digest" style="display:flex;gap:10px;align-items:center">
+        <label style="display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer">
+          <input type=checkbox name=weekly value=1{checked}> Email me the weekly digest</label>
+        <button class="btn sec sm">Save</button>
+      </form>
+    </div>"""
 
 
 def _settings_links(account: dict) -> str:
