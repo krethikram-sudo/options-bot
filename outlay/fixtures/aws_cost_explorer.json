@@ -1,0 +1,17 @@
+{
+  "ResultsByTime": [
+    {
+      "TimePeriod": {"Start": "2026-06-01", "End": "2026-06-08"},
+      "Total": {"UnblendedCost": {"Amount": "128.40", "Unit": "USD"}},
+      "Groups": []
+    },
+    {
+      "TimePeriod": {"Start": "2026-06-08", "End": "2026-06-15"},
+      "Total": {},
+      "Groups": [
+        {"Keys": ["Amazon Bedrock"], "Metrics": {"UnblendedCost": {"Amount": "180.10", "Unit": "USD"}}},
+        {"Keys": ["Amazon Bedrock - Claude"], "Metrics": {"UnblendedCost": {"Amount": "31.50", "Unit": "USD"}}}
+      ]
+    }
+  ]
+}

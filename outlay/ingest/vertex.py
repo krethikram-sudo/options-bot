@@ -136,3 +136,42 @@ def parse_vertex_log_text(text: str, user_map: Optional[dict] = None) -> list[Us
 def parse_vertex_log_file(path: Union[str, Path],
                           user_map: Optional[dict] = None) -> list[UsageEvent]:
     return parse_vertex_log_text(Path(path).read_text(), user_map=user_map)
+
+
+def parse_vertex_cost(rows) -> float:
+    """Sum a GCP **Cloud Billing** BigQuery export into a net USD total — Google's
+    own billed figure, the truth source we reconcile against.
+
+    Each row carries a `cost` and a list of `credits` (each a negative `amount`),
+    so net cost is `cost + sum(credits.amount)`. Accepts a list of rows or a
+    `{"rows":[...]}`/`{"data":[...]}` wrapper. Tolerates string amounts."""
+    if isinstance(rows, dict):
+        rows = rows.get("rows") or rows.get("data") or []
+    if not isinstance(rows, list):
+        return 0.0
+
+    def _f(v) -> float:
+        try:
+            return float(v or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    total = 0.0
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        total += _f(r.get("cost"))
+        for c in (r.get("credits") or []):
+            if isinstance(c, dict):
+                total += _f(c.get("amount"))
+    return round(total, 2)
+
+
+def parse_vertex_cost_text(text: str) -> float:
+    text = (text or "").strip()
+    if not text:
+        return 0.0
+    try:
+        return parse_vertex_cost(json.loads(text))
+    except json.JSONDecodeError:
+        return 0.0

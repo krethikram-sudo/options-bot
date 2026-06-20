@@ -74,6 +74,34 @@ def _rows(payload) -> list[dict]:
     return [payload]
 
 
+def parse_openai_costs(payload) -> float:
+    """Sum the OpenAI **Costs API** (`/v1/organization/costs`) into a USD total —
+    OpenAI's own billed figure, the truth source we reconcile our token-normalized
+    cost against. Buckets carry `results` rows with an `amount` `{value, currency}`
+    (older exports use a flat `amount`/`cost`). Tolerant of both shapes."""
+    total = 0.0
+    for row in _rows(payload):
+        amt = row.get("amount", row.get("cost"))
+        if isinstance(amt, dict):           # {"value": 1.23, "currency": "usd"}
+            amt = amt.get("value", amt.get("amount", 0))
+        try:
+            total += float(amt)
+        except (TypeError, ValueError):
+            continue
+    return round(total, 2)
+
+
+def parse_openai_costs_text(text: str) -> float:
+    text = (text or "").strip()
+    if not text:
+        return 0.0
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        payload = [json.loads(ln) for ln in text.splitlines() if ln.strip()]
+    return parse_openai_costs(payload)
+
+
 def parse_openai_usage(payload, user_map: Optional[dict] = None,
                        deployment_map: Optional[dict] = None) -> list[UsageEvent]:
     """Parse an OpenAI/Azure usage export into `UsageEvent`s.
