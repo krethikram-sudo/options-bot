@@ -646,12 +646,15 @@ async def app_outlay_digest_due(request: Request):
     got = auth[7:].strip() if auth[:7].lower() == "bearer " else ""
     if not want or not secrets.compare_digest(got, want):
         return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
-    from . import spend_digest
+    from . import close_pack, spend_digest
     summary = await asyncio.to_thread(spend_digest.run_due_digests)
+    # Monthly finance close pack (opt-in) rides the same daily sweep; the 30-day
+    # cadence is enforced per account.
+    close = await asyncio.to_thread(close_pack.run_due_close_packs)
     # Piggyback retention enforcement on the daily sweep — purge history past each
     # account's window (belt-and-suspenders to the inline purge on snapshot write).
     retention = await asyncio.to_thread(store.purge_due_outlay_history)
-    return JSONResponse({"ok": True, **summary, "retention": retention})
+    return JSONResponse({"ok": True, **summary, "close_pack": close, "retention": retention})
 
 
 @app.post("/app/digest")
@@ -662,9 +665,11 @@ async def app_digest_toggle(request: Request):
         return redir
     f = await _form(request)
     store.set_digest_weekly(acct["id"], bool(f.get("weekly")))
+    store.set_close_pack_monthly(acct["id"], bool(f.get("close_pack")))
     _audit(acct["id"], "digest.toggle",
            actor=acct.get("display_email") or acct.get("email", ""),
-           detail=f"weekly={'on' if f.get('weekly') else 'off'}")
+           detail=f"weekly={'on' if f.get('weekly') else 'off'} "
+                  f"close_pack={'on' if f.get('close_pack') else 'off'}")
     return _redirect("/app/settings#digest")
 
 

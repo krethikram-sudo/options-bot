@@ -2488,6 +2488,47 @@ def test_digest_cron_requires_token_and_toggle_persists(env, client):
     assert "Weekly spend digest" in client.get("/app/settings").text
 
 
+def test_monthly_close_pack_builds_attaches_focus_and_cadence(env, client, monkeypatch):
+    from console import close_pack, store, notify
+    _signup(client, email="close@x.com")
+    acct = store.get_account_by_email("close@x.com")
+    # opt-in via the settings toggle (off by default)
+    assert store.get_account(acct["id"])["close_pack_monthly"] == 0
+    client.post("/app/digest", data={"weekly": "1", "close_pack": "1"}, follow_redirects=True)
+    assert store.get_account(acct["id"])["close_pack_monthly"] == 1
+    assert "Monthly finance close pack" in client.get("/app/settings").text
+
+    # nothing to send until there's a report
+    assert close_pack.build_close_pack(acct["id"]) is None
+    assert store.accounts_due_for_close_pack() == []
+
+    client.post("/app/outlay/sample", follow_redirects=True)
+    pack = close_pack.build_close_pack(acct["id"])
+    assert pack and "close pack" in pack["subject"]
+    assert "FOCUS-aligned" in pack["body"] and "close-report.html" in pack["body"]
+    # the attached CSV is the FOCUS export (spec column names)
+    assert pack["csv"].splitlines()[0].startswith("BilledCost,EffectiveCost")
+
+    # due now; sending attaches the CSV, marks sent; monthly cadence holds it back
+    assert acct["id"] in store.accounts_due_for_close_pack()
+    sent = []
+    monkeypatch.setattr(notify, "send_email",
+                        lambda *a, **k: (sent.append((a, k)), True)[1])
+    assert close_pack.send_close_pack(acct["id"]) is True
+    (_to, _subj, _body), kw = sent[0]
+    assert kw["attachments"][0][0] == "outlay-focus.csv"
+    assert store.accounts_due_for_close_pack() == []
+    assert acct["id"] in store.accounts_due_for_close_pack(now=time.time() + 31 * 24 * 3600)
+
+    # opting out removes it from the sweep
+    store.set_close_pack_monthly(acct["id"], False)
+    assert acct["id"] not in store.accounts_due_for_close_pack(now=time.time() + 60 * 24 * 3600)
+    # the daily digest cron also drives close packs (due again a month later)
+    store.set_close_pack_monthly(acct["id"], True)
+    out = close_pack.run_due_close_packs(now=time.time() + 31 * 24 * 3600)
+    assert out["due"] >= 1
+
+
 def test_anomalies_surfaced_on_spend_and_overview(env, client):
     """Runaway tickets (>=3x class median) show in-product — strip on Overview,
     card on Spend — not just buried in the report."""

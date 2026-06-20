@@ -100,6 +100,15 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — scheduled monthly finance close pack (FOCUS CSV attached)
+- [x] Month-end close is a recurring finance workflow — automated the delivery of the artifact they need.
+- [x] **`console/close_pack.py`** (mirrors `spend_digest.py`): `build_close_pack` (period summary + top cost
+      centers/work types + budget + reconciliation + data-confidence), `send_close_pack` (emails it with the
+      **FOCUS-aligned CSV attached**), `run_due_close_packs` (monthly cadence, resilient sweep).
+- [x] **Attachment support** in `notify.send_email` (optional `attachments=[(name, content, subtype)]`).
+- [x] **Opt-in toggle** on Settings → "Scheduled emails" (weekly digest + the new monthly close pack);
+      `accounts.close_pack_monthly` / `close_pack_last_at`. Rides the existing daily `digest-due` cron. 306 tests.
+
 ### 2026-06-20 — data-confidence verdict (rolls up trust signals; UI badge + API)
 - [x] The signals that answer "can finance trust these numbers?" (coverage, reconciliation, pricing fidelity,
       sync freshness) rendered as scattered strips and were absent from the API. Rolled them into one verdict:

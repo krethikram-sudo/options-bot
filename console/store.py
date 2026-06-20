@@ -306,6 +306,8 @@ _MIGRATIONS = [
     "ALTER TABLE outlay_connections ADD COLUMN sync_fail_count INTEGER NOT NULL DEFAULT 0",  # consecutive auto-sync failures
     "ALTER TABLE outlay_connections ADD COLUMN sync_alerted_at REAL",  # last stale/failed-sync alert sent (de-dupe)
     "ALTER TABLE accounts ADD COLUMN retention_days INTEGER NOT NULL DEFAULT 0",  # 0 = keep history forever; else purge snapshots older than N days
+    "ALTER TABLE accounts ADD COLUMN close_pack_monthly INTEGER NOT NULL DEFAULT 0",  # email the monthly close pack (FOCUS CSV + summary)
+    "ALTER TABLE accounts ADD COLUMN close_pack_last_at REAL",  # last close-pack send time
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -933,6 +935,44 @@ def accounts_due_for_digest(now: float | None = None, every_seconds: int = 7 * 2
             "SELECT a.id FROM accounts a JOIN outlay_reports r ON r.account_id = a.id "
             "WHERE a.status='active' AND a.digest_weekly=1 "
             "AND (a.digest_last_at IS NULL OR a.digest_last_at <= ?)",
+            (cutoff,)).fetchall()
+    finally:
+        conn.close()
+    return [r["id"] for r in rows]
+
+
+def set_close_pack_monthly(account_id: int, on: bool, path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE accounts SET close_pack_monthly=? WHERE id=?",
+                     (1 if on else 0, account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def mark_close_pack_sent(account_id: int, now: float | None = None, path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE accounts SET close_pack_last_at=? WHERE id=?",
+                     (now or time.time(), account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def accounts_due_for_close_pack(now: float | None = None, every_seconds: int = 30 * 24 * 3600,
+                                path: str | None = None) -> list[int]:
+    """Active accounts opted into the monthly close pack that have a saved report and
+    whose last send is older than the cadence (or never sent)."""
+    now = now or time.time()
+    cutoff = now - every_seconds
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT a.id FROM accounts a JOIN outlay_reports r ON r.account_id = a.id "
+            "WHERE a.status='active' AND a.close_pack_monthly=1 "
+            "AND (a.close_pack_last_at IS NULL OR a.close_pack_last_at <= ?)",
             (cutoff,)).fetchall()
     finally:
         conn.close()
