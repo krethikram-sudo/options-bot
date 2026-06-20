@@ -19,7 +19,7 @@ from typing import Optional
 from outlay.attribute import attribute
 from outlay.backtest import backtest
 from outlay.forecast import class_stats, find_anomalies, forecast_roadmap
-from outlay.ingest import parse_anthropic_usage, parse_github_issues
+from outlay.ingest import parse_anthropic_usage, parse_bedrock_log_text, parse_github_issues
 from outlay.recommend import recommend
 from outlay.serialize import to_dict
 from outlay.size import fit_size_models
@@ -33,19 +33,41 @@ def _tmp(text) -> str:
     return f.name
 
 
+def _looks_like_bedrock(usage) -> bool:
+    """Heuristic: AWS Bedrock invocation logs carry `modelId` / a ModelInvocationLog
+    schema tag, which the Anthropic per-call usage shape never does."""
+    text = usage if isinstance(usage, str) else json.dumps(usage)
+    head = (text or "").strip()[:2000]
+    return "ModelInvocationLog" in head or '"modelId"' in head
+
+
+def _parse_usage(usage):
+    """Parse pasted/uploaded AI usage, auto-detecting the source: AWS Bedrock
+    invocation logs (JSON or JSONL export) or Anthropic per-call usage JSON."""
+    if _looks_like_bedrock(usage):
+        try:
+            return parse_bedrock_log_text(usage if isinstance(usage, str) else json.dumps(usage))
+        except Exception as e:  # noqa: BLE001 — clean message for the UI
+            raise ValueError(f"Couldn't read the Bedrock invocation logs: {e}") from e
+    up = _tmp(usage)
+    try:
+        return parse_anthropic_usage(up)
+    except Exception as e:  # noqa: BLE001
+        raise ValueError(f"Couldn't read the AI-usage data: {e}") from e
+    finally:
+        os.unlink(up)
+
+
 def _parse(issues, usage):
     """Parse uploaded JSON into work items + usage events. Raises ValueError."""
-    ip, up = _tmp(issues), _tmp(usage)
+    ip = _tmp(issues)
     try:
-        try:
-            work = parse_github_issues(ip)
-            events = parse_anthropic_usage(up)
-        except Exception as e:  # noqa: BLE001 — clean message for the UI
-            raise ValueError(f"Couldn't read the uploaded data: {e}") from e
+        work = parse_github_issues(ip)
+    except Exception as e:  # noqa: BLE001 — clean message for the UI
+        raise ValueError(f"Couldn't read the tracker data: {e}") from e
     finally:
         os.unlink(ip)
-        os.unlink(up)
-    return work, events
+    return work, _parse_usage(usage)
 
 
 def _fit(work, events):

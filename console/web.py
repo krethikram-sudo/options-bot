@@ -374,13 +374,14 @@ def _outlay_connect(error: str = "", collapsed: bool = False) -> str:
     return f"""<details class=card{open_attr}>{summary}
       <h3 style="margin:.2em 0 .4em">Connect your data <span class=muted style="font-weight:400">· read-only</span></h3>
       <p class=muted style="margin:.2em 0 1em">Paste your tracker export (GitHub Issues JSON) and your AI-usage
-        export (Anthropic usage JSON). Metadata only — no prompts. Optionally add a planned-work backlog to budget it.</p>
+        export — <b>Anthropic usage JSON</b> or <b>AWS Bedrock invocation logs</b> (auto-detected).
+        Metadata only — no prompts. Optionally add a planned-work backlog to budget it.</p>
       {err}
       <div style="display:grid;gap:12px">
         <label class=fld><span>Tracker — GitHub Issues JSON</span>
           <textarea id=ol_issues rows=4 placeholder='{{"issues":[ ... ]}}'></textarea></label>
-        <label class=fld><span>AI usage — Anthropic usage JSON</span>
-          <textarea id=ol_usage rows=4 placeholder='[ {{"id":"e1","model":"claude-...","input_tokens":...}} ]'></textarea></label>
+        <label class=fld><span>AI usage — Anthropic usage JSON <span class=muted style="font-weight:400">or AWS Bedrock invocation logs</span></span>
+          <textarea id=ol_usage rows=4 placeholder='Anthropic: [ {{"id":"e1","model":"claude-...","input_tokens":...}} ]   ·   Bedrock: {{"modelId":"...","input":{{"inputTokenCount":...}}, ...}} per line'></textarea></label>
         <label class=fld><span>Planned backlog (optional) — JSON</span>
           <textarea id=ol_planned rows=3 placeholder='{{"items":[{{"id":"PROJ-1","title":"Add SSO","requirements":"...","points":8}}]}}'></textarea></label>
       </div>
