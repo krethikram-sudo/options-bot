@@ -1872,3 +1872,16 @@ def test_admin_leads_inbox(env, client):
     r = client.get("/admin/leads")
     assert r.status_code == 200 and "Acme" in r.text and "lead@acme.dev" in r.text
     assert "Pilot requests" in r.text and "VP Eng" in r.text
+
+
+
+def test_outlay_run_accepts_bedrock_logs(env, client):
+    """The paste/run path auto-detects an AWS Bedrock invocation-log export."""
+    _signup(client)
+    fix = _fixtures()
+    issues = (fix / "github_issues.json").read_text()
+    bedrock = (fix / "bedrock_invocation_logs.jsonl").read_text()
+    r = client.post("/app/outlay/run", json={"issues": issues, "usage": bedrock})
+    assert r.status_code == 200 and r.json()["ok"] is True, r.text
+    r = client.get("/app/outlay")
+    assert r.status_code == 200 and "AI spend" in r.text
