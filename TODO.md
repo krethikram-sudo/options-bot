@@ -100,6 +100,13 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — weekly spend digest: proactive retention (PR #109)
+- [x] Customer-facing weekly email (total + WoW trend, top team/work-type, coverage, budget status, runaway
+      tickets, reconciliation, dashboard link). `console/spend_digest.py` (pure builder + sweep);
+      `accounts.digest_weekly`/`digest_last_at`; token-gated `/internal/outlay/digest-due` cron (safe daily,
+      weekly cadence per account); Settings on/off toggle. 288 tests. **Ops:** point the scheduler at
+      `/internal/outlay/digest-due` (same one as auto-sync).
+
 ### 2026-06-20 — runaway-ticket anomalies: surface + alert (PR #107)
 - [x] The engine flagged tickets ≥3× their work-type median but the console never showed or alerted on them.
       Now: an amber anomaly strip on Overview + a "Runaway tickets" card on Spend (cost vs class median, ratio
