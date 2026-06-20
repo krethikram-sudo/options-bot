@@ -2071,6 +2071,28 @@ def test_anomaly_tuning_mute_and_threshold(env, client, monkeypatch):
     assert store.get_anomaly_prefs(acct["id"])[0] == 3.0
 
 
+def test_slack_alerts_for_budget_and_anomaly(env, client, monkeypatch):
+    """A configured Slack webhook receives budget + runaway-ticket alerts."""
+    from console import notify, store
+    posts = []
+    monkeypatch.setattr(notify, "send_slack", lambda url, text: (posts.append((url, text)), True)[1])
+    _signup(client, email="slk@x.com")
+    acct = store.get_account_by_email("slk@x.com")
+    client.post("/app/outlay/slack",
+                data={"slack_webhook": "https://hooks.slack.com/services/X"}, follow_redirects=True)
+    assert store.get_slack_webhook(acct["id"]) == "https://hooks.slack.com/services/X"
+    assert "Slack alerts" in client.get("/app/outlay/connect").text
+
+    store.add_outlay_budget(acct["id"], "overall", None, 1.0, 90)  # tiny budget → over
+    fix = _fixtures()
+    client.post("/app/outlay/run", json={"issues": (fix / "github_issues.json").read_text(),
+                "usage": (fix / "anthropic_usage.json").read_text()})
+    kinds = " ".join(t for _, t in posts)
+    assert "Budget over" in kinds and "runaway ticket" in kinds
+    client.post("/app/outlay/slack", data={"slack_webhook": ""}, follow_redirects=True)
+    assert store.get_slack_webhook(acct["id"]) is None
+
+
 def test_spend_by_model_card_and_csv(env, client):
     """Cost-per-token across models (a FinOps table-stake): a 'Spend by model' card
     with per-model token split, plus a CSV export view."""

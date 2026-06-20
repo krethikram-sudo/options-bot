@@ -95,6 +95,23 @@ def send_pilot_request(lead: dict) -> bool:
     return send_email(to, f"Pilot request — {lead.get('company') or lead.get('email')}", body)
 
 
+def send_slack(webhook_url: str, text: str) -> bool:
+    """Post a message to a Slack (or Teams-compatible) incoming webhook. Best-effort
+    — alerting must never break the path that triggered it."""
+    if not webhook_url or not text:
+        return False
+    import json as _json
+    import urllib.request
+    body = _json.dumps({"text": text}).encode()
+    req = urllib.request.Request(webhook_url, data=body,
+                                 headers={"content-type": "application/json"}, method="POST")
+    try:
+        urllib.request.urlopen(req, timeout=5).close()
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def send_anomaly_alert(email: str, anomalies: list, product: str = "Outlay") -> bool:
     """Email the owner when newly-detected runaway tickets appear — a ticket
     burning far more than its work-type median is the guardrail that binds."""

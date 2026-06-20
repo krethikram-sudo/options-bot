@@ -473,6 +473,17 @@ def app_estimate(request: Request):
     return _html(web.estimate_page(acct, plan, cycle, lifetime, bill))
 
 
+def _slack_notify(account_id: int, text: str) -> None:
+    """Post an alert to the account's Slack/Teams webhook if one is configured —
+    best-effort, alongside email + webhooks. Slack is where eng + finance live."""
+    try:
+        url = store.get_slack_webhook(account_id)
+        if url:
+            notify.send_slack(url, text)
+    except Exception:  # noqa: BLE001 — alerting must never break the sync path
+        pass
+
+
 def _budget_email(account_id: int, s: dict) -> None:
     """Email the account owner on a budget transition — webhooks reach machines,
     this reaches a human (the only channel most pilots will have wired up)."""
@@ -503,6 +514,10 @@ def _check_budgets(account_id: int, report: dict) -> None:
                 "spent_usd": s["spent_usd"], "limit_usd": s["limit_usd"],
                 "projected_usd": s["projected_usd"], "period_days": s.get("period_days")})
             _budget_email(account_id, s)
+            scope = s["scope_type"] + (f' "{s["scope_id"]}"' if s.get("scope_id") else "")
+            _slack_notify(account_id,
+                          f":rotating_light: *Budget {new}* — {scope}: projected "
+                          f"${s.get('projected_usd', 0):,.0f} vs ${s.get('limit_usd', 0) or 0:,.0f} limit.")
         store.set_outlay_budget_status(s["id"], new)
 
 
@@ -528,6 +543,11 @@ def _check_anomalies(account_id: int, report: dict) -> None:
             "count": len(new),
             "tickets": [{"ticket_id": a["ticket_id"], "task_class": a["task_class"],
                          "cost_usd": a["cost_usd"], "ratio": a["ratio"]} for a in new]})
+        worst = new[0]
+        _slack_notify(account_id,
+                      f":warning: *{len(new)} runaway ticket{'s' if len(new) != 1 else ''}* — worst "
+                      f"{worst['ticket_id']} at {worst.get('ratio', 0):.0f}× its class median "
+                      f"(${worst.get('cost_usd', 0):,.0f}).")
     store.set_alerted_anomalies(account_id, ids)
 
 
@@ -669,6 +689,20 @@ async def app_anomaly_threshold(request: Request):
     except (TypeError, ValueError):
         pass
     return _redirect("/app/outlay")
+
+
+@app.post("/app/outlay/slack")
+async def app_outlay_slack(request: Request):
+    """Save (or clear) the Slack/Teams incoming-webhook URL for budget + anomaly alerts."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    store.set_slack_webhook(acct["id"], f.get("slack_webhook"))
+    _audit(acct["id"], "slack.save",
+           actor=acct.get("display_email") or acct.get("email", ""),
+           detail="set" if (f.get("slack_webhook") or "").strip() else "cleared")
+    return _redirect("/app/outlay/connect#alerts")
 
 
 @app.post("/app/persona")
