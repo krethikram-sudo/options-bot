@@ -1775,8 +1775,12 @@ def audit_page(account: dict, entries: list[dict]) -> str:
     head = ('<div class=ohead><h1>Activity &amp; audit log</h1>'
             '<p>Security-relevant events on your account — sign-ins, connection changes, and team '
             'changes. Newest first.</p></div>')
+    siem = ('<div class=olinks style="margin:-6px 0 16px">'
+            '<a href="/app/audit/export.csv">Export CSV</a>'
+            '<span class=muted style="font-size:12.5px">· stream to your SIEM via '
+            '<a href="/app/api">the audit API</a> (poll <code>/api/v1/audit?since=…</code>)</span></div>')
     if not entries:
-        return page("Activity", head + '<div class=ocard><p class=muted style="margin:0">'
+        return page("Activity", head + siem + '<div class=ocard><p class=muted style="margin:0">'
                     'No activity recorded yet.</p></div>', account, active="/app/audit")
     rows = ""
     for e in entries:
@@ -1788,7 +1792,7 @@ def audit_page(account: dict, entries: list[dict]) -> str:
              f'<span class=sub>{len(entries)} events</span></div>'
              f'<table><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Detail</th></tr></thead>'
              f'<tbody>{rows}</tbody></table></div>')
-    return page("Activity", head + table, account, active="/app/audit")
+    return page("Activity", head + siem + table, account, active="/app/audit")
 
 
 def leads_page(account: dict, leads: list[dict]) -> str:
@@ -2506,6 +2510,19 @@ def api_page(account: dict, keys: list[dict], deployments: list[dict],
                    for name, desc in _FOCUS_FIELD_DOCS)
     curl = (f"curl -s {base}/api/v1/spend \\\n"
             f"  -H 'Authorization: Bearer {sample_key}'")
+    curl_audit = (f"curl -s '{base}/api/v1/audit?since=0&limit=1000' \\\n"
+                  f"  -H 'Authorization: Bearer {sample_key}'")
+    resp_audit = ('{\n'
+                  '  "account_id": 42,\n'
+                  '  "next_since": 1841,\n'
+                  '  "count": 2,\n'
+                  '  "events": [\n'
+                  '    {"id": 1840, "ts": "2026-06-20T14:02:11+00:00", "actor": "cfo@acme.com",\n'
+                  '     "action": "login", "detail": ""},\n'
+                  '    {"id": 1841, "ts": "2026-06-20T14:05:39+00:00", "actor": "cfo@acme.com",\n'
+                  '     "action": "connection.save", "detail": "tracker=github"}\n'
+                  '  ]\n'
+                  '}')
     resp = ('{\n'
             '  "account_id": 42,\n'
             '  "period": {"start": "2026-05-21T00:00:00+00:00",\n'
@@ -2545,6 +2562,16 @@ def api_page(account: dict, keys: list[dict], deployments: list[dict],
       <p class="small muted" style="margin-top:12px">Returns <code>401</code> if the key is missing, invalid,
       or revoked. Before your first sync the response is a valid empty shape
       (<code>total_usd: 0, rows: []</code>).</p>
+    </div>
+
+    <div class=card style="margin-top:16px">
+      <h2 style="margin-top:0"><code>GET /api/v1/audit</code></h2>
+      <p class="small muted">Your security audit trail (sign-ins, connection &amp; team changes) for SIEM
+      ingestion — Splunk, Datadog, etc. Events come in ascending <code>id</code> order; poll with
+      <code>?since=&lt;next_since&gt;</code> to fetch only new events, gap-free. <code>?limit=</code> caps at 5000.</p>
+      <pre>{_e(curl_audit)}</pre>
+      <p class="small muted" style="margin-bottom:6px"><b>Response</b></p>
+      <pre>{_e(resp_audit)}</pre>
     </div>
 
     <div class=card style="margin-top:16px">

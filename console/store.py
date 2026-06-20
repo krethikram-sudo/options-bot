@@ -1392,6 +1392,22 @@ def list_audit(account_id: int, limit: int = 200, path: str | None = None) -> li
     return [dict(r) for r in rows]
 
 
+def audit_events(account_id: int, since_id: int = 0, limit: int = 1000,
+                 path: str | None = None) -> list[dict]:
+    """Audit rows in *ascending* id order for SIEM ingestion. `since_id` is a cursor:
+    pass the last id you saw to fetch only newer events (incremental, gap-free)."""
+    limit = max(1, min(int(limit or 1000), 5000))
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT id, ts, actor, action, detail FROM audit_log"
+            " WHERE account_id=? AND id > ? ORDER BY id ASC LIMIT ?",
+            (account_id, int(since_id or 0), limit)).fetchall()
+    finally:
+        conn.close()
+    return [dict(r) for r in rows]
+
+
 PERSONAS = ("finance", "eng")
 
 

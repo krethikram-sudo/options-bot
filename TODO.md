@@ -100,6 +100,14 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — audit-log export for SIEM (Splunk/Datadog) + CSV
+- [x] Enterprise security teams want account events in their SIEM. Added:
+- [x] **`GET /api/v1/audit`** — token-authed (Bearer/x-modelpilot-key), events in ascending `id` order with a
+      `next_since` cursor; poll `?since=<next_since>` for gap-free incremental ingestion (`?limit` caps 5000).
+      `store.audit_events(account_id, since_id, limit)`.
+- [x] **`/app/audit/export.csv`** — admin-session full-trail CSV (ISO-8601 timestamps) for offline/GRC import.
+- [x] Documented `/api/v1/audit` on the API page; the Activity page links the CSV + the API. 303 tests.
+
 ### 2026-06-20 — in-console API reference (makes the BI/warehouse API discoverable)
 - [x] Shipped `/api/v1/spend` (#122) but a customer with a key had no way to discover or use it. Added a
       first-class **API page** (`/app/api`, owner/admin; nav → Sources → API): documents `GET /api/v1/spend`
