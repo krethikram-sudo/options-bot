@@ -110,7 +110,8 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 - [x] **Fixed `delete_account`** — it silently left ALL Outlay data (incl. *encrypted connection creds*),
       personas, audit_log, and OTP codes orphaned. Now purges every account-keyed table; feedback is
       anonymized (account link severed) rather than deleted so the cancel-reason signal survives. 301 tests.
-- [ ] Follow-up (marketing): note configurable retention + on-demand erasure on `security.html`.
+- [x] Follow-up (marketing): `security.html` now lists configurable retention + self-serve erase-on-demand
+      (incl. that account deletion removes encrypted connection tokens) under "Data handling, isolation & exit".
 
 ### 2026-06-20 — sync-staleness surfacing + repeated-failure alerting (#1 silent-failure)
 - [x] The audit's #1 customer-trust risk = data that quietly stopped updating (token rotated, cron down)
