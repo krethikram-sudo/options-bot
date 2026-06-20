@@ -494,7 +494,8 @@ def page(title: str, body: str, account: dict | None = None, active: str = "", b
         admin = ""
         if account.get("role") == "admin":
             admin = ('<div class=navgrp>Vendor</div>'
-                     f'<a class="{"on" if active == "/admin/leads" else ""}" href="/admin/leads">Pilot requests</a>')
+                     f'<a class="{"on" if active == "/admin/leads" else ""}" href="/admin/leads">Pilot requests</a>'
+                     f'<a class="{"on" if active == "/admin/health" else ""}" href="/admin/health">Scheduler health</a>')
         em = _e(account.get("display_email") or account["email"])
         chrome = (
             '<div class=shell><aside class=side>'
@@ -3238,6 +3239,65 @@ def _proposals_section(target_id: int, proposals: list[dict]) -> str:
           </form></div>"""
     return (f'<h2>Proposed tuning <span class="small muted">— {len(proposals)} pending</span></h2>'
             f'{cards}')
+
+
+def _ago(age_seconds) -> str:
+    if age_seconds is None:
+        return "never"
+    h = age_seconds / 3600
+    if h < 1:
+        return f"{int(age_seconds // 60)}m ago"
+    if h < 48:
+        return f"{h:.0f}h ago"
+    return f"{h / 24:.0f}d ago"
+
+
+_CRON_JOB_INFO = {
+    "sync-due": ("Auto-sync + staleness alerts", "POST /internal/outlay/sync-due",
+                 "Re-syncs connected sources and fires stale-data / repeated-failure alerts."),
+    "digest-due": ("Digest · close pack · retention · webhook redelivery",
+                   "POST /internal/outlay/digest-due",
+                   "Weekly digest, monthly close pack, data-retention purge, durable webhook redelivery."),
+}
+
+
+def admin_health_page(account: dict, cron: dict, runs: dict) -> str:
+    """Operator view of scheduled-job freshness — a missing/broken cron scheduler is
+    the silent failure mode for the digest / close-pack / retention / redelivery
+    sweeps, so make 'last run' visible with a clear stale flag."""
+    any_stale = any(c["stale"] for c in cron.values())
+    banner = ("" if not any_stale else
+              '<div class=ostrip style="background:var(--red-l)"><span>'
+              '<span class="otag over">action</span> '
+              '<b style="color:var(--red)">A scheduled job is overdue.</b> '
+              'If the scheduler isn\'t hitting these endpoints daily (with <code>OUTLAY_CRON_TOKEN</code>), '
+              'digests, the monthly close pack, retention purges, and webhook redelivery silently never run.'
+              '</span></div>')
+    rows = ""
+    for job, c in cron.items():
+        label, endpoint, what = _CRON_JOB_INFO.get(job, (job, "", ""))
+        badge = ('<span class="badge suspended">stale</span>' if c["stale"]
+                 else '<span class="badge paid">ok</span>')
+        last = _fmt_date(c["last_run_at"]) if c["last_run_at"] else "—"
+        detail = _e((runs.get(job) or {}).get("detail") or "")
+        detail = f'<div class="small muted" style="margin-top:3px;word-break:break-all">{detail}</div>' if detail else ""
+        rows += (f'<tr><td><b>{_e(label)}</b><br><code class=small>{_e(endpoint)}</code>'
+                 f'<div class="small muted">{_e(what)}</div></td>'
+                 f'<td>{badge}</td>'
+                 f'<td class="small muted">{last}</td>'
+                 f'<td class="small muted">{_ago(c["age_seconds"])}{detail}</td></tr>')
+    body = (
+        '<div class=row><h1>Scheduler health</h1><div class=spacer></div>'
+        '<a class="small" href="/admin">← overview</a></div>'
+        '<p class=muted>The daily cron drives every background sweep. If a job goes stale, '
+        'the scheduler (Fly scheduled machine / external cron) likely stopped hitting it.</p>'
+        f'{banner}'
+        '<div class=card style="padding:0"><table>'
+        '<thead><tr><th>Job</th><th>Status</th><th>Last run</th><th>Age / last result</th></tr></thead>'
+        f'<tbody>{rows}</tbody></table></div>'
+        '<p class="small muted" style="margin-top:12px">External monitors can poll '
+        '<code>GET /api/health</code> — it returns <code>cron_ok</code> and per-job freshness.</p>')
+    return page("Scheduler health", body, account, "/admin/health")
 
 
 def admin_proposals_queue(account: dict, proposals: list[dict], emails: dict) -> str:

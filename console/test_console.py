@@ -533,6 +533,42 @@ def test_customer_cannot_access_admin(client):
     assert client.get("/admin").status_code == 403
 
 
+def test_cron_health_tracking_and_surfaces(env, client):
+    import time
+    server, store = env
+    # never run → both jobs stale; health rollup is not-ok
+    h = store.cron_health()
+    assert set(h) == {"sync-due", "digest-due"}
+    assert all(c["stale"] and not c["ran"] for c in h.values())
+
+    # a run stamps freshness
+    store.mark_cron_run("sync-due", {"due": 2, "synced": 2, "failed": 0})
+    h = store.cron_health()
+    assert h["sync-due"]["ran"] and not h["sync-due"]["stale"]
+    assert h["digest-due"]["stale"]  # still never run
+    # goes stale once overdue (>36h)
+    assert store.cron_health(now=time.time() + 40 * 3600)["sync-due"]["stale"]
+
+    # the cron endpoint records its run (auth-gated)
+    import os
+    os.environ["OUTLAY_CRON_TOKEN"] = "ct"
+    try:
+        client.post("/internal/outlay/digest-due", headers={"authorization": "Bearer ct"})
+    finally:
+        del os.environ["OUTLAY_CRON_TOKEN"]
+    assert store.get_cron_runs()["digest-due"]["last_run_at"]
+
+    # public health endpoint exposes per-job freshness + a rollup
+    hj = client.get("/api/health").json()
+    assert "cron" in hj and "cron_ok" in hj and "sync-due" in hj["cron"]
+
+    # admin page renders the jobs + a stale warning when overdue
+    store.create_account("ops@b.com", "password123", role="admin")
+    client.post("/login", data={"email": "ops@b.com", "password": "password123"})
+    page = client.get("/admin/health").text
+    assert "Scheduler health" in page and "sync-due" in page and "digest-due" in page
+
+
 def test_admin_can_view_and_manage(env, client):
     server, store = env
     # make an admin directly, then log in via the client
