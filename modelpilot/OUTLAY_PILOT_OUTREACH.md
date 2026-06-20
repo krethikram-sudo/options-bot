@@ -8,7 +8,7 @@
 > "route to the cheaper model / pay a cut of savings" — that's the old motion and it confuses the buyer.
 >
 > **Offer:** a **free, read-only, ~2-week design-partner pilot.** ~30-minute setup (two read-only tokens).
-> **No card, no fee** — pilots are free and platform pricing is set *with* design partners.
+> **No card, no fee** — pilots are free and we're setting early-customer pricing now.
 >
 > **Links to use:**
 > - 2-min estimator / value teaser: **https://outlay-ai.com/#estimate**
@@ -33,7 +33,7 @@ question: **which teams, projects, and tickets is the spend actually going to, a
 next quarter?** That's Outlay. You don't have to change a line of your stack to get the answer.
 
 **One-line framing:** *"You can't govern a bill you can't break down. Outlay maps your Claude spend to
-the work that caused it and forecasts it — read-only, ~30 min, free for design partners."*
+the work that caused it and forecasts it — read-only, ~30 min, free to get started."*
 
 ---
 
@@ -50,7 +50,7 @@ the work that caused it and forecasts it — read-only, ~30 min, free for design
 > epics *before* you build them. **No proxy, no SDK** — prompts and your API key never touch us, we read
 > metadata only.
 >
-> 30-second teaser: https://outlay-ai.com/#estimate · We're onboarding a few design partners free
+> 30-second teaser: https://outlay-ai.com/#estimate · We're onboarding our first customers free
 > (read-only, ~2 weeks). Worth 15 min?
 
 ## Cold/warm email (fuller)

@@ -149,7 +149,7 @@ Visible in both modes, both surfaces.
 | Phase | Scope | Exit criterion |
 |---|---|---|
 | **0 — Shadow (4–6 wks)** | Gateway passthrough + router v0 (Haiku-as-judge) + counterfactual ledger. No traffic altered. | A pilot customer's 2-week shadow report showing credible would-have-saved $ |
-| **1 — Advise** | Mode 1 headers + dashboard, golden dataset v1, trained fast router, savings ticker | Routing accuracy ≥ target on golden set; ≥1 design partner acting on recommendations |
+| **1 — Advise** | Mode 1 headers + dashboard, golden dataset v1, trained fast router, savings ticker | Routing accuracy ≥ target on golden set; ≥1 early customer acting on recommendations |
 | **2 — Autopilot** | Mode 2 with confidence gates, policy engine, escalation valve, randomized holdout, dashboard GA | RCT shows savings with quality parity (escalation rate < threshold) at a paying customer |
 | **3 — Expand** | Browser extension (Mode 1 first), Claude Code plugin, effort/batch/caching levers, second provider | Multi-surface, multi-lever; renewal/expansion motion running |
 
