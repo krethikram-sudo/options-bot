@@ -90,6 +90,12 @@ CREATE TABLE IF NOT EXISTS settings (
     budget_alert_pct REAL NOT NULL DEFAULT 0.8,
     autopilot_pct INTEGER NOT NULL DEFAULT 100    -- gradual rollout: % of eligible traffic to auto-route in autopilot
 );
+CREATE TABLE IF NOT EXISTS personas (
+    account_id INTEGER NOT NULL,
+    member_id INTEGER NOT NULL DEFAULT 0,         -- 0 = the account owner; else members.id
+    persona TEXT NOT NULL DEFAULT '',             -- 'finance' | 'eng' : which experience this person sees
+    PRIMARY KEY (account_id, member_id)
+);
 CREATE TABLE IF NOT EXISTS plans (
     account_id INTEGER PRIMARY KEY REFERENCES accounts(id),
     plan TEXT NOT NULL DEFAULT 'trial',         -- 'trial' | 'paid'
@@ -1045,6 +1051,35 @@ def get_settings(account_id: int, path: str | None = None) -> dict:
             conn.commit()
             row = conn.execute("SELECT * FROM settings WHERE account_id=?", (account_id,)).fetchone()
         return dict(row)
+    finally:
+        conn.close()
+
+
+PERSONAS = ("finance", "eng")
+
+
+def get_persona(account_id: int, member_id: int = 0, path: str | None = None) -> str:
+    """The chosen experience ('finance'|'eng'|'') for this person (member_id 0 = owner)."""
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT persona FROM personas WHERE account_id=? AND member_id=?",
+                           (account_id, member_id)).fetchone()
+        return (row["persona"] if row else "") or ""
+    finally:
+        conn.close()
+
+
+def set_persona(account_id: int, persona: str, member_id: int = 0, path: str | None = None) -> None:
+    """Set this person's experience (per member — finance and eng are separate logins)."""
+    if persona not in PERSONAS:
+        raise StoreError(f"persona must be one of {PERSONAS}")
+    conn = connect(path)
+    try:
+        conn.execute(
+            "INSERT INTO personas(account_id, member_id, persona) VALUES(?,?,?) "
+            "ON CONFLICT(account_id, member_id) DO UPDATE SET persona=excluded.persona",
+            (account_id, member_id, persona))
+        conn.commit()
     finally:
         conn.close()
 
