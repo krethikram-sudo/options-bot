@@ -878,6 +878,22 @@ def app_outlay_export(request: Request, view: str = "tickets"):
         "content-disposition": f'attachment; filename="outlay-{view}.csv"'})
 
 
+@app.get("/app/outlay/close-report.html", response_class=HTMLResponse)
+def app_outlay_close_report(request: Request):
+    """A printable finance close report — the VP-ready audit readout for the current
+    window (total, attribution, forecast, flags, accuracy, reconciliation). Opens in
+    a new tab; print-to-PDF for the books."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    report = store.get_outlay_report(acct["id"])
+    if not report:
+        return _redirect("/app/outlay")
+    from outlay.readout import render_html
+    company = acct.get("company") or "Your team"
+    return HTMLResponse(render_html(report, company=company))
+
+
 @app.get("/app/outlay/accuracy", response_class=HTMLResponse)
 def app_outlay_accuracy(request: Request):
     acct, redir = _require(request)

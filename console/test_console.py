@@ -2025,6 +2025,20 @@ def test_parse_cost_export_autodetects_provider():
     assert outlay_app.parse_cost_export("not json or recognizable") == (0.0, "")
 
 
+def test_close_report_renders_printable_readout(env, client):
+    """Finance can download a printable close report (the VP audit readout); absent a
+    report it redirects rather than 500s."""
+    _signup(client, email="close@x.com", company="Acme Corp")
+    assert client.get("/app/outlay/close-report.html",
+                      follow_redirects=False).status_code in (302, 303, 307)  # no data yet
+    client.post("/app/outlay/sample", follow_redirects=True)
+    r = client.get("/app/outlay/close-report.html")
+    assert r.status_code == 200 and r.text.startswith("<!doctype html>")
+    assert "Acme Corp" in r.text and "AI spend audit" in r.text
+    client.post("/app/persona", data={"persona": "finance"}, follow_redirects=True)
+    assert "close-report.html" in client.get("/app/outlay").text
+
+
 def test_anomaly_tuning_mute_and_threshold(env, client, monkeypatch):
     """Customers can mute a known-expensive ticket and raise the flag threshold —
     immediately (pure filter), and it suppresses the alert too."""
