@@ -912,6 +912,41 @@ def app_outlay_export(request: Request, view: str = "tickets"):
         "content-disposition": f'attachment; filename="outlay-{view}.csv"'})
 
 
+@app.get("/app/outlay/export.focus.csv")
+def app_outlay_export_focus(request: Request):
+    """FOCUS-aligned per-ticket charge rows (FinOps Open Cost & Usage Spec column
+    names) — load Outlay's attributed spend into any FOCUS-aware FinOps/BI tool."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    report = store.get_outlay_report(acct["id"])
+    if not report:
+        return _redirect("/app/outlay")
+    return PlainTextResponse(outlay_app.report_focus_csv(report), media_type="text/csv",
+                             headers={"content-disposition": 'attachment; filename="outlay-focus.csv"'})
+
+
+@app.get("/api/v1/spend")
+def api_v1_spend(request: Request):
+    """Token-authed spend export for BI/warehouse pipelines. Bearer (or
+    x-modelpilot-key) API key → the account's latest report as FOCUS-aligned rows.
+    Read-only; returns the same attributed numbers shown in the console."""
+    auth = request.headers.get("authorization", "")
+    tok = auth[7:].strip() if auth[:7].lower() == "bearer " else request.headers.get("x-modelpilot-key", "")
+    resolved = store.resolve_api_key(tok) if tok else None
+    if not resolved:
+        return JSONResponse({"error": "invalid api key"}, status_code=401)
+    report = store.get_outlay_report(resolved["account_id"])
+    if not report:
+        return JSONResponse({"account_id": resolved["account_id"], "period": None,
+                             "currency": "USD", "total_usd": 0.0, "rows": []})
+    rows = outlay_app.focus_rows(report)
+    total = round(sum(float(r.get("BilledCost") or 0) for r in rows), 6)
+    period = {"start": rows[0]["ChargePeriodStart"], "end": rows[0]["ChargePeriodEnd"]} if rows else None
+    return JSONResponse({"account_id": resolved["account_id"], "period": period,
+                         "currency": "USD", "total_usd": total, "rows": rows})
+
+
 @app.get("/app/outlay/close-report.html", response_class=HTMLResponse)
 def app_outlay_close_report(request: Request):
     """A printable finance close report — the VP-ready audit readout for the current

@@ -1325,7 +1325,10 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                   '<span class=sp></span>'
                   '<span class=muted style="font-size:12.5px">Export CSV:</span>'
                   '<a href="/app/outlay/export.csv?view=tickets">by ticket</a>'
-                  '<a href="/app/outlay/export.csv?view=classes">by work type</a></div>')
+                  '<a href="/app/outlay/export.csv?view=classes">by work type</a>'
+                  '<a href="/app/outlay/export.focus.csv" '
+                  'title="FinOps Open Cost &amp; Usage Spec column names — load into any FOCUS-aware BI tool">'
+                  'FOCUS</a></div>')
     else:
         olinks = ('<div class=olinks>'
                   '<a href="/app/outlay/accuracy">How accurate is this? →</a>'
