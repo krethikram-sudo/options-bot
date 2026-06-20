@@ -84,6 +84,14 @@ def parse_github_issues(data: Union[str, Path, list, dict]) -> list[WorkItem]:
                 merged_at=_ts(rec.get("merged_at")),
             )
         )
+    # If the export also carries pull requests, recover the branch→ticket link from
+    # their closing references — so a branch that never names a ticket still
+    # attributes. (No `pulls` key → no-op, fully backward compatible.)
+    if isinstance(data, dict):
+        pulls = data.get("pulls") or data.get("pull_requests")
+        if pulls:
+            from ..link import link_branches
+            link_branches(items, pulls, source="github")
     return items
 
 
