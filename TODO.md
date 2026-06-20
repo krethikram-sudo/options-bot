@@ -100,6 +100,15 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — drill-down, anomaly tuning, finance close report (PRs #111-113)
+- [x] **Drill-down** (#111): team & work-type rows on Spend link to `/app/outlay/scope` — the tickets behind
+      that scope, biggest first, runaway outliers flagged, CSV export.
+- [x] **Anomaly tuning** (#112): per-account threshold (floors 3×) + muted tickets; Spend card has a threshold
+      tuner, per-row mute, unmute list; muted/below-threshold tickets don't display or alert. Pure filter (no re-run).
+- [x] **Finance close report** (#113): wired `outlay/readout.py` into the console — `/app/outlay/close-report.html`
+      renders the printable VP audit (total, attribution, forecast, flags, accuracy, cost-fidelity proof) for
+      print-to-PDF. Linked from Spend. 291 tests.
+
 ### 2026-06-20 — weekly spend digest: proactive retention (PR #109)
 - [x] Customer-facing weekly email (total + WoW trend, top team/work-type, coverage, budget status, runaway
       tickets, reconciliation, dashboard link). `console/spend_digest.py` (pure builder + sweep);
