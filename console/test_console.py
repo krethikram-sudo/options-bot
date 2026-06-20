@@ -2025,6 +2025,36 @@ def test_parse_cost_export_autodetects_provider():
     assert outlay_app.parse_cost_export("not json or recognizable") == (0.0, "")
 
 
+def test_anomaly_tuning_mute_and_threshold(env, client, monkeypatch):
+    """Customers can mute a known-expensive ticket and raise the flag threshold —
+    immediately (pure filter), and it suppresses the alert too."""
+    from console import notify, server, store
+    _signup(client, email="tune@x.com")
+    acct = store.get_account_by_email("tune@x.com")
+    client.post("/app/outlay/sample", follow_redirects=True)  # has GH-106 at ~11.5x
+
+    spend = client.get("/app/outlay").text
+    assert "anomaly/mute" in spend and "anomaly/threshold" in spend  # controls present
+
+    # mute → muted set + chip
+    client.post("/app/outlay/anomaly/mute", data={"ticket_id": "GH-106"}, follow_redirects=True)
+    assert "GH-106" in store.get_anomaly_prefs(acct["id"])[1]
+    assert "Muted (1)" in client.get("/app/outlay").text
+
+    # a muted ticket does NOT alert
+    calls = []
+    monkeypatch.setattr(notify, "send_anomaly_alert", lambda *a, **k: (calls.append(a), True)[1])
+    server._check_anomalies(acct["id"], store.get_outlay_report(acct["id"]))
+    assert calls == []
+
+    # unmute + raise/lower threshold (floors at 3x)
+    client.post("/app/outlay/anomaly/unmute", data={"ticket_id": "GH-106"}, follow_redirects=True)
+    client.post("/app/outlay/anomaly/threshold", data={"threshold": "20"}, follow_redirects=True)
+    assert store.get_anomaly_prefs(acct["id"])[0] == 20.0
+    client.post("/app/outlay/anomaly/threshold", data={"threshold": "1"}, follow_redirects=True)
+    assert store.get_anomaly_prefs(acct["id"])[0] == 3.0
+
+
 def test_scope_drilldown_from_spend(env, client):
     """Clicking a work-type / team row drills into the tickets behind it."""
     _signup(client, email="dr@x.com")

@@ -6,6 +6,7 @@ consistent with the existing dashboard/ingest pages.
 """
 
 import html
+import json as _json
 import os
 import time
 from datetime import datetime, timezone
@@ -744,10 +745,30 @@ def _budget_strip(statuses: list[dict] | None) -> str:
             f'<a href="/app/outlay/budgets">manage budgets →</a></div>')
 
 
-def _anomaly_strip(report: dict) -> str:
+def _anomaly_prefs(conn: dict | None) -> tuple[float, set]:
+    """(threshold, muted_ids) from the stored connection row — floored at 3×."""
+    conn = conn or {}
+    thr = conn.get("anomaly_threshold")
+    thr = float(thr) if thr and thr >= 3.0 else 3.0
+    try:
+        muted = set(_json.loads(conn.get("muted_tickets") or "[]"))
+    except (ValueError, TypeError):
+        muted = set()
+    return thr, muted
+
+
+def _visible_anomalies(report: dict, threshold: float, muted) -> list:
+    """Anomalies after the customer's tuning: at/above their threshold and not muted.
+    Each anomaly carries its ratio, so this is a pure filter — no re-run needed."""
+    muted = muted or set()
+    return [a for a in ((report or {}).get("anomalies") or [])
+            if a.get("ratio", 0) >= threshold and a.get("ticket_id") not in muted]
+
+
+def _anomaly_strip(report: dict, threshold: float = 3.0, muted=None) -> str:
     """One-line Overview banner: N runaway tickets and the spend above their class
     median. The guardrail that binds on outliers, not on every task."""
-    an = (report or {}).get("anomalies") or []
+    an = _visible_anomalies(report, threshold, muted)
     if not an:
         return ""
     over = sum(max(0.0, a.get("cost_usd", 0) - a.get("class_median_usd", 0)) for a in an)
@@ -760,28 +781,60 @@ def _anomaly_strip(report: dict) -> str:
             f'<a href="/app/outlay">review →</a></div>')
 
 
-def _anomaly_card(report: dict) -> str:
-    """The runaway-ticket detail: each outlier, its cost vs its work-type median,
-    and how many times over. Sorted worst-first (already sorted by the engine)."""
-    an = (report or {}).get("anomalies") or []
-    if not an:
+def _anomaly_card(report: dict, threshold: float = 3.0, muted=None, controls: bool = False) -> str:
+    """The runaway-ticket detail: each outlier, its cost vs its work-type median, and
+    how many times over. With `controls`, adds a threshold tuner, per-row mute, and
+    an unmute list — so a known-expensive ticket can be silenced and the bar raised."""
+    muted = muted or set()
+    an = _visible_anomalies(report, threshold, muted)
+    raw = (report or {}).get("anomalies") or []
+    if not an and not (controls and (muted or raw)):
         return ""
-    worst = an[0].get("ratio", 1) or 1
+    worst = (an[0].get("ratio", 1) if an else 1) or 1
     rows = ""
-    for a in an[:8]:
+    for a in an[:12]:
         ratio = a.get("ratio", 0)
         col = "var(--red)" if ratio >= 5 else "var(--amber)"
         med = a.get("class_median_usd", 0)
-        rows += (f'<div class=erow><span class=nm>{_e(a.get("ticket_id"))} '
+        tid = a.get("ticket_id")
+        mute_btn = (f'<form method=post action="/app/outlay/anomaly/mute" style="margin:0 0 0 8px;display:inline">'
+                    f'<input type=hidden name=ticket_id value="{_e(tid)}">'
+                    f'<button class="btn sec sm" style="padding:1px 7px;font-size:11px">mute</button></form>'
+                    if controls else "")
+        rows += (f'<div class=erow><span class=nm>{_e(tid)} '
                  f'<small>· {_e(a.get("task_class"))} · vs {money(med)} median</small></span>'
                  f'<span class=amt>{money(a.get("cost_usd", 0))} '
-                 f'<span style="color:{col};font-weight:600;font-size:12px">{ratio:.0f}×</span></span>'
+                 f'<span style="color:{col};font-weight:600;font-size:12px">{ratio:.0f}×</span>{mute_btn}</span>'
                  f'<div class=ebar><span style="width:{min(100, ratio / worst * 100):.0f}%;'
                  f'background:{col}"></span></div></div>')
+    if not rows:
+        rows = '<p class=muted style="font-size:13px;margin:0">No tickets above your current threshold.</p>'
+
+    tuner = ""
+    if controls:
+        unmute = ""
+        if muted:
+            chips = "".join(
+                f'<form method=post action="/app/outlay/anomaly/unmute" style="margin:0;display:inline">'
+                f'<input type=hidden name=ticket_id value="{_e(m)}">'
+                f'<button class="btn sec sm" style="padding:1px 7px;font-size:11px">{_e(m)} ✕</button></form>'
+                for m in sorted(muted))
+            unmute = (f'<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">'
+                      f'<span class=muted style="font-size:12px">Muted ({len(muted)}):</span>{chips}</div>')
+        tuner = (
+            f'<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);'
+            f'display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+            f'<form method=post action="/app/outlay/anomaly/threshold" style="margin:0;display:flex;gap:6px;align-items:center">'
+            f'<span class=muted style="font-size:12.5px">Flag at</span>'
+            f'<input name=threshold type=number min=3 max=50 step=1 value="{threshold:.0f}" '
+            f'style="width:64px;padding:5px 8px;border:1px solid var(--line);border-radius:8px">'
+            f'<span class=muted style="font-size:12.5px">× class median</span>'
+            f'<button class="btn sec sm">Apply</button></form></div>{unmute}')
+
     return (f'<div class=ocard><div class=dh>Runaway tickets'
-            f'<span class=sub>&ge;3&times; their work-type median</span></div>{rows}'
+            f'<span class=sub>&ge;{threshold:.0f}&times; their work-type median</span></div>{rows}'
             f'<p class=muted style="font-size:12px;margin-top:10px">Where a single ticket is burning far '
-            f'more than its peers — the place to look first, not an average everyone pays.</p></div>')
+            f'more than its peers — the place to look first, not an average everyone pays.</p>{tuner}</div>')
 
 
 def _sample_strip(report: dict) -> str:
@@ -990,7 +1043,8 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     fidelity = f'<div style="margin-top:16px">{fidelity}</div>' if fidelity else ""
 
     body = (chooser + head + _persona_switch(persona) + _sample_strip(report) + checklist
-            + _budget_strip(statuses) + _anomaly_strip(report) + _kpis_row(report, history, persona)
+            + _budget_strip(statuses) + _anomaly_strip(report, *_anomaly_prefs(conn))
+            + _kpis_row(report, history, persona)
             + _recon_strip(report) + _pricing_warn(report)
             + fidelity + tm_row
             + '<div class=ogrid style="margin-top:16px">' + _forecast_card(report)
@@ -1092,7 +1146,8 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
         team_card = (f'<div class=ocard><div class=dh>Spend by team / cost-center'
                      f'<span class=sub>allocation</span></div>{trows}</div>')
 
-    anomaly_card = _anomaly_card(report)
+    _athr, _amuted = _anomaly_prefs(conn)
+    anomaly_card = _anomaly_card(report, _athr, _amuted, controls=True)
     anomaly_row = f'<div style="margin-top:16px">{anomaly_card}</div>' if anomaly_card else ""
 
     # Attribution-only grid — forecast/estimate now live on Overview and their

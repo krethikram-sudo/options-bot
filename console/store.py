@@ -300,6 +300,8 @@ _MIGRATIONS = [
     "ALTER TABLE outlay_connections ADD COLUMN alerted_anomalies TEXT",  # JSON: ticket ids already alerted
     "ALTER TABLE accounts ADD COLUMN digest_weekly INTEGER NOT NULL DEFAULT 1",  # weekly spend digest on/off
     "ALTER TABLE accounts ADD COLUMN digest_last_at REAL",  # last weekly digest send time
+    "ALTER TABLE outlay_connections ADD COLUMN anomaly_threshold REAL",  # runaway flag multiple (default 3x)
+    "ALTER TABLE outlay_connections ADD COLUMN muted_tickets TEXT",  # JSON: ticket ids muted from anomalies
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -738,6 +740,62 @@ def outlay_history(account_id: int, limit: int = 12, path: str | None = None) ->
             d["breakdown"] = {}
         out.append(d)
     return out
+
+
+ANOMALY_THRESHOLD_DEFAULT = 3.0
+
+
+def _upsert_connection_field(account_id: int, field: str, value, path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        exists = conn.execute("SELECT 1 FROM outlay_connections WHERE account_id=?",
+                              (account_id,)).fetchone()
+        if exists:
+            conn.execute(f"UPDATE outlay_connections SET {field}=? WHERE account_id=?",
+                         (value, account_id))
+        else:
+            conn.execute(f"INSERT INTO outlay_connections(account_id, {field}) VALUES(?,?)",
+                         (account_id, value))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_anomaly_prefs(account_id: int, path: str | None = None) -> tuple[float, set]:
+    """(threshold_multiple, muted_ticket_ids). Threshold floors at the default 3x;
+    muting hides a known-expensive ticket from the runaway flags and alerts."""
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT anomaly_threshold, muted_tickets FROM outlay_connections "
+                          "WHERE account_id=?", (account_id,)).fetchone()
+    finally:
+        conn.close()
+    if not row:
+        return ANOMALY_THRESHOLD_DEFAULT, set()
+    thr = row["anomaly_threshold"]
+    thr = float(thr) if thr and thr >= ANOMALY_THRESHOLD_DEFAULT else ANOMALY_THRESHOLD_DEFAULT
+    try:
+        muted = set(json.loads(row["muted_tickets"] or "[]"))
+    except (ValueError, TypeError):
+        muted = set()
+    return thr, muted
+
+
+def set_anomaly_threshold(account_id: int, threshold: float, path: str | None = None) -> None:
+    thr = max(ANOMALY_THRESHOLD_DEFAULT, min(50.0, float(threshold)))
+    _upsert_connection_field(account_id, "anomaly_threshold", thr, path)
+
+
+def mute_ticket(account_id: int, ticket_id: str, path: str | None = None) -> None:
+    _, muted = get_anomaly_prefs(account_id, path)
+    muted.add(str(ticket_id))
+    _upsert_connection_field(account_id, "muted_tickets", json.dumps(sorted(muted)), path)
+
+
+def unmute_ticket(account_id: int, ticket_id: str, path: str | None = None) -> None:
+    _, muted = get_anomaly_prefs(account_id, path)
+    muted.discard(str(ticket_id))
+    _upsert_connection_field(account_id, "muted_tickets", json.dumps(sorted(muted)), path)
 
 
 def set_digest_weekly(account_id: int, on: bool, path: str | None = None) -> None:
