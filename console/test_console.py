@@ -1682,6 +1682,32 @@ def test_outlay_csv_export(env, client):
     assert "/app/outlay/export.csv?view=people" in client.get("/app/outlay").text
 
 
+def test_api_rate_limiting_per_key(env, client, monkeypatch):
+    from console import server, store
+    _signup(client, email="rl@x.com")
+    acct = store.get_account_by_email("rl@x.com")
+    dep = store.deployments_for(acct["id"])[0]["deployment_id"]
+    key = store.create_api_key(acct["id"], dep, "rl")["full_key"]
+    h = {"Authorization": f"Bearer {key}"}
+
+    monkeypatch.setattr(server, "_API_RATE_LIMIT", 3)
+    server._rate_state.clear()
+    # first 3 within the window succeed
+    for _ in range(3):
+        assert client.get("/api/v1/data-quality", headers=h).status_code == 200
+    # 4th is throttled with a structured 429 + Retry-After
+    r = client.get("/api/v1/data-quality", headers=h)
+    assert r.status_code == 429 and int(r.headers["Retry-After"]) >= 1
+    assert r.json()["error"] == "rate limit exceeded" and r.json()["retry_after"] >= 1
+    # the limit is per key — a different key is unaffected
+    key2 = store.create_api_key(acct["id"], dep, "rl2")["full_key"]
+    assert client.get("/api/v1/spend", headers={"Authorization": f"Bearer {key2}"}).status_code == 200
+    # auth is checked before the limiter: a bad key is still 401, not 429
+    assert client.get("/api/v1/data-quality",
+                      headers={"Authorization": "Bearer mp_live_nope"}).status_code == 401
+    server._rate_state.clear()
+
+
 def test_data_quality_verdict_engine():
     import time
     from console import outlay_app

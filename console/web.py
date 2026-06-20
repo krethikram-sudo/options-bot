@@ -2592,6 +2592,9 @@ def api_page(account: dict, keys: list[dict], deployments: list[dict],
       <h2 style="margin-top:0">Authentication</h2>
       <p class="small muted">Create a key below, then send it as a bearer token on every request. Keys are
       shown once, hashed at rest, and revocable. The <code>x-modelpilot-key: &lt;key&gt;</code> header works too.</p>
+      <p class="small muted">Requests are rate-limited per key; over the limit returns <code>429</code> with a
+      <code>Retry-After</code> header. The data refreshes on your sync cadence, so polling faster than that
+      adds nothing — once a day (or after a sync) is plenty.</p>
     </div>
 
     <div class=card style="margin-top:16px">
