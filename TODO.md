@@ -100,6 +100,16 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — real-data proof (dogfood)
+- [x] **Cost-fidelity proof on our own real usage** (PR #90). New `outlay/proof.py` `cost_fidelity(events)`
+      quantifies cache-aware (correct) vs naive token-count costing; wired into `outlay/dogfood.py` with a
+      `--proof-only` mode that runs on local Claude Code transcripts alone (no repo/token). **Result on this
+      repo's build sessions: $340 real spend vs $2,516 naive — a 7.4× overstatement, because 98% of input-side
+      tokens (489.5M of 499.7M) were cache reads.** Honest write-up in `modelpilot/OUTLAY_PROOF.md`, explicit
+      that this proves correct costing but NOT ticket-coverage/forecast-accuracy here (our single-branch squash
+      workflow can't exercise the join; those are measured per-customer). 261 tests pass. Reproduce:
+      `python -m outlay.dogfood --proof-only`.
+
 ### 2026-06-20 — product experience: navigable IA + guided connect + Overview home
 - [x] **Overview trend + movers, Team page on the design system** (PR #88). Overview gained a
       **Spend-trend** card (larger sparkline of total spend over recent refreshes + Δ vs last sync) and a
