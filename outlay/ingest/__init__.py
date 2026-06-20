@@ -29,6 +29,11 @@ from .bedrock import (
     parse_bedrock_log_text,
 )
 from .claude_code import parse_claude_code_dir, parse_claude_code_transcript
+from .vertex import (
+    parse_vertex_log_file,
+    parse_vertex_log_text,
+    parse_vertex_logs,
+)
 from .cursor import CursorAdminClient, parse_cursor_events
 from .github_issues import GitHubIssuesClient, parse_github_issues
 from .jira import JiraClient, parse_jira_issues
@@ -60,4 +65,7 @@ __all__ = [
     "parse_bedrock_invocation_logs",
     "parse_bedrock_log_text",
     "parse_bedrock_log_file",
+    "parse_vertex_logs",
+    "parse_vertex_log_text",
+    "parse_vertex_log_file",
 ]

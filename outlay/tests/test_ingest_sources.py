@@ -196,3 +196,31 @@ def test_cost_report_parse_and_paginate():
     client = AnthropicAdminClient(api_key="sk-ant-admin-test", transport=transport)
     assert client.pull_cost("2026-06-01T00:00:00Z") == 5.5
     assert calls["n"] == 2
+
+
+def test_vertex_logs_parse_and_price():
+    """Google Vertex (Claude) log export -> UsageEvents priced on the Claude table."""
+    from outlay.ingest import parse_vertex_log_file
+    from outlay.ingest.vertex import normalize_vertex_model
+    from outlay.pricing import cost_usd
+
+    events = parse_vertex_log_file(FIX / "vertex_logs.jsonl")
+    assert len(events) == 3                       # zero-token line dropped
+    e = events[0]
+    assert e.provider == "vertex" and e.model == "claude-sonnet-4-6"
+    assert e.input_tokens == 1500 and e.cache_read_tokens == 900
+    assert e.user == "payments-svc@acme.iam.gserviceaccount.com"
+    assert any(x.model == "claude-haiku-4-5" and x.user == "alice@acme.com" for x in events)
+    opus = [x for x in events if x.model == "claude-opus-4-8"][0]
+    assert opus.cache_write_tokens == 400
+    assert all(cost_usd(x) > 0 for x in events)   # Claude models price directly
+    assert normalize_vertex_model("publishers/anthropic/models/claude-opus-4-8@20250101") == "claude-opus-4-8"
+
+
+def test_vertex_user_map_team_fidelity():
+    from outlay.ingest import parse_vertex_log_file
+    events = parse_vertex_log_file(FIX / "vertex_logs.jsonl",
+                                   user_map={"payments-svc@acme.iam.gserviceaccount.com": "pay@acme.com"})
+    ident = IdentityGraph(user_to_team={"pay@acme.com": "growth"})
+    res = attribute(events, [], engine=JoinEngine([], identity=ident))
+    assert "growth" in {r.team_id for r in res.rows if r.team_id}
