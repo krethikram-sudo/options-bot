@@ -34,7 +34,29 @@ from ..models import UsageEvent
 from ._http import Transport, get_json
 
 USAGE_URL = "https://api.anthropic.com/v1/organizations/usage_report/messages"
+COST_URL = "https://api.anthropic.com/v1/organizations/cost_report"
 ANTHROPIC_VERSION = "2023-06-01"
+
+
+def parse_cost_report(report: dict) -> float:
+    """Sum the org Cost Report into a single USD total for the window.
+
+    This is Anthropic's own *billed* figure — the truth source we reconcile our
+    token-normalized costs against. Each bucket carries `results` rows with an
+    `amount` (USD). Tolerates a few field-name variants."""
+    total = 0.0
+    for bucket in report.get("data", []):
+        for row in bucket.get("results", []):
+            amt = row.get("amount")
+            if amt is None:
+                amt = row.get("cost", row.get("amount_usd", 0))
+            if isinstance(amt, dict):  # {"amount": "1.23", "currency": "USD"}
+                amt = amt.get("amount", amt.get("value", 0))
+            try:
+                total += float(amt)
+            except (TypeError, ValueError):
+                continue
+    return round(total, 2)
 
 
 def _ts(value) -> datetime:
@@ -141,3 +163,29 @@ class AnthropicAdminClient:
 
     def pull(self, starting_at: str, **kw) -> list[UsageEvent]:
         return parse_admin_usage_report(self.fetch(starting_at, **kw))
+
+    def fetch_cost_report(self, starting_at: str, ending_at: Optional[str] = None,
+                          bucket_width: str = "1d", limit: int = 1000) -> dict:
+        """Fetch all pages of the org Cost Report, merged into one `{"data": [...]}`."""
+        from urllib.parse import urlencode
+
+        params = [("starting_at", starting_at), ("bucket_width", bucket_width), ("limit", str(limit))]
+        if ending_at:
+            params.append(("ending_at", ending_at))
+        merged: list[dict] = []
+        page: Optional[str] = None
+        while True:
+            q = list(params)
+            if page:
+                q.append(("page", page))
+            resp = get_json(f"{COST_URL}?{urlencode(q)}", self._headers(), self._transport)
+            merged.extend(resp.get("data", []))
+            if resp.get("has_more") and resp.get("next_page"):
+                page = resp["next_page"]
+                continue
+            break
+        return {"data": merged}
+
+    def pull_cost(self, starting_at: str, **kw) -> float:
+        """Anthropic's billed USD total for the window — the reconciliation truth source."""
+        return parse_cost_report(self.fetch_cost_report(starting_at, **kw))

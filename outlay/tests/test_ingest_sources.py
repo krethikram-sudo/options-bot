@@ -171,3 +171,28 @@ def test_bedrock_user_map_and_team_fidelity():
     assert "growth" in teams and "platform" in teams
     fids = {r.fidelity for r in res.rows}
     assert fids <= {FidelityTier.TEAM, FidelityTier.INVOICE}  # no branch -> never ticket-level
+
+
+def test_cost_report_parse_and_paginate():
+    """The org Cost Report (Anthropic's billed USD) parses + paginates -> reconciliation source."""
+    from outlay.ingest import parse_cost_report
+    from outlay.ingest.anthropic_admin import AnthropicAdminClient
+
+    rep = {"data": [{"results": [{"amount": "6.40", "currency": "USD"}]},
+                    {"results": [{"amount": "6.60"}]}]}
+    assert parse_cost_report(rep) == 13.0
+
+    pages = [
+        {"data": [{"results": [{"amount": "2.00"}]}], "has_more": True, "next_page": "p2"},
+        {"data": [{"results": [{"amount": "3.50"}]}], "has_more": False},
+    ]
+    calls = {"n": 0}
+
+    def transport(method, url, headers, body):
+        assert "cost_report" in url
+        i = calls["n"]; calls["n"] += 1
+        return pages[i]
+
+    client = AnthropicAdminClient(api_key="sk-ant-admin-test", transport=transport)
+    assert client.pull_cost("2026-06-01T00:00:00Z") == 5.5
+    assert calls["n"] == 2

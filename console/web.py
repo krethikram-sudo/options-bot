@@ -475,6 +475,30 @@ def _onboarding(conn: dict | None, report: dict | None, has_budget: bool, person
             f'<span class=muted style="font-size:12px">~10 minutes with read-only tokens</span></div>{rows}</div>')
 
 
+def _recon_strip(report: dict) -> str:
+    """Reconciliation banner: Outlay's computed spend vs the provider's billed figure.
+    The thing that lets finance trust the number."""
+    rec = (report or {}).get("reconciliation") or {}
+    inv = rec.get("invoice_usd")
+    if not inv:
+        return ""
+    comp = rec.get("computed_usd", 0.0)
+    dp = rec.get("delta_pct", 0.0)
+    within = abs(dp) <= 5
+    tone, bg, col = (("ok", "var(--grn-l)", "var(--grn-d)") if within
+                     else ("warn", "var(--amber-l)", "var(--amber)"))
+    if within:
+        msg = f"within {abs(dp):.0f}% of your Anthropic invoice"
+    else:
+        msg = (f"{abs(dp):.0f}% {'over' if dp > 0 else 'under'} the invoice — "
+               f"likely uncovered usage or pricing drift")
+    return (f'<div class=ostrip style="background:{bg}"><span>'
+            f'<span class="otag {tone}">reconciled</span> '
+            f'computed <b>{money(comp)}</b> vs billed <b>{money(inv)}</b> · '
+            f'<b style="color:{col}">{msg}</b></span>'
+            f'<span class=muted style="font-size:12px">Anthropic Cost Report</span></div>')
+
+
 def _persona_card(value: str, title: str, desc: str) -> str:
     return (f'<form method=post action="/app/persona" style="margin:0">'
             f'<input type=hidden name=persona value="{value}">'
@@ -726,7 +750,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                   '<button class="btn sec sm">Clear sample data</button></form></div>')
 
     body = (chooser + ohead + _persona_switch(persona) + sample + checklist + bstrip + kpis
-            + sync_line + olinks + grid
+            + _recon_strip(report) + sync_line + olinks + grid
             + '<div style="margin-top:18px">' + _outlay_connect(collapsed=True) + '</div>')
     return page("Spend", body, account, active="/app/outlay")
 
