@@ -127,3 +127,47 @@ def test_http_helpers_use_injected_transport():
 
     assert get_json("http://x", {}, t)["method"] == "GET"
     assert post_json("http://x", {}, {"a": 1}, t)["had_body"] is True
+
+
+def test_bedrock_invocation_logs():
+    """Bedrock model-invocation-log export -> UsageEvents (team-fidelity)."""
+    from outlay.ingest import parse_bedrock_log_file
+    from outlay.ingest.bedrock import normalize_model, actor_from_identity
+    from outlay.pricing import cost_usd
+
+    events = parse_bedrock_log_file(FIX / "bedrock_invocation_logs.jsonl")
+    # 4 records, but one is a zero-token control line -> dropped
+    assert len(events) == 3
+    e = events[0]
+    assert e.provider == "bedrock"
+    assert e.model == "claude-sonnet-4-6"            # region + version stripped, mapped
+    assert e.input_tokens == 1800 and e.output_tokens == 420
+    assert e.cache_read_tokens == 1200               # cache split preserved
+    assert e.user == "PaymentsSvcRole"               # actor from assumed-role ARN
+    # the `usage`-block variant + cache write is parsed too
+    opus = [x for x in events if x.model == "claude-opus-4-8"][0]
+    assert opus.input_tokens == 3000 and opus.cache_write_tokens == 500
+    assert opus.user == "PlatformRole"
+    # iam user ARN resolves to the user name
+    assert any(x.user == "alice" and x.model == "claude-haiku-4-5" for x in events)
+    # every event prices without error (cache-aware)
+    assert all(cost_usd(x) >= 0 for x in events)
+    # model-id + identity helpers
+    assert normalize_model("eu.anthropic.claude-haiku-4-5-v1:0") == "claude-haiku-4-5"
+    assert actor_from_identity({"arn": "arn:aws:iam::1:user/bob"}) == "bob"
+
+
+def test_bedrock_user_map_and_team_fidelity():
+    """A user_map lets the identity graph reach team fidelity on Bedrock spend."""
+    from outlay.ingest import parse_bedrock_log_file
+
+    events = parse_bedrock_log_file(
+        FIX / "bedrock_invocation_logs.jsonl",
+        user_map={"PaymentsSvcRole": "payments@acme.dev", "PlatformRole": "platform@acme.dev"})
+    ident = IdentityGraph(user_to_team={"payments@acme.dev": "growth",
+                                        "platform@acme.dev": "platform"})
+    res = attribute(events, [], engine=JoinEngine([], identity=ident))
+    teams = {r.team_id for r in res.rows if r.team_id}
+    assert "growth" in teams and "platform" in teams
+    fids = {r.fidelity for r in res.rows}
+    assert fids <= {FidelityTier.TEAM, FidelityTier.INVOICE}  # no branch -> never ticket-level
