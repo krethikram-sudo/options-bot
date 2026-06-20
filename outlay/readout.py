@@ -152,6 +152,25 @@ def render_html(
     else:
         savings_block = '<p class="muted">No downgrade opportunities detected in this window.</p>'
 
+    # --- Cost-fidelity proof (lead banner) ---
+    cf = report.get("cost_fidelity") or {}
+    fidelity_block = ""
+    if cf.get("naive_usd") and cf.get("inflation_factor", 0) >= 1.15:
+        fidelity_block = f"""
+    <div class="fidbanner">
+      <div class="fidnums">
+        <div class="fcell"><span class="fl">Outlay · cache-aware</span>
+          <span class="fv num" style="color:var(--grn-d)">{_usd(cf['outlay_usd'])}</span></div>
+        <div class="fx">vs</div>
+        <div class="fcell"><span class="fl">Naive token-count tracker</span>
+          <span class="fv num strike">{_usd(cf['naive_usd'])}</span></div>
+        <div class="fmult">{cf['inflation_factor']:.1f}× overstated</div>
+      </div>
+      <p class="fnote"><b>{_pct(cf.get('cache_read_share', 0))}</b> of input-side tokens were cache reads,
+        billed at ~1/10th of base input. Pricing them at full rate — the common mistake — inflates the bill.
+        Outlay costs each token class correctly, then reconciles to the provider invoice.</p>
+    </div>"""
+
     # --- Accuracy (trust line) ---
     accuracy_block = ""
     if cal and cal.get("n_evaluated", 0) > 0:
@@ -227,6 +246,15 @@ def render_html(
   .pill.watch{{color:var(--amber);background:var(--amber-l)}}
   .cols{{display:grid;grid-template-columns:1fr 1fr;gap:28px}}
   .trust{{background:var(--grn-l);border:1px solid #cfe3d8;border-radius:12px;padding:14px 16px;font-size:13px;color:var(--grn-d);margin-top:8px}}
+  .fidbanner{{background:linear-gradient(180deg,var(--grn-l),#fff);border:1px solid #cfe3d8;border-radius:14px;padding:18px 20px;margin-bottom:24px}}
+  .fidnums{{display:flex;align-items:center;gap:22px;flex-wrap:wrap}}
+  .fcell{{display:flex;flex-direction:column;gap:2px}}
+  .fl{{font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--mut)}}
+  .fv{{font-family:var(--disp);font-weight:700;font-size:27px;color:var(--ink);letter-spacing:-.02em;line-height:1.05}}
+  .fv.strike{{color:var(--mut);text-decoration:line-through;text-decoration-color:var(--amber);text-decoration-thickness:2px}}
+  .fx{{font-size:13px;color:var(--faint);font-style:italic}}
+  .fmult{{margin-left:auto;font-family:var(--disp);font-weight:700;font-size:18px;color:var(--amber);background:var(--amber-l);border-radius:999px;padding:6px 14px}}
+  .fnote{{font-size:12.5px;color:var(--body);margin:12px 0 0;line-height:1.55}}
   .foot{{border-top:1px solid var(--line);margin-top:28px;padding-top:16px;font-size:11.5px;color:var(--mut);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}}
   @media(max-width:720px){{.kpis{{grid-template-columns:1fr 1fr}}.cols{{grid-template-columns:1fr}}}}
   @media print{{body{{background:#fff}}.sheet{{box-shadow:none;border:none;margin:0;max-width:none;border-radius:0}}}}
@@ -245,6 +273,8 @@ def render_html(
       <span style="color:var(--grn)">Read-only · metadata only</span>
     </div>
   </div>
+
+  {fidelity_block}
 
   {kpis}
 

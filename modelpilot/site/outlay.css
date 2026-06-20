@@ -253,6 +253,8 @@
 .prose pre .c{color:#7e8ba5}.prose pre .b{color:#6ee7b7;font-weight:600}.prose pre .y{color:#f4c77b}
 .prose :not(pre)>code{font-family:var(--mono);font-size:.88em;background:var(--paper2);border:1px solid var(--line);
   border-radius:6px;padding:1px 6px;color:var(--navy2)}
+.pbody code{font-family:var(--mono);font-size:.86em;background:var(--paper2);border:1px solid var(--line);
+  border-radius:6px;padding:1px 5px;color:var(--navy2);white-space:nowrap}
 .prose table{width:100%;border-collapse:collapse;font-size:14px;margin:4px 0 18px;display:block;overflow-x:auto}
 .prose table th,.prose table td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line2);vertical-align:top}
 .prose table thead th{font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);background:var(--paper);white-space:nowrap}
