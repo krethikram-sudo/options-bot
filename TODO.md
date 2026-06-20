@@ -100,6 +100,18 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — sync-staleness surfacing + repeated-failure alerting (#1 silent-failure)
+- [x] The audit's #1 customer-trust risk = data that quietly stopped updating (token rotated, cron down)
+      while finance keeps trusting the numbers. Closed the silent path end-to-end:
+- [x] **Consecutive-failure tracking** — `outlay_connections.sync_fail_count` (+ `sync_alerted_at`);
+      `mark_outlay_sync_error` increments + returns the count, `mark_outlay_synced` resets both.
+- [x] **Repeated-failure alert** — when auto-sync fails ≥2× in a row, `_alert_sync_failure` emails the owner
+      (`notify.send_sync_failure_alert`) + posts to Slack once, de-duped on a 12h cooldown so a standing
+      breakage never re-spams. Wired into the cron sweep (`_run_due_syncs`).
+- [x] **Loud staleness banner** — `_staleness_banner` at the top of Spend + Overview: red when auto-sync is
+      failing ("seeing the last good numbers from <date>, not current spend"), amber when data is past ~2× its
+      refresh window (pipeline stalled). Hidden when healthy. 299 tests.
+
 ### 2026-06-20 — FOCUS export + BI/warehouse API (requirements gap, table-stake)
 - [x] Requirements research flagged "Data warehouse / BI export" and "API for integration" as MISSING
       table-stakes for enterprise FinOps. Closed both:

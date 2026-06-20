@@ -997,6 +997,39 @@ def _sample_strip(report: dict) -> str:
             '<button class="btn sec sm">Clear sample data</button></form></div>')
 
 
+def _staleness_banner(report: dict, conn: dict | None) -> str:
+    """Loud, top-of-page banner when the numbers may be stale — the #1 silent
+    failure for a spend tool is data that quietly stopped updating. Fires when
+    auto-sync is failing, or when data is well past its expected refresh window
+    (cron down, token revoked). Stays hidden when the pipeline is healthy."""
+    import time
+    conn = conn or {}
+    synced_at = conn.get("synced_at")
+    asy = conn.get("auto_sync_hours") or 0
+    failing = conn.get("sync_fail_count") or 0
+    # How long since the last *successful* refresh?
+    age_h = ((time.time() - synced_at) / 3600) if synced_at else None
+
+    # Standing auto-sync failure → data is frozen at the last good pull.
+    if failing >= 2 and asy:
+        last = _fmt_date(synced_at) if synced_at else "never"
+        return (f'<div class=ostrip style="background:var(--red-l)">'
+                f'<span><span class="otag over">stale</span> '
+                f'<b style="color:var(--red)">Auto-sync has failed {failing} times.</b> '
+                f"You're seeing the last good numbers from <b>{last}</b>, not current spend. "
+                f'<a href="/app/outlay/connect" style="color:var(--red)">Fix the connection →</a></span></div>')
+    # Auto-sync on and data is past ~2× its interval → the refresh pipeline stalled.
+    if asy and age_h is not None and age_h > 2 * asy:
+        days = age_h / 24
+        when = f"{days:.0f} days" if days >= 1.5 else f"{age_h:.0f} hours"
+        return (f'<div class=ostrip style="background:var(--amber-l)">'
+                f'<span><span class="otag warn">stale</span> '
+                f'<b style="color:var(--amber)">Data is {when} old</b> — older than its '
+                f'{"daily" if asy == 24 else "weekly"} refresh window. The auto-sync may have stalled. '
+                f'<a href="/app/outlay/connect">Check the connection →</a> or refresh now.</span></div>')
+    return ""
+
+
 def _sync_line(report: dict, conn: dict | None) -> str:
     """The 'last refreshed · cadence · manage connection' footer line."""
     conn = conn or {}
@@ -1192,7 +1225,8 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     fidelity = _fidelity_callout(report, persona)
     fidelity = f'<div style="margin-top:16px">{fidelity}</div>' if fidelity else ""
 
-    body = (chooser + head + _persona_switch(persona) + _sample_strip(report) + checklist
+    body = (chooser + head + _persona_switch(persona) + _staleness_banner(report, conn)
+            + _sample_strip(report) + checklist
             + _budget_strip(statuses) + _anomaly_strip(report, *_anomaly_prefs(conn))
             + _kpis_row(report, history, persona)
             + _recon_strip(report) + _pricing_warn(report)
@@ -1344,7 +1378,8 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     cov_diag = _coverage_diag(report)
     cov_diag = f'<div style="margin:16px 0">{cov_diag}</div>' if cov_diag else ""
 
-    body = (chooser + ohead + _persona_switch(persona) + _sample_strip(report) + checklist
+    body = (chooser + ohead + _persona_switch(persona) + _staleness_banner(report, conn)
+            + _sample_strip(report) + checklist
             + _budget_strip(statuses) + kpis + _recon_strip(report) + _pricing_warn(report)
             + cov_diag + _sync_line(report, conn) + olinks + grid)
     return page("Spend", body, account, active="/app/outlay")

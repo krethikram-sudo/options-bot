@@ -129,6 +129,21 @@ def send_anomaly_alert(email: str, anomalies: list, product: str = "Outlay") -> 
     return send_email(email, subject, body)
 
 
+def send_sync_failure_alert(email: str, fails: int, last_error: str = "",
+                            since: str = "", product: str = "Outlay") -> bool:
+    """Email the owner when auto-sync has failed repeatedly — stale data is the
+    #1 silent failure (you trust numbers that quietly stopped updating)."""
+    subject = f"{product}: auto-sync is failing — your spend data is going stale"
+    stale = f" Your data hasn't refreshed since {since}." if since else ""
+    body = (f"{product} couldn't refresh your spend data on the last {fails} attempts."
+            f"{stale}\n\n"
+            f"Most recent error:\n  {last_error or 'unknown'}\n\n"
+            f"This usually means a tracker/API token was rotated or revoked. Until it's "
+            f"fixed, the dashboard shows the last good numbers — not current spend.\n\n"
+            f"Fix the connection:\n{base_url()}/app/outlay/connect\n\n— {product}")
+    return send_email(email, subject, body)
+
+
 def send_budget_alert(email: str, level: str, spend: float, budget: float,
                       scope: str = "", product: str = "Outlay") -> bool:
     """Budget warn/over email. `scope` (e.g. 'team "platform"') and `product`
