@@ -100,6 +100,21 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — QA hardening: no confidently-wrong numbers (PR #100)
+- [x] **Fallback pricing surfaced** — unknown model ids (e.g. a model launched after our last rate update)
+      no longer silently price as Sonnet/gpt-4o. `pricing.model_is_known`; report carries `pricing_fidelity`;
+      amber "priced at nearest tier" strip on Overview/Spend above 0.5%.
+- [x] **Currency guard** — `parse_cost_export` refuses non-USD exports (returns `non_usd`) instead of
+      reconciling a EUR/GBP invoice against a USD total.
+- [x] **No fabricated tickets** — version/release-shaped branches (`release-2.3`, `v1-2`, `hotfix-9`) no
+      longer match the PROJ-123 pattern and invent "RELEASE-2"; real keys still resolve.
+- [x] **Negative token counts clamp to zero** in `cost_usd`. 275 tests pass.
+- [ ] **Open risk (assumption):** ticket coverage depends on branches encoding ticket ids — trunk-based /
+      personal / bot branches yield low coverage. Surfaced honestly; flag in qualification. Future: a proxy
+      / explicit-tag path for teams without ticket-named branches.
+- [ ] **Open risk (scale):** report stored as a JSON blob in sqlite; fine now, a ceiling at millions of
+      events/month. Future: aggregate storage / pagination.
+
 ### 2026-06-20 — reconciliation depth + Compare polish
 - [x] **Multi-provider reconciliation** (PRs #96, #97). Reconciliation ("computed vs billed · within N%")
       was Anthropic-only; now spans every provider. Added cost-report parsers — `parse_bedrock_cost`
