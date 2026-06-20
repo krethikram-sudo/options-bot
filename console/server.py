@@ -510,7 +510,9 @@ def _check_anomalies(account_id: int, report: dict) -> None:
     """Alert on *newly* detected runaway tickets (≥3× their work-type median) — to
     subscribed webhooks and the owner's email. De-duped on ticket id so a standing
     outlier isn't re-emailed every sync; a ticket that drops off and re-spikes does."""
-    anomalies = report.get("anomalies") or []
+    threshold, muted = store.get_anomaly_prefs(account_id)
+    anomalies = [a for a in (report.get("anomalies") or [])
+                 if a.get("ratio", 0) >= threshold and a["ticket_id"] not in muted]
     ids = {a["ticket_id"] for a in anomalies}
     already = store.get_alerted_anomalies(account_id)
     new = [a for a in anomalies if a["ticket_id"] not in already]
@@ -630,6 +632,43 @@ def app_outlay_scope(request: Request, type: str = "team", id: str = ""):
         return redir
     scope_type = type if type in ("team", "class") else "team"
     return _html(web.scope_page(acct, store.get_outlay_report(acct["id"]), scope_type, id))
+
+
+@app.post("/app/outlay/anomaly/mute")
+async def app_anomaly_mute(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    tid = (f.get("ticket_id") or "").strip()
+    if tid:
+        store.mute_ticket(acct["id"], tid)
+    return _redirect("/app/outlay")
+
+
+@app.post("/app/outlay/anomaly/unmute")
+async def app_anomaly_unmute(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    tid = (f.get("ticket_id") or "").strip()
+    if tid:
+        store.unmute_ticket(acct["id"], tid)
+    return _redirect("/app/outlay")
+
+
+@app.post("/app/outlay/anomaly/threshold")
+async def app_anomaly_threshold(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    try:
+        store.set_anomaly_threshold(acct["id"], float(f.get("threshold") or 3))
+    except (TypeError, ValueError):
+        pass
+    return _redirect("/app/outlay")
 
 
 @app.post("/app/persona")
