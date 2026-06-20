@@ -276,6 +276,11 @@ CREATE TABLE IF NOT EXISTS outlay_budgets (
     limit_usd REAL NOT NULL,
     period_days INTEGER NOT NULL DEFAULT 30
 );
+CREATE TABLE IF NOT EXISTS cron_runs (
+    job TEXT PRIMARY KEY,             -- 'sync-due' | 'digest-due'
+    last_run_at REAL NOT NULL,        -- when the scheduler last hit this endpoint
+    detail TEXT                       -- JSON summary of the last run
+);
 """
 
 WEBHOOK_EVENTS = ("budget.warn", "budget.over", "anomaly.detected", "proposal.pending", "account.suspended")
@@ -331,6 +336,53 @@ OTP_MAX_ATTEMPTS = 5   # wrong tries before a code is burned
 TEAM_ROLES = ("admin", "member", "billing")
 
 RESET_TTL = 3600  # password-reset token lifetime (seconds)
+
+
+# Cron jobs we expect a scheduler to drive, and the max age (seconds) before we
+# call a job stale. Both endpoints are meant to run daily; 36h tolerates one miss.
+CRON_JOBS = {"sync-due": 36 * 3600, "digest-due": 36 * 3600}
+
+
+def mark_cron_run(job: str, detail=None, now: float | None = None,
+                  path: str | None = None) -> None:
+    """Stamp that a scheduled job just ran, so a missing scheduler is observable
+    (otherwise the digest/close-pack/retention/redelivery sweeps silently never fire).
+    `detail` may be a dict (JSON-encoded) or a string."""
+    if isinstance(detail, (dict, list)):
+        detail = json.dumps(detail, separators=(",", ":"))
+    conn = connect(path)
+    try:
+        conn.execute(
+            "INSERT INTO cron_runs(job, last_run_at, detail) VALUES(?,?,?)"
+            " ON CONFLICT(job) DO UPDATE SET last_run_at=excluded.last_run_at, detail=excluded.detail",
+            (job, now or time.time(), (detail or "")[:500]))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_cron_runs(path: str | None = None) -> dict:
+    conn = connect(path)
+    try:
+        rows = conn.execute("SELECT job, last_run_at, detail FROM cron_runs").fetchall()
+        return {r["job"]: {"last_run_at": r["last_run_at"], "detail": r["detail"]} for r in rows}
+    finally:
+        conn.close()
+
+
+def cron_health(now: float | None = None, path: str | None = None) -> dict:
+    """Per-job freshness for the health surface: {job: {last_run_at, age_seconds,
+    stale, ran}}. `stale` is True when overdue or never seen."""
+    now = now or time.time()
+    runs = get_cron_runs(path)
+    out = {}
+    for job, max_age in CRON_JOBS.items():
+        r = runs.get(job)
+        last = r["last_run_at"] if r else None
+        age = (now - last) if last else None
+        out[job] = {"last_run_at": last, "age_seconds": age, "ran": bool(last),
+                    "stale": (age is None or age > max_age)}
+    return out
 
 
 def init_db(path: str | None = None) -> None:

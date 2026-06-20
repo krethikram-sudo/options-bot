@@ -100,6 +100,13 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — scheduler health surface (de-risks the cron dependency)
+- [x] Many features only run if a scheduler hits `/internal/outlay/sync-due` + `/internal/outlay/digest-due`
+      daily — a missing scheduler was a silent failure. Now each hit stamps `cron_runs`; `cron_health` computes
+      per-job staleness (overdue >36h or never-run). Surfaced three ways: `GET /api/health` returns `cron_ok` +
+      per-job freshness (for external monitors), a vendor **`/admin/health`** "Scheduler health" page (last run /
+      age / last result, red banner when overdue), and the admin nav. 314 tests.
+
 ### 2026-06-20 — durable webhook redelivery (survives restarts)
 - [x] Follow-up to the retry/log work: the in-thread retries die with the process. Now a still-failing delivery
       persists its signed `payload` + `next_attempt_at`; `redeliver_due_webhooks` (on the daily cron) re-sends it

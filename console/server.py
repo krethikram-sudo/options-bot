@@ -680,6 +680,7 @@ async def app_outlay_sync_due(request: Request):
     if not want or not secrets.compare_digest(got, want):
         return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
     summary = await asyncio.to_thread(_run_due_syncs)
+    store.mark_cron_run("sync-due", summary)
     return JSONResponse({"ok": True, **summary})
 
 
@@ -704,8 +705,9 @@ async def app_outlay_digest_due(request: Request):
     # Piggyback retention enforcement on the daily sweep — purge history past each
     # account's window (belt-and-suspenders to the inline purge on snapshot write).
     retention = await asyncio.to_thread(store.purge_due_outlay_history)
-    return JSONResponse({"ok": True, **summary, "close_pack": close,
-                         "webhooks": webhooks, "retention": retention})
+    result = {**summary, "close_pack": close, "webhooks": webhooks, "retention": retention}
+    store.mark_cron_run("digest-due", result)
+    return JSONResponse({"ok": True, **result})
 
 
 @app.post("/app/digest")
@@ -1673,6 +1675,16 @@ def admin_proposals(request: Request):
     return _html(web.admin_proposals_queue(acct, pending, emails))
 
 
+@app.get("/admin/health", response_class=HTMLResponse)
+def admin_health(request: Request):
+    """Operator view of scheduled-job freshness — so a missing/broken cron
+    scheduler is visible instead of silently skipping the daily sweeps."""
+    acct, redir = _require_admin(request)
+    if redir:
+        return redir
+    return _html(web.admin_health_page(acct, store.cron_health(), store.get_cron_runs()))
+
+
 @app.post("/admin/proposals/bulk")
 async def admin_proposals_bulk(request: Request):
     acct, redir = _require_admin(request)
@@ -2104,7 +2116,16 @@ async def sso_scim_token(request: Request):
 @app.get("/api/health")
 @app.get("/healthz")
 def health():
-    return {"ok": True, "stripe": stripe_billing.enabled()}
+    # `ok` reflects app liveness. `cron` exposes per-job freshness so an external
+    # monitor can alert when the scheduler stops driving the sweeps; `cron_ok` is a
+    # single rollup (False if any expected job is overdue/never-run).
+    try:
+        cron = store.cron_health()
+    except Exception:  # noqa: BLE001 — health must never throw
+        cron = {}
+    return {"ok": True, "stripe": stripe_billing.enabled(),
+            "cron_ok": all(not c["stale"] for c in cron.values()) if cron else True,
+            "cron": cron}
 
 
 def main():
