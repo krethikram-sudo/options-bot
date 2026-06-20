@@ -101,6 +101,12 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 ## ✅ Done
 
 ### 2026-06-20 — real-data proof (dogfood)
+- [x] **Proof on the marketing site + leading the audit readout** (PR #94). Added a "The math" section
+      (+ nav link) to outlay-ai.com showing naive $2,516 vs Outlay cache-aware $340 (7.4×, 98% cache reads),
+      measured + reproducible. The VP-ready printable readout (`outlay/readout.py`) now opens with a
+      cost-fidelity banner above the KPIs, shown only when the gap is material. 264 tests pass. Marketing
+      auto-deploys via Cloudflare Pages on merge.
+
 - [x] **Cost-fidelity proof surfaced in-product** (PR #92). Every report carries `cost_fidelity` (attached
       at build/sync like reconciliation); the Overview shows a "Why this number is the right one" callout —
       cache-aware vs naive total, the inflation factor, and the cache-read share — shown only when the gap is
