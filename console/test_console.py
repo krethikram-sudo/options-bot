@@ -2082,6 +2082,17 @@ def test_coachmark_engine_and_connect_walkthrough(env, client):
     assert "class=srcgrid" in conn and "id=ob-sync" in conn and "name=anthropic_key" in conn
 
 
+def test_show_me_how_entry_points(env, client):
+    """The walkthrough is reachable from the empty-state CTA, the checklist connect
+    steps, and a "Show me how" button on the Connect header."""
+    _signup(client, email="smh@x.com")
+    home = client.get("/app").text  # fresh account → empty state + checklist
+    assert "Show me how" in home
+    assert "/app/outlay/connect?tour=connect" in home           # CTA + checklist deep-link the tour
+    conn = client.get("/app/outlay/connect").text
+    assert "Show me how" in conn and "startConnectTour" in conn  # header button launches it in place
+
+
 def test_scope_drilldown_from_spend(env, client):
     """Clicking a work-type / team row drills into the tickets behind it."""
     _signup(client, email="dr@x.com")
