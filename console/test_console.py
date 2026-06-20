@@ -1501,9 +1501,11 @@ def test_run_due_syncs_records_per_account_error(env, client):
 def test_outlay_onboarding_checklist_shows_and_completes(env, client):
     _, store = env
     _signup(client, email="onb@x.com")
-    # fresh account → checklist visible, nothing done
+    # fresh account → checklist visible; endowed-progress means the account step is
+    # pre-completed, so it opens at "1 of 5" (default persona), never empty
     page = client.get("/app/outlay").text
-    assert "Get set up" in page and "0/4" in page
+    assert "Get set up" in page and "1 of 5" in page
+    assert "Create your account" in page and "ob-bar" in page
 
     # sample data does NOT count as being set up (still a worked example)
     client.post("/app/outlay/sample", follow_redirects=True)

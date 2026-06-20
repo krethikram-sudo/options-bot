@@ -221,6 +221,13 @@ pre{background:var(--paper2);color:var(--navy);padding:16px;border-radius:10px;o
 .fidbig{font-size:25px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.1}
 .fidbig.grn{color:var(--grn-d)}
 .fidbig.naive{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--amber);text-decoration-thickness:2px}
+.ob-bar{height:7px;border-radius:5px;background:var(--paper2);overflow:hidden;margin:4px 0 12px}
+.ob-bar>span{display:block;height:100%;border-radius:5px;background:var(--grn);transition:width .4s ease}
+.ob-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line2,#f1f5f9);font-size:14px}
+.ob-tick{color:var(--grn-d);font-weight:700}
+.ob-dot{color:#cbd5e1}
+.ob-label{color:var(--ink)}
+.ob-done .ob-label{color:#94a3b8;text-decoration:line-through}
 a.nm{text-decoration:none;color:var(--ink)}
 a.nm:hover{color:var(--grn-d);text-decoration:none}
 a.nm .drill{color:var(--faint);font-size:12px;opacity:0;transition:opacity .12s}
@@ -541,25 +548,38 @@ def _onboarding(conn: dict | None, report: dict | None, has_budget: bool, person
         has_tracker = bool(conn.get("github_owner") and conn.get("github_repo") and conn.get("github_token"))
     has_usage = bool(conn.get("anthropic_key") or conn.get("cursor_key"))
     has_report = bool(report) and not (report or {}).get("_sample")
+    has_identity = bool(conn.get("identity_map"))
+    # Endowed progress: the account already exists, so the checklist opens non-empty
+    # (a robust completion nudge — goal-gradient/endowed-progress, Kivetz 2006).
+    # Each step deep-links to the real control; `tour` keys a contextual walkthrough.
     steps = [
-        ("Connect a tracker", has_tracker, "/app/outlay/connect", "Connect"),
-        ("Add an AI-usage key (Anthropic or Cursor)", has_usage, "/app/outlay/connect", "Add key"),
-        ("Run your first sync", has_report, "/app/outlay/connect", "Sync"),
-        ("Set a budget", has_budget, "/app/outlay/budgets", "Set budget"),
+        ("Create your account", True, "/app", "", None),
+        ("Connect a tracker", has_tracker, "/app/outlay/connect", "Connect", "connect"),
+        ("Connect your AI usage", has_usage, "/app/outlay/connect", "Add key", "connect"),
+        ("Run your first audit", has_report, "/app/outlay/connect", "Run", "connect"),
     ]
-    done = sum(1 for _, d, _, _ in steps if d)
-    if done == len(steps):
+    if persona == "finance":
+        # Cost-center allocation is the finance lead view — make it a setup step.
+        steps.append(("Map people to teams", has_identity, "/app/outlay/connect#teams", "Map teams", "teams"))
+    steps.append(("Set a budget", has_budget, "/app/outlay/budgets", "Set a budget", "budgets"))
+
+    total = len(steps)
+    done = sum(1 for s in steps if s[1])
+    if done == total:
         return ""
+    pct = int(round(done / total * 100))
     rows = ""
-    for label, d, href, cta in steps:
-        mark = '<span style="color:#0f6b4f">✓</span>' if d else '<span style="color:#cbd5e1">○</span>'
+    for label, d, href, cta, _tour in steps:
+        mark = ('<span class=ob-tick>✓</span>' if d else '<span class=ob-dot>○</span>')
         action = "" if d else f'<a href="{href}" class="btn sec sm" style="margin-left:auto">{cta}</a>'
-        style = "color:#94a3b8;text-decoration:line-through" if d else ""
-        rows += (f'<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid #f1f5f9">'
-                 f'{mark}<span style="{style}">{_e(label)}</span>{action}</div>')
-    return (f'<div class=card style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:baseline">'
-            f'<h3 style="margin:.2em 0 .2em">Get set up <span class=muted style="font-weight:400">· {done}/{len(steps)}</span></h3>'
-            f'<span class=muted style="font-size:12px">~10 minutes with read-only tokens</span></div>{rows}</div>')
+        cls = " ob-done" if d else ""
+        rows += (f'<div class="ob-row{cls}">{mark}<span class=ob-label>{_e(label)}</span>{action}</div>')
+    return (
+        '<div class="card ob-card" style="margin-bottom:16px">'
+        '<div style="display:flex;justify-content:space-between;align-items:baseline">'
+        f'<h3 style="margin:.2em 0 .2em">Get set up <span class=muted style="font-weight:400">· {done} of {total}</span></h3>'
+        '<span class=muted style="font-size:12px">~10 minutes with read-only tokens</span></div>'
+        f'<div class=ob-bar><span style="width:{pct}%"></span></div>{rows}</div>')
 
 
 def _recon_strip(report: dict) -> str:
