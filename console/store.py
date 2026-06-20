@@ -266,7 +266,7 @@ CREATE TABLE IF NOT EXISTS outlay_budgets (
 );
 """
 
-WEBHOOK_EVENTS = ("budget.warn", "budget.over", "proposal.pending", "account.suspended")
+WEBHOOK_EVENTS = ("budget.warn", "budget.over", "anomaly.detected", "proposal.pending", "account.suspended")
 
 # Columns added after the proposals table first shipped — applied to existing DBs.
 _MIGRATIONS = [
@@ -297,6 +297,7 @@ _MIGRATIONS = [
     "ALTER TABLE pilot_requests ADD COLUMN title TEXT",
     "ALTER TABLE outlay_history ADD COLUMN breakdown TEXT",  # JSON: top team/class spend per snapshot → movers
     "ALTER TABLE outlay_connections ADD COLUMN identity_map TEXT",  # JSON: identifier/domain → team
+    "ALTER TABLE outlay_connections ADD COLUMN alerted_anomalies TEXT",  # JSON: ticket ids already alerted
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -735,6 +736,40 @@ def outlay_history(account_id: int, limit: int = 12, path: str | None = None) ->
             d["breakdown"] = {}
         out.append(d)
     return out
+
+
+def get_alerted_anomalies(account_id: int, path: str | None = None) -> set:
+    """Ticket ids we've already alerted on, so a standing runaway ticket isn't
+    re-emailed every sync (a ticket that drops off and re-spikes will re-alert)."""
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT alerted_anomalies FROM outlay_connections WHERE account_id=?",
+                          (account_id,)).fetchone()
+    finally:
+        conn.close()
+    if not row or not row["alerted_anomalies"]:
+        return set()
+    try:
+        return set(json.loads(row["alerted_anomalies"]))
+    except (ValueError, TypeError):
+        return set()
+
+
+def set_alerted_anomalies(account_id: int, ticket_ids, path: str | None = None) -> None:
+    payload = json.dumps(sorted(str(t) for t in ticket_ids))
+    conn = connect(path)
+    try:
+        exists = conn.execute("SELECT 1 FROM outlay_connections WHERE account_id=?",
+                              (account_id,)).fetchone()
+        if exists:
+            conn.execute("UPDATE outlay_connections SET alerted_anomalies=? WHERE account_id=?",
+                         (payload, account_id))
+        else:
+            conn.execute("INSERT INTO outlay_connections(account_id, alerted_anomalies) VALUES(?,?)",
+                         (account_id, payload))
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def set_outlay_identity_map(account_id: int, identity_map: str | None,

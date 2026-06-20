@@ -739,6 +739,46 @@ def _budget_strip(statuses: list[dict] | None) -> str:
             f'<a href="/app/outlay/budgets">manage budgets →</a></div>')
 
 
+def _anomaly_strip(report: dict) -> str:
+    """One-line Overview banner: N runaway tickets and the spend above their class
+    median. The guardrail that binds on outliers, not on every task."""
+    an = (report or {}).get("anomalies") or []
+    if not an:
+        return ""
+    over = sum(max(0.0, a.get("cost_usd", 0) - a.get("class_median_usd", 0)) for a in an)
+    top = an[0]
+    return (f'<div class=ostrip style="background:var(--amber-l)">'
+            f'<span><span class="otag warn">anomaly</span> '
+            f'<b style="color:var(--amber)">{len(an)} runaway ticket{"s" if len(an) != 1 else ""}</b> · '
+            f'{money(over)} above class median '
+            f'(worst: <b>{_e(top.get("ticket_id"))}</b> at {top.get("ratio", 0):.0f}×)</span>'
+            f'<a href="/app/outlay">review →</a></div>')
+
+
+def _anomaly_card(report: dict) -> str:
+    """The runaway-ticket detail: each outlier, its cost vs its work-type median,
+    and how many times over. Sorted worst-first (already sorted by the engine)."""
+    an = (report or {}).get("anomalies") or []
+    if not an:
+        return ""
+    worst = an[0].get("ratio", 1) or 1
+    rows = ""
+    for a in an[:8]:
+        ratio = a.get("ratio", 0)
+        col = "var(--red)" if ratio >= 5 else "var(--amber)"
+        med = a.get("class_median_usd", 0)
+        rows += (f'<div class=erow><span class=nm>{_e(a.get("ticket_id"))} '
+                 f'<small>· {_e(a.get("task_class"))} · vs {money(med)} median</small></span>'
+                 f'<span class=amt>{money(a.get("cost_usd", 0))} '
+                 f'<span style="color:{col};font-weight:600;font-size:12px">{ratio:.0f}×</span></span>'
+                 f'<div class=ebar><span style="width:{min(100, ratio / worst * 100):.0f}%;'
+                 f'background:{col}"></span></div></div>')
+    return (f'<div class=ocard><div class=dh>Runaway tickets'
+            f'<span class=sub>&ge;3&times; their work-type median</span></div>{rows}'
+            f'<p class=muted style="font-size:12px;margin-top:10px">Where a single ticket is burning far '
+            f'more than its peers — the place to look first, not an average everyone pays.</p></div>')
+
+
 def _sample_strip(report: dict) -> str:
     """Banner shown while viewing the worked sample dataset rather than real spend."""
     if not report.get("_sample"):
@@ -945,7 +985,7 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     fidelity = f'<div style="margin-top:16px">{fidelity}</div>' if fidelity else ""
 
     body = (chooser + head + _persona_switch(persona) + _sample_strip(report) + checklist
-            + _budget_strip(statuses) + _kpis_row(report, history, persona)
+            + _budget_strip(statuses) + _anomaly_strip(report) + _kpis_row(report, history, persona)
             + _recon_strip(report) + _pricing_warn(report)
             + fidelity + tm_row
             + '<div class=ogrid style="margin-top:16px">' + _forecast_card(report)
@@ -1044,6 +1084,9 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
         team_card = (f'<div class=ocard><div class=dh>Spend by team / cost-center'
                      f'<span class=sub>allocation</span></div>{trows}</div>')
 
+    anomaly_card = _anomaly_card(report)
+    anomaly_row = f'<div style="margin-top:16px">{anomaly_card}</div>' if anomaly_card else ""
+
     # Attribution-only grid — forecast/estimate now live on Overview and their
     # own pages, so Spend stays focused on "where every dollar went".
     if persona == "finance":
@@ -1051,11 +1094,11 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
         # detail; per-engineer (individual-name) detail is an engineering concern.
         g1 = f'<div class=ogrid>{team_card or class_card}{spend_card}</div>'
         extra = f'<div style="margin-top:16px">{class_card}</div>' if team_card else ""
-        grid = g1 + extra
+        grid = g1 + extra + anomaly_row
     else:
         g1 = f'<div class=ogrid>{spend_card}{class_card}</div>'
         g2 = (f'<div style="margin-top:16px">{people_card}</div>' if people_card else "")
-        grid = g1 + g2
+        grid = g1 + g2 + anomaly_row
 
     if persona == "finance":
         olinks = ('<div class=olinks>'
