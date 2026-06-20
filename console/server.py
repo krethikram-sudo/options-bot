@@ -506,6 +506,29 @@ def _check_budgets(account_id: int, report: dict) -> None:
         store.set_outlay_budget_status(s["id"], new)
 
 
+def _check_anomalies(account_id: int, report: dict) -> None:
+    """Alert on *newly* detected runaway tickets (≥3× their work-type median) — to
+    subscribed webhooks and the owner's email. De-duped on ticket id so a standing
+    outlier isn't re-emailed every sync; a ticket that drops off and re-spikes does."""
+    anomalies = report.get("anomalies") or []
+    ids = {a["ticket_id"] for a in anomalies}
+    already = store.get_alerted_anomalies(account_id)
+    new = [a for a in anomalies if a["ticket_id"] not in already]
+    if new:
+        acct = store.get_account(account_id)
+        email = (acct or {}).get("email")
+        if email:
+            try:
+                notify.send_anomaly_alert(email, new, product="Outlay")
+            except Exception:  # noqa: BLE001 — alerting must never break the sync path
+                pass
+        store.deliver_event(account_id, "anomaly.detected", {
+            "count": len(new),
+            "tickets": [{"ticket_id": a["ticket_id"], "task_class": a["task_class"],
+                         "cost_usd": a["cost_usd"], "ratio": a["ratio"]} for a in new]})
+    store.set_alerted_anomalies(account_id, ids)
+
+
 _AUTO_SYNC_CHOICES = (0, 24, 168)  # off · daily · weekly
 
 
@@ -537,6 +560,7 @@ def _run_due_syncs(now: float | None = None, transport=None) -> dict:
         store.record_outlay_snapshot(account_id, report, now=now)
         store.mark_outlay_synced(account_id, now=now)
         _check_budgets(account_id, report)
+        _check_anomalies(account_id, report)
         synced += 1
     return {"due": len(due), "synced": synced, "failed": failed}
 
@@ -614,6 +638,7 @@ async def app_outlay_run(request: Request):
     store.save_outlay_report(acct["id"], report)
     store.record_outlay_snapshot(acct["id"], report)
     _check_budgets(acct["id"], report)
+    _check_anomalies(acct["id"], report)
     return JSONResponse({"ok": True})
 
 
@@ -716,6 +741,7 @@ async def app_outlay_sync(request: Request):
     store.record_outlay_snapshot(acct["id"], report)
     store.mark_outlay_synced(acct["id"])
     _check_budgets(acct["id"], report)
+    _check_anomalies(acct["id"], report)
     return JSONResponse({"ok": True})
 
 

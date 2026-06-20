@@ -2025,6 +2025,42 @@ def test_parse_cost_export_autodetects_provider():
     assert outlay_app.parse_cost_export("not json or recognizable") == (0.0, "")
 
 
+def test_anomalies_surfaced_on_spend_and_overview(env, client):
+    """Runaway tickets (>=3x class median) show in-product — strip on Overview,
+    card on Spend — not just buried in the report."""
+    _signup(client, email="anom@x.com")
+    client.post("/app/outlay/sample", follow_redirects=True)  # sample has a 11.5x outlier
+    spend = client.get("/app/outlay").text
+    assert "Runaway tickets" in spend
+    home = client.get("/app").text
+    assert "runaway ticket" in home and "anomaly" in home
+
+
+def test_anomaly_alert_fires_once_then_dedupes(env, client, monkeypatch):
+    """A newly-detected runaway ticket alerts the owner once; a standing one isn't
+    re-emailed every sync; it re-alerts if it drops off and re-spikes."""
+    from console import notify, server, store
+    calls = []
+    monkeypatch.setattr(notify, "send_anomaly_alert",
+                        lambda *a, **k: (calls.append(a), True)[1])
+    _signup(client, email="alert@x.com")
+    acct = store.get_account_by_email("alert@x.com")
+
+    report = {"anomalies": [{"ticket_id": "GH-1", "task_class": "feature",
+                             "cost_usd": 500.0, "class_median_usd": 40.0, "ratio": 12.5}]}
+    server._check_anomalies(acct["id"], report)
+    assert len(calls) == 1                                   # alerted once
+    server._check_anomalies(acct["id"], report)
+    assert len(calls) == 1                                   # standing outlier → no re-alert
+    assert store.get_alerted_anomalies(acct["id"]) == {"GH-1"}
+
+    server._check_anomalies(acct["id"], {"anomalies": []})   # drops off
+    assert store.get_alerted_anomalies(acct["id"]) == set()
+    server._check_anomalies(acct["id"], report)              # re-spikes
+    assert len(calls) == 2
+    assert "anomaly.detected" in store.WEBHOOK_EVENTS
+
+
 def test_identity_map_parses_users_domains_keys():
     from console import outlay_app
     ig = outlay_app.identity_graph(

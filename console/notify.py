@@ -95,6 +95,23 @@ def send_pilot_request(lead: dict) -> bool:
     return send_email(to, f"Pilot request — {lead.get('company') or lead.get('email')}", body)
 
 
+def send_anomaly_alert(email: str, anomalies: list, product: str = "Outlay") -> bool:
+    """Email the owner when newly-detected runaway tickets appear — a ticket
+    burning far more than its work-type median is the guardrail that binds."""
+    if not anomalies:
+        return False
+    n = len(anomalies)
+    rows = "\n".join(
+        f"  - {a.get('ticket_id')} ({a.get('task_class')}): ${a.get('cost_usd', 0):,.2f}"
+        f" — {a.get('ratio', 0):.0f}x its work-type median"
+        for a in anomalies[:8])
+    subject = f"{product}: {n} runaway ticket{'s' if n != 1 else ''} detected"
+    body = (f"{n} ticket{'s' if n != 1 else ''} {'are' if n != 1 else 'is'} costing far more than "
+            f"{'their' if n != 1 else 'its'} work-type peers:\n\n{rows}\n\n"
+            f"Review them:\n{base_url()}/app/outlay\n\n— {product}")
+    return send_email(email, subject, body)
+
+
 def send_budget_alert(email: str, level: str, spend: float, budget: float,
                       scope: str = "", product: str = "Outlay") -> bool:
     """Budget warn/over email. `scope` (e.g. 'team "platform"') and `product`
