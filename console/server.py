@@ -50,8 +50,13 @@ async def _startup():
 
         app.state.digest_task = asyncio.create_task(_digest_loop())
 
-    # Auto-sync sweep: in single-process deploys run it in-process; under a real
-    # scheduler hit /internal/outlay/sync-due instead and leave this at 0.
+    # In-process schedulers for single-machine deploys: set the *_EVERY_MIN env vars
+    # and the one always-on machine self-drives every background sweep — no external
+    # cron needed. (Under a real external scheduler, leave these at 0 and POST the
+    # /internal/outlay/* endpoints instead.) Both sweeps are idempotent and cadence-
+    # guarded, so running them as often as hourly only fires genuinely-due work.
+    import asyncio
+
     app.state.autosync_task = None
     every = float(os.environ.get("OUTLAY_AUTOSYNC_EVERY_MIN", "0") or 0)
     if every > 0:
@@ -59,16 +64,32 @@ async def _startup():
             while True:
                 await asyncio.sleep(every * 60)
                 try:
-                    await asyncio.to_thread(_run_due_syncs)
+                    summary = await asyncio.to_thread(_run_due_syncs)
+                    store.mark_cron_run("sync-due", summary)
                 except Exception:  # noqa: BLE001 — a sweep must never crash the server
                     pass
 
         app.state.autosync_task = asyncio.create_task(_autosync_loop())
 
+    # Maintenance sweep: weekly digest + monthly close pack + webhook redelivery +
+    # retention purge (all cadence-guarded). Drives /admin/health 'digest-due'.
+    app.state.maintenance_task = None
+    maint = float(os.environ.get("OUTLAY_MAINTENANCE_EVERY_MIN", "0") or 0)
+    if maint > 0:
+        async def _maintenance_loop():
+            while True:
+                await asyncio.sleep(maint * 60)
+                try:
+                    await asyncio.to_thread(_run_maintenance)
+                except Exception:  # noqa: BLE001 — a sweep must never crash the server
+                    pass
+
+        app.state.maintenance_task = asyncio.create_task(_maintenance_loop())
+
 
 @app.on_event("shutdown")
 async def _shutdown():
-    for name in ("digest_task", "autosync_task"):
+    for name in ("digest_task", "autosync_task", "maintenance_task"):
         task = getattr(app.state, name, None)
         if task is not None:
             task.cancel()
@@ -694,20 +715,24 @@ async def app_outlay_digest_due(request: Request):
     got = auth[7:].strip() if auth[:7].lower() == "bearer " else ""
     if not want or not secrets.compare_digest(got, want):
         return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+    result = await asyncio.to_thread(_run_maintenance)
+    return JSONResponse({"ok": True, **result})
+
+
+def _run_maintenance() -> dict:
+    """The daily maintenance bundle: weekly digest + monthly close pack (both
+    cadence-guarded per account), durable webhook redelivery, and data-retention
+    purge. Idempotent and safe to run as often as hourly — only due work fires.
+    Records the run so /admin/health shows freshness. Shared by the cron endpoint
+    and the in-process scheduler."""
     from . import close_pack, spend_digest
-    summary = await asyncio.to_thread(spend_digest.run_due_digests)
-    # Monthly finance close pack (opt-in) rides the same daily sweep; the 30-day
-    # cadence is enforced per account.
-    close = await asyncio.to_thread(close_pack.run_due_close_packs)
-    # Durably re-send any webhook deliveries that are still failing (survives the
-    # in-thread retries dying with the process).
-    webhooks = await asyncio.to_thread(store.redeliver_due_webhooks)
-    # Piggyback retention enforcement on the daily sweep — purge history past each
-    # account's window (belt-and-suspenders to the inline purge on snapshot write).
-    retention = await asyncio.to_thread(store.purge_due_outlay_history)
+    summary = spend_digest.run_due_digests()
+    close = close_pack.run_due_close_packs()
+    webhooks = store.redeliver_due_webhooks()
+    retention = store.purge_due_outlay_history()
     result = {**summary, "close_pack": close, "webhooks": webhooks, "retention": retention}
     store.mark_cron_run("digest-due", result)
-    return JSONResponse({"ok": True, **result})
+    return result
 
 
 @app.post("/app/digest")

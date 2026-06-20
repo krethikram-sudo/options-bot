@@ -100,6 +100,13 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — in-process scheduler (no external cron needed) + runbook
+- [x] Closed the deploy-risk at the source: the single always-on machine now self-drives the sweeps via env
+      vars (`OUTLAY_AUTOSYNC_EVERY_MIN`, `OUTLAY_MAINTENANCE_EVERY_MIN`, both set to 60 in `fly.toml`).
+      Extracted `_run_maintenance` (digest + close pack + webhook redelivery + retention) shared by the HTTP
+      endpoint and the loop; both loops now record `mark_cron_run` so `/admin/health` reflects them. External
+      cron still supported (set vars to 0 + `OUTLAY_CRON_TOKEN`). Runbook: `console/CRON_SETUP.md`. 315 tests.
+
 ### 2026-06-20 — scheduler health surface (de-risks the cron dependency)
 - [x] Many features only run if a scheduler hits `/internal/outlay/sync-due` + `/internal/outlay/digest-due`
       daily — a missing scheduler was a silent failure. Now each hit stamps `cron_runs`; `cron_health` computes
