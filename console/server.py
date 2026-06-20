@@ -1406,9 +1406,14 @@ async def create_key(request: Request):
     f = await _form(request)
     deps = store.deployments_for(acct["id"])
     dep = f.get("deployment_id") or (deps[0]["deployment_id"] if deps else "")
+    try:
+        exp_days = int(f.get("expires_in_days") or 0) or None
+    except (TypeError, ValueError):
+        exp_days = None
     new_key = ""
     try:
-        new_key = store.create_api_key(acct["id"], dep, f.get("name", ""))["full_key"]
+        new_key = store.create_api_key(acct["id"], dep, f.get("name", ""),
+                                       expires_in_days=exp_days)["full_key"]
     except store.StoreError:
         pass
     # show the key once (never recoverable), on whichever surface created it

@@ -887,6 +887,39 @@ def test_api_key_create_resolve_revoke(env):
     assert store.resolve_api_key("mp_live_bogus") is None and store.resolve_api_key("nope") is None
 
 
+def test_api_key_expiry(env, client):
+    import time
+    _, store = env
+    a = store.create_account("exp@b.com", "password123")
+    dep = store.deployments_for(a["id"])[0]["deployment_id"]
+    out = store.create_api_key(a["id"], dep, "rotating", expires_in_days=30)
+    full = out["full_key"]
+    assert out["expires_at"] and out["expires_at"] > time.time()
+    # valid now
+    assert store.resolve_api_key(full) is not None
+    # rejected once past the expiry (like a revoked key)
+    later = time.time() + 31 * 86400
+    assert store.resolve_api_key(full, now=later) is None
+    # no-expiry keys keep working
+    forever = store.create_api_key(a["id"], dep, "prod")["full_key"]
+    assert store.resolve_api_key(forever, now=later) is not None
+    assert store.list_api_keys(a["id"])[0]["expires_at"] is None  # newest first
+
+    # the create form passes the expiry through; the table shows expired keys
+    from console import server
+    _signup(client, email="expui@b.com")
+    acct = store.get_account_by_email("expui@b.com")
+    client.post("/app/keys", data={"name": "k", "expires_in_days": "30", "from": "api"})
+    k = store.list_api_keys(acct["id"])[0]
+    assert k["expires_at"] is not None
+    # force-expire it and confirm the UI marks it expired
+    conn = store.connect(None)
+    conn.execute("UPDATE api_keys SET expires_at=? WHERE id=?", (time.time() - 10, k["id"]))
+    conn.commit()
+    conn.close()
+    assert "expired" in client.get("/app/api").text
+
+
 def test_meter_authenticates_by_key_and_rejects_bad(env, client):
     _, store = env
     a = store.create_account("k2@b.com", "password123")
