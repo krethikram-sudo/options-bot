@@ -100,6 +100,16 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — landing page: lead with platform breadth + compatibility (research-led)
+- [x] Ran research on how top FinOps/devtool startups (Vantage, CloudZero, Finout, Vanta, Linear, Vercel,
+      Segment, Datadog) advertise integrations/compatibility. Applied honestly (no SOC2 claim we don't hold;
+      "FOCUS-aligned" not "conformant"; no fake warehouse connectors):
+- [x] Expanded the provider strip (Anthropic, OpenAI, Azure, Bedrock, Vertex, Cursor, Claude Code + trackers);
+      new **compatibility trust bar** (data-never-leaves, FOCUS export, BI API, SSO·SAML·SCIM·2FA, audit→SIEM,
+      retention+erasure); new **"Your data, your way"** export/API/SIEM section; new **categorized Integrations**
+      section (Providers / Coding agents / Code & trackers / Warehouse·BI·SIEM); extended privacy → **enterprise
+      governance** guards. Refreshed nav, footer, meta description, hero trustline, reveal animations + CSS.
+
 ### 2026-06-20 — in-process scheduler (no external cron needed) + runbook
 - [x] Closed the deploy-risk at the source: the single always-on machine now self-drives the sweeps via env
       vars (`OUTLAY_AUTOSYNC_EVERY_MIN`, `OUTLAY_MAINTENANCE_EVERY_MIN`, both set to 60 in `fly.toml`).

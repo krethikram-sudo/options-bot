@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Outlay — the control plane for AI compute spend</title>
-<meta name="description" content="Outlay attributes every dollar of LLM and coding-agent spend to the work you already plan — Jira/Linear/GitHub tickets, epics, roadmap — then forecasts cost by scope, holds it to budget with pace-based guardrails, and safely drives it down. Prompts never leave your environment.">
+<meta name="description" content="Outlay attributes every dollar of LLM and coding-agent spend — across Anthropic, OpenAI, Cursor, AWS Bedrock, and Google Vertex — to the Jira/Linear/GitHub tickets, epics, and roadmap that drove it. Forecast by scope, hold to budget, reconcile to the invoice, and export FOCUS-aligned data to your BI tool or warehouse. SSO/SCIM/2FA, audit-log export, configurable retention. Prompts never leave your environment.">
 <link rel="canonical" href="https://outlay-ai.com/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,14 +26,13 @@
   <span class="brand">Outlay<span class="dot">.ai</span></span>
   <div class="navlinks">
     <a href="/#how">How it works</a>
-    <a href="/#owners">For eng &amp; finance</a>
     <a href="/#proof">Attribution</a>
-    <a href="/#math">The math</a>
-    <a href="/#estimate">Estimate</a>
+    <a href="/#data">Export &amp; API</a>
+    <a href="/#integrations">Integrations</a>
+    <a href="/#security">Security</a>
     <a href="/#compare">Compare</a>
     <a href="/#pricing">Pricing</a>
     <a href="/tour">Product Tour</a>
-    <a href="/pilot">Pilot</a>
   </div>
   <div class="navsp"></div>
   <div class="navcta">
@@ -54,8 +53,8 @@
       <a class="btn primary lg" href="https://app.outlay-ai.com/pilot-request">Request a design-partner pilot →</a>
       <a class="btn ghost lg" href="/tour">Take the Product Tour →</a>
     </div>
-    <div class="trustline"><b>Read-only to start</b> · prompts never leave your environment · no app rewrite ·
-      <a href="/security">built for security review →</a></div>
+    <div class="trustline"><b>Every major provider</b> · read-only to start · FOCUS-aligned export + API ·
+      prompts never leave your environment · <a href="/security">built for security review →</a></div>
   </div>
 
   <div class="panel">
@@ -84,11 +83,24 @@
   </div>
 </div></header>
 
-<!-- INTEGRATIONS -->
+<!-- INTEGRATIONS STRIP -->
 <div class="integ"><div class="wrap">
-  <span class="lead">Maps your trackers to your AI tools</span>
-  <span class="pill">Jira</span><span class="pill">Linear</span><span class="pill">GitHub Issues</span>
-  <span class="pill">Claude Code</span><span class="pill">Cursor</span><span class="pill">Anthropic API</span>
+  <span class="lead">Reads spend from every major AI provider</span>
+  <span class="pill">Anthropic</span><span class="pill">OpenAI</span><span class="pill">Azure OpenAI</span>
+  <span class="pill">AWS Bedrock</span><span class="pill">Google Vertex</span>
+  <span class="pill">Claude Code</span><span class="pill">Cursor</span>
+  <span class="pill">Jira</span><span class="pill">Linear</span><span class="pill">GitHub</span>
+</div></div>
+
+<!-- COMPATIBILITY / STANDARDS BAR -->
+<div class="compatbar"><div class="wrap">
+  <span class="lead">Built to your standards — open, portable, auditable</span>
+  <span class="cbadge is-claim"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Data never leaves your environment</span>
+  <span class="cbadge"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>FOCUS-aligned export</span>
+  <span class="cbadge"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/></svg>BI &amp; warehouse API</span>
+  <span class="cbadge"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 5-3.5 7.5-8.5 9C7.5 19.5 4 17 4 12V6l8-3 8 3z" fill="none"/></svg>SSO · SAML · SCIM · 2FA</span>
+  <span class="cbadge"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Audit-log export → SIEM</span>
+  <span class="cbadge">Configurable retention + self-serve erasure</span>
 </div></div>
 
 <!-- TWO OWNERS -->
@@ -269,11 +281,103 @@ epic Q3-stability <span class="w">on pace $22k · over</span></code>
 </div></section>
 
 
-<!-- PRIVACY -->
-<section><div class="wrap">
+<!-- YOUR DATA, YOUR WAY -->
+<section id="data"><div class="wrap">
   <div class="sec-head">
-    <div class="eyebrow">Privacy by architecture</div>
-    <h2>Governance without shipping us your prompts.</h2>
+    <div class="eyebrow">Your data, your way</div>
+    <h2>It's your spend data — take it anywhere.</h2>
+    <p>Outlay is a hub, not a silo. Export <b>FOCUS-aligned</b> cost rows for any FinOps/BI tool, pull them
+       programmatically through a read-only API, and stream your audit log to your SIEM — all reconciled to
+       the provider invoice, to the cent. No lock-in, ever.</p>
+  </div>
+  <div class="flow">
+    <span class="node">Outlay<small>spend mapped to work</small></span>
+    <span class="arrow">→</span>
+    <span class="node">FOCUS CSV · BI API<small>Snowflake, BigQuery, your BI</small></span>
+    <span class="node">Audit-log API<small>Splunk, Datadog, S3</small></span>
+  </div>
+  <div class="ways">
+    <div class="way">
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <h3>FOCUS-aligned export</h3>
+      <p>Per-ticket charge rows using the <b>FinOps Open Cost &amp; Usage Spec</b> column names — load straight into any FOCUS-aware FinOps or BI tool.</p>
+      <code><span class="c"># spec column names · per-ticket rows</span>
+BilledCost,ServiceCategory,<span class="g">Tags{team,work_type}</span></code>
+    </div>
+    <div class="way">
+      <div class="ic"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg></div>
+      <h3>BI &amp; warehouse API</h3>
+      <p>A token-authed, rate-limited endpoint returns your latest report as JSON for any warehouse or BI pipeline — the same attributed numbers as the console.</p>
+      <code>GET /api/v1/spend
+<span class="g">→ { total_usd, rows[], data_quality }</span></code>
+    </div>
+    <div class="way">
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></div>
+      <h3>Audit log → your SIEM</h3>
+      <p>Stream every security event to Splunk, Datadog, or S3 — poll the audit API with a cursor for gap-free ingestion, or export CSV for GRC.</p>
+      <code>GET /api/v1/audit?since=<span class="g">cursor</span></code>
+    </div>
+  </div>
+  <p class="igfoot">Plus HMAC-signed <b>webhooks</b> for budget &amp; anomaly events (retried, with a delivery log), and
+    a printable <b>month-end close pack</b> — emailed automatically with the FOCUS CSV attached.</p>
+</div></section>
+
+<!-- INTEGRATIONS (categorized) -->
+<section id="integrations" class="paper"><div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">Integrations</div>
+    <h2>Works with every model and every tool in your stack.</h2>
+    <p>Outlay reads spend from every major provider and connects it to the systems where the work actually
+       happens — read-only, no app rewrite, no prompts leaving your environment.</p>
+  </div>
+  <div class="integrid">
+    <div class="igcol">
+      <div class="cat"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.5 2.5M16.5 16.5L19 19M19 5l-2.5 2.5M7.5 16.5L5 19"/></svg>AI providers</div>
+      <ul>
+        <li>Anthropic <small>API + admin usage</small></li>
+        <li>OpenAI</li>
+        <li>Azure OpenAI</li>
+        <li>AWS Bedrock</li>
+        <li>Google Vertex</li>
+      </ul>
+    </div>
+    <div class="igcol">
+      <div class="cat"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Coding agents</div>
+      <ul>
+        <li>Claude Code <small>session transcripts</small></li>
+        <li>Cursor <small>admin usage</small></li>
+        <li>CI / remote agents <small>task-tagging</small></li>
+      </ul>
+    </div>
+    <div class="igcol">
+      <div class="cat"><svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 0 0-.9-2.6c3-.3 6.2-1.5 6.2-6.7A5.2 5.2 0 0 0 20 4.8a4.9 4.9 0 0 0-.1-3.6s-1.1-.3-3.6 1.4a12.3 12.3 0 0 0-6.6 0C7.2.9 6.1 1.2 6.1 1.2A4.9 4.9 0 0 0 6 4.8a5.2 5.2 0 0 0-1.4 3.7c0 5.2 3.2 6.4 6.2 6.7a3.4 3.4 0 0 0-.9 2.6V22"/></svg>Code &amp; trackers</div>
+      <ul>
+        <li>GitHub <small>issues + PRs</small></li>
+        <li>Jira</li>
+        <li>Linear</li>
+      </ul>
+    </div>
+    <div class="igcol">
+      <div class="cat"><svg viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><polyline points="7 11 12 16 17 11"/><line x1="12" y1="4" x2="12" y2="16"/></svg>Warehouse, BI &amp; SIEM</div>
+      <ul>
+        <li>FOCUS CSV export</li>
+        <li>BI / warehouse API</li>
+        <li>SIEM audit-log export</li>
+        <li>Webhooks</li>
+      </ul>
+    </div>
+  </div>
+  <p class="igfoot"><b>Reconciles against your provider invoice</b> — Anthropic, AWS Cost Explorer, GCP Cloud
+    Billing, OpenAI Costs — so finance trusts the number, not a token estimate.
+    <a href="https://app.outlay-ai.com/pilot-request">Connect your stack →</a></p>
+</div></section>
+
+
+<!-- PRIVACY + ENTERPRISE GOVERNANCE -->
+<section id="security"><div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">Privacy &amp; enterprise governance</div>
+    <h2>Built to pass your security review.</h2>
     <p>Most spend tools see everything you send. Outlay is built so the sensitive data physically
        can't reach us — purpose-built for teams that <b style="color:var(--ink)">can't let prompts leave
        their environment</b>: healthcare, legal, and financial services.</p>
@@ -288,8 +392,10 @@ epic Q3-stability <span class="w">on pace $22k · over</span></code>
   <div class="guards">
     <div class="guard"><span class="ck">✓</span><div>Connected with <b>read-only tokens</b> — Outlay reads usage metadata (models, token counts) and ticket references, never prompt text or model outputs.</div></div>
     <div class="guard"><span class="ck">✓</span><div>Your API keys and prompts never pass through Outlay — we read your provider's usage data, not your traffic.</div></div>
-    <div class="guard"><span class="ck">✓</span><div>Attribution and budgets are computed from categories, dollars, and ticket IDs — not content.</div></div>
-    <div class="guard"><span class="ck">✓</span><div>Per-deployment isolation, and you can leave anytime — your data stays yours.</div></div>
+    <div class="guard"><span class="ck">✓</span><div><b>SSO / SAML, SCIM</b> provisioning, and <b>2FA</b> — with role-based access (owner / admin / member / billing) and a full audit log.</div></div>
+    <div class="guard"><span class="ck">✓</span><div><b>Configurable data retention</b> and <b>self-serve erasure</b> — set how long history is kept, or wipe ingested data and your account, yourself, anytime.</div></div>
+    <div class="guard"><span class="ck">✓</span><div><b>Audit-log export</b> to your SIEM, signed webhooks, and a rate-limited API with scoped, expiring keys.</div></div>
+    <div class="guard"><span class="ck">✓</span><div>Per-deployment isolation, and you can leave anytime — your data stays yours. <a href="/security">See the security overview →</a></div></div>
   </div>
 </div></section>
 
@@ -459,8 +565,9 @@ epic Q3-stability <span class="w">on pace $22k · over</span></code>
   <span class="sep"></span>
   <a href="https://app.outlay-ai.com/pilot-request">Book a pilot</a>
   <a href="/pilot">Design-partner pilot</a>
-  <a href="#owners">For eng &amp; finance</a>
   <a href="#proof">Attribution</a>
+  <a href="#data">Export &amp; API</a>
+  <a href="#integrations">Integrations</a>
   <a href="#compare">Compare</a>
   <a href="/tour">Product Tour</a>
   <a href="/accuracy">Accuracy</a>
@@ -478,7 +585,7 @@ epic Q3-stability <span class="w">on pace $22k · over</span></code>
   var d=document, reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   if(reduce||!('IntersectionObserver' in window))return;
   // stagger within groups
-  [['.owners',90],['.loop',80],['.feat',70],['.statlist',90],['.guards',60]].forEach(function(g){
+  [['.owners',90],['.loop',80],['.feat',70],['.statlist',90],['.guards',60],['.ways',70],['.integrid',60],['.compatbar .wrap',40]].forEach(function(g){
     d.querySelectorAll(g[0]).forEach(function(grp){
       Array.prototype.forEach.call(grp.children,function(ch,i){ch.style.setProperty('--rd',(i*g[1])+'ms');});
     });
@@ -487,7 +594,7 @@ epic Q3-stability <span class="w">on pace $22k · over</span></code>
   var htext=d.querySelector('.hero .herogrid>div'), panel=d.querySelector('.hero .panel');
   if(htext){Array.prototype.forEach.call(htext.children,function(ch,i){ch.classList.add('reveal');ch.style.setProperty('--rd',(i*80)+'ms');});}
   if(panel){panel.classList.add('reveal');panel.style.setProperty('--rd','200ms');}
-  var sel='.integ .wrap,.sec-head,.owner,.lstep,.card,.pcard,.statlist .s,.flow .node,.guards .guard,.tbl-wrap,.cmp-wrap,.pilot,.faq details,.final h2,.final p,.final .center';
+  var sel='.integ .wrap,.compatbar .cbadge,.sec-head,.owner,.lstep,.card,.way,.igcol,.pcard,.statlist .s,.flow .node,.guards .guard,.tbl-wrap,.cmp-wrap,.pilot,.faq details,.final h2,.final p,.final .center';
   d.querySelectorAll(sel).forEach(function(el){el.classList.add('reveal');});
   function countUp(el){
     if(el._c)return; el._c=1;
