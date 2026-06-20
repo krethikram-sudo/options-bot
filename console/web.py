@@ -213,6 +213,12 @@ pre{background:var(--paper2);color:var(--navy);padding:16px;border-radius:10px;o
 .rolelegend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
 .rolelegend b{color:var(--ink)}
 @media(max-width:560px){.trow{flex-wrap:wrap}.trow .nm{flex-basis:100%}}
+.fidgrid{display:flex;gap:28px;flex-wrap:wrap;margin:6px 0 12px}
+.fidcell{display:flex;flex-direction:column;gap:3px}
+.fidlab{font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
+.fidbig{font-size:25px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.1}
+.fidbig.grn{color:var(--grn-d)}
+.fidbig.naive{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--amber);text-decoration-thickness:2px}
 .cstep{display:flex;gap:11px;align-items:flex-start;margin:22px 0 10px}
 .cstep:first-child{margin-top:4px}
 .cnum{flex:none;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center}
@@ -776,6 +782,36 @@ def _movers_card(history: list[dict] | None, report: dict) -> str:
             f'appears here once you have two syncs of history.</p></div>')
 
 
+def _fidelity_callout(report: dict, persona: str = "") -> str:
+    """The proof, in-product: a naive token-count tracker would overstate this bill
+    N× because cache reads dominate. Shown only when the gap is material so it lands
+    as a real reassurance, not noise. Mirrors modelpilot/OUTLAY_PROOF.md."""
+    cf = (report or {}).get("cost_fidelity") or {}
+    correct, naive = cf.get("outlay_usd", 0.0), cf.get("naive_usd", 0.0)
+    infl = cf.get("inflation_factor", 0.0)
+    if not naive or infl < 1.15:   # no meaningful cache-driven gap → don't cry wolf
+        return ""
+    share = cf.get("cache_read_share", 0.0)
+    who = ("Your reported AI spend is the cache-aware figure"
+           if persona == "finance" else "This is the cache-aware figure")
+    return (
+        '<div class=ocard style="border-color:var(--grn);background:linear-gradient(180deg,var(--grn-l),#fff)">'
+        '<div class=dh>Why this number is the right one</div>'
+        '<div class=fidgrid>'
+        f'<div class=fidcell><span class=fidlab>Outlay · cache-aware</span>'
+        f'<span class="fidbig grn">{money(correct)}</span></div>'
+        f'<div class=fidcell><span class=fidlab>Naive token tracker</span>'
+        f'<span class="fidbig naive">{money(naive)}</span></div>'
+        f'<div class=fidcell><span class=fidlab>Overstated by</span>'
+        f'<span class=fidbig>{infl:.1f}×</span></div>'
+        '</div>'
+        f'<p class=muted style="font-size:12.5px;margin:0;line-height:1.55">{who}. '
+        f'<b>{share*100:.0f}%</b> of your input tokens are cache reads, billed at ~1/10th of base input. '
+        f'A tracker that prices them at full rate would report <b>{money(naive)}</b> — Outlay costs each '
+        f'token class correctly, then reconciles against the provider invoice.</p>'
+        '</div>')
+
+
 def _explore_card(persona: str) -> str:
     """Overview's hub: short, role-ordered jump-offs into the deeper product areas."""
     dest = {
@@ -844,9 +880,12 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     else:
         tm_row = ""
 
+    fidelity = _fidelity_callout(report, persona)
+    fidelity = f'<div style="margin-top:16px">{fidelity}</div>' if fidelity else ""
+
     body = (chooser + head + _persona_switch(persona) + _sample_strip(report) + checklist
             + _budget_strip(statuses) + _kpis_row(report, history, persona) + _recon_strip(report)
-            + tm_row
+            + fidelity + tm_row
             + '<div class=ogrid style="margin-top:16px">' + _forecast_card(report)
             + _explore_card(persona) + '</div>' + _sync_line(report, conn))
     return page("Home", body, account, active="/app")

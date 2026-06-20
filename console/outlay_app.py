@@ -22,6 +22,7 @@ from outlay.forecast import class_stats, find_anomalies, forecast_roadmap
 from outlay.ingest import (parse_anthropic_usage, parse_bedrock_log_text,
                             parse_github_issues, parse_openai_usage_text,
                             parse_vertex_log_text)
+from outlay.proof import cost_fidelity
 from outlay.recommend import recommend
 from outlay.serialize import to_dict
 from outlay.size import fit_size_models
@@ -192,7 +193,8 @@ def _team_spend(result) -> list[dict]:
     return out
 
 
-def _report(work, result, stats, size_models, planned_items=None, window_days: int = 30) -> dict:
+def _report(work, result, stats, size_models, planned_items=None, window_days: int = 30,
+            events=None) -> dict:
     recs = recommend(result, horizon_scale=30.0 / max(window_days, 1))
     cal = backtest(result, work)
     fc = forecast_roadmap([w for w in work if w.is_open], stats, size_models)
@@ -202,6 +204,10 @@ def _report(work, result, stats, size_models, planned_items=None, window_days: i
     data["team_spend"] = _team_spend(result)  # per-team / cost-center rollup (finance view)
     data["class_spend"] = class_spend(data)  # spend by work type (FinOps view)
     data["_model"] = _serialize_model(stats, size_models)  # for the backlog estimator
+    # Cache-aware vs naive costing gap on the customer's own usage — the proof that
+    # the headline spend number is the correct one, surfaced in-product (Overview).
+    if events:
+        data["cost_fidelity"] = cost_fidelity(events).as_dict()
     if planned_items:
         data["estimate"] = _serialize_plan(estimate_plan(planned_items, stats, size_models))
     return data
@@ -230,7 +236,7 @@ def build_report(issues, usage, planned: Optional[object] = None, window_days: i
             planned_items = parse_planned(pp)
         finally:
             os.unlink(pp)
-    return _report(work, result, stats, size_models, planned_items, window_days)
+    return _report(work, result, stats, size_models, planned_items, window_days, events=events)
 
 
 _SAMPLE_PLAN = ('{"items":[{"id":"PROJ-201","title":"Add SSO (SAML + SCIM)",'
@@ -422,7 +428,7 @@ def sync(conn: dict, window_days: int = 30, transport=None) -> dict:
         raise ValueError(f"Couldn't sync from your sources: {e}") from e
 
     result, stats, size_models = _fit(work, events)
-    report = _report(work, result, stats, size_models, None, window_days)
+    report = _report(work, result, stats, size_models, None, window_days, events=events)
     if invoice_usd is not None and invoice_usd > 0:
         computed = (report.get("spend") or {}).get("total_usd", 0.0)
         report["reconciliation"] = {
