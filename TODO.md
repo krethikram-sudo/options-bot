@@ -101,6 +101,11 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 ## ✅ Done
 
 ### 2026-06-20 — real-data proof (dogfood)
+- [x] **Cost-fidelity proof surfaced in-product** (PR #92). Every report carries `cost_fidelity` (attached
+      at build/sync like reconciliation); the Overview shows a "Why this number is the right one" callout —
+      cache-aware vs naive total, the inflation factor, and the cache-read share — shown only when the gap is
+      material (≥1.15×). Lands the proof the moment a prospect connects real data. 262 tests pass.
+
 - [x] **Cost-fidelity proof on our own real usage** (PR #90). New `outlay/proof.py` `cost_fidelity(events)`
       quantifies cache-aware (correct) vs naive token-count costing; wired into `outlay/dogfood.py` with a
       `--proof-only` mode that runs on local Claude Code transcripts alone (no repo/token). **Result on this
