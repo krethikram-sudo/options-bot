@@ -122,6 +122,25 @@ def _people_spend(result) -> list[dict]:
     return out
 
 
+def _team_spend(result) -> list[dict]:
+    """Spend per team / cost-center (user→team from the identity graph), biggest
+    first. Honest about coverage: events with no resolved team roll up under
+    '(unassigned)'. This is the finance/FinOps allocation view."""
+    total = result.total_cost or 0.0
+    agg: dict[str, dict] = {}
+    for r in result.rows:
+        key = getattr(r, "team_id", None) or "(unassigned)"
+        a = agg.setdefault(key, {"team": key, "spent_usd": 0.0, "events": 0})
+        a["spent_usd"] += r.cost_usd
+        a["events"] += 1
+    out = []
+    for a in sorted(agg.values(), key=lambda x: x["spent_usd"], reverse=True):
+        out.append({"team": a["team"], "spent_usd": round(a["spent_usd"], 2),
+                    "events": a["events"],
+                    "share": round(a["spent_usd"] / total, 4) if total else 0.0})
+    return out
+
+
 def _report(work, result, stats, size_models, planned_items=None, window_days: int = 30) -> dict:
     recs = recommend(result, horizon_scale=30.0 / max(window_days, 1))
     cal = backtest(result, work)
@@ -129,6 +148,7 @@ def _report(work, result, stats, size_models, planned_items=None, window_days: i
     data = to_dict(result, stats, fc, find_anomalies(result, stats), recs,
                    calibration=cal, window_days=window_days)
     data["people"] = _people_spend(result)  # per-engineer spend rollup
+    data["team_spend"] = _team_spend(result)  # per-team / cost-center rollup (finance view)
     data["class_spend"] = class_spend(data)  # spend by work type (FinOps view)
     data["_model"] = _serialize_model(stats, size_models)  # for the backlog estimator
     if planned_items:

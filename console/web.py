@@ -620,6 +620,20 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
         people_card = (f'<div class=ocard><div class=dh>Spend by engineer'
                        f'<span class=sub>team-fidelity · user→cost</span></div>{prows}</div>')
 
+    # Spend by team / cost-center (finance allocation view)
+    teams = report.get("team_spend") or []
+    team_card = ""
+    if any(t.get("team") != "(unassigned)" for t in teams):
+        tmax = max((t.get("spent_usd", 0) for t in teams), default=1) or 1
+        trows = "".join(
+            _erow(("Unassigned" if t.get("team") == "(unassigned)" else t.get("team")),
+                  f'{t.get("share",0)*100:.0f}% of attributed',
+                  money(t.get("spent_usd", 0)), t.get("spent_usd", 0) / tmax * 100,
+                  "#cfcabb" if t.get("team") == "(unassigned)" else "var(--grn)")
+            for t in teams)
+        team_card = (f'<div class=ocard><div class=dh>Spend by team / cost-center'
+                     f'<span class=sub>allocation</span></div>{trows}</div>')
+
     # Backlog estimate (optional)
     est_card = ""
     if est:
@@ -638,10 +652,11 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                     f'estimated, {est.get("items_unknown",0)} declined.</div>{erows}</div>')
 
     if persona == "finance":
-        # Finance leads with the forecast and work-type/cost rollups; per-engineer
-        # detail is an engineering concern (and individual-name spend), so it's omitted here.
-        g1 = f'<div class=ogrid>{fc_card}{class_card}</div>'
-        g2 = f'<div style="margin-top:16px">{spend_card}</div>'
+        # Finance leads with the forecast + team/cost-center allocation, then work-type;
+        # per-engineer (individual-name) detail is an engineering concern, omitted here.
+        g1 = f'<div class=ogrid>{fc_card}{team_card or class_card}</div>'
+        extra = f'<div style="margin-top:16px">{class_card}</div>' if team_card else ""
+        g2 = extra + f'<div style="margin-top:16px">{spend_card}</div>'
         g3 = f'<div style="margin-top:16px">{est_card}</div>' if est_card else ""
         grid = g1 + g2 + g3
     else:
