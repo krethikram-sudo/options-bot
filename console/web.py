@@ -2466,23 +2466,38 @@ def _api_keys_section(keys: list[dict], deployments: list[dict], new_key: str = 
     if new_key:
         reveal = (f'<div class="note"><b>Your new API key (shown once — copy it now):</b><br>'
                   f'<code style="word-break:break-all">{_e(new_key)}</code></div>')
+    now = time.time()
     rows = ""
     for k in keys:
         revoked = bool(k.get("revoked_at"))
-        status = ('<span class="badge suspended">revoked</span>' if revoked
-                  else '<span class="badge paid">active</span>')
+        exp = k.get("expires_at")
+        expired = bool(exp) and exp <= now and not revoked
+        if revoked:
+            status = '<span class="badge suspended">revoked</span>'
+        elif expired:
+            status = '<span class="badge suspended">expired</span>'
+        else:
+            status = '<span class="badge paid">active</span>'
         last = _fmt_date(k["last_used_at"]) if k.get("last_used_at") else "never"
-        action = ("" if revoked else
+        expires = ("—" if not exp else
+                   ('<span style="color:var(--red)">' + _fmt_date(exp) + '</span>' if expired
+                    else _fmt_date(exp)))
+        action = ("" if (revoked or expired) else
                   f'<form method=post action="/app/keys/revoke" style="margin:0">'
                   f'<input type=hidden name=key_id value="{k["id"]}">{ret}'
                   f'<button class="btn sec sm">Revoke</button></form>')
         rows += (f"<tr><td>{_e(k.get('name') or 'key')}</td>"
                  f"<td><code>{_e(k['prefix'])}…</code></td><td>{status}</td>"
-                 f"<td class='small muted'>{last}</td><td>{action}</td></tr>")
+                 f"<td class='small muted'>{last}</td><td class='small muted'>{expires}</td>"
+                 f"<td>{action}</td></tr>")
     dep_opts = "".join(f'<option value="{_e(d["deployment_id"])}">{_e(d.get("label") or d["deployment_id"])}</option>'
                        for d in deployments)
+    exp_opts = ('<option value="0">No expiry</option><option value="30">Expires in 30 days</option>'
+                '<option value="90">90 days</option><option value="180">180 days</option>'
+                '<option value="365">1 year</option>')
     table = (f'<div class=card style="padding:0"><table><thead><tr><th>Name</th><th>Key</th>'
-             f'<th>Status</th><th>Last used</th><th></th></tr></thead><tbody>{rows}</tbody></table></div>'
+             f'<th>Status</th><th>Last used</th><th>Expires</th><th></th></tr></thead>'
+             f'<tbody>{rows}</tbody></table></div>'
              if rows else '<div class=card><p class="small muted">No API keys yet.</p></div>')
     return f"""
     <h2>API keys</h2>
@@ -2494,7 +2509,8 @@ def _api_keys_section(keys: list[dict], deployments: list[dict], new_key: str = 
     <div class=card style="margin-top:12px">
       <form method=post action="/app/keys" class=row style="gap:8px">
         <input name=name placeholder="key name (e.g. prod)" style="max-width:200px">
-        <select name=deployment_id>{dep_opts}</select>{ret}
+        <select name=deployment_id>{dep_opts}</select>
+        <select name=expires_in_days title="Set an expiry for rotating keys">{exp_opts}</select>{ret}
         <button class=btn>Create API key</button>
       </form>
     </div>"""

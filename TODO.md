@@ -100,6 +100,12 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — API key expiry (rotating keys for enterprise)
+- [x] Keys were all-or-nothing and never expired; enterprises require rotation. Added optional expiry:
+      `api_keys.expires_at`; `create_api_key(..., expires_in_days=)`; `resolve_api_key` rejects expired keys
+      like revoked ones. Create form has a "No expiry / 30 / 90 / 180 / 365 days" select; the key table shows
+      an "expired" badge + the expiry date (red once past). 308 tests.
+
 ### 2026-06-20 — API hardening: per-key rate limiting on /api/v1/*
 - [x] The public token-authed endpoints were unthrottled — a leaked key could hammer them. Added an in-process
       fixed-window limiter keyed by API key (default 120 req / 60s, env-tunable `OUTLAY_API_RATE_LIMIT` /

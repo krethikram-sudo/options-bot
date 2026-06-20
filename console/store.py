@@ -308,6 +308,7 @@ _MIGRATIONS = [
     "ALTER TABLE accounts ADD COLUMN retention_days INTEGER NOT NULL DEFAULT 0",  # 0 = keep history forever; else purge snapshots older than N days
     "ALTER TABLE accounts ADD COLUMN close_pack_monthly INTEGER NOT NULL DEFAULT 0",  # email the monthly close pack (FOCUS CSV + summary)
     "ALTER TABLE accounts ADD COLUMN close_pack_last_at REAL",  # last close-pack send time
+    "ALTER TABLE api_keys ADD COLUMN expires_at REAL",  # optional key expiry; NULL = never
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -1520,31 +1521,35 @@ KEY_PREFIX = "mp_live_"
 
 
 def create_api_key(account_id: int, deployment_id: str, name: str = "",
-                   path: str | None = None, now: float | None = None) -> dict:
+                   path: str | None = None, now: float | None = None,
+                   expires_in_days: int | None = None) -> dict:
     """Mint a key. Returns the FULL key once (never recoverable) plus its row.
-    Only the sha256 hash + a display prefix are stored."""
+    Only the sha256 hash + a display prefix are stored. `expires_in_days` sets an
+    optional expiry (None = never) — enterprises often require rotating keys."""
     if not account_for_deployment(deployment_id, path):
         raise StoreError("unknown deployment")
     now = now or time.time()
+    expires_at = (now + expires_in_days * 86400) if expires_in_days else None
     full = KEY_PREFIX + secrets.token_urlsafe(24)
     prefix = full[:16]
     key_hash = hashlib.sha256(full.encode()).hexdigest()
     conn = connect(path)
     try:
         conn.execute("INSERT INTO api_keys(account_id, deployment_id, name, prefix, key_hash,"
-                     " created_at) VALUES(?,?,?,?,?,?)",
-                     (account_id, deployment_id, (name or "key").strip(), prefix, key_hash, now))
+                     " created_at, expires_at) VALUES(?,?,?,?,?,?,?)",
+                     (account_id, deployment_id, (name or "key").strip(), prefix, key_hash, now,
+                      expires_at))
         conn.commit()
     finally:
         conn.close()
-    return {"full_key": full, "prefix": prefix, "name": name}
+    return {"full_key": full, "prefix": prefix, "name": name, "expires_at": expires_at}
 
 
 def list_api_keys(account_id: int, path: str | None = None) -> list[dict]:
     conn = connect(path)
     try:
         rows = conn.execute(
-            "SELECT id, deployment_id, name, prefix, created_at, last_used_at, revoked_at"
+            "SELECT id, deployment_id, name, prefix, created_at, last_used_at, revoked_at, expires_at"
             " FROM api_keys WHERE account_id=? ORDER BY created_at DESC", (account_id,)).fetchall()
         return [dict(r) for r in rows]
     finally:
@@ -1566,7 +1571,7 @@ def revoke_api_key(key_id: int, account_id: int, path: str | None = None,
 
 def resolve_api_key(full_key: str, path: str | None = None, now: float | None = None) -> dict | None:
     """Validate a presented key. Returns {account_id, deployment_id, key_id} or None
-    (unknown/revoked). Updates last_used_at on success."""
+    (unknown/revoked/expired). Updates last_used_at on success."""
     if not full_key or not full_key.startswith(KEY_PREFIX):
         return None
     now = now or time.time()
@@ -1577,6 +1582,8 @@ def resolve_api_key(full_key: str, path: str | None = None, now: float | None = 
                            (key_hash,)).fetchone()
         if not row:
             return None
+        if row["expires_at"] and row["expires_at"] <= now:
+            return None  # expired keys are rejected like revoked ones
         conn.execute("UPDATE api_keys SET last_used_at=? WHERE id=?", (now, row["id"]))
         conn.commit()
         return {"account_id": row["account_id"], "deployment_id": row["deployment_id"],
