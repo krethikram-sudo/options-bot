@@ -66,6 +66,20 @@
           <td class="us"><span class="y">✓</span><span class="sub">attributed to the work you plan</span></td>
         </tr>
         <tr>
+          <td class="feat">Cache-aware costing (per token class)</td>
+          <td><span class="n">~</span><span class="sub">reads the bill, can't attribute</span></td>
+          <td><span class="n">✕</span><span class="sub">tokens at a flat rate</span></td>
+          <td><span class="n">~</span><span class="sub">provider total only</span></td>
+          <td class="us"><span class="y">✓</span><span class="sub">cache reads at ~0.1×</span></td>
+        </tr>
+        <tr>
+          <td class="feat">Reconciled to the provider invoice</td>
+          <td><span class="y">✓</span><span class="sub">it is the bill</span></td>
+          <td><span class="n">✕</span></td>
+          <td><span class="y">✓</span><span class="sub">single provider</span></td>
+          <td class="us"><span class="y">✓</span><span class="sub">Anthropic, Bedrock, Vertex, OpenAI</span></td>
+        </tr>
+        <tr>
           <td class="feat">Forecast by open scope + budget guardrails</td>
           <td><span class="y">✓</span><span class="sub">for cloud, not AI-by-scope</span></td>
           <td><span class="n">✕</span></td>
@@ -113,8 +127,11 @@
   <p>Great for debugging quality, latency, and traces — and several show cost per call. The structural
     trade-off: to trace, they <b>ingest your prompts and outputs</b>, so your content sits in their data
     path. They also stop at <em>observation</em> — they surface cost, they don't forecast by roadmap
-    scope or estimate planned work. Outlay connects <b>read-only</b> (only a category, token counts, and
-    ticket id ever reach us) and is built to <b>act</b> on the number — forecast and budget it — not just chart it.</p>
+    scope or estimate planned work. And because they cost from <b>raw token counts</b>, a tool that prices
+    cache reads at the base input rate overstates a cache-heavy agentic workload several-fold — on our own
+    usage the gap was <a href="/#math">7.4×</a>. Outlay costs each token class separately and reconciles to
+    the provider invoice; it connects <b>read-only</b> (only a category, token counts, and ticket id ever
+    reach us) and is built to <b>act</b> on the number — forecast and budget it — not just chart it.</p>
 
   <h2>Native provider consoles (Anthropic, OpenAI, Cursor admin…)</h2>
   <p>Free, accurate, and already there — totals by API key, model, and workspace. The gap is the join:
