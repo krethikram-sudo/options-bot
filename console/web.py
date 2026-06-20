@@ -2398,18 +2398,27 @@ def _retention_section(account: dict, retention_days: int = 0, purged: bool = Fa
 
 
 def _digest_section(account: dict) -> str:
-    """Toggle the weekly spend digest email (on by default)."""
+    """Toggle the scheduled emails: the weekly spend digest (on by default) and the
+    monthly finance close pack (opt-in, with the FOCUS CSV attached)."""
     on = account.get("digest_weekly", 1) in (1, True, "1")
+    cp = account.get("close_pack_monthly", 0) in (1, True, "1")
     checked = " checked" if on else ""
+    cp_checked = " checked" if cp else ""
     return f"""
     <div class=card style="margin-top:16px" id=digest>
-      <div class=label>Weekly spend digest</div>
-      <p class="small muted" style="margin:.2em 0 .8em">A short Monday email — total AI spend and the
-        week-over-week trend, top team &amp; work type, budget status, and any runaway tickets.
-        Sent to the account owner ({_e(account.get("email", ""))}).</p>
-      <form method=post action="/app/digest" style="display:flex;gap:10px;align-items:center">
-        <label style="display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer">
-          <input type=checkbox name=weekly value=1{checked}> Email me the weekly digest</label>
+      <div class=label>Scheduled emails</div>
+      <p class="small muted" style="margin:.2em 0 .8em">Sent to the account owner
+        ({_e(account.get("email", ""))}).</p>
+      <form method=post action="/app/digest">
+        <label style="display:flex;gap:8px;align-items:flex-start;font-size:14px;cursor:pointer;margin-bottom:10px">
+          <input type=checkbox name=weekly value=1{checked} style="margin-top:3px">
+          <span><b>Weekly spend digest</b><br><span class="small muted">A short Monday email — total AI
+          spend and the week-over-week trend, top team &amp; work type, budget status, runaway tickets.</span></span></label>
+        <label style="display:flex;gap:8px;align-items:flex-start;font-size:14px;cursor:pointer;margin-bottom:12px">
+          <input type=checkbox name=close_pack value=1{cp_checked} style="margin-top:3px">
+          <span><b>Monthly finance close pack</b><br><span class="small muted">A month-end email with the
+          period summary and the <b>FOCUS-aligned CSV attached</b> — the artifact you load into the books /
+          your FinOps tool — plus a link to the printable close report.</span></span></label>
         <button class="btn sec sm">Save</button>
       </form>
     </div>"""

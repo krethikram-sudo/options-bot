@@ -24,15 +24,21 @@ def reset_link(token: str) -> str:
     return f"{base_url()}/reset?token={token}"
 
 
-def send_email(to: str, subject: str, body: str) -> bool:
+def send_email(to: str, subject: str, body: str, attachments: list | None = None) -> bool:
+    """Send a plain-text email, optionally with file attachments. `attachments` is a
+    list of (filename, content_str, mime_subtype) — e.g. ('outlay-focus.csv', csv, 'csv')."""
     if not enabled():
-        print(f"[notify:dev] to={to} subject={subject!r}\n{body}")
+        extra = f" +{len(attachments)} attachment(s)" if attachments else ""
+        print(f"[notify:dev] to={to} subject={subject!r}{extra}\n{body}")
         return False
     msg = EmailMessage()
     msg["From"] = os.environ.get("SMTP_FROM", "Outlay <no-reply@outlay-ai.com>")
     msg["To"] = to
     msg["Subject"] = subject
     msg.set_content(body)
+    for fname, content, subtype in (attachments or []):
+        msg.add_attachment((content or "").encode("utf-8"), maintype="text",
+                           subtype=subtype or "plain", filename=fname)
     host = os.environ["SMTP_HOST"]
     port = int(os.environ.get("SMTP_PORT", "587"))
     with smtplib.SMTP(host, port, timeout=10) as s:
