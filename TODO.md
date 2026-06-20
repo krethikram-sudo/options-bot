@@ -100,7 +100,16 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
-### 2026-06-20 — product experience: navigable IA + guided connect
+### 2026-06-20 — product experience: navigable IA + guided connect + Overview home
+- [x] **Role-aware Overview home + slimmed Spend** (PR #86). Added an Overview as the product home
+      (`/app`, was a redirect to Spend): the role-aware first screen — headline KPIs, budget status,
+      the p10–p90 forecast band, and an "Explore" hub whose order is persona-aware (finance → Budgets
+      first, engineering → Estimate first). Empty state keeps the first-run connect CTA + onboarding.
+      All auth landings (signup, login, member, 2FA, SSO) now route to `/app`. **Spend** is slimmed to
+      attribution only (by team/cost-center, work type, ticket, engineer) — the forecast band and backlog
+      estimate cards moved to Overview / the Estimate page, and the redundant bottom connect form is gone.
+      Shared fragments factored into module helpers; sidebar gains an "Overview" item. 133 tests pass.
+      ⚠️ live on `fly deploy`.
 - [x] **Role-aware grouped sidebar (IA restructure)** (PR #83). Replaced the thin 2-item sidebar
       (Spend / Settings) with a real, navigable product IA grouped into **Analyze** (Spend, Accuracy,
       Budgets, Estimate), **Sources** (Connect), and **Workspace** (Team, Settings, Activity). The
