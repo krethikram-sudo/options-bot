@@ -363,6 +363,8 @@ def test_outlay_retention_and_purge_routes(env, client):
     # retention control surfaces on Settings + saving it sticks
     page = client.get("/app/settings").text
     assert "Data retention" in page and 'action="/app/retention"' in page
+    # grouped IA: labeled settings groups render
+    assert "Data &amp; privacy" in page and "Notifications" in page
     client.post("/app/retention", data={"retention_days": "90"}, follow_redirects=True)
     assert store.get_retention_days(acct["id"]) == 90
 
