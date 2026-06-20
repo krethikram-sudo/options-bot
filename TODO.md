@@ -100,6 +100,12 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — onboarding: "Verify your numbers" activation step
+- [x] Added a reconciliation step to the setup checklist — done once the report reconciles to a real provider
+      invoice (`reconciliation.invoice_usd`). Turns "a number" into "a number finance trusts" and feeds the
+      data-confidence verdict. Deep-links to the import flow (cost-export paste); auto-completes for
+      Anthropic-connected accounts (sync reconciles against the cost report). 310 tests.
+
 ### 2026-06-20 — webhook delivery reliability (retry + delivery log)
 - [x] Delivery was fire-and-forget with swallowed errors — a dropped webhook was invisible. Now:
 - [x] **Retry with backoff** — `deliver_event` attempts up to 3× (0s/1s/3s) on failure or non-2xx, per webhook.

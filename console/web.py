@@ -650,6 +650,7 @@ def _onboarding(conn: dict | None, report: dict | None, has_budget: bool, person
     has_usage = bool(conn.get("anthropic_key") or conn.get("cursor_key"))
     has_report = bool(report) and not (report or {}).get("_sample")
     has_identity = bool(conn.get("identity_map"))
+    has_reconciled = bool(((report or {}).get("reconciliation") or {}).get("invoice_usd"))
     # Endowed progress: the account already exists, so the checklist opens non-empty
     # (a robust completion nudge — goal-gradient/endowed-progress, Kivetz 2006).
     # Each step deep-links to the real control; `tour` keys a contextual walkthrough.
@@ -658,6 +659,9 @@ def _onboarding(conn: dict | None, report: dict | None, has_budget: bool, person
         ("Connect a tracker", has_tracker, "/app/outlay/connect", "Connect", "connect"),
         ("Connect your AI usage", has_usage, "/app/outlay/connect", "Add key", "connect"),
         ("Run your first audit", has_report, "/app/outlay/connect", "Run", "connect"),
+        # Verifying the total reconciles to a real invoice is what turns "a number"
+        # into "a number finance trusts" — the activation step the trust work feeds.
+        ("Verify your numbers", has_reconciled, "/app/outlay/connect", "Reconcile", "connect"),
     ]
     if persona == "finance":
         # Cost-center allocation is the finance lead view — make it a setup step.
