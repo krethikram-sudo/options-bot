@@ -593,6 +593,7 @@ async def app_outlay_run(request: Request):
     issues = (data.get("issues") or "").strip()
     usage = (data.get("usage") or "").strip()
     planned = (data.get("planned") or "").strip() or None
+    cost_export = (data.get("cost_export") or "").strip()
     if not issues or not usage:
         return JSONResponse({"ok": False, "error": "Paste both the tracker and AI-usage JSON."})
     try:
@@ -601,6 +602,14 @@ async def app_outlay_run(request: Request):
         return JSONResponse({"ok": False, "error": str(e)})
     except Exception:  # noqa: BLE001
         return JSONResponse({"ok": False, "error": "Could not process that data."})
+    # Optional: reconcile against a pasted provider cost/billing export (any provider).
+    if cost_export:
+        try:
+            invoice_usd, source = outlay_app.parse_cost_export(cost_export)
+            if invoice_usd > 0:
+                outlay_app.reconcile(report, invoice_usd, source, report.get("window_days", 30))
+        except Exception:  # noqa: BLE001 — reconciliation is best-effort, never fail the run
+            pass
     store.save_outlay_report(acct["id"], report)
     store.record_outlay_snapshot(acct["id"], report)
     _check_budgets(acct["id"], report)
