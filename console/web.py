@@ -605,6 +605,38 @@ def _pricing_warn(report: dict) -> str:
             f'<span class=muted style="font-size:12px">tell us to add exact rates</span></div>')
 
 
+def _coverage_diag(report: dict) -> str:
+    """When ticket coverage is low, explain *why* (from the fidelity breakdown) and
+    the cheapest way to lift it — turning a weak number into a guided next step
+    instead of a dead end. Hidden when coverage is healthy."""
+    sp = (report or {}).get("spend") or {}
+    total = sp.get("total_usd", 0.0)
+    cov = sp.get("ticket_coverage", 0.0)
+    if total <= 0 or cov >= 0.5:
+        return ""
+    bf = sp.get("by_fidelity_usd") or {}
+    team_usd = bf.get("team", 0.0)        # reached a team, but no ticket → branch had no ticket/PR link
+    inv_usd = bf.get("invoice", 0.0)      # no ticket and no team signal at all
+    recs = ""
+    if team_usd > 0:
+        recs += (f'<li><b>{money(team_usd)}</b> ran on branches with no ticket or linked PR. '
+                 f'<b>Connect your PRs</b> — most reference the issue they close ("Closes #123"), '
+                 f'which recovers the link automatically, no branch renaming. '
+                 f'<a href="/app/outlay/connect">Connect →</a></li>')
+    if inv_usd > 0:
+        recs += (f'<li><b>{money(inv_usd)}</b> had no team or ticket signal. Add an identity map '
+                 f'(API key / email → team) so at least team allocation lands. '
+                 f'<a href="/app/outlay/connect">Set up →</a></li>')
+    if not recs:
+        return ""
+    return (f'<div class=ocard style="border-color:var(--amber);background:var(--amber-l)">'
+            f'<div class=dh>Lift your ticket coverage'
+            f'<span class=sub>{cov*100:.0f}% mapped to a ticket</span></div>'
+            f'<p class=muted style="font-size:13px;margin:0 0 8px">Coverage depends on resolving each '
+            f'AI call\'s branch to a ticket. Here\'s where yours is leaking — and the no-effort fix:</p>'
+            f'<ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.6">{recs}</ul></div>')
+
+
 def _persona_card(value: str, title: str, desc: str) -> str:
     return (f'<form method=post action="/app/persona" style="margin:0">'
             f'<input type=hidden name=persona value="{value}">'
@@ -1045,9 +1077,12 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                   '<a href="/app/outlay/export.csv?view=classes">work types</a>'
                   '<a href="/app/outlay/export.csv?view=people">engineers</a></div>')
 
+    cov_diag = _coverage_diag(report)
+    cov_diag = f'<div style="margin:16px 0">{cov_diag}</div>' if cov_diag else ""
+
     body = (chooser + ohead + _persona_switch(persona) + _sample_strip(report) + checklist
             + _budget_strip(statuses) + kpis + _recon_strip(report) + _pricing_warn(report)
-            + _sync_line(report, conn) + olinks + grid)
+            + cov_diag + _sync_line(report, conn) + olinks + grid)
     return page("Spend", body, account, active="/app/outlay")
 
 

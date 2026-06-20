@@ -52,6 +52,33 @@ def test_recovers_attribution_end_to_end():
     assert res.ticket_id == "GH-123" and res.fidelity == FidelityTier.BRANCH
 
 
+def test_live_client_links_pr_branches():
+    """The live puller fetches PRs and links their head branches onto the issues
+    they close — best-effort, paginated, no extra customer config."""
+    from outlay.ingest import GitHubIssuesClient
+    issues = [{"number": 123, "title": "Add SSO", "state": "closed"}]
+    pulls = [{"number": 10, "head": {"ref": "alice/quick-fix"}, "body": "Closes #123"}]
+
+    def transport(method, url, headers, body):
+        if "/pulls" in url:
+            return pulls if "page=1" in url else []
+        if "/issues" in url:
+            return issues if "page=1" in url else []
+        return []
+
+    work = GitHubIssuesClient(token="t", transport=transport).pull("acme", "web")
+    assert work[0].ticket_id == "GH-123" and work[0].branch == "alice/quick-fix"
+
+    # PR fetch failing must never break the issues pull (best-effort linkage)
+    def flaky(method, url, headers, body):
+        if "/pulls" in url:
+            raise RuntimeError("no PR scope")
+        return issues if "page=1" in url else []
+
+    work2 = GitHubIssuesClient(token="t", transport=flaky).pull("acme", "web")
+    assert work2[0].ticket_id == "GH-123" and work2[0].branch is None
+
+
 def test_combined_export_links_through_parse_github_issues():
     payload = {
         "issues": [{"number": 123, "title": "Add SSO", "state": "closed"}],
