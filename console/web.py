@@ -2558,9 +2558,11 @@ def _webhook_delivery_log(deliveries: list[dict] | None) -> str:
         return ""
     rows = ""
     for d in deliveries:
-        ok = d.get("status") == "delivered"
-        badge = ('<span class="badge paid">delivered</span>' if ok
-                 else '<span class="badge suspended">failed</span>')
+        status = d.get("status")
+        ok = status == "delivered"
+        badge = {"delivered": '<span class="badge paid">delivered</span>',
+                 "dead": '<span class="badge suspended">gave up</span>'}.get(
+                     status, '<span class="badge suspended">retrying</span>')
         code = d.get("status_code")
         detail = (f"HTTP {code}" if code else "") + (
             f" · {_e(d.get('error') or '')}" if (not ok and d.get("error")) else "")

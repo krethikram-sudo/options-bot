@@ -321,6 +321,8 @@ _MIGRATIONS = [
     "ALTER TABLE accounts ADD COLUMN close_pack_monthly INTEGER NOT NULL DEFAULT 0",  # email the monthly close pack (FOCUS CSV + summary)
     "ALTER TABLE accounts ADD COLUMN close_pack_last_at REAL",  # last close-pack send time
     "ALTER TABLE api_keys ADD COLUMN expires_at REAL",  # optional key expiry; NULL = never
+    "ALTER TABLE webhook_deliveries ADD COLUMN payload TEXT",  # exact signed body, for durable redelivery
+    "ALTER TABLE webhook_deliveries ADD COLUMN next_attempt_at REAL",  # when a failed delivery is due to retry; NULL = terminal
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -2217,22 +2219,56 @@ def sign_payload(secret: str, body: bytes) -> str:
     return "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
 
 
-WEBHOOK_MAX_ATTEMPTS = 3
+WEBHOOK_MAX_ATTEMPTS = 3          # immediate, in-thread attempts on the first dispatch
 WEBHOOK_BACKOFF = (0.0, 1.0, 3.0)  # seconds before attempts 1, 2, 3
+WEBHOOK_MAX_TOTAL_ATTEMPTS = 8    # after which a failed delivery is given up ('dead')
+# Backoff (seconds) before the Nth cron redelivery — escalating; with a daily cron
+# anything under a day just means "next sweep". Indexed by redelivery number.
+WEBHOOK_REDELIVER_BACKOFF = (3600, 6 * 3600, 24 * 3600, 24 * 3600, 24 * 3600)
+
+
+def _webhook_headers(event_type: str, secret: str, body: bytes) -> dict:
+    return {"content-type": "application/json", "user-agent": "Outlay-Webhook",
+            "x-outlay-event": event_type, "x-outlay-signature": sign_payload(secret, body)}
+
+
+def _webhook_attempt(url: str, body: bytes, headers: dict, post_fn=None) -> tuple:
+    """One delivery attempt → (ok, status_code, error). `post_fn` (tests) may return
+    an HTTP status int or raise to simulate failure."""
+    if post_fn is not None:
+        try:
+            code = post_fn(url, body, headers)
+        except Exception as e:  # noqa: BLE001 — capture, then retry/record
+            return False, None, str(e)[:200]
+        code = code if isinstance(code, int) else 200
+        return (200 <= code < 300), code, ""
+    import urllib.request
+    req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+    try:
+        resp = urllib.request.urlopen(req, timeout=5)
+        code = getattr(resp, "status", 200)
+        resp.close()
+        return (200 <= code < 300), code, ""
+    except Exception as e:  # noqa: BLE001 — capture, then retry/record
+        code = getattr(e, "code", None)
+        return False, code, str(e)[:200]
 
 
 def record_webhook_delivery(account_id: int, webhook_id: int, event_type: str, status: str,
                             attempts: int = 1, status_code=None, error: str = "",
+                            payload: str | None = None, next_attempt_at: float | None = None,
                             path: str | None = None, now: float | None = None) -> None:
-    """Persist the outcome of a webhook delivery so a dropped event is visible
-    (not silently swallowed) — surfaced in the webhooks UI."""
+    """Persist a webhook delivery so a dropped event is visible (not silently
+    swallowed) and can be durably redelivered. `status`: delivered | failed | dead.
+    A 'failed' row carries the signed `payload` + `next_attempt_at` so the cron can
+    re-send it even across a process restart."""
     conn = connect(path)
     try:
         conn.execute(
             "INSERT INTO webhook_deliveries(account_id, webhook_id, event_type, status, attempts,"
-            " status_code, error, created_at) VALUES(?,?,?,?,?,?,?,?)",
+            " status_code, error, payload, next_attempt_at, created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
             (account_id, webhook_id, event_type, status, attempts, status_code,
-             (error or "")[:200], now or time.time()))
+             (error or "")[:200], payload, next_attempt_at, now or time.time()))
         conn.commit()
     finally:
         conn.close()
@@ -2252,10 +2288,11 @@ def recent_webhook_deliveries(account_id: int, limit: int = 10, path: str | None
 def deliver_event(account_id: int, event_type: str, data: dict, path: str | None = None,
                   post_fn=None, sleep_fn=None) -> int:
     """Fire `event_type` to the account's subscribed webhooks (HMAC-signed,
-    off-thread). Retries up to WEBHOOK_MAX_ATTEMPTS with backoff on failure / non-2xx,
-    and records each delivery's final outcome so drops are visible. Returns how many
-    webhooks were dispatched. `post_fn` (tests) receives (url, body_bytes, headers)
-    synchronously and may return an HTTP status int or raise to simulate failure."""
+    off-thread). Retries up to WEBHOOK_MAX_ATTEMPTS in-thread with backoff on failure
+    / non-2xx; anything still failing is recorded with its signed payload + a
+    next_attempt_at so the cron (`redeliver_due_webhooks`) re-sends it durably (even
+    across a restart). Returns how many webhooks were dispatched. `post_fn` (tests)
+    may return an HTTP status int or raise to simulate failure."""
     hooks = _matching_webhooks(account_id, event_type, path)
     if not hooks:
         return 0
@@ -2263,39 +2300,21 @@ def deliver_event(account_id: int, event_type: str, data: dict, path: str | None
                       separators=(",", ":")).encode()
     _sleep = sleep_fn if sleep_fn is not None else time.sleep
 
-    def _attempt(url, secret):
-        """One delivery attempt → (ok, status_code, error)."""
-        headers = {"content-type": "application/json", "user-agent": "Outlay-Webhook",
-                   "x-outlay-event": event_type, "x-outlay-signature": sign_payload(secret, body)}
-        if post_fn is not None:
-            try:
-                code = post_fn(url, body, headers)
-            except Exception as e:  # noqa: BLE001 — capture, then retry/record
-                return False, None, str(e)[:200]
-            code = code if isinstance(code, int) else 200
-            return (200 <= code < 300), code, ""
-        import urllib.request
-        req = urllib.request.Request(url, data=body, headers=headers, method="POST")
-        try:
-            resp = urllib.request.urlopen(req, timeout=5)
-            code = getattr(resp, "status", 200)
-            resp.close()
-            return (200 <= code < 300), code, ""
-        except Exception as e:  # noqa: BLE001 — capture, then retry/record
-            code = getattr(e, "code", None)
-            return False, code, str(e)[:200]
-
     def _send(wid, url, secret):
+        headers = _webhook_headers(event_type, secret, body)
         ok, code, err = False, None, ""
         for i in range(WEBHOOK_MAX_ATTEMPTS):
             if i and _sleep:
                 _sleep(WEBHOOK_BACKOFF[min(i, len(WEBHOOK_BACKOFF) - 1)])
-            ok, code, err = _attempt(url, secret)
+            ok, code, err = _webhook_attempt(url, body, headers, post_fn)
             if ok:
                 break
+        next_at = None if ok else (time.time() + WEBHOOK_REDELIVER_BACKOFF[0])
         record_webhook_delivery(account_id, wid, event_type,
                                 "delivered" if ok else "failed",
-                                attempts=i + 1, status_code=code, error=err, path=path)
+                                attempts=i + 1, status_code=code, error=err,
+                                payload=(None if ok else body.decode("utf-8", "replace")),
+                                next_attempt_at=next_at, path=path)
 
     for w in hooks:
         if post_fn is not None:
@@ -2304,6 +2323,65 @@ def deliver_event(account_id: int, event_type: str, data: dict, path: str | None
             import threading
             threading.Thread(target=_send, args=(w["id"], w["url"], w["secret"]), daemon=True).start()
     return len(hooks)
+
+
+def redeliver_due_webhooks(now: float | None = None, path: str | None = None,
+                           post_fn=None, limit: int = 200) -> dict:
+    """Durably re-send failed webhook deliveries whose next_attempt_at has elapsed —
+    one attempt per sweep. On success → 'delivered'; once WEBHOOK_MAX_TOTAL_ATTEMPTS
+    is hit (or the webhook was deleted) → 'dead'; else reschedule with backoff.
+    Resilient: returns a summary. Meant to ride the daily cron."""
+    now = now or time.time()
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT * FROM webhook_deliveries WHERE status='failed' AND next_attempt_at IS NOT NULL"
+            " AND next_attempt_at <= ? ORDER BY id ASC LIMIT ?", (now, int(limit))).fetchall()
+        rows = [dict(r) for r in rows]
+    finally:
+        conn.close()
+    redelivered = failed = dead = 0
+    for r in rows:
+        hook = None
+        for w in list_webhooks(r["account_id"], path):
+            if w["id"] == r["webhook_id"]:
+                hook = w
+                break
+        attempts = (r["attempts"] or 0) + 1
+        body = (r["payload"] or "").encode()
+        if hook is None or not body:
+            # webhook deleted or no stored payload → nothing to redeliver to
+            _update_delivery(r["id"], "dead", attempts, r["status_code"],
+                             "webhook deleted" if hook is None else "no payload", None, path)
+            dead += 1
+            continue
+        headers = _webhook_headers(r["event_type"], hook["secret"], body)
+        ok, code, err = _webhook_attempt(hook["url"], body, headers, post_fn)
+        if ok:
+            _update_delivery(r["id"], "delivered", attempts, code, "", None, path)
+            redelivered += 1
+        elif attempts >= WEBHOOK_MAX_TOTAL_ATTEMPTS:
+            _update_delivery(r["id"], "dead", attempts, code, err, None, path)
+            dead += 1
+        else:
+            idx = min(attempts - WEBHOOK_MAX_ATTEMPTS, len(WEBHOOK_REDELIVER_BACKOFF) - 1)
+            nxt = now + WEBHOOK_REDELIVER_BACKOFF[max(0, idx)]
+            _update_delivery(r["id"], "failed", attempts, code, err, nxt, path)
+            failed += 1
+    return {"due": len(rows), "redelivered": redelivered, "failed": failed, "dead": dead}
+
+
+def _update_delivery(delivery_id: int, status: str, attempts: int, status_code,
+                     error: str, next_attempt_at, path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute(
+            "UPDATE webhook_deliveries SET status=?, attempts=?, status_code=?, error=?,"
+            " next_attempt_at=? WHERE id=?",
+            (status, attempts, status_code, (error or "")[:200], next_attempt_at, delivery_id))
+        conn.commit()
+    finally:
+        conn.close()
 
 
 # --------------------------------------------------------------------------- #

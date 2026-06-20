@@ -100,6 +100,13 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — durable webhook redelivery (survives restarts)
+- [x] Follow-up to the retry/log work: the in-thread retries die with the process. Now a still-failing delivery
+      persists its signed `payload` + `next_attempt_at`; `redeliver_due_webhooks` (on the daily cron) re-sends it
+      with escalating backoff up to `WEBHOOK_MAX_TOTAL_ATTEMPTS` (8), then marks it `dead` (gave up). Re-signs the
+      stored body with the webhook's current secret; a deleted webhook → `dead`. UI shows delivered / retrying /
+      gave-up. 313 tests.
+
 ### 2026-06-20 — onboarding: "Verify your numbers" activation step
 - [x] Added a reconciliation step to the setup checklist — done once the report reconciles to a real provider
       invoice (`reconciliation.invoice_usd`). Turns "a number" into "a number finance trusts" and feeds the

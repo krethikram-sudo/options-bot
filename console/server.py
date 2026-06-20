@@ -698,10 +698,14 @@ async def app_outlay_digest_due(request: Request):
     # Monthly finance close pack (opt-in) rides the same daily sweep; the 30-day
     # cadence is enforced per account.
     close = await asyncio.to_thread(close_pack.run_due_close_packs)
+    # Durably re-send any webhook deliveries that are still failing (survives the
+    # in-thread retries dying with the process).
+    webhooks = await asyncio.to_thread(store.redeliver_due_webhooks)
     # Piggyback retention enforcement on the daily sweep — purge history past each
     # account's window (belt-and-suspenders to the inline purge on snapshot write).
     retention = await asyncio.to_thread(store.purge_due_outlay_history)
-    return JSONResponse({"ok": True, **summary, "close_pack": close, "retention": retention})
+    return JSONResponse({"ok": True, **summary, "close_pack": close,
+                         "webhooks": webhooks, "retention": retention})
 
 
 @app.post("/app/digest")
