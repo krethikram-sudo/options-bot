@@ -9,6 +9,7 @@ import html
 import os
 import time
 from datetime import datetime, timezone
+from urllib.parse import quote
 
 from . import store
 
@@ -219,6 +220,10 @@ pre{background:var(--paper2);color:var(--navy);padding:16px;border-radius:10px;o
 .fidbig{font-size:25px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.1}
 .fidbig.grn{color:var(--grn-d)}
 .fidbig.naive{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--amber);text-decoration-thickness:2px}
+a.nm{text-decoration:none;color:var(--ink)}
+a.nm:hover{color:var(--grn-d);text-decoration:none}
+a.nm .drill{color:var(--faint);font-size:12px;opacity:0;transition:opacity .12s}
+a.nm:hover .drill{opacity:1;color:var(--grn-d)}
 .cstep{display:flex;gap:11px;align-items:flex-start;margin:22px 0 10px}
 .cstep:first-child{margin-top:4px}
 .cnum{flex:none;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center}
@@ -1032,10 +1037,11 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
 
     kpis = _kpis_row(report, history, persona)
 
-    def _erow(name, sub, amount, bar_pct, color="var(--grn)"):
+    def _erow(name, sub, amount, bar_pct, color="var(--grn)", href=None):
         sub_html = f' <small>· {_e(sub)}</small>' if sub else ""
-        return (f'<div class=erow><span class=nm>{_e(name)}{sub_html}</span>'
-                f'<span class=amt>{amount}</span>'
+        nm = (f'<a class=nm href="{href}">{_e(name)}{sub_html} <span class=drill>→</span></a>'
+              if href else f'<span class=nm>{_e(name)}{sub_html}</span>')
+        return (f'<div class=erow>{nm}<span class=amt>{amount}</span>'
                 f'<div class=ebar><span style="width:{max(2,min(100,bar_pct)):.0f}%;background:{color}"></span></div></div>')
 
     # Spend by ticket
@@ -1054,7 +1060,8 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     clsmax = max((c.get("spent_usd", 0) for c in cls), default=1) or 1
     crows = "".join(
         _erow(c.get("task_class"), f'{c.get("tickets",0)} tickets · {c.get("share",0)*100:.0f}%',
-              money(c.get("spent_usd", 0)), c.get("spent_usd", 0) / clsmax * 100)
+              money(c.get("spent_usd", 0)), c.get("spent_usd", 0) / clsmax * 100,
+              href=f'/app/outlay/scope?type=class&id={quote(str(c.get("task_class") or ""))}')
         for c in cls) or '<p class=muted style="font-size:13px">No work-type spend yet.</p>'
     class_card = f'<div class=ocard><div class=dh>Spend by work type</div>{crows}</div>'
 
@@ -1079,7 +1086,8 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
             _erow(("Unassigned" if t.get("team") == "(unassigned)" else t.get("team")),
                   f'{t.get("share",0)*100:.0f}% of attributed',
                   money(t.get("spent_usd", 0)), t.get("spent_usd", 0) / tmax * 100,
-                  "#cfcabb" if t.get("team") == "(unassigned)" else "var(--grn)")
+                  "#cfcabb" if t.get("team") == "(unassigned)" else "var(--grn)",
+                  href=f'/app/outlay/scope?type=team&id={quote(str(t.get("team") or ""))}')
             for t in teams)
         team_card = (f'<div class=ocard><div class=dh>Spend by team / cost-center'
                      f'<span class=sub>allocation</span></div>{trows}</div>')
@@ -1127,6 +1135,51 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
             + _budget_strip(statuses) + kpis + _recon_strip(report) + _pricing_warn(report)
             + cov_diag + _sync_line(report, conn) + olinks + grid)
     return page("Spend", body, account, active="/app/outlay")
+
+
+def scope_page(account: dict, report: dict | None, scope_type: str, scope_id: str) -> str:
+    """Drill-down: the tickets behind one team or work-type, biggest first, with the
+    runaway outliers in that scope flagged. Reached by clicking a row on Spend."""
+    back = '<p style="margin:0 0 14px"><a href="/app/outlay">&larr; Back to Spend</a></p>'
+    if not report:
+        return page("Detail", back + '<div class=ocard><p class=muted style="margin:0">No data yet.</p></div>',
+                    account, active="/app/outlay")
+    all_tix = report.get("tickets", [])
+    if scope_type == "team":
+        label, kind = scope_id, "team / cost-center"
+        tix = [t for t in all_tix if (t.get("team_id") or "(unassigned)") == scope_id]
+    else:
+        scope_type = "class"
+        label, kind = scope_id, "work type"
+        tix = [t for t in all_tix if t.get("task_class") == scope_id]
+    tix = sorted(tix, key=lambda t: t.get("cost_usd", 0), reverse=True)
+    total = sum(t.get("cost_usd", 0) for t in tix)
+    anom_ids = {a.get("ticket_id"): a.get("ratio", 0) for a in (report.get("anomalies") or [])}
+
+    head = (f'<div class=ohead><h1>{_e(label)} <span class=muted>· {kind}</span></h1>'
+            f'<p>{money(total)} across {len(tix)} ticket{"s" if len(tix) != 1 else ""} in this window.</p></div>')
+    if not tix:
+        body = back + head + '<div class=ocard><p class=muted style="margin:0">No ticket-attributed spend in this scope.</p></div>'
+        return page("Detail", body, account, active="/app/outlay")
+
+    maxc = max((t.get("cost_usd", 0) for t in tix), default=1) or 1
+    rows = ""
+    for t in tix[:50]:
+        ratio = anom_ids.get(t.get("ticket_id"))
+        flag = (f' <span style="color:var(--amber);font-weight:600;font-size:12px">{ratio:.0f}× runaway</span>'
+                if ratio else "")
+        sub = t.get("task_class") if scope_type == "team" else (t.get("team_id") or "unassigned")
+        col = "var(--amber)" if ratio else "var(--grn)"
+        rows += (f'<div class=erow><span class=nm>{_e(t.get("ticket_id"))} '
+                 f'<small>· {_e(sub)} · {_e(t.get("status"))}</small>{flag}</span>'
+                 f'<span class=amt>{money(t.get("cost_usd", 0))}</span>'
+                 f'<div class=ebar><span style="width:{max(2, t.get("cost_usd",0)/maxc*100):.0f}%;'
+                 f'background:{col}"></span></div></div>')
+    card = f'<div class=ocard><div class=dh>Tickets<span class=sub>biggest first</span></div>{rows}</div>'
+    csv_view = "tickets"
+    export = (f'<div class=olinks style="margin-top:14px">'
+              f'<a href="/app/outlay/export.csv?view=tickets">Export all tickets (CSV)</a></div>')
+    return page("Detail", back + head + card + export, account, active="/app/outlay")
 
 
 def outlay_connect_page(account: dict, conn: dict | None) -> str:

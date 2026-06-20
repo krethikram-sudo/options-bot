@@ -622,6 +622,16 @@ def app_outlay(request: Request):
                                  has_budget=bool(budgets), persona=persona))
 
 
+@app.get("/app/outlay/scope", response_class=HTMLResponse)
+def app_outlay_scope(request: Request, type: str = "team", id: str = ""):
+    """Drill-down into the tickets behind one team or work type."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    scope_type = type if type in ("team", "class") else "team"
+    return _html(web.scope_page(acct, store.get_outlay_report(acct["id"]), scope_type, id))
+
+
 @app.post("/app/persona")
 async def app_set_persona(request: Request):
     acct, redir = _require(request)
