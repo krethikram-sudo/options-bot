@@ -298,6 +298,8 @@ _MIGRATIONS = [
     "ALTER TABLE outlay_history ADD COLUMN breakdown TEXT",  # JSON: top team/class spend per snapshot → movers
     "ALTER TABLE outlay_connections ADD COLUMN identity_map TEXT",  # JSON: identifier/domain → team
     "ALTER TABLE outlay_connections ADD COLUMN alerted_anomalies TEXT",  # JSON: ticket ids already alerted
+    "ALTER TABLE accounts ADD COLUMN digest_weekly INTEGER NOT NULL DEFAULT 1",  # weekly spend digest on/off
+    "ALTER TABLE accounts ADD COLUMN digest_last_at REAL",  # last weekly digest send time
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -736,6 +738,44 @@ def outlay_history(account_id: int, limit: int = 12, path: str | None = None) ->
             d["breakdown"] = {}
         out.append(d)
     return out
+
+
+def set_digest_weekly(account_id: int, on: bool, path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE accounts SET digest_weekly=? WHERE id=?",
+                     (1 if on else 0, account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def mark_digest_sent(account_id: int, now: float | None = None, path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE accounts SET digest_last_at=? WHERE id=?",
+                     (now or time.time(), account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def accounts_due_for_digest(now: float | None = None, every_seconds: int = 7 * 24 * 3600,
+                            path: str | None = None) -> list[int]:
+    """Active accounts opted into the weekly digest that have a saved spend report
+    and whose last send is older than the cadence (or never sent)."""
+    now = now or time.time()
+    cutoff = now - every_seconds
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT a.id FROM accounts a JOIN outlay_reports r ON r.account_id = a.id "
+            "WHERE a.status='active' AND a.digest_weekly=1 "
+            "AND (a.digest_last_at IS NULL OR a.digest_last_at <= ?)",
+            (cutoff,)).fetchall()
+    finally:
+        conn.close()
+    return [r["id"] for r in rows]
 
 
 def get_alerted_anomalies(account_id: int, path: str | None = None) -> set:

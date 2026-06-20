@@ -578,6 +578,35 @@ async def app_outlay_sync_due(request: Request):
     return JSONResponse({"ok": True, **summary})
 
 
+@app.post("/internal/outlay/digest-due")
+async def app_outlay_digest_due(request: Request):
+    """Cron hook: send the weekly spend digest to every account whose cadence has
+    elapsed. Same OUTLAY_CRON_TOKEN gate as sync-due; safe to call daily (the
+    weekly cadence is enforced per account)."""
+    want = os.environ.get("OUTLAY_CRON_TOKEN", "")
+    auth = request.headers.get("authorization", "")
+    got = auth[7:].strip() if auth[:7].lower() == "bearer " else ""
+    if not want or not secrets.compare_digest(got, want):
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+    from . import spend_digest
+    summary = await asyncio.to_thread(spend_digest.run_due_digests)
+    return JSONResponse({"ok": True, **summary})
+
+
+@app.post("/app/digest")
+async def app_digest_toggle(request: Request):
+    """Owner toggles the weekly spend digest email on/off."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    store.set_digest_weekly(acct["id"], bool(f.get("weekly")))
+    _audit(acct["id"], "digest.toggle",
+           actor=acct.get("display_email") or acct.get("email", ""),
+           detail=f"weekly={'on' if f.get('weekly') else 'off'}")
+    return _redirect("/app/settings#digest")
+
+
 @app.get("/app/outlay", response_class=HTMLResponse)
 def app_outlay(request: Request):
     acct, redir = _require(request)

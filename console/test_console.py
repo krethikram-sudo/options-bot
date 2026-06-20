@@ -2025,6 +2025,52 @@ def test_parse_cost_export_autodetects_provider():
     assert outlay_app.parse_cost_export("not json or recognizable") == (0.0, "")
 
 
+def test_weekly_digest_builds_and_respects_cadence(env, client, monkeypatch):
+    from console import spend_digest, store, notify
+    _signup(client, email="dig@x.com")
+    acct = store.get_account_by_email("dig@x.com")
+    # no report yet → nothing to send
+    assert spend_digest.build_account_digest(acct["id"]) is None
+    assert store.accounts_due_for_digest() == []
+
+    client.post("/app/outlay/sample", follow_redirects=True)
+    d = spend_digest.build_account_digest(acct["id"])
+    assert d and "AI spend" in d["subject"]
+    assert "Where it's going" in d["body"] and "/app" in d["body"]
+
+    # due now; send marks it; not due again within the week; due after a week
+    assert acct["id"] in store.accounts_due_for_digest()
+    sent = []
+    monkeypatch.setattr(notify, "send_email", lambda *a, **k: (sent.append(a), True)[1])
+    assert spend_digest.send_account_digest(acct["id"]) is True and len(sent) == 1
+    assert store.accounts_due_for_digest() == []
+    assert acct["id"] in store.accounts_due_for_digest(now=time.time() + 8 * 24 * 3600)
+
+    # opting out removes it from the sweep
+    store.set_digest_weekly(acct["id"], False)
+    assert acct["id"] not in store.accounts_due_for_digest(now=time.time() + 30 * 24 * 3600)
+
+
+def test_digest_cron_requires_token_and_toggle_persists(env, client):
+    from console import store
+    import os
+    assert client.post("/internal/outlay/digest-due").status_code == 401
+    os.environ["OUTLAY_CRON_TOKEN"] = "secret-cron"
+    try:
+        r = client.post("/internal/outlay/digest-due",
+                        headers={"authorization": "Bearer secret-cron"})
+        assert r.status_code == 200 and r.json()["ok"] is True and "sent" in r.json()
+    finally:
+        del os.environ["OUTLAY_CRON_TOKEN"]
+    _signup(client, email="tog@x.com")
+    acct = store.get_account_by_email("tog@x.com")
+    client.post("/app/digest", data={}, follow_redirects=True)  # unchecked → off
+    assert store.get_account(acct["id"])["digest_weekly"] == 0
+    client.post("/app/digest", data={"weekly": "1"}, follow_redirects=True)
+    assert store.get_account(acct["id"])["digest_weekly"] == 1
+    assert "Weekly spend digest" in client.get("/app/settings").text
+
+
 def test_anomalies_surfaced_on_spend_and_overview(env, client):
     """Runaway tickets (>=3x class median) show in-product — strip on Overview,
     card on Spend — not just buried in the report."""
