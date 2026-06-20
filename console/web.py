@@ -1402,6 +1402,9 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
     jemail = _e(conn.get("jira_email") or "")
     jjql = _e(conn.get("jira_jql") or "")
     idmap = _e(conn.get("identity_map") or "")
+    slack_url = _e(conn.get("slack_webhook") or "")
+    slack_state = ('<b style="color:var(--grn-d)">✓ Slack connected.</b>' if conn.get("slack_webhook")
+                   else "")
     sset = lambda k: "✓ saved" if conn.get(k) else "not set"  # noqa: E731
     chk = lambda v: " checked" if tracker == v else ""         # noqa: E731
     asy = conn.get("auto_sync_hours") or 0
@@ -1506,6 +1509,18 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
 bob@acme.com, Growth
 @contractor.com, External">{idmap}</textarea>
           <button class="btn sec" style="margin-top:12px">Save team map</button>
+        </form>
+      </div>
+      <div class=ocard style="margin-top:16px" id=alerts>
+        <div class=dh>Slack alerts <span class=sub>where eng &amp; finance live</span></div>
+        <p class=muted style="margin:-4px 0 10px;font-size:13.5px">Get budget and runaway-ticket alerts in
+          Slack (or Teams). Paste an <a href="https://api.slack.com/messaging/webhooks" target=_blank>incoming
+          webhook URL</a> — we post a one-line alert when a budget trips or a ticket goes runaway.
+          {slack_state}</p>
+        <form method=post action="/app/outlay/slack" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+          <label class=fld style="flex:1;min-width:280px"><span>Incoming webhook URL</span>
+            <input name=slack_webhook type=url placeholder="https://hooks.slack.com/services/…" value="{slack_url}"></label>
+          <button class="btn sec">Save</button>
         </form>
       </div>"""
     return page("Connect", form + _CONNECT_TOUR_JS, account, active="/app/outlay/connect")

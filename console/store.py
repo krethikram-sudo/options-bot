@@ -302,6 +302,7 @@ _MIGRATIONS = [
     "ALTER TABLE accounts ADD COLUMN digest_last_at REAL",  # last weekly digest send time
     "ALTER TABLE outlay_connections ADD COLUMN anomaly_threshold REAL",  # runaway flag multiple (default 3x)
     "ALTER TABLE outlay_connections ADD COLUMN muted_tickets TEXT",  # JSON: ticket ids muted from anomalies
+    "ALTER TABLE outlay_connections ADD COLUMN slack_webhook TEXT",  # Slack/Teams incoming webhook for alerts
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -779,6 +780,20 @@ def get_anomaly_prefs(account_id: int, path: str | None = None) -> tuple[float, 
     except (ValueError, TypeError):
         muted = set()
     return thr, muted
+
+
+def set_slack_webhook(account_id: int, url: str | None, path: str | None = None) -> None:
+    _upsert_connection_field(account_id, "slack_webhook", (url or "").strip() or None, path)
+
+
+def get_slack_webhook(account_id: int, path: str | None = None) -> str | None:
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT slack_webhook FROM outlay_connections WHERE account_id=?",
+                          (account_id,)).fetchone()
+    finally:
+        conn.close()
+    return (row["slack_webhook"] if row else None) or None
 
 
 def set_anomaly_threshold(account_id: int, threshold: float, path: str | None = None) -> None:
