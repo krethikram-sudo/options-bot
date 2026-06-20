@@ -136,6 +136,78 @@ def reconcile(report: dict, invoice_usd, source: str, window_days: int = 30) -> 
     return report
 
 
+_DQ_RANK = {"good": 0, "fair": 1, "poor": 2, "na": -1}
+
+
+def data_quality(report: dict, conn: dict | None = None, now: float | None = None) -> dict:
+    """A single 'can finance trust these numbers?' verdict, rolled up from the signals
+    that are otherwise scattered across the UI (coverage, reconciliation, pricing
+    fidelity, sync freshness). Returns {score, checks:[{key,label,status,detail}]}.
+    `status` is good|fair|poor, or 'na' when a check doesn't apply (it never drags
+    the overall score down). Overall score = the worst applicable check."""
+    import time as _time
+    report = report or {}
+    conn = conn or {}
+    sp = report.get("spend") or {}
+    checks: list[dict] = []
+
+    # 1. Ticket coverage — how much spend mapped to a specific work item.
+    total = sp.get("total_usd", 0.0)
+    cov = sp.get("ticket_coverage", 0.0)
+    if total <= 0:
+        checks.append({"key": "coverage", "label": "Ticket coverage", "status": "na",
+                       "detail": "No spend in the window yet."})
+    else:
+        cstat = "good" if cov >= 0.8 else "fair" if cov >= 0.5 else "poor"
+        checks.append({"key": "coverage", "label": "Ticket coverage", "status": cstat,
+                       "detail": f"{cov*100:.0f}% of spend is attributed to a specific ticket."})
+
+    # 2. Reconciliation — computed vs the provider's billed figure.
+    rec = report.get("reconciliation")
+    if not rec:
+        checks.append({"key": "reconciliation", "label": "Invoice reconciliation", "status": "na",
+                       "detail": "No provider invoice/export to reconcile against yet."})
+    else:
+        dp = abs(rec.get("delta_pct", 0.0))
+        rstat = "good" if dp <= 5 else "fair" if dp <= 15 else "poor"
+        checks.append({"key": "reconciliation", "label": "Invoice reconciliation", "status": rstat,
+                       "detail": f"Computed total is within {dp:.1f}% of the {rec.get('source','provider')} invoice."})
+
+    # 3. Pricing fidelity — was any spend priced by nearest-tier fallback?
+    pf = report.get("pricing_fidelity") or {}
+    fshare = pf.get("fallback_share", 0.0)
+    if not pf or fshare <= 0:
+        checks.append({"key": "pricing", "label": "Pricing fidelity", "status": "good",
+                       "detail": "Every model was priced from an exact rate."})
+    else:
+        pstat = "fair" if fshare < 0.05 else "poor"
+        checks.append({"key": "pricing", "label": "Pricing fidelity", "status": pstat,
+                       "detail": f"{fshare*100:.0f}% was priced at the nearest tier (unrecognized model id)."})
+
+    # 4. Freshness — is the data current?
+    synced_at = conn.get("synced_at")
+    asy = conn.get("auto_sync_hours") or 0
+    fails = conn.get("sync_fail_count") or 0
+    if not synced_at:
+        checks.append({"key": "freshness", "label": "Data freshness", "status": "na",
+                       "detail": "No successful sync recorded yet."})
+    else:
+        age_h = ((now or _time.time()) - synced_at) / 3600
+        if asy and fails >= 2:
+            fstat, det = "poor", f"Auto-sync has failed {fails}× — showing the last good data."
+        elif asy:
+            fstat = "good" if age_h <= asy else "fair" if age_h <= 2 * asy else "poor"
+            det = f"Last refreshed {age_h/24:.0f} day(s) ago (auto-sync every {asy}h)."
+        else:  # manual sync
+            fstat = "good" if age_h <= 168 else "fair" if age_h <= 720 else "poor"
+            det = f"Last refreshed {age_h/24:.0f} day(s) ago (manual sync)."
+        checks.append({"key": "freshness", "label": "Data freshness", "status": fstat, "detail": det})
+
+    worst = max((_DQ_RANK[c["status"]] for c in checks), default=-1)
+    score = {0: "good", 1: "fair", 2: "poor"}.get(worst, "na")
+    return {"score": score, "checks": checks}
+
+
 def parse_cost_export(text):
     """Auto-detect and sum a pasted *provider cost/billing export* into (usd, source).
 

@@ -100,6 +100,16 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — data-confidence verdict (rolls up trust signals; UI badge + API)
+- [x] The signals that answer "can finance trust these numbers?" (coverage, reconciliation, pricing fidelity,
+      sync freshness) rendered as scattered strips and were absent from the API. Rolled them into one verdict:
+- [x] **`outlay_app.data_quality(report, conn)`** → `{score: good|fair|poor, checks:[{key,label,status,detail}]}`.
+      Overall = worst applicable check; `na` checks (no invoice / no spend yet) never drag it down.
+- [x] **At-a-glance badge** on Spend ("Data confidence: Good/Fair/Poor", expandable to the per-check reasons) —
+      the rollup finance asked for; the detailed strips still render below.
+- [x] **API**: embedded as `data_quality` in `/api/v1/spend`, plus a lightweight `GET /api/v1/data-quality`
+      (no rows) so a pipeline can gate or a monitor can alert on confidence. Documented on the API page. 305 tests.
+
 ### 2026-06-20 — audit-log export for SIEM (Splunk/Datadog) + CSV
 - [x] Enterprise security teams want account events in their SIEM. Added:
 - [x] **`GET /api/v1/audit`** — token-authed (Bearer/x-modelpilot-key), events in ascending `id` order with a
