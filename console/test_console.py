@@ -1238,6 +1238,20 @@ def test_overview_is_role_aware_home(env, client):
     assert "Backlog estimate" not in spend            # estimate card → Estimate page
 
 
+def test_overview_cost_fidelity_callout(env, client):
+    _, store = env
+    _signup(client, email="fid@x.com")
+    client.post("/app/outlay/sample", follow_redirects=True)
+    # the report carries the cache-aware vs naive comparison
+    rep = store.get_outlay_report(store.get_account_by_email("fid@x.com")["id"])
+    cf = rep.get("cost_fidelity")
+    assert cf and cf["naive_usd"] > cf["outlay_usd"] and cf["inflation_factor"] > 1
+    # and the Overview surfaces it as the in-product proof
+    home = client.get("/app").text
+    assert "Why this number is the right one" in home
+    assert "Naive token tracker" in home and "Overstated by" in home
+
+
 def test_overview_trend_and_movers(env, client):
     _signup(client, email="mv@x.com")
     # sample seeds a short backdated history → trend sparkline + real movers appear
