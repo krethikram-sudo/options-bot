@@ -952,6 +952,23 @@ def test_owner_sees_team_and_can_invite(env, client):
     assert store.list_members(acct["id"]) == []
 
 
+def test_team_page_is_first_class(env, client):
+    _, store = env
+    _signup(client, email="lead@team.com")
+    acct = store.get_account_by_email("lead@team.com")
+    page = client.get("/app/team").text
+    # restyled on the product design system, with the owner and an invite affordance
+    assert "Team &amp; access" in page
+    assert "lead@team.com" in page and "owner" in page
+    assert "Invite a teammate" in page and "member" in page  # role legend / options
+    # invite a teammate → they appear as a manageable row (role + remove controls)
+    client.post("/app/team/invite", data={"email": "new@team.com", "role": "member"},
+                follow_redirects=True)
+    page = client.get("/app/team").text
+    assert "new@team.com" in page
+    assert "/app/team/role" in page and "/app/team/remove" in page
+
+
 def test_member_cannot_convert_billing(env, client):
     _, store = env
     owner = store.create_account("o4@b.com", "password123")
@@ -1219,6 +1236,32 @@ def test_overview_is_role_aware_home(env, client):
     assert "Where your AI spend went" in spend       # attribution stays
     assert "expected from open scope" not in spend    # forecast band card → Overview
     assert "Backlog estimate" not in spend            # estimate card → Estimate page
+
+
+def test_overview_trend_and_movers(env, client):
+    _signup(client, email="mv@x.com")
+    # sample seeds a short backdated history → trend sparkline + real movers appear
+    client.post("/app/outlay/sample", follow_redirects=True)
+    home = client.get("/app").text
+    assert "Spend trend" in home and "<svg" in home          # the trend card renders
+    assert "Top movers" in home                               # Δ-vs-last-refresh card
+
+    # the breakdown is captured per snapshot so movers are computable
+    _, store = env
+    hist = store.outlay_history(store.get_account_by_email("mv@x.com")["id"])
+    assert len(hist) >= 2 and hist[-1].get("breakdown")       # breakdown persisted
+    from console import web
+    assert web._movers(hist)                                  # produces ranked movers
+
+
+def test_overview_movers_fallback_to_drivers(env, client):
+    # a single real run (no prior history) → no Δ yet, so show top spend drivers
+    _signup(client, email="drv@x.com")
+    fix = _fixtures()
+    client.post("/app/outlay/run", json={"issues": (fix / "github_issues.json").read_text(),
+                "usage": (fix / "anthropic_usage.json").read_text()})
+    home = client.get("/app").text
+    assert "Top spend drivers" in home and "Top movers" not in home
 
 
 def test_outlay_run_rejects_bad_data(env, client):
