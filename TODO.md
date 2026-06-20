@@ -19,13 +19,13 @@ Live URLs:
 > **(1) `fly deploy` the console** so `/pilot-request` (and the redesigned product) are live — the site
 > CTAs already point at it; **(2) set up transactional SMTP** (`SMTP_*` Fly secrets) so 2FA codes,
 > password resets, budget alerts, and pilot-request notifications actually send (logged-only until then);
-> optionally set `PILOT_INBOX`. Then: **send the design-partner outreach** (the real validation gap is
+> optionally set `PILOT_INBOX`. Then: **send the early-customer outreach** (the real validation gap is
 > end-to-end ticket coverage + a measured forecast-accuracy number on a real team). Founder track
 > (entity → live Stripe) + counsel review of legal docs still open below.
 >
 > **NOTE — legal docs lag the pivot:** `modelpilot/site/legal/terms.html` + `msa.html` still describe the
 > old **"20% of realized savings"** routing-billing model. Outlay pilots run **free** and platform pricing
-> is set with design partners, so this copy is stale/misleading. Left for the **counsel review** pass
+> is set with early customers, so this copy is stale/misleading. Left for the **counsel review** pass
 > (don't rewrite legal terms ad hoc) — but flag it to the attorney.
 >
 > **PROGRESS 2026-06-17:** Nav decluttered. Deep competitor research added
@@ -75,7 +75,7 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
         Routing), `SMTP_*` + `PILOT_INBOX=krethikram@gmail.com` set as Fly secrets. Verified end-to-end —
         a test pilot request emailed through. This also turns on 2FA codes, password resets, and budget
         alerts (all share `send_email`).
-- [ ] **Send the design-partner outreach** — kit is ready: `OUTLAY_PILOT_OUTREACH.md` (opener/email/
+- [ ] **Send the early-customer outreach** — kit is ready: `OUTLAY_PILOT_OUTREACH.md` (opener/email/
       community/security-FAQ/call-script/per-prospect drafts, all Outlay-framed, free read-only pilots) +
       `OUTLAY_ONEPAGER.md` (prospect-facing). Targets in `PROSPECTS.md` (list still valid — drop the routing
       narrative, keep the names). Goal: 3–5 pilots; the real validation gap is **attribution coverage + a

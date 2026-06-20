@@ -41,7 +41,7 @@ gateway, no SDK, no app changes.** Prompts, outputs, and your API key **never re
   or our roadmap? Ask.
 
 ## Pricing
-- **Pilots run free.** Platform pricing for ongoing budgeting & governance is set *with* design partners —
+- **Pilots run free.** Early-customer pricing for ongoing budgeting & governance —
   influence over the roadmap and pricing is part of the deal.
 
 ## Quick FAQ
