@@ -1703,26 +1703,29 @@ def test_outlay_onboarding_checklist_shows_and_completes(env, client):
     _, store = env
     _signup(client, email="onb@x.com")
     # fresh account → checklist visible; endowed-progress means the account step is
-    # pre-completed, so it opens at "1 of 5" (default persona), never empty
+    # pre-completed, so it opens at "1 of 6" (default persona), never empty
     page = client.get("/app/outlay").text
-    assert "Get set up" in page and "1 of 5" in page
+    assert "Get set up" in page and "1 of 6" in page
     assert "Create your account" in page and "ob-bar" in page
+    assert "Verify your numbers" in page  # the reconciliation activation step
 
     # sample data does NOT count as being set up (still a worked example)
     client.post("/app/outlay/sample", follow_redirects=True)
     assert "Get set up" in client.get("/app/outlay").text
 
-    # configure everything: connection, a real (non-sample) report, a budget
+    # configure everything: connection, a real (non-sample) report reconciled to an
+    # invoice (the verify step), and a budget
     client.post("/app/outlay/connect", data={"tracker": "github", "github_owner": "acme",
                 "github_repo": "web", "github_token": "ghp_x", "anthropic_key": "sk"},
                 follow_redirects=True)
     fix = _fixtures()
     client.post("/app/outlay/run", json={"issues": (fix / "github_issues.json").read_text(),
-                "usage": (fix / "anthropic_usage.json").read_text()})
+                "usage": (fix / "anthropic_usage.json").read_text(),
+                "cost_export": '{"ResultsByTime":[{"Total":{"UnblendedCost":{"Amount":"500.00"}},"Groups":[]}]}'})
     client.post("/app/outlay/budgets", data={"scope_type": "overall", "scope_id": "",
                 "limit_usd": "5000", "period_days": "90"}, follow_redirects=True)
 
-    # all four steps done → checklist disappears
+    # all steps done (incl. reconciliation) → checklist disappears
     assert "Get set up" not in client.get("/app/outlay").text
 
 
