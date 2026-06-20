@@ -224,3 +224,34 @@ def test_vertex_user_map_team_fidelity():
     ident = IdentityGraph(user_to_team={"pay@acme.com": "growth"})
     res = attribute(events, [], engine=JoinEngine([], identity=ident))
     assert "growth" in {r.team_id for r in res.rows if r.team_id}
+
+
+def test_openai_usage_parse_and_price():
+    """OpenAI usage export -> UsageEvents priced on the separate OpenAI table."""
+    from outlay.ingest import parse_openai_usage_file
+    from outlay.ingest.openai_usage import normalize_openai_model
+    from outlay.pricing import cost_usd, rate_for
+
+    events = parse_openai_usage_file(FIX / "openai_usage.json")
+    assert len(events) == 3                          # zero-token row dropped
+    e = events[0]
+    assert e.provider == "openai" and e.model == "gpt-4o"
+    # OpenAI splits cached out of total input -> uncached 1200, cached 800
+    assert e.input_tokens == 1200 and e.cache_read_tokens == 800 and e.output_tokens == 500
+    assert any(x.model == "gpt-4o-mini" for x in events)
+    assert any(x.model == "o1" for x in events)
+    # priced on OpenAI rates (gpt-4o $2.5/$10, cached @0.5x), not Claude
+    assert abs(cost_usd(e) - (1200*2.5 + 800*1.25 + 500*10)/1e6) < 1e-9
+    assert rate_for("gpt-4o").model == "gpt-4o"
+    assert normalize_openai_model("gpt-4o-mini-2024-07-18") == "gpt-4o-mini"
+
+
+def test_openai_azure_deployment_map_and_team():
+    from outlay.ingest import parse_openai_usage
+    payload = [{"model": "prod-gpt4o", "input_tokens": 100, "output_tokens": 50, "user_id": "svc"}]
+    events = parse_openai_usage(payload, user_map={"svc": "ops@acme.com"},
+                                deployment_map={"prod-gpt4o": "gpt-4o"})
+    assert events[0].model == "gpt-4o" and events[0].user == "ops@acme.com"
+    ident = IdentityGraph(user_to_team={"ops@acme.com": "ops"})
+    res = attribute(events, [], engine=JoinEngine([], identity=ident))
+    assert "ops" in {r.team_id for r in res.rows if r.team_id}

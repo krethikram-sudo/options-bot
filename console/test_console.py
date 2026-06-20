@@ -1978,3 +1978,13 @@ def test_outlay_run_accepts_vertex_logs(env, client):
     r = client.post("/app/outlay/run", json={"issues": issues, "usage": vertex})
     assert r.status_code == 200 and r.json()["ok"] is True, r.text
     assert "AI spend" in client.get("/app/outlay").text
+
+
+def test_outlay_run_accepts_openai_usage(env, client):
+    """The paste/run path auto-detects an OpenAI usage export."""
+    _signup(client)
+    fix = _fixtures()
+    issues = (fix / "github_issues.json").read_text()
+    openai = (fix / "openai_usage.json").read_text()
+    r = client.post("/app/outlay/run", json={"issues": issues, "usage": openai})
+    assert r.status_code == 200 and r.json()["ok"] is True, r.text

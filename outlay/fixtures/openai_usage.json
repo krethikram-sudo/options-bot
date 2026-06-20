@@ -1,0 +1,10 @@
+{"object":"page","data":[
+ {"start_time":1718700000,"results":[
+   {"model":"gpt-4o-2024-08-06","input_tokens":2000,"input_cached_tokens":800,"output_tokens":500,"user_id":"svc-payments"},
+   {"model":"gpt-4o-mini","input_tokens":1000,"output_tokens":300,"user_id":"alice@acme.com"}
+ ]},
+ {"start_time":1718786400,"results":[
+   {"model":"o1-2024-12-17","input_tokens":3000,"output_tokens":1200,"user_id":"svc-platform"},
+   {"model":"gpt-4o","input_tokens":0,"output_tokens":0,"user_id":"svc-payments"}
+ ]}
+]}

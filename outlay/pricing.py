@@ -22,24 +22,24 @@ from .models import UsageEvent
 @dataclass(frozen=True)
 class ModelRate:
     """Per-1M-token rates. `tier` is the capability-ladder position used by the
-    routing recommender (0=cheapest .. 3=most capable)."""
+    routing recommender (0=cheapest .. 3=most capable). Cache multipliers are
+    per-provider: Anthropic caches read at 0.1x / write at 1.25x of base input;
+    OpenAI caches read at 0.5x with no separate write charge."""
 
     model: str
     input_per_m: float
     output_per_m: float
     tier: int
-
-    # Anthropic prompt-cache multipliers relative to base input price.
-    CACHE_READ_MULT = 0.1
-    CACHE_WRITE_MULT = 1.25
+    cache_read_mult: float = 0.1
+    cache_write_mult: float = 1.25
 
     @property
     def cache_read_per_m(self) -> float:
-        return self.input_per_m * self.CACHE_READ_MULT
+        return self.input_per_m * self.cache_read_mult
 
     @property
     def cache_write_per_m(self) -> float:
-        return self.input_per_m * self.CACHE_WRITE_MULT
+        return self.input_per_m * self.cache_write_mult
 
 
 # Canonical model → rate. Keep ids in sync with the rest of the repo's model
@@ -52,22 +52,47 @@ RATES: dict[str, ModelRate] = {
     "claude-fable-5": ModelRate("claude-fable-5", 10.0, 50.0, tier=3),
 }
 
-# Ordered cheapest → most capable; used to find a downgrade candidate.
+# Ordered cheapest → most capable; used to find a downgrade candidate. Built from
+# the Claude RATES only — the routing recommender is Claude-tier-aware and must not
+# see other providers' models.
 TIER_LADDER: list[str] = sorted(RATES, key=lambda m: RATES[m].tier)
 
+# OpenAI / Azure OpenAI rates — kept SEPARATE from the Claude tier ladder above,
+# with OpenAI's own cache economics (cached input ~0.5x, no cache-write charge).
+# Approximate USD/1M; update as OpenAI reprices. Used only to cost ingested
+# OpenAI spend, never for routing.
+OPENAI_RATES: dict[str, ModelRate] = {
+    "gpt-4o-mini": ModelRate("gpt-4o-mini", 0.15, 0.60, tier=0, cache_read_mult=0.5, cache_write_mult=0.0),
+    "o3-mini":     ModelRate("o3-mini", 1.10, 4.40, tier=1, cache_read_mult=0.5, cache_write_mult=0.0),
+    "gpt-4.1":     ModelRate("gpt-4.1", 2.00, 8.00, tier=1, cache_read_mult=0.5, cache_write_mult=0.0),
+    "gpt-4o":      ModelRate("gpt-4o", 2.50, 10.00, tier=2, cache_read_mult=0.5, cache_write_mult=0.0),
+    "gpt-4-turbo": ModelRate("gpt-4-turbo", 10.0, 30.0, tier=2, cache_read_mult=0.5, cache_write_mult=0.0),
+    "o1":          ModelRate("o1", 15.0, 60.0, tier=3, cache_read_mult=0.5, cache_write_mult=0.0),
+}
+
 _FALLBACK = RATES["claude-sonnet-4-6"]
+_OPENAI_FALLBACK = OPENAI_RATES["gpt-4o"]
 
 
 def rate_for(model: str) -> ModelRate:
     """Resolve a model id to its rate, tolerating minor id drift (date suffixes,
-    `anthropic.` provider prefixes from Bedrock-style ids)."""
+    `anthropic.` provider prefixes from Bedrock-style ids). OpenAI ids resolve to
+    the separate OpenAI table."""
     if model in RATES:
         return RATES[model]
+    if model in OPENAI_RATES:
+        return OPENAI_RATES[model]
     norm = model.replace("anthropic.", "")
     # Strip a trailing -YYYYMMDD date snapshot if present.
     for known in RATES:
         if norm == known or norm.startswith(known + "-"):
             return RATES[known]
+    for known in OPENAI_RATES:
+        if norm == known or norm.startswith(known + "-"):
+            return OPENAI_RATES[known]
+    # An OpenAI-family id we don't have an exact rate for → OpenAI fallback, not Claude.
+    if norm.startswith(("gpt", "o1", "o3", "o4", "chatgpt")):
+        return _OPENAI_FALLBACK
     return _FALLBACK
 
 
