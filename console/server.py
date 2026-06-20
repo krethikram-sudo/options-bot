@@ -277,11 +277,19 @@ async def signup(request: Request):
     return resp
 
 
+_SSO_MSG = {
+    "unknown": "We couldn't find single sign-on for that email domain. Use your password, or check with your admin.",
+    "failed": "Single sign-on didn't complete. Please try again or sign in with your password.",
+    "domain": "That account's email domain isn't allowed for SSO here.",
+}
+
+
 @app.get("/login", response_class=HTMLResponse)
 def login_form(request: Request):
     if _current(request):
         return _redirect("/app")
-    return _html(web.auth_form("login"))
+    err = _SSO_MSG.get(request.query_params.get("sso", ""), "")
+    return _html(web.auth_form("login", err))
 
 
 @app.post("/login")
@@ -1563,6 +1571,7 @@ def sso_callback(request: Request):
     org = store.get_account(account_id)
     resp = _redirect("/app/outlay")
     _set_session(resp, org, member["role"], member["id"], platform_role="customer")
+    _audit(account_id, "login", actor=email, detail=f"SSO · role {member['role']}")
     return resp
 
 
