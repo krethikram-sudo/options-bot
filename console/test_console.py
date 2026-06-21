@@ -1491,6 +1491,10 @@ def test_security_compliance_page_for_reviewers(env, client):
     assert "SCIM" in t and "SSO" in t                 # real, shipped auth features
     assert "audit log" in t.lower() and "retention" in t.lower()
     assert "not yet SOC" in t                          # honest on certifications
+    # AI transparency statement (NIST AI RMF / state responsible-AI alignment)
+    assert "AI transparency" in t
+    assert "No training on your data" in t and "NIST AI Risk Management Framework" in t
+    assert "VPAT" in t                                  # accessibility conformance report offered
     # reachable from the product nav
     assert 'href="/app/security"' in client.get("/app").text
 

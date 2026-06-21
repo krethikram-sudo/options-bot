@@ -2629,7 +2629,24 @@ def security_page(account: dict) -> str:
 
     {card("Accessibility (Section 508 / WCAG 2.1 AA)",
           li("The console is built to <b>WCAG 2.1 AA / Section 508</b>; an automated axe-core audit "
-             "passes with <b>zero violations</b>. Accessibility details are available for your review."))}
+             "passes with <b>zero violations</b>. A <b>VPAT / ACR</b> is available for your review "
+             "(covering WCAG 2.1 AA, Section 508, and Maryland Nonvisual Access / NTIAA)."))}
+
+    {card("AI transparency &amp; model use",
+          li("<b>Where AI is used.</b> Outlay uses a model only to <b>classify work into task "
+             "categories</b> (e.g. bug / feature / refactor) from ticket titles and labels you already "
+             "have. It does <b>not</b> make consequential decisions about people."),
+          li("<b>No training on your data.</b> Your metadata is never used to train or fine-tune any "
+             "model, and is never shared with a model provider for training."),
+          li("<b>Explainable &amp; overridable.</b> Every classification and cost figure is shown with "
+             "the evidence behind it (the ticket, the token counts, the pricing) and can be "
+             "<b>reviewed and corrected by a human</b> — no opaque automated scoring."),
+          li("<b>Metadata only.</b> The model sees task categories and identifiers, never prompt "
+             "content, model outputs, citizen/PII data, or your keys."),
+          note="Aligned with the <b>NIST AI Risk Management Framework</b> and state responsible-AI "
+               "guidance (e.g. Maryland's Executive Order on AI and DoIT's Responsible AI policy): "
+               "transparency about where AI is used, no training on customer data, and human oversight "
+               "of every output.")}
 
     <div class=note style="margin-top:16px"><b>Certifications — the honest part.</b> The data-flow
       guarantee above is a property of the <b>architecture</b> and is independently verifiable. We are
