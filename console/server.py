@@ -1259,6 +1259,25 @@ def api_v1_enforcement(request: Request, ticket: str = "", team: str = "", work_
                          "decision": decision})
 
 
+@app.post("/api/v1/enforcement/report")
+async def api_v1_enforcement_report(request: Request):
+    """The gateway reports how many calls it blocked / routed down per program, so
+    the console can show finance the hard cap is actually biting. Token-authed;
+    body: {"counts": {"<program_id>": n}}."""
+    resolved, err = _api_auth(request)
+    if err:
+        return err
+    try:
+        data = await request.json()
+    except Exception:  # noqa: BLE001
+        data = {}
+    counts = (data or {}).get("counts") or {}
+    if not isinstance(counts, dict):
+        return JSONResponse({"ok": False, "error": "counts must be an object"}, status_code=400)
+    hit = store.record_program_enforcement(resolved["account_id"], counts)
+    return JSONResponse({"ok": True, "programs_updated": hit})
+
+
 def _audit_iso(ts) -> str:
     from datetime import datetime, timezone
     try:

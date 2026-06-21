@@ -48,6 +48,7 @@
     <a href="#connect">Connect</a>
     <a href="#what">What you get</a>
     <a href="#privacy">Privacy &amp; data flow</a>
+    <a href="#enforce">Enforce budgets</a>
     <a href="#pilot">Start a pilot</a>
   </div>
 
@@ -102,6 +103,47 @@
   </ul>
   <div class="note">Full detail, and a walkthrough for your security reviewer, on
     <a href="/security">Security &amp; privacy</a>.</div>
+
+  <h2 id="enforce">Enforce a budget by program (optional)</h2>
+  <p>Everything above is <b>read-only</b> — Outlay alerts you before a budget is blown, and your own
+    automation can act on a <code>program.over</code> webhook. If you want a <b>true hard stop</b>, there's an
+    optional in-path mode: run the ModelPilot gateway in front of your Claude calls, and it will block or
+    route down traffic the moment a <b>program</b> is over its cap.</p>
+  <div class="note"><b>This is the one mode where we're in your path</b>, and it's entirely opt-in. The
+    read-only product above never touches your traffic; you only run the gateway if you want it to enforce.</div>
+
+  <h3>1. Define a program with a hard cap</h3>
+  <p>In the console, go to <b>Programs</b> and create a program — a budget spanning several teams, projects, or
+    work types (e.g. <i>Platform</i> = team <code>platform</code> + project <code>PLAT</code>). Set
+    <b>Enforcement</b> to <b>Hard cap</b> and choose the action when it's over: <b>block</b> new calls, or
+    <b>route down</b> to a cheaper floor model (e.g. <code>claude-haiku-4-5</code>).</p>
+
+  <h3>2. Put the gateway in front of your calls</h3>
+  <pre><span class="c"># point your SDK's base_url at the gateway, and turn enforcement on</span>
+export MODELPILOT_CONSOLE_URL=https://app.outlay-ai.com
+export MODELPILOT_API_KEY=mp_live_…        <span class="c"># from the console API page</span>
+export MODELPILOT_ENFORCE=1
+uvicorn modelpilot.gateway:app --port 8400</pre>
+  <p>The gateway caches the current verdict from <code>/api/v1/enforcement</code> (refreshed every ~60s) and
+    decides each call <b>locally</b> — no per-request round trip. It's <b>fail-open</b>: if the console is
+    ever unreachable, calls pass through (we never block your traffic because <i>our</i> control plane blipped
+    — only because a budget you set was actually exceeded).</p>
+
+  <h3>3. Tag each call with its work context</h3>
+  <p>So the gateway knows which program a call belongs to, send one of these headers (the same work tags used
+    for attribution):</p>
+  <table>
+    <thead><tr><th>Header</th><th>Matches a program member of type</th></tr></thead>
+    <tbody>
+      <tr><td><code>x-modelpilot-work-ticket: PLAT-123</code></td><td><b>project</b> (the <code>PLAT</code> prefix)</td></tr>
+      <tr><td><code>x-modelpilot-cost-center: platform</code></td><td><b>team</b></td></tr>
+      <tr><td><code>x-modelpilot-work-type: feature</code></td><td><b>work type</b></td></tr>
+    </tbody>
+  </table>
+  <p>When a program is over its hard cap, a matching call is either <b>blocked</b> (HTTP <code>402</code>,
+    <code>budget_exceeded</code>) or returned on the <b>floor model</b>, with an <code>x-modelpilot-enforced</code>
+    response header so you can see it happened. Programs left on <b>Alert only</b> are never blocked — they
+    just fire the <code>program.over</code> webhook.</p>
 
   <h2 id="pilot">Start a pilot</h2>
   <p>Outlay is onboarding its first customers now — read-only, ~2 weeks, free. We'll map your real AI spend to your

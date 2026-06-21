@@ -1939,11 +1939,17 @@ def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> s
             enf = f'<span class="otag over" title="{tip}">hard cap · {_e(act)}</span>'
         else:
             enf = '<span class="otag ex" title="detect &amp; notify; your automation enforces">alert only</span>'
+        bit = ""
+        if s.get("enforce_mode") == "hard" and (s.get("enforced_count") or 0) > 0:
+            n = int(s["enforced_count"])
+            when = f' · last {_fmt_date(s["last_enforced_at"])}' if s.get("last_enforced_at") else ""
+            bit = (f'<span style="color:var(--red);font-weight:600"> · enforced {n:,} '
+                   f'time{"s" if n != 1 else ""}{when}</span>')
         rows += (f'<div class=bcard><div style="display:flex;justify-content:space-between;align-items:center;gap:10px">'
                  f'<b style="font-size:14.5px">{_e(s.get("name"))}</b>'
                  f'<span style="display:flex;gap:6px;align-items:center">{enf}'
                  f'<span class="otag {s["status"]}">{_e(s["status"])}</span></span></div>'
-                 f'<div class=muted style="font-size:12px;margin-top:3px">members: {mem}</div>'
+                 f'<div class=muted style="font-size:12px;margin-top:3px">members: {mem}{bit}</div>'
                  f'<div class=dual style="margin-top:10px"><div class=track>'
                  f'<span style="width:{w:.0f}%;background:{bar}"></span></div></div>'
                  f'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">'

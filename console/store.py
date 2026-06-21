@@ -342,6 +342,8 @@ _MIGRATIONS = [
     "ALTER TABLE api_keys ADD COLUMN expires_at REAL",  # optional key expiry; NULL = never
     "ALTER TABLE webhook_deliveries ADD COLUMN payload TEXT",  # exact signed body, for durable redelivery
     "ALTER TABLE webhook_deliveries ADD COLUMN next_attempt_at REAL",  # when a failed delivery is due to retry; NULL = terminal
+    "ALTER TABLE outlay_programs ADD COLUMN enforced_count INTEGER NOT NULL DEFAULT 0",  # times the gateway blocked/route-down'd for this program
+    "ALTER TABLE outlay_programs ADD COLUMN last_enforced_at REAL",  # last enforcement action
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -1354,6 +1356,31 @@ def set_outlay_program_status(program_id: int, status: str, path: str | None = N
         conn.commit()
     finally:
         conn.close()
+
+
+def record_program_enforcement(account_id: int, counts: dict, now: float | None = None,
+                               path: str | None = None) -> int:
+    """Add the gateway's enforcement tallies to each program (so finance sees the cap
+    actually biting). `counts` is {program_id: n}. Returns the number of programs hit."""
+    now = now or time.time()
+    conn = connect(path)
+    hit = 0
+    try:
+        for pid, n in (counts or {}).items():
+            try:
+                pid, n = int(pid), int(n)
+            except (TypeError, ValueError):
+                continue
+            if n <= 0:
+                continue
+            cur = conn.execute(
+                "UPDATE outlay_programs SET enforced_count=COALESCE(enforced_count,0)+?,"
+                " last_enforced_at=? WHERE id=? AND account_id=?", (n, now, pid, account_id))
+            hit += cur.rowcount or 0
+        conn.commit()
+    finally:
+        conn.close()
+    return hit
 
 
 def activation_funnel(path: str | None = None) -> dict:

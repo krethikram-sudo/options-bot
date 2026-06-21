@@ -44,7 +44,7 @@ def test_gateway_blocks_call_over_hard_cap(monkeypatch, tmp_path):
     try:
         with TestClient(gw.app) as client:
             # seed the cached verdict (the refresh loop is off without a console)
-            gw.app.state.enforced = [{"name": "Platform", "action": "block",
+            gw.app.state.enforced = [{"id": 7, "name": "Platform", "action": "block",
                                       "members": [{"scope_type": "project", "scope_id": "PLAT"}]}]
             # a call tagged to PLAT is blocked (402) before any upstream call
             r = client.post("/v1/messages",
@@ -55,5 +55,7 @@ def test_gateway_blocks_call_over_hard_cap(monkeypatch, tmp_path):
             assert r.headers.get("x-modelpilot-enforced") == "block"
             assert r.headers.get("x-modelpilot-program") == "Platform"
             assert r.json()["error"]["type"] == "budget_exceeded"
+            # the block is tallied for reporting back to the console
+            assert gw.app.state.enforce_counts.get(7) == 1
     finally:
         importlib.reload(gw)

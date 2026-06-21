@@ -252,6 +252,7 @@ async def _lifespan(app):
     # over their hard cap and cache the verdict, so each request is decided locally
     # (no per-call round trip). Fail-open: keep the last verdict on any error.
     app.state.enforced = []
+    app.state.enforce_counts = {}  # {program_id: n} accumulated between reports
     enforce_task = None
     if ENFORCE and app.state.console_url:
         import asyncio
@@ -262,6 +263,11 @@ async def _lifespan(app):
             interval = int(os.environ.get("MODELPILOT_ENFORCE_REFRESH", "60"))
             while True:
                 try:
+                    # report what we enforced since last tick, then refresh the verdict
+                    counts, app.state.enforce_counts = app.state.enforce_counts, {}
+                    if counts:
+                        await asyncio.to_thread(_enforce.report_enforcement,
+                                                app.state.console_url, None, counts)
                     got = await asyncio.to_thread(_enforce.fetch_enforced,
                                                   app.state.console_url, None)
                     if got is not None:
@@ -770,6 +776,10 @@ async def messages(request: Request):
             app.state.enforced, ticket=work_meta["ticket"],
             team=request.headers.get("x-modelpilot-cost-center"),
             work_type=request.headers.get("x-modelpilot-work-type"))
+        if verdict["decision"] in ("block", "downgrade"):
+            _pid = verdict.get("program_id")
+            if _pid is not None:
+                app.state.enforce_counts[_pid] = app.state.enforce_counts.get(_pid, 0) + 1
         if verdict["decision"] == "block":
             return Response(
                 content=json.dumps({"type": "error", "error": {
