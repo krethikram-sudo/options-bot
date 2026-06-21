@@ -45,7 +45,8 @@ def decide(enforced: list, ticket: str | None = None, team: str | None = None,
     block = next((p for p in matched if (p.get("action") or "block") == "block"), None)
     chosen = block or matched[0]
     return {"decision": chosen.get("action") or "block",
-            "program": chosen.get("name"), "floor_model": chosen.get("floor_model")}
+            "program": chosen.get("name"), "program_id": chosen.get("id"),
+            "floor_model": chosen.get("floor_model")}
 
 
 def fetch_enforced(console_url: str | None, api_key: str | None, timeout: float = 3.0):
@@ -63,3 +64,20 @@ def fetch_enforced(console_url: str | None, api_key: str | None, timeout: float 
         return data.get("enforced") or []
     except Exception:  # noqa: BLE001 — never break the gateway on a control-plane blip
         return None
+
+
+def report_enforcement(console_url: str | None, api_key: str | None, counts: dict,
+                       timeout: float = 3.0) -> bool:
+    """Best-effort: POST per-program block/route-down tallies back to the console so
+    finance sees the cap biting. `counts` is {program_id: n}. Never raises."""
+    api_key = api_key or os.environ.get("MODELPILOT_API_KEY")
+    if not console_url or not api_key or not counts:
+        return False
+    try:
+        import httpx
+        httpx.post(f"{console_url.rstrip('/')}/api/v1/enforcement/report",
+                   json={"counts": {str(k): int(v) for k, v in counts.items() if k is not None}},
+                   headers={"Authorization": f"Bearer {api_key}"}, timeout=timeout)
+        return True
+    except Exception:  # noqa: BLE001
+        return False

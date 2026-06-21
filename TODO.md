@@ -115,6 +115,12 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
       over their *hard* cap (`enforced`) so the gateway caches + matches locally; `?ticket=/team=/work_type=`
       resolves a single call → `{decision: allow|block|downgrade, floor_model}`. Engine: `enforced_programs`
       + `program_decision` (block wins over downgrade; project key from ticket). Documented on the API page.
+- [x] **Enforcement counter + setup doc + marketing.** Gateway tallies block/route-down per program and POSTs
+      `/api/v1/enforcement/report`; console `record_program_enforcement` increments `enforced_count` /
+      `last_enforced_at`, shown as "enforced N times" on the Programs page. Customer setup doc added to the
+      published docs (`#enforce`). **Marketing:** new landing "Govern by program" section (enforce + reallocate),
+      hero/nav/meta/compat-badge/feature-card updates, honest FAQ rewrite (alert-by-default vs opt-in hard cap),
+      and a compare-table enforcement row. 535 tests.
 - [x] **Slice 3: gateway enforcement** — `modelpilot/enforce.py` (publishable; fetch + local `decide`, no IP)
       + gateway wiring: an opt-in (`MODELPILOT_ENFORCE=1`) refresh loop caches `/api/v1/enforcement`, and each
       `/v1/messages` call whose program is over its hard cap is **blocked (402 budget_exceeded)** or

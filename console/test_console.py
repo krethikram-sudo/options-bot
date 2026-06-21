@@ -2742,6 +2742,18 @@ def test_program_enforcement_decision_endpoint(env, client):
     # documented on the API page
     assert "GET /api/v1/enforcement" in client.get("/app/api").text
 
+    # the gateway reports its tallies; the program page shows "enforced N times"
+    pid = store.list_outlay_programs(acct["id"])[0]["id"]
+    rep = client.post("/api/v1/enforcement/report", headers=h, json={"counts": {str(pid): 3}})
+    assert rep.status_code == 200 and rep.json()["programs_updated"] == 1
+    client.post("/api/v1/enforcement/report", headers=h, json={"counts": {str(pid): 2}})
+    prog = [p for p in store.list_outlay_programs(acct["id"]) if p["id"] == pid][0]
+    assert prog["enforced_count"] == 5 and prog["last_enforced_at"]
+    assert "enforced 5 times" in client.get("/app/outlay/programs").text
+    # a stranger's program id is ignored (account-scoped)
+    assert client.post("/api/v1/enforcement/report", headers=h,
+                       json={"counts": {"999999": 9}}).json()["programs_updated"] == 0
+
 
 def test_unit_economics_engine_and_card(env, client):
     from console import outlay_app
