@@ -1068,7 +1068,7 @@ def app_outlay_export(request: Request, view: str = "tickets"):
     report = store.get_outlay_report(acct["id"])
     if not report:
         return _redirect("/app/outlay")
-    if view not in ("tickets", "people", "classes", "savings", "models"):
+    if view not in ("tickets", "people", "classes", "teams", "savings", "models"):
         view = "tickets"
     csv_text = outlay_app.report_csv(report, view)
     return PlainTextResponse(csv_text, media_type="text/csv", headers={

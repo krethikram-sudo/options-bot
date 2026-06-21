@@ -1401,6 +1401,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                   '<span class=sp></span>'
                   '<span class=muted style="font-size:12.5px">Export CSV:</span>'
                   '<a href="/app/outlay/export.csv?view=tickets">by ticket</a>'
+                  '<a href="/app/outlay/export.csv?view=teams" title="Per-team / cost-center allocation for showback / chargeback">by team</a>'
                   '<a href="/app/outlay/export.csv?view=classes">by work type</a>'
                   '<a href="/app/outlay/export.focus.csv" '
                   'title="FinOps Open Cost &amp; Usage Spec column names — load into any FOCUS-aware BI tool">'

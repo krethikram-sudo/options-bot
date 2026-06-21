@@ -594,6 +594,12 @@ def report_csv(report: dict, view: str = "tickets") -> str:
         for c in report.get("class_spend", []):
             w.writerow([c.get("task_class"), c.get("tickets"), c.get("spent_usd"),
                         round(c.get("share", 0) * 100, 1)])
+    elif view == "teams":
+        # Per-team / cost-center allocation for finance showback / chargeback.
+        w.writerow(["team", "spend_usd", "share_pct", "events"])
+        for t in report.get("team_spend", []):
+            w.writerow([t.get("team"), t.get("spent_usd"), round(t.get("share", 0) * 100, 1),
+                        t.get("events")])
     elif view == "savings":
         w.writerow(["work_type", "from_model", "to_model", "projected_savings_usd", "confidence"])
         for r in report.get("recommendations", []):

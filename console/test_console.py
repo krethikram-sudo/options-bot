@@ -1851,6 +1851,8 @@ def test_outlay_csv_export(env, client):
 
     people = client.get("/app/outlay/export.csv?view=people")
     assert people.text.splitlines()[0] == "engineer,spend_usd,share_pct,top_model,events"
+    teams = client.get("/app/outlay/export.csv?view=teams")
+    assert teams.text.splitlines()[0] == "team,spend_usd,share_pct,events"
     savings = client.get("/app/outlay/export.csv?view=savings")
     assert savings.text.splitlines()[0] == "work_type,from_model,to_model,projected_savings_usd,confidence"
 
