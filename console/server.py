@@ -1213,7 +1213,10 @@ def app_outlay_estimate(request: Request):
     acct, redir = _require(request)
     if redir:
         return redir
-    return _html(web.estimate_backlog_page(acct, store.get_outlay_report(acct["id"])))
+    overall = next((b.get("limit_usd", 0) or 0 for b in store.list_outlay_budgets(acct["id"])
+                    if b.get("scope_type") == "overall"), 0.0)
+    return _html(web.estimate_backlog_page(acct, store.get_outlay_report(acct["id"]),
+                                           overall_budget_usd=overall))
 
 
 @app.post("/app/outlay/estimate/run")

@@ -100,6 +100,12 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-21 — forecast scenarios ("if we commit this backlog…")
+- [x] Combined the two planning surfaces: the Estimate page now shows a **scenario card** rolling up the
+      open-work forecast + the pasted backlog estimate into a single projected quarter total (with combined
+      band), verdicted **over/under the overall budget** (or a nudge to set one). `_scenario_card`; the route
+      passes the overall budget limit. 318 tests.
+
 ### 2026-06-21 — post-review hardening (SSRF + privacy + cadence) & per-team showback page
 - [x] Ran parallel security + correctness reviews over the session's new code. Fixed every real finding:
 - [x] **SSRF (HIGH)** — webhook + Slack delivery URLs were unvalidated; a trial account could point us at
