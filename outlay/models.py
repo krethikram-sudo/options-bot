@@ -29,16 +29,17 @@ class FidelityTier(str, Enum):
 
     CALL = "call"        # event carried an explicit ticket tag (e.g. proxy metadata)
     BRANCH = "branch"    # event's git branch resolved to a ticket
+    SESSION = "session"  # inferred: same agent session as a branch/tag-resolved event
     TEAM = "team"        # only key→user→team known; no ticket
     INVOICE = "invoice"  # only provider-level total; no team/ticket
 
     @property
     def rank(self) -> int:
-        return {"call": 0, "branch": 1, "team": 2, "invoice": 3}[self.value]
+        return {"call": 0, "branch": 1, "session": 2, "team": 3, "invoice": 4}[self.value]
 
     @property
     def has_ticket(self) -> bool:
-        return self in (FidelityTier.CALL, FidelityTier.BRANCH)
+        return self in (FidelityTier.CALL, FidelityTier.BRANCH, FidelityTier.SESSION)
 
 
 class TaskClass(str, Enum):

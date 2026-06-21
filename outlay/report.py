@@ -58,7 +58,8 @@ def render(
     add("  Attribution fidelity (how confident each dollar's join is)")
     add("  " + "-" * 56)
     fid = result.cost_by_fidelity()
-    for tier in (FidelityTier.CALL, FidelityTier.BRANCH, FidelityTier.TEAM, FidelityTier.INVOICE):
+    for tier in (FidelityTier.CALL, FidelityTier.BRANCH, FidelityTier.SESSION,
+                 FidelityTier.TEAM, FidelityTier.INVOICE):
         amt = fid.get(tier, 0.0)
         frac = (amt / total) if total else 0.0
         add(f"   {tier.value:<8} {_bar(frac)} {frac:>4.0%}  {_usd(amt)}")
