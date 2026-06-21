@@ -90,7 +90,8 @@
       linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px) -1px 0/64px 100%,
       radial-gradient(1000px 520px at 84% -18%, rgba(15,107,79,.32), transparent 60%),
       linear-gradient(180deg,#0c1424,#0a1018);
-      border-bottom:1px solid rgba(255,255,255,.08);padding:78px 0 60px}
+      border-bottom:1px solid rgba(255,255,255,.08);padding:96px 0 88px}
+  .herotext{max-width:820px}
   .herogrid{display:grid;grid-template-columns:1.04fr .96fr;gap:54px;align-items:center}
   @media(max-width:940px){.herogrid{grid-template-columns:1fr;gap:40px}}
   .hero h1{font-size:58px;font-weight:700;letter-spacing:-.033em;max-width:13ch;margin:18px 0 0;color:#f4f7fb}
