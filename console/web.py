@@ -513,7 +513,7 @@ def page(title: str, body: str, account: dict | None = None, active: str = "", b
             f'<div class=wrap style="max-width:640px">{body}</div>')
     else:
         nav = ('<div class="spacer"></div><div class="nav">'
-               '<a href="/login">Sign in</a><a class="btn sm" href="/signup">Start free trial</a></div>')
+               '<a href="/login">Sign in</a><a class="btn sm" href="/pilot-request">Become a customer</a></div>')
         chrome = (
             '<div class=top><div class=wrap style="padding-top:12px;padding-bottom:12px">'
             f'<a class=brand href="https://outlay-ai.com/">Outlay<span class=dot>.ai</span></a>{nav}'
@@ -2017,9 +2017,10 @@ def pilot_request_page(error: str = "", values: dict | None = None) -> str:
     v = values or {}
     err = f'<div class=ostrip style="background:var(--red-l);margin-bottom:14px"><span>{_e(error)}</span></div>' if error else ""
     body = (
-        '<div class=ohead style="margin-top:30px"><h1>Request a design-partner pilot</h1>'
-        '<p>Tell us a bit about your team and we\'ll get back to you within a day. A pilot is read-only, '
-        '~2 weeks, and free — we map your real AI spend to your roadmap and forecast the quarter.</p></div>'
+        '<div class=ohead style="margin-top:30px"><h1>Become an Outlay customer</h1>'
+        '<p>Tell us a bit about your team and we\'ll get back to you within a day. We start with a '
+        'read-only, ~2-week pilot — we map your real AI spend to your roadmap and forecast the quarter — '
+        'then onboard you as a customer.</p></div>'
         f'{err}'
         '<form method=post action="/pilot-request" class=ocard>'
         '<input type=text name=website style="display:none" tabindex=-1 autocomplete=off>'  # honeypot
@@ -2035,11 +2036,11 @@ def pilot_request_page(error: str = "", values: dict | None = None) -> str:
         f'<input name=tools value="{_e(v.get("tools",""))}" placeholder="Claude Code, Cursor, the Anthropic API…"></label>'
         f'<label class=fld style="margin-top:14px"><span>Anything you want us to know?</span>'
         f'<textarea name=message rows=4 placeholder="Team size, what\'s driving the AI bill, what you\'re hoping to learn…">{_e(v.get("message",""))}</textarea></label>'
-        '<button class="btn" style="margin-top:16px">Send request →</button>'
-        '<p class=muted style="font-size:12px;margin:12px 0 0">We\'ll only use this to follow up about a pilot. '
-        'No spam.</p>'
+        '<button class="btn" style="margin-top:16px">Become a customer →</button>'
+        '<p class=muted style="font-size:12px;margin:12px 0 0">We\'ll only use this to follow up about '
+        'getting you started. No spam.</p>'
         '</form>')
-    return page("Request a pilot", body, bare=True)
+    return page("Become a customer", body, bare=True)
 
 
 def audit_page(account: dict, entries: list[dict]) -> str:
@@ -2094,7 +2095,7 @@ def leads_page(account: dict, leads: list[dict]) -> str:
 
 def pilot_thanks_page() -> str:
     body = ('<div class=ohead style="margin-top:40px"><h1>Thanks — we\'ll be in touch.</h1>'
-            '<p>Your pilot request is in. We read every one and typically reply within a day '
+            '<p>Your request is in. We read every one and typically reply within a day '
             '(from <b>hello@outlay-ai.com</b> — keep an eye on spam just in case).</p></div>'
             '<a class="btn sec" href="https://outlay-ai.com/">← Back to outlay-ai.com</a>')
     return page("Thanks", body, bare=True)
@@ -2140,7 +2141,7 @@ def landing() -> str:
       <b>enforce a budget per program</b>, reallocating compute to the work that matters most.
       Read-only to start; your prompts and keys never leave your environment.</p>
       <div class="row center" style="justify-content:center;margin-top:18px">
-        <a class=btn href="/signup">Start your free trial</a>
+        <a class=btn href="/pilot-request">Become a customer →</a>
         <a class="btn sec" href="/login">Sign in</a>
       </div>
       <p class="small muted" style="margin-top:24px">Read-only · no app rewrite · prompts never leave your environment.</p>
@@ -2224,7 +2225,7 @@ def auth_form(kind: str, error: str = "", email: str = "") -> str:
            '</form></div>')
     sub = "Create account" if is_signup else "Sign in"
     alt = ('Already have an account? <a href="/login">Sign in</a>' if is_signup
-           else 'New here? <a href="/signup">Start a free trial</a> · '
+           else 'New here? <a href="/pilot-request">Become a customer</a> · '
                 '<a href="/forgot">Forgot password?</a>')
     body = f"""
     <div class=auth><div class=card>
