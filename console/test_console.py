@@ -2998,6 +2998,34 @@ def test_onboarding_engineering_step2_has_direct_reports_and_finance_share(env, 
     assert "Engineering leader" not in w        # the same-role invite option is gone
 
 
+def test_finance_persona_has_no_setup_surfaces(env, client):
+    """Finance manages spend after the fact — it does no setup. So the finance
+    experience must NOT expose Connect/API (Sources), the setup checklist, or a
+    connect form. Instead its empty state invites the engineering counterpart who
+    does the wiring."""
+    server, store = env
+    _raw_signup(client, "cfo@acme.com")
+    client.post("/app/persona", data={"persona": "finance"})
+    home = client.get("/app").text
+    # nav: no Sources group, no Connect/API setup links
+    assert ">Sources<" not in home
+    assert "/app/outlay/connect" not in home
+    assert "/app/api" not in home
+    # empty state: the 'data on its way' + invite-engineering state, not a connect CTA
+    assert "Your AI spend dashboard is on its way." in home
+    assert "Invite your engineering counterpart" in home
+    assert "Connect your sources" not in home
+    # the setup checklist is hidden for finance
+    assert "Run your first audit" not in home
+
+    # engineering, by contrast, keeps every setup surface
+    eng = TestClient(server.app, follow_redirects=False)
+    _raw_signup(eng, "vpe@beta.com")
+    eng.post("/app/persona", data={"persona": "eng"})
+    eng_home = eng.get("/app").text
+    assert ">Sources<" in eng_home and "/app/outlay/connect" in eng_home
+
+
 def test_onboarding_csv_upload_merges_org_structure(env, client):
     _, store = env
     _raw_signup(client, "o2@acme.com")
