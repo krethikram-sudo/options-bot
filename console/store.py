@@ -516,8 +516,11 @@ def create_account(email: str, password: str, company: str = "", role: str = "cu
         conn.execute("INSERT INTO deployments(deployment_id, account_id, label, created_at)"
                      " VALUES(?,?,?,?)", (dep, account_id, "default", now))
         conn.execute("INSERT INTO settings(account_id) VALUES(?)", (account_id,))
+        # trial_started_at = 0 → the trial hasn't started yet; the 14-day clock
+        # begins at setup completion (the first real, non-sample report), via
+        # start_trial(). Until then the account is fully entitled but not counting down.
         conn.execute("INSERT INTO plans(account_id, plan, rate, trial_started_at)"
-                     " VALUES(?, 'trial', ?, ?)", (account_id, DEFAULT_RATE, now))
+                     " VALUES(?, 'trial', ?, 0)", (account_id, DEFAULT_RATE))
         conn.commit()
     finally:
         conn.close()
@@ -751,6 +754,10 @@ def save_outlay_report(account_id: int, report: dict, path: str | None = None,
         conn.commit()
     finally:
         conn.close()
+    # Setup is "complete" the moment real data lands — start the trial clock then,
+    # not at signup. Sample/demo data doesn't count.
+    if not (report or {}).get("_sample"):
+        start_trial(account_id, path=path, now=now)
 
 
 def get_outlay_report(account_id: int, path: str | None = None) -> dict | None:
@@ -1991,11 +1998,32 @@ def get_plan(account_id: int, path: str | None = None) -> dict:
         conn.close()
 
 
+def start_trial(account_id: int, path: str | None = None, now: float | None = None) -> None:
+    """Begin the trial countdown — called once, at setup completion (first real
+    report). Idempotent and a no-op if the trial already started or the account has
+    converted to paid, so it never resets or restarts a running clock."""
+    now = now or time.time()
+    plan = get_plan(account_id, path)
+    if not plan or plan.get("plan") != "trial" or plan.get("trial_started_at"):
+        return
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE plans SET trial_started_at=? WHERE account_id=? AND trial_started_at=0",
+                     (now, account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def trial_status(account_id: int, path: str | None = None, now: float | None = None) -> dict:
     now = now or time.time()
     plan = get_plan(account_id, path)
     if not plan:
         return {"active": False, "days_left": 0, "ends_at": 0}
+    if not plan["trial_started_at"]:
+        # Not started yet — entitled, full clock, counting down hasn't begun.
+        return {"active": True, "days_left": TRIAL_DAYS, "ends_at": 0,
+                "started_at": 0, "not_started": True}
     ends_at = plan["trial_started_at"] + TRIAL_DAYS * DAY
     days_left = max(0, int((ends_at - now) // DAY) + (1 if (ends_at - now) % DAY else 0))
     return {"active": now < ends_at, "days_left": max(0, days_left),

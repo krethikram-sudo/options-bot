@@ -80,6 +80,27 @@ def test_create_account_sets_trial_and_deployment(env):
     assert store.trial_status(a["id"])["active"]
 
 
+def test_trial_clock_starts_at_setup_not_signup(env):
+    _, store = env
+    a = store.create_account("setup@y.com", "password123")
+    # at signup: entitled, but the countdown hasn't started
+    ts = store.trial_status(a["id"])
+    assert ts["active"] and ts.get("not_started")
+    assert store.get_plan(a["id"])["trial_started_at"] == 0
+    # sample/demo data does NOT start the clock
+    store.save_outlay_report(a["id"], {"_sample": True, "spend": {"total_usd": 1.0}})
+    assert store.trial_status(a["id"]).get("not_started")
+    # the first REAL report starts the 14-day clock
+    store.save_outlay_report(a["id"], {"spend": {"total_usd": 100.0}})
+    ts2 = store.trial_status(a["id"])
+    assert not ts2.get("not_started") and ts2["active"] and ts2["days_left"] == store.TRIAL_DAYS
+    # subsequent real reports don't restart it
+    started = store.get_plan(a["id"])["trial_started_at"]
+    assert started > 0
+    store.save_outlay_report(a["id"], {"spend": {"total_usd": 200.0}})
+    assert store.get_plan(a["id"])["trial_started_at"] == started
+
+
 def test_duplicate_email_rejected(env):
     _, store = env
     store.create_account("dup@y.com", "password123")
