@@ -852,15 +852,12 @@ def app_outlay_scope(request: Request, type: str = "team", id: str = ""):
     return _html(web.scope_page(acct, store.get_outlay_report(acct["id"]), scope_type, id))
 
 
-@app.get("/app/outlay/showback", response_class=HTMLResponse)
+@app.get("/app/outlay/showback")
 def app_outlay_showback(request: Request):
-    """Per-team / cost-center showback statement (printable)."""
-    acct, redir = _require(request)
-    if redir:
-        return redir
-    report = store.get_outlay_report(acct["id"])
-    statuses = outlay_app.budget_statuses(report, store.list_outlay_budgets(acct["id"])) if report else []
-    return _html(web.showback_page(acct, report, statuses))
+    """Retired: per-team chargeback now lives on the Spend page (the team /
+    cost-center allocation card + the by-team CSV/FOCUS export). Kept as a
+    redirect so old bookmarks and links don't 404."""
+    return _redirect("/app/outlay")
 
 
 @app.post("/app/outlay/anomaly/mute")

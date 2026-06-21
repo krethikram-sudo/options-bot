@@ -2846,22 +2846,25 @@ def test_unit_economics_engine_and_card(env, client):
     assert "Unit economics" in home and "per attributed ticket" in home
 
 
-def test_showback_page_per_team(env, client):
+def test_showback_redirects_to_spend(env, client):
+    # Showback was redundant — per-team chargeback already lives on the Spend page.
+    # The retired route redirects so old bookmarks don't 404, and Spend carries the
+    # team / cost-center allocation it used to duplicate.
     _, store = env
     _signup(client, email="show@x.com")
     acct = store.get_account_by_email("show@x.com")
-    # no team-attributed data yet → helpful empty state
-    assert "No team-attributed spend yet" in client.get("/app/outlay/showback").text
+    store.set_persona(acct["id"], "finance", 0)
+
+    r = client.get("/app/outlay/showback", follow_redirects=False)
+    assert r.status_code == 303
+    assert r.headers["location"] == "/app/outlay"
 
     client.post("/app/outlay/sample", follow_redirects=True)
-    r = client.get("/app/outlay/showback")
-    assert r.status_code == 200
-    assert "Showback" in r.text and "by team / cost-center" in r.text
-    assert "Allocation" in r.text and "of attributed" in r.text
-    # links to the team CSV + print, and is reachable from the finance Spend view
-    assert "/app/outlay/export.csv?view=teams" in r.text and "window.print()" in r.text
-    store.set_persona(acct["id"], "finance", 0)
-    assert "/app/outlay/showback" in client.get("/app/outlay").text
+    spend = client.get("/app/outlay").text
+    # team allocation + by-team chargeback export live on Spend, not a separate page
+    assert "/app/outlay/export.csv?view=teams" in spend
+    # the finance Spend view no longer links out to a Showback page
+    assert "/app/outlay/showback" not in spend
 
 
 def test_webhook_and_slack_urls_are_ssrf_guarded(env, client):

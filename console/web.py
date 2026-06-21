@@ -364,9 +364,9 @@ def _sidenav(account: dict, active: str) -> str:
     SOURCES (where data comes in), and WORKSPACE (team/settings/activity admin).
     The ANALYZE group is role-aware — each persona surfaces *different* primary
     capabilities, not just a reorder: finance/FinOps gets the allocate-budget-govern
-    tools (Showback chargeback + Programs enforcement); engineering gets the
-    ship-efficiently tools (Accuracy + Estimate). Nothing is truly hidden — the
-    other surfaces stay reachable via the Overview's Explore hub and contextual
+    tools (per-team chargeback lives on Spend + Programs enforcement); engineering
+    gets the ship-efficiently tools (Accuracy + Estimate). Nothing is truly hidden —
+    the other surfaces stay reachable via the Overview's Explore hub and contextual
     links on Spend. Team/Activity are owner/admin-only."""
     persona = (account.get("persona") or "").lower()
     is_admin = account.get("team_role") in ("owner", "admin")
@@ -375,11 +375,10 @@ def _sidenav(account: dict, active: str) -> str:
     accuracy = ("/app/outlay/accuracy", "Accuracy")
     budgets = ("/app/outlay/budgets", "Budgets")
     estimate = ("/app/outlay/estimate", "Estimate")
-    showback = ("/app/outlay/showback", "Showback")
     programs = ("/app/outlay/programs", "Programs")
     if persona == "finance":
-        # Allocate, budget, govern: chargeback (Showback) + program enforcement.
-        analyze = [spend, budgets, showback, programs]
+        # Allocate, budget, govern: per-team chargeback (Spend) + program enforcement.
+        analyze = [spend, budgets, programs]
     elif persona == "eng":
         # Ship efficiently: measure forecast accuracy + price the backlog.
         analyze = [spend, accuracy, estimate, budgets]
@@ -1231,12 +1230,10 @@ def _explore_card(persona: str) -> str:
                     "Set limits by scope and get warned before you overspend."),
         "estimate": ("/app/outlay/estimate", "Estimate planned work",
                      "Price a backlog before you build it, from your learned cost model."),
-        "showback": ("/app/outlay/showback", "Showback by team",
-                     "Allocate spend to teams and cost centers for chargeback."),
         "programs": ("/app/outlay/programs", "Program budgets",
                      "Budget a program across teams and enforce a hard cap."),
     }
-    order = (["spend", "budgets", "showback", "programs"] if persona == "finance"
+    order = (["spend", "budgets", "programs", "accuracy"] if persona == "finance"
              else ["spend", "estimate", "accuracy", "budgets"])
     rows = ""
     for key in order:
@@ -1455,7 +1452,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
 
     if persona == "finance":
         olinks = ('<div class=olinks>'
-                  '<a href="/app/outlay/showback">Showback by team →</a>'
+                  '<a href="/app/outlay/programs">Program budgets →</a>'
                   '<a href="/app/outlay/budgets">Budgets &amp; guardrails →</a>'
                   '<a href="/app/outlay/accuracy">How accurate is this? →</a>'
                   '<a href="/app/outlay/estimate">Estimate planned work →</a>'
@@ -1534,65 +1531,6 @@ def scope_page(account: dict, report: dict | None, scope_type: str, scope_id: st
     export = (f'<div class=olinks style="margin-top:14px">'
               f'<a href="/app/outlay/export.csv?view=tickets">Export all tickets (CSV)</a></div>')
     return page("Detail", back + head + card + export, account, active="/app/outlay")
-
-
-def showback_page(account: dict, report: dict | None, statuses: list[dict] | None = None) -> str:
-    """Per-team / cost-center showback — the allocation statement finance hands to
-    each team: their AI spend this window, share of the total, budget status, and
-    the work type driving it. Print-friendly (a clean one-pager for the books)."""
-    back = '<p style="margin:0 0 14px"><a href="/app/outlay">&larr; Back to Spend</a></p>'
-    teams = (report or {}).get("team_spend") or []
-    if not report or not teams:
-        return page("Showback", back + '<div class=ocard><p class=muted style="margin:0">No team-attributed '
-                    'spend yet. Map people to teams on the <a href="/app/outlay/connect#teams">Connect</a> '
-                    'page to allocate spend to cost centers.</p></div>', account, active="/app/outlay")
-
-    # Budget status by team (team-scoped budgets only).
-    bud = {s.get("scope_id"): s for s in (statuses or []) if s.get("scope_type") == "team"}
-    # Top work type per team, from the attributed tickets.
-    by_team_class: dict[str, dict] = {}
-    for t in report.get("tickets", []):
-        team = t.get("team_id") or "(unassigned)"
-        cls = t.get("task_class") or "unknown"
-        by_team_class.setdefault(team, {}).setdefault(cls, 0.0)
-        by_team_class[team][cls] += t.get("cost_usd", 0.0)
-
-    total = sum(t.get("spent_usd", 0.0) for t in teams)
-    window = (report.get("window_days") or 30)
-    head = (f'<div class=ohead><h1>Showback <span class=muted>· by team / cost-center</span></h1>'
-            f'<p>{money(total)} of attributed AI spend over the last {window} days, allocated to the teams '
-            f'that drove it. Hand each team its line — or print this page for the books.</p></div>')
-
-    rows = ""
-    maxc = max((t.get("spent_usd", 0) for t in teams), default=1) or 1
-    for t in teams:
-        team = t.get("team") or "(unassigned)"
-        unassigned = team == "(unassigned)"
-        disp = "Unassigned" if unassigned else team
-        classes = by_team_class.get(team, {})
-        top = max(classes.items(), key=lambda kv: kv[1], default=(None, 0))
-        topwork = (f'top: {_e(top[0])} ({money(top[1])})' if top[0] else "—")
-        s = bud.get(team)
-        if s:
-            tone = {"over": "var(--red)", "warn": "var(--amber)"}.get(s.get("status"), "var(--grn-d)")
-            badge = (f'<span class="otag {("over" if s.get("status")=="over" else "warn" if s.get("status")=="warn" else "ok")}">'
-                     f'{money(s.get("spent_usd",0))} / {money(s.get("limit_usd",0))}</span>')
-        else:
-            badge = '<span class=muted style="font-size:12px">no budget set</span>'
-        share = t.get("share", 0) * 100
-        col = "#cfcabb" if unassigned else "var(--grn)"
-        rows += (f'<div class=erow><span class=nm><b>{_e(disp)}</b> '
-                 f'<small>· {share:.0f}% of attributed · {t.get("events",0)} calls · {topwork}</small></span>'
-                 f'<span class=amt>{money(t.get("spent_usd",0))} &nbsp;{badge}</span>'
-                 f'<div class=ebar><span style="width:{max(2, t.get("spent_usd",0)/maxc*100):.0f}%;'
-                 f'background:{col}"></span></div></div>')
-    card = f'<div class=ocard><div class=dh>Allocation<span class=sub>biggest first</span></div>{rows}</div>'
-    links = ('<div class=olinks style="margin-top:14px">'
-             '<a href="/app/outlay/export.csv?view=teams">Export (CSV)</a>'
-             '<a href="javascript:window.print()">Print</a>'
-             '<span class=muted style="font-size:12.5px">Unassigned = spend with no resolved team — '
-             '<a href="/app/outlay/connect#teams">map more people to teams</a> to shrink it.</span></div>')
-    return page("Showback", back + head + card + links, account, active="/app/outlay")
 
 
 def outlay_connect_page(account: dict, conn: dict | None) -> str:
