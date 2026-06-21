@@ -26,7 +26,7 @@ mkdir -p "$DEST/modelpilot/goldenset" "$DEST/tests" "$DEST/extension" \
          "$DEST/scripts" "$DEST/launchd" "$DEST/docs" "$DEST/site" "$DEST/packs"
 
 # --- package code ---
-cp "$SRC"/__init__.py "$SRC"/cli.py "$SRC"/gateway.py "$SRC"/router.py \
+cp "$SRC"/__init__.py "$SRC"/cli.py "$SRC"/gateway.py "$SRC"/enforce.py "$SRC"/router.py \
    "$SRC"/router_classify.py "$SRC"/client_proxy.py \
    "$SRC"/pricing.py "$SRC"/taxonomy.py "$SRC"/ledger.py "$SRC"/dashboard.py \
    "$SRC"/chat.py "$SRC"/continuation.py "$SRC"/demo.py "$SRC"/report.py \
