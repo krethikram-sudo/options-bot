@@ -387,6 +387,7 @@ def _sidenav(account: dict, active: str) -> str:
     if is_admin:
         workspace.append(("/app/team", "Team"))
     workspace.append(("/app/settings", "Settings"))
+    workspace.append(("/app/security", "Security"))
     if is_admin:
         workspace.append(("/app/audit", "Activity"))
 
@@ -2620,6 +2621,78 @@ def settings_page(account: dict, settings: dict, saved: bool = False,
                               _retention_section(account, retention_days, purged, purge_error))
             + _danger_zone(account, delete_error))
     return page("Settings", body, account, "/app/settings")
+
+
+def security_page(account: dict) -> str:
+    """In-app security & compliance summary — written for a customer's security
+    reviewer (e.g. public-sector procurement). Every claim maps to a shipped
+    feature; the certification status is stated honestly. Print-to-PDF friendly."""
+    ck = '<span style="color:var(--grn);font-weight:800;flex:none">&#10003;</span>'
+
+    def li(html: str) -> str:
+        return f'<li style="display:flex;gap:10px;margin:9px 0;font-size:14.5px">{ck}<span>{html}</span></li>'
+
+    def card(title: str, *items: str, note: str = "") -> str:
+        lis = "".join(items)
+        note_h = f'<div class=note style="margin-top:12px">{note}</div>' if note else ""
+        return (f'<div class=ocard style="margin-top:16px"><div class=dh>{title}</div>'
+                f'<ul style="list-style:none;padding:0;margin:8px 0 0">{lis}</ul>{note_h}</div>')
+
+    body = f"""
+    <h1>Security &amp; compliance</h1>
+    <p class=muted style="max-width:72ch">How Outlay handles your data — written for your security
+      review. Outlay is built so the sensitive data <b>physically can't reach us</b>: prompts, model
+      outputs, and your API keys never leave your environment.</p>
+
+    <div class=ocard style="margin-top:16px"><div class=dh>Architecture — read-only, never in your traffic path</div>
+      <p class=muted style="margin:6px 0 0;font-size:14.5px">Outlay is <b>not a proxy or gateway</b>.
+        Your AI calls go directly from your infrastructure to your model provider with your own key.
+        Outlay connects <b>read-only</b> to your work tracker (Jira / Linear / GitHub) and your
+        provider's usage/admin APIs, and reads usage metadata only. There is nothing for us to see in
+        your traffic because we are not in it. (An optional, opt-in enforcement gateway exists for hard
+        budget caps — it is the only component that ever sits in your request path, it is entirely
+        opt-in, and it fails open.)</p></div>
+
+    {card("What never leaves your environment",
+          li("<b>Prompt text &amp; model outputs.</b> We never receive request or response bodies."),
+          li("<b>Your API keys.</b> Your provider key stays on your side and calls the model directly."),
+          li("<b>Customer / PII data.</b> Anything inside a prompt stays inside your boundary."),
+          note="Our ingestion endpoints <b>reject any payload</b> that contains prompt text, model "
+               "outputs, or secret-looking keys (HTTP 422) — the boundary is enforced, not just promised.")}
+
+    {card("What Outlay sees — metadata only",
+          li("A <b>task category</b> and numeric features (token counts, status flags)."),
+          li("The <b>ticket / branch identifier</b> the work belongs to (e.g. <code>PROJ-123</code>)."),
+          li("Per-request <b>cost</b> figures from your provider's usage data — dollars and counts, never content."))}
+
+    {card("Access control &amp; auditability",
+          li("<b>SSO (OIDC)</b>, email-domain routed, and <b>SCIM 2.0</b> provisioning/de-provisioning."),
+          li("<b>Two-factor authentication</b> and <b>role-based access</b> (owner / admin / member)."),
+          li("A full <b>audit log</b> of privileged actions, with <b>export to your SIEM</b> (CSV)."),
+          li("Scoped, expiring, <b>one-time-revealed</b> API keys."))}
+
+    {card("Data handling, isolation &amp; exit",
+          li("<b>Per-deployment isolation</b> — your metadata is scoped to your deployment."),
+          li("<b>Configurable retention</b> (keep, or auto-purge after 30 / 90 / 180 / 365 days) and "
+             "<b>self-serve erasure</b> of ingested data or your entire account."),
+          li("<b>Leave anytime</b> — removing Outlay changes nothing about how your calls are made; "
+             "we were never in the path."))}
+
+    {card("Accessibility (Section 508 / WCAG 2.1 AA)",
+          li("The console is built to <b>WCAG 2.1 AA / Section 508</b>; an automated axe-core audit "
+             "passes with <b>zero violations</b>. Accessibility details are available for your review."))}
+
+    <div class=note style="margin-top:16px"><b>Certifications — the honest part.</b> The data-flow
+      guarantee above is a property of the <b>architecture</b> and is independently verifiable. We are
+      <b>not yet SOC&nbsp;2 or HIPAA certified</b>, and we won't claim what we don't hold. For a
+      <b>BAA</b>, a completed security questionnaire, or our compliance roadmap, email
+      <a href="mailto:hello@outlay-ai.com?subject=Outlay%20security%20review">hello@outlay-ai.com</a> —
+      we'll share exactly where we are and walk a reviewer through the data-flow boundary.</div>
+
+    <p class=muted style="font-size:12.5px;margin-top:16px">Tip: use your browser's <b>Print</b>
+      (⌘/Ctrl-P) to save this page as a PDF for your records.</p>
+    """
+    return page("Security &amp; compliance", body, account, "/app/security")
 
 
 def _settings_group(title: str, *cards: str) -> str:
