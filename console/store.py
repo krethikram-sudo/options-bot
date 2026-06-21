@@ -1744,6 +1744,18 @@ def set_persona(account_id: int, persona: str, member_id: int = 0, path: str | N
         conn.close()
 
 
+def clear_persona(account_id: int, member_id: int = 0, path: str | None = None) -> None:
+    """Remove this person's persona so they're treated as first-run again (the role
+    gate fires). Used to re-test the new-user onboarding from an internal account."""
+    conn = connect(path)
+    try:
+        conn.execute("DELETE FROM personas WHERE account_id=? AND member_id=?",
+                     (account_id, member_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def update_settings(account_id: int, *, mode: str | None = None,
                     telemetry_opt_in: bool | None = None, min_model: str | None = None,
                     risk: str | None = None, monthly_budget: float | None = None,

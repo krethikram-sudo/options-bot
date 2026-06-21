@@ -1025,6 +1025,25 @@ async def app_demo_exit(request: Request):
     return _redirect("/app/outlay")
 
 
+@app.post("/app/onboarding/reset")
+async def app_onboarding_reset(request: Request):
+    """Reset an internal/test account to the first-run new-user state so the
+    onboarding role gate can be re-tested. Clears the role choice + any seeded or
+    ingested data (report, budgets, programs, connection, team map). Gated to
+    demo/test accounts (DEMO_ACCOUNT_EMAILS) — never available to real customers."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    if not acct.get("_can_demo"):
+        return _redirect("/app/outlay")
+    demo.clear(acct["id"])  # report/history, budgets, programs, connection
+    store.set_outlay_identity_map(acct["id"], None)
+    store.set_demo_mode(acct["id"], False)
+    store.clear_persona(acct["id"], member_id=acct.get("member_id", 0) or 0)
+    _audit(acct["id"], "onboarding.reset", actor=acct.get("display_email", ""))
+    return _redirect("/app/welcome")
+
+
 @app.get("/app/demo/guide", response_class=HTMLResponse)
 def app_demo_guide(request: Request):
     """Presenter's talk-track for the live demo — demo accounts only."""
