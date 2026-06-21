@@ -52,10 +52,13 @@ Page is strong (the "costed two ways" comparison and the 6-card grid read well).
       maps the h1's three clauses to the #math / #estimate / #data sections, so
       the long page has wayfinding and the hero isn't bare text.
 
-### `security.html` — "Governance without shipping us your prompts"
-Trust page → make it feel auditable and calm. Goals: the "what never leaves /
-what we see" two-column contrast, the read-only architecture diagram/flow, and
-scannable data-handling list.
+### `security.html` — "Governance without shipping us your prompts" ✓
+- [x] Pulled the "what never leaves / what we see" story out of stacked prose
+      into a side-by-side: a green "stays in your environment" card vs a neutral
+      "metadata only" card — the security contrast is now instant.
+- [x] Mobile flow fix (global): the read-only flow diagram now stacks vertically
+      with down-arrows below 560px (also helps platform + docs).
+- Architecture + data-handling prose left as-is (reviewers want the detail).
 
 ### `compare.html` — category positioning
 Comparison tables are the core. Goals: table readability at mobile (horizontal
