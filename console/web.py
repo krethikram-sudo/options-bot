@@ -884,7 +884,9 @@ def demo_guide_page(account: dict) -> str:
 
 
 def _persona_chooser() -> str:
-    """First-run: let the customer pick the experience tailored to their role."""
+    """First-run fallback: let a person pick the experience tailored to their role.
+    Owners are routed to the full-screen /app/welcome gate; this stays as a safety
+    net for a member who somehow has no persona yet."""
     return (
         '<div class=ocard style="margin-bottom:18px">'
         '<div class=dh>How will you use Outlay? '
@@ -897,6 +899,99 @@ def _persona_chooser() -> str:
                         "Spend by epic, sprint, and engineer, anomaly flags on runaway tickets, and "
                         "estimates for planned work before you build it.")
         + '</div></div>')
+
+
+def _role_gate(next_to: str = "welcome") -> str:
+    """The first-run role question — two side-by-side tiles. The owner identifies
+    themselves; their pick sets the persona (finance/eng) and unlocks the product."""
+    def tile(value: str, title: str, blurb: str) -> str:
+        return (f'<form method=post action="/app/persona" style="margin:0;display:flex">'
+                f'<input type=hidden name=persona value="{value}">'
+                f'<input type=hidden name=next value="{next_to}">'
+                f'<button class="bcard" style="width:100%;text-align:left;cursor:pointer;'
+                f'display:flex;flex-direction:column">'
+                f'<div style="font-size:16px;font-weight:700;color:var(--ink);line-height:1.35">{_e(title)}</div>'
+                f'<div class=muted style="font-size:13px;margin-top:10px;line-height:1.55;flex:1">{_e(blurb)}</div>'
+                f'<div style="margin-top:16px;color:var(--grn-d);font-weight:600;font-size:13px">Continue →</div>'
+                f'</button></form>')
+    tiles = (
+        tile("finance", "I’m a finance leader setting this up for my business",
+             "You’ll lead with total AI spend, the quarter forecast vs budget, allocation to teams and "
+             "cost centers, and guardrails that flag before you overspend.")
+        + tile("eng", "I’m an engineering leader using this for my business",
+               "You’ll lead with spend by ticket, epic and engineer, runaway-ticket flags, and estimates "
+               "for planned work before you build it."))
+    return f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" class=cols-2>{tiles}</div>'
+
+
+def _csv_upload_form(next_to: str = "") -> str:
+    """A small CSV-upload control for the people→team org structure (email,team)."""
+    nx = f'<input type=hidden name=next value="{next_to}">' if next_to else ""
+    return (f'<form method=post action="/app/outlay/identity/upload" enctype="multipart/form-data" '
+            f'style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;'
+            f'border-top:1px solid var(--line2);padding-top:12px">{nx}'
+            f'<input type=file name=file accept=".csv,text/csv" required style="font-size:13px;max-width:240px">'
+            f'<button class="btn sec sm">Upload CSV</button>'
+            f'<span class=muted style="font-size:12px">A <code>email,team</code> CSV — merged into the map.</span>'
+            f'</form>')
+
+
+def welcome_page(account: dict, conn: dict | None, idmap: str = "") -> str:
+    """First-run onboarding takeover. Step 1 (no persona yet) is the mandatory role
+    gate; once a role is chosen it becomes Step 2 — add org structure + invite the
+    counterpart — with a clear jump to the dashboard."""
+    persona = (account.get("persona") or "").lower()
+    if persona not in ("finance", "eng"):
+        body = ('<div class=ohead><h1>Welcome to Outlay</h1>'
+                '<p>First, tell us who you are — it tailors your whole experience. You’ll invite your '
+                'counterpart in a moment, and you can switch views anytime in Settings.</p></div>'
+                + _role_gate("welcome"))
+        return page("Welcome", body, account, active="/app")
+
+    fin = persona == "finance"
+    me = "Finance" if fin else "Engineering"
+    counter_persona = "eng" if fin else "finance"
+    counter_label = "engineering leader" if fin else "finance leader"
+    counter_title = "Engineering leader" if fin else "Finance leader"
+    placeholder = "vp.eng@company.com" if fin else "cfo@company.com"
+
+    org_card = (
+        '<div class=ocard style="margin-top:16px"><div class=dh>Add your org structure '
+        '<span class=sub>so spend allocates by team / cost center</span></div>'
+        '<p class=muted style="margin:-4px 0 10px;font-size:13.5px">Map each person’s email to a team — '
+        'one per line, <code>alice@acme.com, Platform</code>, or a whole domain '
+        '<code>@acme.com, Internal</code>. This fills the “Spend by team” view.</p>'
+        '<form method=post action="/app/outlay/identity">'
+        '<input type=hidden name=next value="welcome">'
+        f'<textarea name=identity_map rows=5 placeholder="alice@acme.com, Platform&#10;'
+        f'bob@acme.com, Growth">{_e(idmap)}</textarea>'
+        '<button class="btn sec" style="margin-top:12px">Save team map</button>'
+        '</form>' + _csv_upload_form("welcome") + '</div>')
+
+    invite_card = (
+        '<div class=ocard style="margin-top:16px"><div class=dh>Invite your counterpart</div>'
+        f'<p class=muted style="margin:-4px 0 10px;font-size:13.5px">Outlay is best when finance and '
+        f'engineering share one workspace. Invite your {counter_label} — they’ll land straight in their own '
+        f'view, with no setup question to answer.</p>'
+        '<form method=post action="/app/team/invite" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">'
+        '<input type=hidden name=next value="welcome"><input type=hidden name=role value="admin">'
+        '<label class=fld style="flex:1;min-width:220px"><span>Their work email</span>'
+        f'<input name=email type=email placeholder="{placeholder}" required></label>'
+        '<label class=fld style="min-width:170px"><span>Their role</span>'
+        f'<select name=persona><option value="{counter_persona}" selected>{counter_title}</option>'
+        f'<option value="{persona}">{me} leader</option></select></label>'
+        '<button class=btn>Send invite</button></form>'
+        '<p class=muted style="font-size:12.5px;margin-top:6px">They get a link to set a password. '
+        'Manage everyone on the <a href="/app/team">Team</a> page.</p></div>')
+
+    done = ('<div style="margin-top:20px;display:flex;gap:12px;align-items:center">'
+            '<a class="btn" href="/app/outlay">Go to my dashboard →</a>'
+            '<span class=muted style="font-size:12.5px">These steps are optional — you can do them later '
+            'from Connect and Team.</span></div>')
+    body = (f'<div class=ohead><h1>You’re set up as {me}</h1>'
+            '<p>Two quick steps to get the most out of Outlay — or jump straight into the product.</p></div>'
+            + org_card + invite_card + done)
+    return page("Welcome", body, account, active="/app")
 
 
 def _kpicard(label, value, sub, grn=False, href=None) -> str:
@@ -1749,6 +1844,7 @@ bob@acme.com, Growth
 @contractor.com, External">{idmap}</textarea>
           <button class="btn sec" style="margin-top:12px">Save team map</button>
         </form>
+        {_csv_upload_form()}
       </div>
       <div class=ocard style="margin-top:16px" id=alerts>
         <div class=dh>Slack alerts <span class=sub>where eng &amp; finance live</span></div>
@@ -3298,10 +3394,14 @@ def team_page(account: dict, members: list[dict], invite_link: str = "",
                     f'<span class=sub>{seats} with access</span></div>{rows}</div>')
     invite_card = f"""<div class=ocard style="margin-top:16px"><div class=dh>Invite a teammate</div>
       <form method=post action="/app/team/invite" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
-        <label class=fld style="flex:1;min-width:240px"><span>Work email</span>
+        <label class=fld style="flex:1;min-width:220px"><span>Work email</span>
           <input name=email type=email placeholder="teammate@company.com" required></label>
-        <label class=fld style="min-width:150px"><span>Role</span>
+        <label class=fld style="min-width:140px"><span>Access</span>
           <select name=role>{role_opts}</select></label>
+        <label class=fld style="min-width:150px"><span>Experience</span>
+          <select name=persona><option value="">Let them choose</option>
+            <option value="finance">Finance leader</option>
+            <option value="eng">Engineering leader</option></select></label>
         <button class=btn>Send invite</button>
       </form>
       <div class=rolelegend>
