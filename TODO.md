@@ -115,7 +115,11 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
       over their *hard* cap (`enforced`) so the gateway caches + matches locally; `?ticket=/team=/work_type=`
       resolves a single call → `{decision: allow|block|downgrade, floor_model}`. Engine: `enforced_programs`
       + `program_decision` (block wins over downgrade; project key from ticket). Documented on the API page.
-- [ ] Slice 3: gateway/brain wiring (consume `/api/v1/enforcement`; block / route-down at request time).
+- [x] **Slice 3: gateway enforcement** — `modelpilot/enforce.py` (publishable; fetch + local `decide`, no IP)
+      + gateway wiring: an opt-in (`MODELPILOT_ENFORCE=1`) refresh loop caches `/api/v1/enforcement`, and each
+      `/v1/messages` call whose program is over its hard cap is **blocked (402 budget_exceeded)** or
+      **routed down** to the program's floor model — decided locally from the cache (no per-call round trip),
+      fail-open. **End-to-end: define a program → set a hard cap → the gateway enforces it.** 535 tests.
 
 ### 2026-06-21 — unit economics (cost per ticket / per closed / rework tax)
 - [x] Reframed raw spend as efficiency — `outlay_app.unit_economics(report)` computes cost per attributed

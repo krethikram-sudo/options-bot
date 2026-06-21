@@ -52,6 +52,10 @@ CACHE_ON = os.environ.get("MODELPILOT_CACHE", "") in ("1", "true", "yes", "on")
 # ~1024-token cache minimum so we never send an un-cacheable breakpoint (which 400s).
 AUTO_CACHE = os.environ.get("MODELPILOT_AUTO_CACHE", "") in ("1", "true", "yes", "on")
 AUTO_CACHE_MIN_CHARS = int(os.environ.get("MODELPILOT_AUTO_CACHE_MIN_CHARS", "6000"))
+# Program hard-cap enforcement (opt-in): when on and a console is configured, the
+# gateway blocks / routes down calls whose program is over its hard budget. Off by
+# default — existing deployments are unaffected until a customer turns it on.
+ENFORCE = os.environ.get("MODELPILOT_ENFORCE", "") in ("1", "true", "yes", "on")
 CACHE = _cache.ResponseCache(
     ttl=float(os.environ.get("MODELPILOT_CACHE_TTL", str(_cache.DEFAULT_TTL))),
     maxsize=int(os.environ.get("MODELPILOT_CACHE_MAX", str(_cache.DEFAULT_MAX))))
@@ -244,6 +248,30 @@ async def _lifespan(app):
 
         meter_task = asyncio.create_task(_meter_loop())
 
+    # Program hard-cap enforcement (opt-in): periodically fetch which programs are
+    # over their hard cap and cache the verdict, so each request is decided locally
+    # (no per-call round trip). Fail-open: keep the last verdict on any error.
+    app.state.enforced = []
+    enforce_task = None
+    if ENFORCE and app.state.console_url:
+        import asyncio
+
+        from . import enforce as _enforce
+
+        async def _enforce_loop():
+            interval = int(os.environ.get("MODELPILOT_ENFORCE_REFRESH", "60"))
+            while True:
+                try:
+                    got = await asyncio.to_thread(_enforce.fetch_enforced,
+                                                  app.state.console_url, None)
+                    if got is not None:
+                        app.state.enforced = got
+                except Exception:  # noqa: BLE001 — enforcement refresh never breaks the gateway
+                    pass
+                await asyncio.sleep(interval)
+
+        enforce_task = asyncio.create_task(_enforce_loop())
+
     # Live policy refresh: re-fetch admin-approved floors + rules from the console
     # and rebuild the classifier, so an approval takes effect without a restart.
     policy_task = None
@@ -287,7 +315,7 @@ async def _lifespan(app):
 
         logs_task = asyncio.create_task(_logs_loop())
     yield
-    for t in (meter_task, policy_task, logs_task):
+    for t in (meter_task, policy_task, logs_task, enforce_task):
         if t is not None:
             t.cancel()
     await app.state.http.aclose()
@@ -733,12 +761,41 @@ async def messages(request: Request):
         "branch": request.headers.get("x-modelpilot-work-branch"),
         "ticket": request.headers.get("x-modelpilot-work-ticket"),
     }
+    # Program hard-cap enforcement: if this call's program is over its hard budget,
+    # block it (402) or route it down to the program's floor model. Decided locally
+    # from the cached verdict — no per-call round trip. Allow-by-default.
+    if ENFORCE and getattr(app.state, "enforced", None):
+        from . import enforce as _enforce
+        verdict = _enforce.decide(
+            app.state.enforced, ticket=work_meta["ticket"],
+            team=request.headers.get("x-modelpilot-cost-center"),
+            work_type=request.headers.get("x-modelpilot-work-type"))
+        if verdict["decision"] == "block":
+            return Response(
+                content=json.dumps({"type": "error", "error": {
+                    "type": "budget_exceeded",
+                    "message": f"Blocked by Outlay program budget '{verdict.get('program')}' "
+                               f"(over its hard cap). Raise the budget or wait for the period to reset."}}),
+                status_code=402, media_type="application/json",
+                headers={"x-modelpilot-enforced": "block",
+                         "x-modelpilot-program": str(verdict.get("program") or "")})
+        if verdict["decision"] == "downgrade" and verdict.get("floor_model"):
+            body["model"] = verdict["floor_model"]
+            raw = json.dumps(body).encode()
+            decision = replace(decision, routed_model=verdict["floor_model"], applied=True)
+            extra_enforce = {"x-modelpilot-enforced": "downgrade",
+                             "x-modelpilot-program": str(verdict.get("program") or "")}
+        else:
+            extra_enforce = {}
+    else:
+        extra_enforce = {}
     maybe_capture(app.state.ledger, body, decision, request_id, CAPTURE_PCT)
     fwd_headers = {k: v for k, v in request.headers.items() if k.lower() in _FORWARD_HEADERS}
     fwd_headers["content-length"] = str(len(raw))
     url = f"{UPSTREAM}/v1/messages"
     extra = _advice_headers(decision) if MODE in ("advise", "autopilot") else {"x-modelpilot-mode": MODE}
     extra["x-modelpilot-request-id"] = request_id
+    extra.update(extra_enforce)
     if cache_applied:
         extra["x-modelpilot-cache-applied"] = "system"
 
