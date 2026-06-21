@@ -131,11 +131,13 @@ def run_due_digests(now: Optional[float] = None, path: Optional[str] = None) -> 
     due = store.accounts_due_for_digest(now=now, path=path)
     sent = 0
     for account_id in due:
+        # send_account_digest only stamps the cadence when there was real spend to
+        # report. If it returns False (no spend yet / no owner email) we deliberately
+        # do NOT stamp, so the first genuine digest goes out as soon as spend lands —
+        # the account is just re-checked cheaply on the next sweep.
         try:
             if send_account_digest(account_id, path=path, now=now):
                 sent += 1
-            else:
-                store.mark_digest_sent(account_id, now=now, path=path)  # don't retry empties all week
-        except Exception:  # noqa: BLE001
-            store.mark_digest_sent(account_id, now=now, path=path)
+        except Exception:  # noqa: BLE001 — one account never blocks the rest
+            pass
     return {"due": len(due), "sent": sent}

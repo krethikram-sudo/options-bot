@@ -109,11 +109,12 @@ def run_due_close_packs(now: Optional[float] = None, path: Optional[str] = None)
     due = store.accounts_due_for_close_pack(now=now, path=path)
     sent = 0
     for account_id in due:
+        # send_close_pack only stamps the monthly cadence when a pack was actually
+        # built + addressable. On False (no spend yet / no owner email) we don't
+        # stamp, so the first real close pack isn't suppressed for up to a month.
         try:
             if send_close_pack(account_id, path=path, now=now):
                 sent += 1
-            else:
-                store.mark_close_pack_sent(account_id, now=now, path=path)
-        except Exception:  # noqa: BLE001
-            store.mark_close_pack_sent(account_id, now=now, path=path)
+        except Exception:  # noqa: BLE001 — one account never blocks the rest
+            pass
     return {"due": len(due), "sent": sent}
