@@ -1417,6 +1417,11 @@ def test_activation_funnel_and_feedback(env, client):
     assert r.status_code == 303
     assert any(x["kind"] == "dashboard" and x["rating"] == "up" and x["comment"] == "love it"
                for x in store.list_feedback())
+    # a feature request is captured with its own category (so the founder can triage)
+    r = client.post("/app/feedback", data={"kind": "idea", "comment": "Add weekly Slack digests"})
+    assert r.status_code == 303
+    assert any(x["kind"] == "idea" and x["comment"] == "Add weekly Slack digests"
+               for x in store.list_feedback())
     # cancel reason survives account deletion (feedback isn't cascade-deleted)
     store.record_feedback(a["id"], "cancel", comment="too pricey")
     store.delete_account(a["id"])

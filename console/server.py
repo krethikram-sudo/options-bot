@@ -1517,9 +1517,17 @@ async def app_feedback(request: Request):
     if redir:
         return redir
     f = await _form(request)
-    rating = f.get("rating") if f.get("rating") in ("up", "down") else None
+    kind = f.get("kind")
+    if kind in ("idea", "problem", "praise", "other"):
+        # Categorized feedback / feature request from the widget; derive a coarse
+        # sentiment so it still shows in the thumbs view, and keep the category.
+        rating = {"praise": "up", "problem": "down"}.get(kind)
+    else:
+        kind = "dashboard"
+        rating = f.get("rating") if f.get("rating") in ("up", "down") else None
+    comment = (f.get("comment") or "").strip() or None
     try:
-        store.record_feedback(acct["id"], "dashboard", rating=rating, comment=f.get("comment"))
+        store.record_feedback(acct["id"], kind, rating=rating, comment=comment)
     except store.StoreError:
         pass
     ref = request.headers.get("referer", "")

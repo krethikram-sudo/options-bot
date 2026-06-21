@@ -2598,6 +2598,7 @@ def settings_page(account: dict, settings: dict, saved: bool = False,
             + _settings_group("Account &amp; team", _settings_links(account))
             + _settings_group("Security", _twofa_section(account, twofa))
             + _settings_group("Notifications", _digest_section(account))
+            + _settings_group("Help us improve", _feedback_widget())
             + _settings_group("Data &amp; privacy",
                               _retention_section(account, retention_days, purged, purge_error))
             + _danger_zone(account, delete_error))
@@ -3280,16 +3281,20 @@ def billing_page(account: dict, plan: dict, trial: dict, bill: dict,
 # --------------------------------------------------------------------------- #
 
 def _feedback_widget() -> str:
-    return ('<div class=card style="margin-top:16px"><div class=label>How\'s Outlay working for you?</div>'
+    return ('<div class=card style="margin-top:16px"><div class=label>Feedback &amp; feature requests</div>'
             '<form method=post action="/app/feedback" class=row '
             'style="gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">'
-            '<button name=rating value=up class="btn sm sec" title="Going well">&#128077;</button>'
-            '<button name=rating value=down class="btn sm sec" title="Not great">&#128078;</button>'
-            '<input name=comment placeholder="Anything we should know? (optional)" '
+            '<select name=kind aria-label="Type" '
+            'style="padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:14px">'
+            '<option value=idea>&#128161; Feature request</option>'
+            '<option value=problem>&#128030; Something&#39;s broken</option>'
+            '<option value=praise>&#128077; What&#39;s working</option>'
+            '<option value=other>&#128172; Other</option></select>'
+            '<input name=comment required placeholder="What would make Outlay better?" '
             'style="flex:1;min-width:220px;padding:8px 10px;border:1px solid var(--line);border-radius:8px">'
             '<button class="btn sm">Send</button></form>'
             '<p class="small muted" style="margin-top:6px">Goes straight to the founder — just your note, '
-            'never any prompt content.</p></div>')
+            'never any prompt content. We read every one.</p></div>')
 
 
 def _funnel_panel(funnel: dict | None) -> str:
