@@ -1915,8 +1915,73 @@ def budgets_page(account: dict, report: dict | None, statuses: list[dict],
       </form></div>"""
     head = ('<div class=ohead><h1>Budgets &amp; guardrails</h1>'
             '<p>Set a budget by scope; Outlay projects your spend to the period and flags it '
-            '<b>before</b> you go over — not at month-end.</p></div>')
+            '<b>before</b> you go over — not at month-end. Need to budget a body of work across several '
+            'teams or projects? Use <a href="/app/outlay/programs">program budgets</a>.</p></div>')
     return page("Budgets", head + note + rows + pref + add, account, active="/app/outlay/budgets")
+
+
+def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> str:
+    """Program budgets — a named budget across several teams/projects/work types, with
+    optional hard-cap enforcement handed to the opt-in gateway."""
+    tones = {"ok": ("var(--grn)", "var(--grn-d)"), "warn": ("var(--amber)", "var(--amber)"),
+             "over": ("var(--red)", "var(--red)")}
+    note = "" if report else ('<div class=ocard style="margin-bottom:16px"><p class=muted style="margin:0">'
+                              'Connect data on the <a href="/app/outlay">Spend</a> tab to see live status.</p></div>')
+    rows = ""
+    for s in statuses:
+        bar, txt = tones.get(s["status"], tones["ok"])
+        w = min(max(s.get("pct_used", 0), 0), 1) * 100
+        mem = ", ".join(f'{_e(m.get("scope_type"))}{(":" + _e(m.get("scope_id"))) if m.get("scope_id") else ""}'
+                        for m in (s.get("members") or [])) or "—"
+        if s.get("enforce_mode") == "hard":
+            act = s.get("action") or "block"
+            tip = f'gateway will {act}' + (f' → {_e(s.get("floor_model"))}' if act == "downgrade" and s.get("floor_model") else '')
+            enf = f'<span class="otag over" title="{tip}">hard cap · {_e(act)}</span>'
+        else:
+            enf = '<span class="otag ex" title="detect &amp; notify; your automation enforces">alert only</span>'
+        rows += (f'<div class=bcard><div style="display:flex;justify-content:space-between;align-items:center;gap:10px">'
+                 f'<b style="font-size:14.5px">{_e(s.get("name"))}</b>'
+                 f'<span style="display:flex;gap:6px;align-items:center">{enf}'
+                 f'<span class="otag {s["status"]}">{_e(s["status"])}</span></span></div>'
+                 f'<div class=muted style="font-size:12px;margin-top:3px">members: {mem}</div>'
+                 f'<div class=dual style="margin-top:10px"><div class=track>'
+                 f'<span style="width:{w:.0f}%;background:{bar}"></span></div></div>'
+                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">'
+                 f'<span class=muted style="font-size:12.5px">{money(s.get("spent_usd",0))} of {money(s["limit_usd"])} · '
+                 f'projected <b style="color:{txt}">{money(s.get("projected_usd",0))}</b> / {int(s.get("period_days") or 90)}d</span>'
+                 f'<form method=post action="/app/outlay/programs/delete" style="margin:0">'
+                 f'<input type=hidden name=id value="{s["id"]}">'
+                 f'<button class="btn sec sm">Remove</button></form></div></div>')
+    rows = (f'<div class=ocard><div class=dh>Your programs</div>{rows}</div>' if statuses
+            else '<div class=ocard><p class=muted style="margin:0">No programs yet — define one below.</p></div>')
+    add = """<div class=ocard style="margin-top:16px"><div class=dh>Define a program</div>
+      <form method=post action="/app/outlay/programs">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;align-items:end">
+          <label class=fld><span>Program name</span><input name=name placeholder="Platform" required></label>
+          <label class=fld><span>Budget (USD)</span><input name=limit_usd type=number step=any placeholder="50000" required></label>
+          <label class=fld><span>Period (days)</span><input name=period_days type=number value=90></label>
+        </div>
+        <label class=fld style="margin-top:12px"><span>Members — one per line: <code>team platform</code>, <code>project PLAT</code>, <code>class feature</code>, or <code>overall</code></span>
+          <textarea name=members rows=3 placeholder="team platform&#10;team infra&#10;project PLAT" required></textarea></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:end;margin-top:12px">
+          <label class=fld><span>Enforcement</span><select name=enforce_mode>
+            <option value=alert>Alert only (detect + notify)</option>
+            <option value=hard>Hard cap (gateway enforces)</option></select></label>
+          <label class=fld><span>When over (hard cap)</span><select name=action>
+            <option value=block>Block new calls</option>
+            <option value=downgrade>Route down to a cheaper model</option></select></label>
+          <label class=fld><span>Floor model (for route-down)</span><input name=floor_model placeholder="claude-haiku-4-5"></label>
+        </div>
+        <button class="btn" style="margin-top:14px">Add program</button>
+      </form>
+      <p class=muted style="font-size:12.5px;margin:12px 0 0"><b>Hard cap</b> requires the opt-in
+        <a href="/app/outlay/connect">ModelPilot gateway</a> in front of your calls — it consults Outlay and
+        blocks or routes down once a program is over. <b>Alert only</b> works read-only: we fire a
+        <code>program.over</code> webhook so your own automation enforces.</p></div>"""
+    head = ('<div class=ohead><h1>Program budgets</h1>'
+            '<p>Budget a <b>program</b> — a body of work spanning several teams, projects, or work types — '
+            'as one number. Alert on it, or hand a <b>hard cap</b> to the gateway to enforce.</p></div>')
+    return page("Programs", head + note + rows + add, account, active="/app/outlay/programs")
 
 
 def pilot_request_page(error: str = "", values: dict | None = None) -> str:

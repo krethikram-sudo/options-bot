@@ -589,6 +589,40 @@ def _check_budgets(account_id: int, report: dict) -> None:
         store.set_outlay_budget_status(s["id"], new)
 
 
+def _check_programs(account_id: int, report: dict) -> None:
+    """Fire program.warn / program.over on transition. For a 'hard' program, an
+    'over' is the signal the opt-in gateway enforces against (block / route-down) —
+    so this event is also the automation hook for teams without the gateway."""
+    programs = store.list_outlay_programs(account_id)
+    if not programs:
+        return
+    for s in outlay_app.program_statuses(report, programs):
+        new, old = s["status"], s.get("last_status")
+        if new in ("warn", "over") and new != old:
+            store.deliver_event(account_id, f"program.{new}", {
+                "program": s.get("name"), "program_id": s.get("id"),
+                "enforce_mode": s.get("enforce_mode"), "action": s.get("action"),
+                "floor_model": s.get("floor_model"),
+                "spent_usd": s["spent_usd"], "limit_usd": s["limit_usd"],
+                "projected_usd": s["projected_usd"], "period_days": s.get("period_days")})
+            acct = store.get_account(account_id)
+            if acct and acct.get("email"):
+                try:
+                    notify.send_budget_alert(acct["email"], new, s.get("projected_usd", 0),
+                                             s.get("limit_usd", 0) or 0,
+                                             scope=f'program "{s.get("name")}"', product="Outlay")
+                except Exception:  # noqa: BLE001 — alerting never breaks the path
+                    pass
+            hard = s.get("enforce_mode") == "hard" and new == "over"
+            act = (f" — gateway will {s.get('action')}"
+                   f"{(' to ' + s.get('floor_model')) if s.get('action') == 'downgrade' and s.get('floor_model') else ''}"
+                   if hard else "")
+            _slack_notify(account_id,
+                          f":rotating_light: *Program {new}* — {s.get('name')}: projected "
+                          f"${s.get('projected_usd', 0):,.0f} vs ${s.get('limit_usd', 0) or 0:,.0f} limit{act}.")
+        store.set_outlay_program_status(s["id"], new)
+
+
 def _check_anomalies(account_id: int, report: dict) -> None:
     """Alert on *newly* detected runaway tickets (≥3× their work-type median) — to
     subscribed webhooks and the owner's email. De-duped on ticket id so a standing
@@ -686,6 +720,7 @@ def _run_due_syncs(now: float | None = None, transport=None) -> dict:
         store.record_outlay_snapshot(account_id, report, now=now)
         store.mark_outlay_synced(account_id, now=now)
         _check_budgets(account_id, report)
+        _check_programs(account_id, report)
         _check_anomalies(account_id, report)
         synced += 1
     return {"due": len(due), "synced": synced, "failed": failed}
@@ -929,6 +964,7 @@ async def app_outlay_run(request: Request):
     store.save_outlay_report(acct["id"], report)
     store.record_outlay_snapshot(acct["id"], report)
     _check_budgets(acct["id"], report)
+    _check_programs(acct["id"], report)
     _check_anomalies(acct["id"], report)
     return JSONResponse({"ok": True})
 
@@ -1032,6 +1068,7 @@ async def app_outlay_sync(request: Request):
     store.record_outlay_snapshot(acct["id"], report)
     store.mark_outlay_synced(acct["id"])
     _check_budgets(acct["id"], report)
+    _check_programs(acct["id"], report)
     _check_anomalies(acct["id"], report)
     return JSONResponse({"ok": True})
 
@@ -1073,6 +1110,66 @@ async def app_outlay_budgets_delete(request: Request):
     f = await _form(request)
     store.delete_outlay_budget(acct["id"], int(f.get("id") or 0))
     return _redirect("/app/outlay/budgets")
+
+
+@app.get("/app/outlay/programs", response_class=HTMLResponse)
+def app_outlay_programs(request: Request):
+    """Program budgets — named budgets spanning several teams / projects / work types,
+    with optional hard-cap enforcement via the opt-in gateway."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    report = store.get_outlay_report(acct["id"])
+    statuses = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"]))
+    return _html(web.programs_page(acct, report, statuses))
+
+
+@app.post("/app/outlay/programs")
+async def app_outlay_programs_add(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    name = (f.get("name") or "").strip()
+    try:
+        limit = float(f.get("limit_usd") or 0)
+    except ValueError:
+        limit = 0.0
+    # members: one per line, "scope_type id" or "scope_type:id" (overall needs no id)
+    members = []
+    for raw in (f.get("members") or "").splitlines():
+        raw = raw.strip()
+        if not raw:
+            continue
+        parts = raw.replace(":", " ", 1).split(None, 1)
+        st = parts[0].lower()
+        sid = parts[1].strip() if len(parts) > 1 else ""
+        if st in ("team", "class", "project", "overall"):
+            members.append({"scope_type": st, "scope_id": sid})
+    enforce = f.get("enforce_mode") or "alert"
+    action = f.get("action") or "block"
+    floor = (f.get("floor_model") or "").strip()
+    try:
+        period = int(f.get("period_days") or 90)
+    except ValueError:
+        period = 90
+    if name and limit > 0 and members:
+        store.add_outlay_program(acct["id"], name, members, limit, period,
+                                 enforce_mode=enforce, action=action, floor_model=floor)
+        _audit(acct["id"], "program.create",
+               actor=acct.get("display_email") or acct.get("email", ""),
+               detail=f"{name} · {enforce} · ${limit:,.0f}/{period}d")
+    return _redirect("/app/outlay/programs")
+
+
+@app.post("/app/outlay/programs/delete")
+async def app_outlay_programs_delete(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    store.delete_outlay_program(acct["id"], int(f.get("id") or 0))
+    return _redirect("/app/outlay/programs")
 
 
 @app.get("/app/outlay/export.csv")
