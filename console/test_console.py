@@ -284,19 +284,13 @@ def test_sync_excludes_trial_period_savings(env, monkeypatch):
     assert events[-1]["payload"]["value"] == "900"
 
 
-def test_estimate_page_measured_and_projector(env, client):
+def test_estimate_page_redirects_to_outlay(env, client):
     server, store = env
     _signup(client, email="est@b.com")
-    # no traffic yet -> projector + connect prompt
+    # The parked ModelPilot savings projection is hidden; the route now sends any
+    # stray bookmark to the Outlay spend estimate rather than savings telemetry.
     r = client.get("/app/estimate")
-    assert r.status_code == 200
-    assert "What-if projector" in r.text and "No routed traffic yet" in r.text
-    # with traffic -> measured savings + annualized, seeded with the real baseline
-    acct = store.get_account_by_email("est@b.com")
-    dep = store.deployments_for(acct["id"])[0]["deployment_id"]
-    store.record_meter(dep, requests=1000, routed=600, baseline_cost=900.0, actual_cost=500.0)
-    r2 = client.get("/app/estimate")
-    assert "Measured savings this cycle" in r2.text and "Annualized at this run-rate" in r2.text
+    assert r.status_code == 303 and r.headers["location"] == "/app/outlay/estimate"
 
 
 def test_delete_account_cascade(env):
