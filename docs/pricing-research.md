@@ -94,7 +94,61 @@ Numbers are starting anchors, not gospel — the point is the **shape**: predict
 - **Don't over-discount the savings-share to win logos** — it's your cleanest aligned-incentive story; keep it crisp (a round 20%).
 - **Talk to 5–10 design-partner buyers** and literally ask "what would you expect to pay, and what would feel like a steal?" — your real pricing comes from them, this doc just frames the conversation.
 
+## Realistic dollar price points (what you'll actually charge & close)
+
+The percentages only matter once they land on a number a buyer signs. Grounding
+them against (a) what comparable tools list, (b) what early-stage B2B SaaS actually
+closes, and (c) what customers spend on AI:
+
+**Anchors from the market:**
+- **Tool list prices:** Vantage **Free / $30 / $200 / Enterprise**; Portkey from
+  **$49/mo**; Helicone **~$25–79/mo**; Kubecost **<$10k/yr**; CloudZero custom,
+  enterprise **"high five figures"/yr** (~$50k+). [Vantage via Modern DataTools](https://www.modern-datatools.com/tools/cloudzero/pricing), [Portkey pricing](https://www.truefoundry.com/blog/portkey-pricing-guide)
+- **Early-stage SaaS deal sizes (the reality check):** median ACV for <$5M-ARR
+  companies is **$12k/yr**; **seed-stage deals run $5k–$10k**; SMB $5–15k,
+  mid-market $15–50k, enterprise $50–250k+; overall private-SaaS median ACV
+  **$26,265/yr**. [Optifai ACV benchmarks](https://optif.ai/learn/questions/b2b-saas-acv-benchmark/), [SaaS Capital](https://www.saas-capital.com/blog-posts/what-is-the-average-deal-size-for-private-saas-companies/)
+- **The spend you'd be a % of:** enterprise LLM spend hit **$8.4B (mid-2025),
+  doubling ~every 6 months**; but per-token prices are **falling ~80%/yr**. [Menlo via NatLawReview](https://natlawreview.com/press-releases/enterprise-llm-spend-reaches-84b-anthropic-overtakes-openai-according-new), [CloudZero LLM pricing](https://www.cloudzero.com/blog/llm-api-pricing-comparison/)
+
+**Suggested concrete tiers (monthly / implied annual ACV):**
+
+| Tier | Customer's AI spend/mo | Price/mo | ACV/yr | ≈ % of AI spend |
+|---|---|---|---|---|
+| **Pilot** | any (14 days) | Free | — | — |
+| **Starter** | ~$10k–$50k | **$300–$500** | $3.6k–$6k | 1–3% |
+| **Team / Growth** | ~$50k–$250k | **$1,000–$2,000** | $12k–$24k | ~1–2% |
+| **Scale** | ~$250k–$500k | **$4,000–$6,000** | $48k–$72k | ~1% |
+| **Enterprise / Gov** | $500k+ | **Custom, $8k+** | $100k+ | <1%, firm-fixed-price |
+| **Savings add-on** | — | **20% of enforced savings** | — | opt-in, gateway only |
+
+**What this means in practice:**
+- Your **first 10 customers will pay roughly $300–$1,500/mo ($4k–$18k ACV)** — i.e.
+  right around the **$12k early-stage median**. That's normal and good; don't expect
+  $100k enterprise deals before you have proof + references.
+- These land at **1–3% of the AI spend you watch** — squarely in the FinOps norm,
+  so it's defensible to a finance buyer ("less than the rounding error on the bill
+  we're helping you control").
+- **Bill flat bands, reprice annually — don't bill a live %.** Per-token prices are
+  cratering ~80%/yr; if your fee floats on $ spend it can shrink even as you do more.
+  Flat bands by spend-under-management (or by a volume metric like attributed
+  tickets/requests) insulate you. Volume is exploding, so bands trend up over time.
+- **Anchor high, then offer a "founding customer" rate** (e.g. 30–50% off for the
+  first ~10 logos) in exchange for a case study + reference + design-partner feedback.
+  That preserves your list price while still closing.
+- **Government/enterprise:** quote a **fixed annual** (e.g. $50k–$120k firm-fixed-
+  price) rather than a variable %; it's easier to put on a PO and matches how they buy.
+
+**Bottom line:** a realistic *list* is roughly **$300–$500/mo entry, ~$1–2k/mo for a
+real team, $4–8k/mo at scale, custom six-figures for enterprise/gov** — with your
+first signed deals clustering around **$8k–$15k/yr** while you build proof.
+
 ### Sources
+- [Early-stage ACV benchmarks — Optifai](https://optif.ai/learn/questions/b2b-saas-acv-benchmark/)
+- [Average SaaS deal size — SaaS Capital](https://www.saas-capital.com/blog-posts/what-is-the-average-deal-size-for-private-saas-companies/)
+- [CloudZero/Vantage pricing — Modern DataTools](https://www.modern-datatools.com/tools/cloudzero/pricing)
+- [Portkey pricing guide — TrueFoundry](https://www.truefoundry.com/blog/portkey-pricing-guide)
+- [Enterprise LLM spend $8.4B — Menlo/NatLawReview](https://natlawreview.com/press-releases/enterprise-llm-spend-reaches-84b-anthropic-overtakes-openai-according-new)
 - [SaaS Pricing Benchmark 2025 — Monetizely](https://www.getmonetizely.com/articles/saas-pricing-benchmark-study-2025-key-insights-from-100-companies-analyzed)
 - [SaaS pricing models — softwarepricing.com](https://softwarepricing.com/blog/saas-pricing-models/)
 - [Hybrid pricing era — Flexera](https://www.flexera.com/blog/saas-management/from-seats-to-consumption-why-saas-pricing-has-entered-its-hybrid-era/)
