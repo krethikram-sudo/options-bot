@@ -947,15 +947,41 @@ def _role_gate(next_to: str = "welcome") -> str:
 
 
 def _csv_upload_form(next_to: str = "") -> str:
-    """A small CSV-upload control for the people→team org structure (email,team)."""
+    """A small CSV-upload control for the identity→team org structure
+    (identifier,team — where identifier is an email, @domain, or service-account id)."""
     nx = f'<input type=hidden name=next value="{next_to}">' if next_to else ""
     return (f'<form method=post action="/app/outlay/identity/upload" enctype="multipart/form-data" '
             f'style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;'
             f'border-top:1px solid var(--line2);padding-top:12px">{nx}'
             f'<input type=file name=file accept=".csv,text/csv" required style="font-size:13px;max-width:240px">'
             f'<button class="btn sec sm">Upload CSV</button>'
-            f'<span class=muted style="font-size:12px">A <code>email,team</code> CSV — merged into the map.</span>'
+            f'<span class=muted style="font-size:12px">An <code>identifier,team</code> CSV '
+            f'(email, @domain, or service-account id) — merged into the map.</span>'
             f'</form>')
+
+
+def _roster_upload_form(next_to: str = "") -> str:
+    """Comprehensive org-roster upload: one CSV both maps everyone to teams AND
+    invites them with their role pre-set (so invitees skip the setup question).
+    Columns (header row, any order): email, team, role (finance|eng),
+    access (admin|member|billing)."""
+    nx = f'<input type=hidden name=next value="{next_to}">' if next_to else ""
+    return (
+        '<div class=ocard style="margin-top:16px"><div class=dh>Upload your team roster '
+        '<span class=sub>map + invite everyone in one file</span></div>'
+        '<p class=muted style="margin:-4px 0 10px;font-size:13.5px">Set up your whole org at once: each '
+        'row maps a person to a team <b>and</b> sends them an invite with their role pre-set, so they land '
+        'straight in their own view. Columns (a header row, in any order): '
+        '<code>email</code>, <code>team</code>, <code>role</code> (finance&nbsp;/&nbsp;eng), '
+        '<code>access</code> (admin&nbsp;/&nbsp;member&nbsp;/&nbsp;billing).</p>'
+        f'<form method=post action="/app/team/roster" enctype="multipart/form-data" '
+        f'style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">{nx}'
+        '<input type=file name=file accept=".csv,text/csv" required style="font-size:13px;max-width:240px">'
+        '<button class="btn">Upload &amp; invite</button>'
+        '<a class="btn sec sm" href="/app/team/roster-template.csv">Download template</a></form>'
+        '<p class=muted style="font-size:12px;margin-top:8px">Example: '
+        '<code>cfo@acme.com, Finance, finance, admin</code>. The owner and anyone already on the team are '
+        'skipped; leave a cell blank to skip that part (no team, or let them pick their own role).</p></div>')
 
 
 def welcome_page(account: dict, conn: dict | None, idmap: str = "") -> str:
@@ -993,9 +1019,10 @@ def welcome_page(account: dict, conn: dict | None, idmap: str = "") -> str:
     org_card = (
         '<div class=ocard style="margin-top:16px"><div class=dh>Add your org structure '
         '<span class=sub>so spend allocates by team / cost center</span></div>'
-        '<p class=muted style="margin:-4px 0 10px;font-size:13.5px">Map each person’s email to a team — '
-        'one per line, <code>alice@acme.com, Platform</code>, or a whole domain '
-        '<code>@acme.com, Internal</code>. This fills the “Spend by team” view.</p>'
+        '<p class=muted style="margin:-4px 0 10px;font-size:13.5px">Map each identity to a team — a '
+        'person’s email, a whole <code>@domain</code>, or a <b>service-account / CI key</b> — one per '
+        'line, e.g. <code>alice@acme.com, Platform</code> or <code>ci-bot, Platform</code>. Don’t forget '
+        'bots/CI keys — agent spend often runs under them. This fills the “Spend by team” view.</p>'
         '<form method=post action="/app/outlay/identity">'
         '<input type=hidden name=next value="welcome">'
         f'<textarea name=identity_map rows=5 placeholder="alice@acme.com, Platform&#10;'
@@ -1024,8 +1051,9 @@ def welcome_page(account: dict, conn: dict | None, idmap: str = "") -> str:
             '<span class=muted style="font-size:12.5px">These steps are optional — you can do them later '
             'from Connect and Team.</span></div>')
     body = (f'<div class=ohead><h1>You’re set up as {me}</h1>'
-            '<p>Two quick steps to get the most out of Outlay — or jump straight into the product.</p></div>'
-            + org_card + invite_card + done)
+            '<p>Set up your org — invite one counterpart, or upload your whole team at once — then jump '
+            'into the product.</p></div>'
+            + org_card + invite_card + _roster_upload_form("welcome") + done)
     return page("Welcome", body, account, active="/app")
 
 
@@ -1868,15 +1896,18 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
         </script>
       </div>
       <div class=ocard style="margin-top:16px" id=teams>
-        <div class=dh>Map people to teams <span class=sub>for cost-center allocation</span></div>
-        <p class=muted style="margin:-4px 0 10px;font-size:13.5px">Optional but powerful: map each engineer's
-          email (or API-key id) to a team, so spend allocates by cost-center even when your tickets don't
-          carry a team. One per line — <code>alice@acme.com, Platform</code> — or map a whole domain with
-          <code>@acme.com, Internal</code>. This is what fills the finance "Spend by team" view.</p>
+        <div class=dh>Map identities to teams <span class=sub>for cost-center allocation</span></div>
+        <p class=muted style="margin:-4px 0 10px;font-size:13.5px">Optional but powerful: map each
+          <b>identity</b> — a person's email, a whole <code>@domain</code>, or a <b>service-account /
+          CI key id</b> — to a team, so spend allocates by cost-center even when your tickets don't carry
+          a team. One per line — <code>alice@acme.com, Platform</code>, <code>@acme.com, Internal</code>,
+          or <code>ci-deploy-bot, Platform</code>. <b>Don't forget your bots/CI keys</b> — agent spend
+          often runs under a service account, and unmapped identities land in "Unassigned". This fills
+          the finance "Spend by team" view.</p>
         <form method=post action="/app/outlay/identity">
           <textarea name=identity_map rows=5 placeholder="alice@acme.com, Platform
-bob@acme.com, Growth
-@contractor.com, External">{idmap}</textarea>
+@acme.com, Internal
+ci-deploy-bot, Platform">{idmap}</textarea>
           <button class="btn sec" style="margin-top:12px">Save team map</button>
         </form>
         {_csv_upload_form()}
@@ -3396,7 +3427,7 @@ def _sso_section(sso: dict, scim_token: str = "") -> str:
 
 
 def team_page(account: dict, members: list[dict], invite_link: str = "",
-              sso: dict | None = None, scim_token: str = "") -> str:
+              sso: dict | None = None, scim_token: str = "", roster: str = "") -> str:
     from .store import TEAM_ROLES
     invite_note = (f'<div class=okbox style="margin-bottom:16px"><b>Invite sent.</b> Share this '
                    f'set-password link (valid 1 hour): <a href="{_e(invite_link)}">{_e(invite_link)}</a></div>'
@@ -3446,7 +3477,9 @@ def team_page(account: dict, members: list[dict], invite_link: str = "",
       </div>
       <p class=muted style="font-size:12.5px;margin-top:6px">They'll get a link to set a password and sign in.</p>
     </div>"""
-    body = head + invite_note + members_card + invite_card + _sso_section(sso or {}, scim_token)
+    roster_note = (f'<div class=okbox style="margin-bottom:16px">{_e(roster)}</div>' if roster else "")
+    body = (head + invite_note + roster_note + members_card + invite_card
+            + _roster_upload_form() + _sso_section(sso or {}, scim_token))
     return page("Team", body, account, "/app/team")
 
 
