@@ -1965,7 +1965,10 @@ def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> s
           <label class=fld><span>When over (hard cap)</span><select name=action>
             <option value=block>Block new calls</option>
             <option value=downgrade>Route down to a cheaper model</option></select></label>
-          <label class=fld><span>Floor model (for route-down)</span><input name=floor_model placeholder="claude-haiku-4-5"></label>
+          <label class=fld><span>Floor model (for route-down)</span><select name=floor_model>
+            <option value="claude-haiku-4-5">Claude Haiku 4.5 (cheapest)</option>
+            <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+            <option value="claude-opus-4-8">Claude Opus 4.8</option></select></label>
         </div>
         <button class="btn" style="margin-top:14px">Add program</button>
       </form>
