@@ -100,6 +100,20 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-21 — program budgets (foundation for hard-cap enforcement) [slice 1]
+- [x] Founder asked to enforce budget *by program*; chose hard-cap-via-gateway. Slice 1 = the program model:
+- [x] **`outlay_programs`** table + CRUD; a program = name + members ([{scope_type, scope_id}] across
+      teams/projects/work-types/overall) + limit + period + `enforce_mode` (alert|hard) + action
+      (block|downgrade) + floor_model.
+- [x] **`outlay_app.program_statuses`** rolls spend across members (a ticket matching ANY member counts once —
+      no double-count), pace-projects, returns ok/warn/over. Refactored `budget_statuses` onto shared
+      `_scope_spent` / `_pace_status` helpers.
+- [x] **`/app/outlay/programs`** page (define/list/delete, members textarea, enforcement selector) +
+      `_check_programs` firing **`program.warn`/`program.over`** webhooks + email + Slack on transition (the
+      over event is the automation hook *and* the future gateway signal). 320 tests.
+- [ ] Slice 2: machine enforcement-decision endpoint the gateway queries (programs over hard cap + action).
+- [ ] Slice 3: gateway/brain wiring (block / route-down at request time).
+
 ### 2026-06-21 — unit economics (cost per ticket / per closed / rework tax)
 - [x] Reframed raw spend as efficiency — `outlay_app.unit_economics(report)` computes cost per attributed
       ticket, per *closed* ticket, the share of spend on reworked tickets, and the priciest work types per

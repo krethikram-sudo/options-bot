@@ -2660,6 +2660,51 @@ def test_scope_drilldown_from_spend(env, client):
                       follow_redirects=False).status_code in (302, 303, 307)
 
 
+def test_program_budgets_rollup_status_and_alerts(env, client, monkeypatch):
+    from console import outlay_app, server, store
+    # rollup across members, no double-count when a ticket matches two members
+    report = {"window_days": 30, "spend": {"total_usd": 300.0},
+              "tickets": [
+                  {"ticket_id": "PLAT-1", "task_class": "feature", "team_id": "platform", "cost_usd": 200.0},
+                  {"ticket_id": "INFRA-9", "task_class": "bugfix", "team_id": "infra", "cost_usd": 100.0},
+                  {"ticket_id": "GROW-2", "task_class": "feature", "team_id": "growth", "cost_usd": 50.0}]}
+    programs = [{"id": 1, "name": "Platform", "limit_usd": 150.0, "period_days": 30,
+                 "members": [{"scope_type": "team", "scope_id": "platform"},
+                             {"scope_type": "project", "scope_id": "PLAT"}]}]
+    st = outlay_app.program_statuses(report, programs)[0]
+    assert st["spent_usd"] == 200.0 and st["status"] == "over"   # platform team + PLAT project = the one ticket, counted once
+
+    # HTTP: create a program, it shows with rolled-up status, and delete works
+    _signup(client, email="prog@x.com")
+    acct = store.get_account_by_email("prog@x.com")
+    r = client.post("/app/outlay/programs", data={
+        "name": "Platform", "limit_usd": "150", "period_days": "30",
+        "members": "team platform\nproject PLAT", "enforce_mode": "hard", "action": "downgrade",
+        "floor_model": "claude-haiku-4-5"}, follow_redirects=True)
+    assert r.status_code == 200
+    progs = store.list_outlay_programs(acct["id"])
+    assert len(progs) == 1 and progs[0]["enforce_mode"] == "hard"
+    assert progs[0]["members"] == [{"scope_type": "team", "scope_id": "platform"},
+                                   {"scope_type": "project", "scope_id": "PLAT"}]
+    page = client.get("/app/outlay/programs").text
+    assert "Program budgets" in page and "Platform" in page and "hard cap" in page
+
+    # an over transition on a hard program fires program.over (webhook) + Slack with the action
+    store.save_outlay_report(acct["id"], report)
+    slacks = []
+    monkeypatch.setattr(server, "_slack_notify", lambda aid, text: slacks.append(text))
+    events = []
+    monkeypatch.setattr(store, "deliver_event", lambda aid, ev, data, **k: events.append((ev, data)))
+    server._check_programs(acct["id"], report)
+    assert any(ev == "program.over" for ev, _ in events)
+    assert slacks and "downgrade" in slacks[0] and "claude-haiku-4-5" in slacks[0]
+    assert "program.over" in store.WEBHOOK_EVENTS
+
+    # delete
+    client.post("/app/outlay/programs/delete", data={"id": str(progs[0]["id"])}, follow_redirects=True)
+    assert store.list_outlay_programs(acct["id"]) == []
+
+
 def test_unit_economics_engine_and_card(env, client):
     from console import outlay_app
     # engine: per-ticket / per-closed / rework / by-class from attributed tickets

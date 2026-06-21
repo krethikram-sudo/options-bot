@@ -529,6 +529,59 @@ def project_spend(report: dict) -> list[dict]:
             for k, v in sorted(agg.items(), key=lambda kv: kv[1], reverse=True)]
 
 
+def _scope_match(ticket: dict, scope_type: str, scope_id) -> bool:
+    if scope_type == "team":
+        return (ticket.get("team_id") or "") == scope_id
+    if scope_type == "class":
+        return ticket.get("task_class") == scope_id
+    if scope_type == "project":
+        return _project_key(ticket.get("ticket_id")) == scope_id
+    return True  # 'overall' matches everything
+
+
+def _scope_spent(tickets: list, total: float, scope_type: str, scope_id) -> float:
+    if scope_type == "overall":
+        return total
+    return sum(t.get("cost_usd", 0) for t in tickets if _scope_match(t, scope_type, scope_id))
+
+
+def _pace_status(spent: float, limit: float, window: int, period: int) -> tuple:
+    """(projected_usd, status) — straight-line the window's spend to the budget
+    period; over if already past or projected past, warn at ≥80%, else ok."""
+    projected = spent / window * period if window else spent
+    if limit and (spent >= limit or projected > limit):
+        status = "over"
+    elif limit and projected >= 0.8 * limit:
+        status = "warn"
+    else:
+        status = "ok"
+    return round(projected, 2), status
+
+
+def program_statuses(report: dict, programs: list[dict]) -> list[dict]:
+    """Spend-vs-budget for *programs* — named budgets spanning several teams /
+    projects / work types. A ticket matching ANY member counts once (no double-count
+    across overlapping members). Same pace projection + status as single-scope budgets."""
+    tickets = report.get("tickets", []) if report else []
+    total = (report.get("spend", {}) or {}).get("total_usd", 0.0) if report else 0.0
+    window = (report.get("window_days") if report else None) or 30
+    out = []
+    for p in programs:
+        members = p.get("members") or []
+        if not members:
+            spent = 0.0
+        elif any(m.get("scope_type") == "overall" for m in members):
+            spent = total
+        else:
+            spent = sum(t.get("cost_usd", 0) for t in tickets
+                        if any(_scope_match(t, m.get("scope_type"), m.get("scope_id")) for m in members))
+        limit = p.get("limit_usd", 0) or 0
+        projected, status = _pace_status(spent, limit, window, p.get("period_days") or 90)
+        out.append({**p, "spent_usd": round(spent, 2), "projected_usd": projected,
+                    "pct_used": round(spent / limit, 3) if limit else 0.0, "status": status})
+    return out
+
+
 def budget_statuses(report: dict, budgets: list[dict]) -> list[dict]:
     """Compute spend-vs-budget with pace projection from the stored report.
 
@@ -541,26 +594,10 @@ def budget_statuses(report: dict, budgets: list[dict]) -> list[dict]:
     window = (report.get("window_days") if report else None) or 30
     out = []
     for b in budgets:
-        st, sid = b["scope_type"], b.get("scope_id")
-        if st == "team":
-            spent = sum(t.get("cost_usd", 0) for t in tickets if (t.get("team_id") or "") == sid)
-        elif st == "class":
-            spent = sum(t.get("cost_usd", 0) for t in tickets if t.get("task_class") == sid)
-        elif st == "project":  # group by ticket-key prefix (PROJ-123 → PROJ)
-            spent = sum(t.get("cost_usd", 0) for t in tickets
-                        if _project_key(t.get("ticket_id")) == sid)
-        else:  # overall
-            spent = total
-        period = b.get("period_days") or 30
-        projected = spent / window * period if window else spent
+        spent = _scope_spent(tickets, total, b["scope_type"], b.get("scope_id"))
         limit = b.get("limit_usd", 0) or 0
-        if limit and (spent >= limit or projected > limit):
-            status = "over"
-        elif limit and projected >= 0.8 * limit:
-            status = "warn"
-        else:
-            status = "ok"
-        out.append({**b, "spent_usd": round(spent, 2), "projected_usd": round(projected, 2),
+        projected, status = _pace_status(spent, limit, window, b.get("period_days") or 30)
+        out.append({**b, "spent_usd": round(spent, 2), "projected_usd": projected,
                     "pct_used": round(spent / limit, 3) if limit else 0.0, "status": status})
     return out
 

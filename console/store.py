@@ -281,9 +281,23 @@ CREATE TABLE IF NOT EXISTS cron_runs (
     last_run_at REAL NOT NULL,        -- when the scheduler last hit this endpoint
     detail TEXT                       -- JSON summary of the last run
 );
+CREATE TABLE IF NOT EXISTS outlay_programs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL,
+    name TEXT NOT NULL,                          -- e.g. "Platform"
+    members TEXT NOT NULL DEFAULT '[]',          -- JSON: [{scope_type, scope_id}] (team/project/class/overall)
+    limit_usd REAL NOT NULL,
+    period_days INTEGER NOT NULL DEFAULT 90,
+    enforce_mode TEXT NOT NULL DEFAULT 'alert',  -- 'alert' (detect+notify) | 'hard' (gateway blocks/route-down)
+    action TEXT NOT NULL DEFAULT 'block',        -- when 'hard' + over: 'block' | 'downgrade'
+    floor_model TEXT,                            -- target model for 'downgrade'
+    last_status TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_program_acct ON outlay_programs(account_id);
 """
 
-WEBHOOK_EVENTS = ("budget.warn", "budget.over", "anomaly.detected", "proposal.pending", "account.suspended")
+WEBHOOK_EVENTS = ("budget.warn", "budget.over", "program.warn", "program.over",
+                  "anomaly.detected", "proposal.pending", "account.suspended")
 
 # Columns added after the proposals table first shipped — applied to existing DBs.
 _MIGRATIONS = [
@@ -1273,6 +1287,70 @@ def set_outlay_budget_status(budget_id: int, status: str, path: str | None = Non
     conn = connect(path)
     try:
         conn.execute("UPDATE outlay_budgets SET last_status=? WHERE id=?", (status, int(budget_id)))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+PROGRAM_ENFORCE_MODES = ("alert", "hard")
+PROGRAM_ACTIONS = ("block", "downgrade")
+
+
+def add_outlay_program(account_id: int, name: str, members: list, limit_usd: float,
+                       period_days: int = 90, enforce_mode: str = "alert",
+                       action: str = "block", floor_model: str | None = None,
+                       path: str | None = None) -> int:
+    """Create a program budget (a named budget spanning several teams/projects/work
+    types). `members` is a list of {scope_type, scope_id}. Returns the new id."""
+    enforce_mode = enforce_mode if enforce_mode in PROGRAM_ENFORCE_MODES else "alert"
+    action = action if action in PROGRAM_ACTIONS else "block"
+    clean = [{"scope_type": m.get("scope_type"), "scope_id": (m.get("scope_id") or "").strip() or None}
+             for m in (members or []) if m.get("scope_type")]
+    conn = connect(path)
+    try:
+        cur = conn.execute(
+            "INSERT INTO outlay_programs(account_id, name, members, limit_usd, period_days,"
+            " enforce_mode, action, floor_model) VALUES(?,?,?,?,?,?,?,?)",
+            (account_id, (name or "Program").strip()[:80], json.dumps(clean), float(limit_usd),
+             int(period_days), enforce_mode, action, (floor_model or "").strip() or None))
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
+
+
+def list_outlay_programs(account_id: int, path: str | None = None) -> list[dict]:
+    conn = connect(path)
+    try:
+        rows = conn.execute("SELECT * FROM outlay_programs WHERE account_id=? ORDER BY id",
+                            (account_id,)).fetchall()
+    finally:
+        conn.close()
+    out = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d["members"] = json.loads(d.get("members") or "[]") or []
+        except (ValueError, TypeError):
+            d["members"] = []
+        out.append(d)
+    return out
+
+
+def delete_outlay_program(account_id: int, program_id: int, path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute("DELETE FROM outlay_programs WHERE id=? AND account_id=?",
+                     (int(program_id), account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def set_outlay_program_status(program_id: int, status: str, path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE outlay_programs SET last_status=? WHERE id=?", (status, int(program_id)))
         conn.commit()
     finally:
         conn.close()
