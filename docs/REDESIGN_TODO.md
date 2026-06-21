@@ -21,10 +21,11 @@ small batch) so regressions are easy to bisect.
 ## Global — do once, affects every page
 - [x] **Mobile nav.** Accessible checkbox-driven hamburger across all 9 pages
       (#167) — frosted dropdown, X morph, keyboard + Esc + close-on-navigate.
-- [ ] **`og:image`.** Points at `favicon.svg`; social cards need a real
-      1200×630 PNG (generate one on-brand: navy bg, green accent, the product
-      panel). Update `og:image`/`twitter:image` on every page; switch
-      `twitter:card` to `summary_large_image`.
+- [x] **`og:image`.** On-brand 1200×630 social card shipped (`/og-image.png`),
+      wired to `og:image` + `twitter:image` (summary_large_image) on all 9 pages.
+      Source template: `modelpilot/site/og/card.html` (noindex). Regenerate:
+      serve the site dir, then `node` a Playwright shot of `/og/card.html` at
+      1200×630 → `modelpilot/site/og-image.png`.
 - [ ] **Consistency pass:** confirm spacing rhythm, button sizes, eyebrow casing,
       and card shadows match BRAND.md across pages (they share `outlay.css`, so
       fix at the class level, not per page).
