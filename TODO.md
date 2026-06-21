@@ -100,6 +100,11 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-20 — Settings IA cleanup
+- [x] Grouped the grown-organically Settings page into labeled sections — Account & team · Security ·
+      Notifications · Data & privacy · Danger zone (`_settings_group`, which hides empty role-gated groups).
+      Reordered logically. UI-only. 315 tests.
+
 ### 2026-06-20 — landing page: lead with platform breadth + compatibility (research-led)
 - [x] Ran research on how top FinOps/devtool startups (Vantage, CloudZero, Finout, Vanta, Linear, Vercel,
       Segment, Datadog) advertise integrations/compatibility. Applied honestly (no SOC2 claim we don't hold;

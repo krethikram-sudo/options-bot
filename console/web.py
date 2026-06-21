@@ -2352,17 +2352,30 @@ def mode_toggle(current: str, paid: bool = False) -> str:
 def settings_page(account: dict, settings: dict, saved: bool = False,
                   delete_error: bool = False, twofa: str = "",
                   retention_days: int = 0, purged: bool = False, purge_error: bool = False) -> str:
-    # Routing-mode / routing-policy / model-spend-budget cards are parked along with
-    # the optimization engine — Settings now covers account, team, and security only.
-    # (Budgets for the spend product live at /app/outlay/budgets.) The /app/settings
-    # POST route still accepts the legacy fields, so this is a UI-only change.
+    # Grouped IA: Account & team · Security · Notifications · Data & privacy ·
+    # Danger zone. Each group hides itself when its cards are empty (role-gated), so
+    # a member sees a shorter page than an owner. (Budgets live at /app/outlay/budgets;
+    # the /app/settings POST still accepts the legacy routing fields.)
     saved_note = '<div class="note">Settings saved.</div>' if saved else ""
     body = (f"<h1>Settings</h1>{saved_note}"
-            f"{_settings_links(account)}{_digest_section(account)}"
-            f"{_retention_section(account, retention_days, purged, purge_error)}"
-            f"{_twofa_section(account, twofa)}"
-            f"{_danger_zone(account, delete_error)}")
+            + _settings_group("Account &amp; team", _settings_links(account))
+            + _settings_group("Security", _twofa_section(account, twofa))
+            + _settings_group("Notifications", _digest_section(account))
+            + _settings_group("Data &amp; privacy",
+                              _retention_section(account, retention_days, purged, purge_error))
+            + _danger_zone(account, delete_error))
     return page("Settings", body, account, "/app/settings")
+
+
+def _settings_group(title: str, *cards: str) -> str:
+    """A labeled settings group; hides itself entirely when every card is empty
+    (so role-gated sections don't leave a dangling header)."""
+    inner = "".join(c for c in cards if c and c.strip())
+    if not inner:
+        return ""
+    return (f'<div style="font-family:var(--mono,monospace);font-size:11.5px;font-weight:600;'
+            f'letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin:30px 0 0">{title}</div>'
+            f'{inner}')
 
 
 def _retention_section(account: dict, retention_days: int = 0, purged: bool = False,
