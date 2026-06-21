@@ -960,26 +960,34 @@ def _role_gate(next_to: str = "welcome") -> str:
     return f'<div class=cols-2 style="display:grid;gap:16px">{tiles}</div>'
 
 
-def _org_upload_form(next_to: str = "") -> str:
-    """The single org-structure upload: one CSV that names each person (for
-    usage-by-person), maps them to a team (cost allocation), and invites everyone
-    with an email. Columns: name, email, team (+ optional access)."""
+def _org_upload_form(next_to: str = "", kind: str = "title") -> str:
+    """Upload that builds the people directory from a CSV (name, email, + a third
+    detail). `kind="title"` → engineering 'direct reports' with a **job title**;
+    `kind="team"` → a **team** for cost allocation. Names show spend by person."""
     nx = f'<input type=hidden name=next value="{next_to}">' if next_to else ""
+    if kind == "title":
+        title, sub, third, ex = ("Upload your direct reports", "names + job titles",
+                                 "job title", "Jordan&nbsp;Lee, jordan@acme.com, Senior Engineer")
+        third_desc = 'their <b>job title</b>'
+    else:
+        title, sub, third, ex = ("Upload your org", "names + teams",
+                                 "team", "Jordan&nbsp;Lee, jordan@acme.com, Platform")
+        third_desc = 'their <b>team</b> for cost-center allocation'
     return (
-        '<div class=ocard style="margin-top:16px"><div class=dh>Upload your org '
-        '<span class=sub>names + teams, in one file</span></div>'
-        '<p class=muted style="margin:-4px 0 12px;font-size:13.5px">One CSV builds your org directory. Each '
-        'row is one person — we use their <b>name</b> to show spend by person (not just an email) and put '
-        'them on a <b>team</b> for cost-center allocation. Columns: <code>name</code>, <code>email</code>, '
-        '<code>team</code>. For a <b>service account / CI key</b>, put its key id in the email column and a '
-        'friendly name. <b>Then invite anyone with one click</b> from their tile below.</p>'
+        f'<div class=ocard style="margin-top:16px"><div class=dh>{title} '
+        f'<span class=sub>{sub}</span></div>'
+        f'<p class=muted style="margin:-4px 0 12px;font-size:13.5px">One CSV builds your directory. Each '
+        f'row is one person — we use their <b>name</b> to show spend by person (not just an email) and '
+        f'record {third_desc}. Columns: <code>name</code>, <code>email</code>, <code>{third}</code>. '
+        f'For a <b>service account / CI key</b>, put its key id in the email column and a friendly name. '
+        f'<b>Then invite anyone with one click</b> from their tile below.</p>'
         f'<form method=post action="/app/team/roster" enctype="multipart/form-data" '
         f'style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">{nx}'
-        '<input type=file name=file accept=".csv,text/csv" required style="font-size:13px;max-width:240px">'
-        '<button class="btn">Upload</button>'
-        '<a class="btn sec sm" href="/app/team/roster-template.csv">Download template</a></form>'
-        '<p class=muted style="font-size:12px;margin-top:8px">Example row: '
-        '<code>Jordan&nbsp;Lee, jordan@acme.com, Platform</code>.</p></div>')
+        f'<input type=hidden name=third value="{kind}">'
+        f'<input type=file name=file accept=".csv,text/csv" required style="font-size:13px;max-width:240px">'
+        f'<button class="btn">Upload</button>'
+        f'<a class="btn sec sm" href="/app/team/roster-template.csv?third={kind}">Download template</a></form>'
+        f'<p class=muted style="font-size:12px;margin-top:8px">Example row: <code>{ex}</code>.</p></div>')
 
 
 def _parse_team_map(text: str) -> dict:
@@ -1007,13 +1015,15 @@ def _org_directory(account: dict, members: list[dict], next_to: str = "") -> str
     from .store import TEAM_ROLES
     aid = account.get("id")
     names = store.get_outlay_identity_names(aid) if aid else {}
+    titles = store.get_outlay_identity_titles(aid) if aid else {}
     teammap = _parse_team_map(store.get_outlay_identity_map(aid) if aid else "")
     owner = (account.get("email") or "").strip().lower()
     member_by = {(m.get("email") or "").strip().lower(): m for m in (members or [])}
     nx = f'<input type=hidden name=next value="{next_to}">' if next_to else ""
 
-    ids = {i for i in (set(names) | set(member_by)) if not i.startswith("@") and i != owner}
-    if not names and not members:
+    ids = {i for i in (set(names) | set(titles) | set(member_by))
+           if not i.startswith("@") and i != owner}
+    if not names and not titles and not members:
         return ""
 
     def initials(label: str) -> str:
@@ -1021,7 +1031,8 @@ def _org_directory(account: dict, members: list[dict], next_to: str = "") -> str
         return _e((parts[0][:1] + (parts[1][:1] if len(parts) > 1 else "")).upper() or "?")
 
     def team_tag(i: str) -> str:
-        t = teammap.get(i, "")
+        # Prefer a job title (engineering direct reports); fall back to team.
+        t = titles.get(i) or teammap.get(i, "")
         return f'<span class=ptt>{_e(t)}</span>' if t else ""
 
     def tile(disp: str, sub: str, i: str, action: str, badge: str = "") -> str:
@@ -1099,25 +1110,25 @@ def welcome_page(account: dict, conn: dict | None, idmap: str = "",
         return page("Welcome", behind, account, active="/app", overlay=gate)
 
     fin = persona == "finance"
-    me = "Finance" if fin else "Engineering"
     counter_persona = "eng" if fin else "finance"
     counter_label = "engineering leader" if fin else "finance leader"
-    counter_title = "Engineering leader" if fin else "Finance leader"
     placeholder = "vp.eng@company.com" if fin else "cfo@company.com"
 
-    invite_card = (
-        '<div class=ocard style="margin-top:16px"><div class=dh>Invite your counterpart</div>'
+    # Share with the other discipline's leader. Single fixed role (no picker): the
+    # finance leader invites their engineering counterpart, and vice-versa.
+    share_title = "Invite your counterpart" if fin else "Share with your finance partner"
+    share_btn = "Send invite" if fin else "Share with finance"
+    share_card = (
+        f'<div class=ocard style="margin-top:16px"><div class=dh>{share_title}</div>'
         f'<p class=muted style="margin:-4px 0 10px;font-size:13.5px">Outlay is best when finance and '
         f'engineering share one workspace. Invite your {counter_label} — they’ll land straight in their own '
         f'view, with no setup question to answer.</p>'
         '<form method=post action="/app/team/invite" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">'
         '<input type=hidden name=next value="welcome"><input type=hidden name=role value="admin">'
-        '<label class=fld style="flex:1;min-width:220px"><span>Their work email</span>'
+        f'<input type=hidden name=persona value="{counter_persona}">'
+        '<label class=fld style="flex:1;min-width:260px"><span>Their work email</span>'
         f'<input name=email type=email placeholder="{placeholder}" required></label>'
-        '<label class=fld style="min-width:170px"><span>Their role</span>'
-        f'<select name=persona><option value="{counter_persona}" selected>{counter_title}</option>'
-        f'<option value="{persona}">{me} leader</option></select></label>'
-        '<button class=btn>Send invite</button></form>'
+        f'<button class=btn>{share_btn}</button></form>'
         '<p class=muted style="font-size:12.5px;margin-top:6px">They get a link to set a password. '
         'Manage everyone on the <a href="/app/team">Team</a> page.</p></div>')
 
@@ -1125,11 +1136,17 @@ def welcome_page(account: dict, conn: dict | None, idmap: str = "",
             '<a class="btn" href="/app/outlay">Go to my dashboard →</a>'
             '<span class=muted style="font-size:12.5px">These steps are optional — you can do them later '
             'from Connect and Team.</span></div>')
-    body = (f'<div class=ohead><h1>You’re set up as {me}</h1>'
-            '<p>Set up your org — upload your whole team in one file, or just invite your counterpart — '
-            'then jump into the product.</p></div>'
-            + _org_upload_form("welcome") + _org_directory(account, members or [], "welcome")
-            + invite_card + done)
+    if fin:
+        # Finance: just share with the engineering counterpart (no org upload).
+        intro = '<p>Invite your engineering counterpart, then jump into the product.</p>'
+        body = f'<div class=ohead><h1>You’re set up as Finance</h1>{intro}</div>' + share_card + done
+    else:
+        # Engineering: upload direct reports (job titles), then share with finance.
+        intro = ('<p>Upload your direct reports and invite them with one click, share with your finance '
+                 'partner, then jump into the product.</p>')
+        body = (f'<div class=ohead><h1>You’re set up as Engineering</h1>{intro}</div>'
+                + _org_upload_form("welcome", "title")
+                + _org_directory(account, members or [], "welcome") + share_card + done)
     return page("Welcome", body, account, active="/app")
 
 
@@ -1976,10 +1993,9 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
           .catch(function(){{btn.classList.remove('loading');btn.disabled=false;alert('Network error.');}});}}
         </script>
       </div>
-      <div id=teams>{_org_upload_form()}</div>
-      <div class=ocard style="margin-top:16px">
-        <div class=dh>Or edit the team map by hand <span class=sub>identities → teams</span></div>
-        <p class=muted style="margin:-4px 0 10px;font-size:13.5px">Fine-tune cost-center allocation: map an
+      <div class=ocard style="margin-top:16px" id=teams>
+        <div class=dh>Map identities to teams <span class=sub>for cost-center allocation</span></div>
+        <p class=muted style="margin:-4px 0 10px;font-size:13.5px">Map an
           <b>identity</b> — a person's email, a whole <code>@domain</code>, or a <b>service-account /
           CI key id</b> — to a team, one per line. Handy for <b>bots/CI keys</b> (agent spend often runs
           under a service account; unmapped identities land in "Unassigned"). Examples —
@@ -3559,8 +3575,10 @@ def team_page(account: dict, members: list[dict], invite_link: str = "",
     </div>"""
     roster_note = (f'<div class=okbox style="margin-bottom:16px">{_e(roster)}</div>' if roster else "")
     directory = _org_directory(account, members) or members_card
+    # Engineering manages direct reports (with job titles); finance does not upload an org.
+    upload = "" if (account.get("persona") or "").lower() == "finance" else _org_upload_form(kind="title")
     body = (head + invite_note + roster_note + directory
-            + _org_upload_form() + invite_card + _sso_section(sso or {}, scim_token))
+            + upload + invite_card + _sso_section(sso or {}, scim_token))
     return page("Team", body, account, "/app/team")
 
 

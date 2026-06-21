@@ -1941,11 +1941,17 @@ def _send_invite_email(email: str) -> None:
             pass
 
 
-_ROSTER_TEMPLATE = ("name,email,team\n"
-                    "Jordan Lee,jordan@acme.com,Platform\n"
-                    "Priya Shah,priya@acme.com,Payments\n"
-                    "Sam Rivera,sam@acme.com,Growth\n"
-                    "CI deploy bot,key_ci_deploy,Platform\n")
+_ROSTER_TEMPLATES = {
+    "title": ("name,email,job title\n"
+              "Jordan Lee,jordan@acme.com,Senior Engineer\n"
+              "Priya Shah,priya@acme.com,Staff Engineer\n"
+              "Sam Rivera,sam@acme.com,Engineering Manager\n"
+              "CI deploy bot,key_ci_deploy,Service account\n"),
+    "team": ("name,email,team\n"
+             "Jordan Lee,jordan@acme.com,Platform\n"
+             "Priya Shah,priya@acme.com,Payments\n"
+             "CI deploy bot,key_ci_deploy,Platform\n"),
+}
 
 
 @app.get("/app/team/roster-template.csv")
@@ -1953,16 +1959,17 @@ def team_roster_template(request: Request):
     acct, redir = _require_team_admin(request)
     if redir:
         return redir
-    return Response(_ROSTER_TEMPLATE, media_type="text/csv",
+    kind = "title" if request.query_params.get("third") == "title" else "team"
+    return Response(_ROSTER_TEMPLATES[kind], media_type="text/csv",
                     headers={"Content-Disposition": 'attachment; filename="outlay-org-template.csv"'})
 
 
 @app.post("/app/team/roster")
 async def team_roster(request: Request):
-    """One org-structure upload that builds the people directory: a CSV that (1)
-    names each person for usage-by-person and (2) maps them to a team for cost
-    allocation. Columns (header row, any order): name, email, team. It does NOT
-    invite — people are invited one click at a time from their tile. Owner/admin-only."""
+    """Build the people directory from a CSV: name each person (for usage-by-person)
+    plus a third detail — a job title (engineering 'direct reports') or a team (cost
+    allocation), per the form's `third` field. Columns (header row, any order):
+    name, email, and team|job title. Does NOT invite (that's one click per tile)."""
     import csv as _csv
     import io as _io
     acct, redir = _require_team_admin(request)
@@ -1970,25 +1977,25 @@ async def team_roster(request: Request):
         return redir
     fields, filetext = await _multipart(request)
     nxt = (fields.get("next") or "")
+    third_kind = "title" if (fields.get("third") or "").lower() == "title" else "team"
     map_lines: list[str] = []
     names: dict[str, str] = {}
+    titles: dict[str, str] = {}
     if filetext:
         rows = [r for r in _csv.reader(_io.StringIO(filetext)) if any(c.strip() for c in r)]
-        col = {"name": 0, "email": 1, "team": 2, "access": 3}
+        col = {"name": 0, "email": 1, "third": 2}
         if rows:
             header = [c.strip().lower() for c in rows[0]]
-            if any(h in ("name", "email", "identifier", "team", "access", "permission")
-                   for h in header):
+            if any(h in ("name", "email", "identifier", "team", "job title", "title", "role",
+                         "department") for h in header):
                 col = {}
                 for i, h in enumerate(header):
                     if h in ("name", "person", "full name"):
                         col["name"] = i
                     elif h in ("email", "identifier"):
                         col["email"] = i
-                    elif h == "team":
-                        col["team"] = i
-                    elif h in ("access", "permission", "role"):
-                        col["access"] = i
+                    elif h in ("team", "job title", "title", "role", "department"):
+                        col["third"] = i
                 rows = rows[1:]
         for r in rows:
             def cell(key: str) -> str:
@@ -1998,23 +2005,30 @@ async def team_roster(request: Request):
             # The "email" column holds the identity we attribute spend to: a person's
             # email, or a service-account / CI key id. Name is display-only.
             ident = cell("email").strip().lower()
-            team = cell("team")
+            third = cell("third")
             if not ident:
                 continue
             if name:
                 names[ident] = name
-            if team:
-                map_lines.append(f"{ident}, {team}")
+            if third:
+                if third_kind == "title":
+                    titles[ident] = third
+                else:
+                    map_lines.append(f"{ident}, {third}")
+    if names:
+        store.set_outlay_identity_names(acct["id"], names)
+    if titles:
+        store.set_outlay_identity_titles(acct["id"], titles)
     if map_lines:
         merged = _merge_identity_csv(store.get_outlay_identity_map(acct["id"]) or "",
                                      "\n".join(map_lines))
         store.set_outlay_identity_map(acct["id"], merged or None)
-    if names:
-        store.set_outlay_identity_names(acct["id"], names)
     _audit(acct["id"], "team.roster", actor=acct.get("display_email") or acct.get("email", ""),
-           detail=f"named={len(names)} mapped={len(map_lines)}")
-    summary = (f"Org uploaded — {len(names)} people added to your directory, "
-               f"{len(map_lines)} mapped to teams. Invite anyone with one click below.")
+           detail=f"named={len(names)} titled={len(titles)} mapped={len(map_lines)}")
+    summary = (f"Directory updated — {len(names)} people named"
+               + (f", {len(titles)} with a job title" if titles else "")
+               + (f", {len(map_lines)} mapped to teams" if map_lines else "")
+               + ". Invite anyone with one click below.")
     if nxt == "welcome":
         return _redirect("/app/welcome")
     return _redirect(f"/app/team?roster={quote(summary)}")

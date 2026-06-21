@@ -353,6 +353,7 @@ _MIGRATIONS = [
     "ALTER TABLE outlay_programs ADD COLUMN last_enforced_at REAL",  # last enforcement action
     "ALTER TABLE accounts ADD COLUMN demo_mode INTEGER NOT NULL DEFAULT 0",  # 1 = this (gated) account is showing seeded demo data
     "ALTER TABLE outlay_connections ADD COLUMN identity_names TEXT",  # JSON {identifier: display name} for usage-by-person
+    "ALTER TABLE outlay_connections ADD COLUMN identity_titles TEXT",  # JSON {identifier: job title} (eng direct reports)
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -1162,12 +1163,16 @@ def get_outlay_identity_map(account_id: int, path: str | None = None) -> str | N
     return (row["identity_map"] if row else None) or None
 
 
-def set_outlay_identity_names(account_id: int, names: dict, path: str | None = None) -> None:
-    """Merge an {identifier: display name} map into the per-account people directory,
-    so spend can be shown by person name rather than a bare email/key id."""
+_IDENTITY_DIR_COLS = ("identity_names", "identity_titles")
+
+
+def _merge_identity_dir(account_id: int, column: str, mapping: dict, path: str | None = None) -> None:
+    """Merge an {identifier: value} JSON directory (names or job titles) onto the
+    connection row, lower-casing identifiers and dropping blanks."""
+    assert column in _IDENTITY_DIR_COLS
     import json as _json
-    cur = get_outlay_identity_names(account_id, path)
-    cur.update({k.strip().lower(): v.strip() for k, v in (names or {}).items()
+    cur = _get_identity_dir(account_id, column, path)
+    cur.update({k.strip().lower(): v.strip() for k, v in (mapping or {}).items()
                 if k and k.strip() and v and v.strip()})
     blob = _json.dumps(cur) if cur else None
     conn = connect(path)
@@ -1175,30 +1180,49 @@ def set_outlay_identity_names(account_id: int, names: dict, path: str | None = N
         exists = conn.execute("SELECT 1 FROM outlay_connections WHERE account_id=?",
                               (account_id,)).fetchone()
         if exists:
-            conn.execute("UPDATE outlay_connections SET identity_names=? WHERE account_id=?",
+            conn.execute(f"UPDATE outlay_connections SET {column}=? WHERE account_id=?",
                          (blob, account_id))
         else:
-            conn.execute("INSERT INTO outlay_connections(account_id, identity_names) VALUES(?,?)",
+            conn.execute(f"INSERT INTO outlay_connections(account_id, {column}) VALUES(?,?)",
                          (account_id, blob))
         conn.commit()
     finally:
         conn.close()
 
 
-def get_outlay_identity_names(account_id: int, path: str | None = None) -> dict:
+def _get_identity_dir(account_id: int, column: str, path: str | None = None) -> dict:
+    assert column in _IDENTITY_DIR_COLS
     import json as _json
     conn = connect(path)
     try:
-        row = conn.execute("SELECT identity_names FROM outlay_connections WHERE account_id=?",
+        row = conn.execute(f"SELECT {column} FROM outlay_connections WHERE account_id=?",
                           (account_id,)).fetchone()
     finally:
         conn.close()
-    if not row or not row["identity_names"]:
+    if not row or not row[column]:
         return {}
     try:
-        return _json.loads(row["identity_names"]) or {}
+        return _json.loads(row[column]) or {}
     except Exception:  # noqa: BLE001
         return {}
+
+
+def set_outlay_identity_names(account_id: int, names: dict, path: str | None = None) -> None:
+    """Merge {identifier: display name} so spend can be shown by person name."""
+    _merge_identity_dir(account_id, "identity_names", names, path)
+
+
+def get_outlay_identity_names(account_id: int, path: str | None = None) -> dict:
+    return _get_identity_dir(account_id, "identity_names", path)
+
+
+def set_outlay_identity_titles(account_id: int, titles: dict, path: str | None = None) -> None:
+    """Merge {identifier: job title} — the engineering 'direct reports' detail."""
+    _merge_identity_dir(account_id, "identity_titles", titles, path)
+
+
+def get_outlay_identity_titles(account_id: int, path: str | None = None) -> dict:
+    return _get_identity_dir(account_id, "identity_titles", path)
 
 
 def save_outlay_connection(account_id: int, github_owner: str | None = None,

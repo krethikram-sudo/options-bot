@@ -2956,9 +2956,25 @@ def test_onboarding_owner_hits_role_gate_then_advances(env, client):
     assert store.get_persona(acct["id"], 0) == "finance"
     w2 = client.get("/app/welcome").text
     assert "You’re set up as Finance" in w2
-    assert "Upload your org" in w2 and "Invite your counterpart" in w2
+    # finance: invite the counterpart, but NO org/direct-reports upload
+    assert "Invite your counterpart" in w2
+    assert "Upload your" not in w2 and "direct reports" not in w2
     # the gate is cleared — the dashboard is reachable now
     assert client.get("/app", follow_redirects=False).status_code == 200
+
+
+def test_onboarding_engineering_step2_has_direct_reports_and_finance_share(env, client):
+    _, store = env
+    _raw_signup(client, "lead@acme.com")
+    client.post("/app/persona", data={"persona": "eng", "next": "welcome"}, follow_redirects=False)
+    w = client.get("/app/welcome").text
+    assert "You’re set up as Engineering" in w
+    # engineering: upload direct reports (job title), share with finance — not "counterpart",
+    # and no option to invite an engineering partner
+    assert "Upload your direct reports" in w and "job title" in w
+    assert "Share with your finance partner" in w
+    assert "Invite your counterpart" not in w
+    assert "Engineering leader" not in w        # the same-role invite option is gone
 
 
 def test_onboarding_csv_upload_merges_org_structure(env, client):
