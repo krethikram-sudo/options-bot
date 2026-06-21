@@ -1966,9 +1966,17 @@ def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> s
             <option value=block>Block new calls</option>
             <option value=downgrade>Route down to a cheaper model</option></select></label>
           <label class=fld><span>Floor model (for route-down)</span><select name=floor_model>
+            <optgroup label="Claude (Anthropic)">
             <option value="claude-haiku-4-5">Claude Haiku 4.5 (cheapest)</option>
             <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
-            <option value="claude-opus-4-8">Claude Opus 4.8</option></select></label>
+            <option value="claude-opus-4-8">Claude Opus 4.8</option></optgroup>
+            <optgroup label="OpenAI / Azure OpenAI">
+            <option value="gpt-4o-mini">GPT-4o mini (cheapest)</option>
+            <option value="o3-mini">o3-mini</option>
+            <option value="gpt-4.1">GPT-4.1</option>
+            <option value="gpt-4o">GPT-4o</option>
+            <option value="gpt-4-turbo">GPT-4 Turbo</option>
+            <option value="o1">o1</option></optgroup></select></label>
         </div>
         <button class="btn" style="margin-top:14px">Add program</button>
       </form>
