@@ -523,7 +523,7 @@ def page(title: str, body: str, account: dict | None = None, active: str = "", b
             f'<nav class=sidenav>{links}{admin}</nav>'
             f'<div class=side-foot>{_trial_pill(account)}<div class=email>{em}</div>'
             '<form method=post action="/logout" style="margin:0">'
-            '<button class="btn sec sm" style="width:100%">Sign out</button></form></div>'
+            '<button class="btn sec sm" style="width:100%;color:var(--red)">Sign out</button></form></div>'
             f'</aside><main class=main><div class=inner>{_demo_banner(account)}'
             f'{_account_trial_banner(account)}{body}</div></main></div>')
     elif bare:
