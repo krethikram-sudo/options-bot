@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 def env(tmp_path, monkeypatch):
     monkeypatch.setenv("CONSOLE_DB", str(tmp_path / "console.db"))
     monkeypatch.setenv("CONSOLE_SECRET", "test-secret")
+    monkeypatch.setenv("DEMO_ACCOUNT_EMAILS", "*")  # demo mode reachable for all test accounts
     monkeypatch.delenv("STRIPE_SECRET_KEY", raising=False)
     import console.store as store
     import console.stripe_billing as sb
@@ -2872,6 +2873,56 @@ def test_showback_redirects_to_spend(env, client):
     assert "/app/outlay/export.csv?view=teams" in spend
     # the finance Spend view no longer links out to a Showback page
     assert "/app/outlay/showback" not in spend
+
+
+def test_demo_mode_enter_seeds_full_account_then_exit_clears(env, client):
+    _, store = env
+    _signup(client, email="demo@x.com")
+    acct = store.get_account_by_email("demo@x.com")
+    # a gated account in standard mode is offered an entry point
+    assert "Enter demo mode" in client.get("/app/outlay").text
+
+    r = client.post("/app/demo/enter", follow_redirects=False)
+    assert r.status_code == 303
+    acct = store.get_account_by_email("demo@x.com")
+    assert acct["demo_mode"] == 1
+    # full worked account: report + budgets + programs + a synced source + persona
+    assert store.get_outlay_report(acct["id"]) is not None
+    assert len(store.list_outlay_budgets(acct["id"])) >= 2
+    assert len(store.list_outlay_programs(acct["id"])) >= 1
+    conn = store.get_outlay_connection(acct["id"])
+    assert conn and conn.get("synced_at")
+    assert store.get_persona(acct["id"], 0) == "finance"
+    # the global banner shows demo controls + the guide; guide renders both flows
+    page = client.get("/app/outlay").text
+    assert "Demo mode" in page and "/app/demo/guide" in page and "Exit demo" in page
+    guide = client.get("/app/demo/guide").text
+    assert "Finance flow" in guide and "Engineering flow" in guide
+
+    client.post("/app/demo/exit", follow_redirects=False)
+    acct = store.get_account_by_email("demo@x.com")
+    assert acct["demo_mode"] == 0
+    assert store.get_outlay_report(acct["id"]) is None
+    assert store.list_outlay_budgets(acct["id"]) == []
+    assert store.list_outlay_programs(acct["id"]) == []
+
+
+def test_demo_mode_is_gated_to_demo_accounts(env, client, monkeypatch):
+    _, store = env
+    # restrict demo access to a specific email — this signup is NOT it
+    monkeypatch.setenv("DEMO_ACCOUNT_EMAILS", "founder@outlay-ai.com")
+    _signup(client, email="prospect@x.com")
+    acct = store.get_account_by_email("prospect@x.com")
+    home = client.get("/app/outlay").text
+    assert "Enter demo mode" not in home
+    assert "See it with sample data" not in home       # sample data is demo-only now
+    # the seeding routes refuse for a non-demo account
+    client.post("/app/demo/enter", follow_redirects=False)
+    client.post("/app/outlay/sample", follow_redirects=False)
+    acct = store.get_account_by_email("prospect@x.com")
+    assert acct["demo_mode"] == 0
+    assert store.get_outlay_report(acct["id"]) is None
+    assert client.get("/app/demo/guide", follow_redirects=False).status_code == 303
 
 
 def test_webhook_and_slack_urls_are_ssrf_guarded(env, client):
