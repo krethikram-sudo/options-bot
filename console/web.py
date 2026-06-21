@@ -41,7 +41,7 @@ a{color:var(--grn-d);text-decoration:none}a:hover{text-decoration:underline}
 .shell{display:flex;min-height:100vh;align-items:stretch}
 .side{width:236px;flex-shrink:0;display:flex;flex-direction:column;padding:18px 14px;
   border-right:1px solid var(--line);background:var(--paper);
-  position:sticky;top:0;height:100vh}
+  position:sticky;top:0;height:100vh;overflow-y:auto}
 .side .brand{padding:6px 10px 2px;font-size:21px}
 .sidenav{display:flex;flex-direction:column;gap:2px;margin-top:18px}
 .sidenav a{color:var(--muted);padding:9px 12px;border-radius:8px;font-weight:500;font-size:14.5px;
@@ -516,7 +516,7 @@ def page(title: str, body: str, account: dict | None = None, active: str = "", b
                '<a href="/login">Sign in</a><a class="btn sm" href="/signup">Start free trial</a></div>')
         chrome = (
             '<div class=top><div class=wrap style="padding-top:12px;padding-bottom:12px">'
-            f'<a class=brand href="/">Outlay<span class=dot>.ai</span></a>{nav}'
+            f'<a class=brand href="https://outlay-ai.com/">Outlay<span class=dot>.ai</span></a>{nav}'
             f'</div></div><div class=wrap>{body}</div>')
     return f"""<!doctype html><html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
