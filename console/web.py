@@ -2003,7 +2003,7 @@ def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> s
         <button class="btn" style="margin-top:14px">Add program</button>
       </form>
       <p class=muted style="font-size:12.5px;margin:12px 0 0"><b>Hard cap</b> requires the opt-in
-        <a href="/app/outlay/connect">ModelPilot gateway</a> in front of your calls — it consults Outlay and
+        <a href="/app/outlay/connect">Outlay gateway</a> in front of your calls — it consults Outlay and
         blocks or routes down once a program is over. <b>Alert only</b> works read-only: we fire a
         <code>program.over</code> webhook so your own automation enforces.</p></div>"""
     head = ('<div class=ohead><h1>Program budgets</h1>'

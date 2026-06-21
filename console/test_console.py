@@ -2551,28 +2551,51 @@ def test_anomaly_tuning_mute_and_threshold(env, client, monkeypatch):
     from console import notify, server, store
     _signup(client, email="tune@x.com")
     acct = store.get_account_by_email("tune@x.com")
-    client.post("/app/outlay/sample", follow_redirects=True)  # has GH-106 at ~11.5x
+    client.post("/app/outlay/sample", follow_redirects=True)
+    report = store.get_outlay_report(acct["id"])
+    anoms = [a["ticket_id"] for a in (report.get("anomalies") or [])]
+    assert anoms, "sample data should surface at least one anomaly"
+    tid = anoms[0]
 
     spend = client.get("/app/outlay").text
     assert "anomaly/mute" in spend and "anomaly/threshold" in spend  # controls present
 
-    # mute → muted set + chip
-    client.post("/app/outlay/anomaly/mute", data={"ticket_id": "GH-106"}, follow_redirects=True)
-    assert "GH-106" in store.get_anomaly_prefs(acct["id"])[1]
-    assert "Muted (1)" in client.get("/app/outlay").text
+    # mute every flagged ticket → muted set + chip
+    for t in anoms:
+        client.post("/app/outlay/anomaly/mute", data={"ticket_id": t}, follow_redirects=True)
+    muted = store.get_anomaly_prefs(acct["id"])[1]
+    assert all(t in muted for t in anoms)
+    assert f"Muted ({len(anoms)})" in client.get("/app/outlay").text
 
-    # a muted ticket does NOT alert
+    # muted tickets do NOT alert
     calls = []
     monkeypatch.setattr(notify, "send_anomaly_alert", lambda *a, **k: (calls.append(a), True)[1])
     server._check_anomalies(acct["id"], store.get_outlay_report(acct["id"]))
     assert calls == []
 
     # unmute + raise/lower threshold (floors at 3x)
-    client.post("/app/outlay/anomaly/unmute", data={"ticket_id": "GH-106"}, follow_redirects=True)
+    client.post("/app/outlay/anomaly/unmute", data={"ticket_id": tid}, follow_redirects=True)
     client.post("/app/outlay/anomaly/threshold", data={"threshold": "20"}, follow_redirects=True)
     assert store.get_anomaly_prefs(acct["id"])[0] == 20.0
     client.post("/app/outlay/anomaly/threshold", data={"threshold": "1"}, follow_redirects=True)
     assert store.get_anomaly_prefs(acct["id"])[0] == 3.0
+
+
+def test_sample_report_is_a_realistic_demo(env):
+    """The one-click demo must read like a real team, not a 6-ticket toy: high
+    coverage, dozens of tickets across teams, and a measured (believable, not
+    200%+) accuracy number — what a prospect sees before connecting any keys."""
+    from console import outlay_app
+    rep = outlay_app.sample_report()
+    sp = rep["spend"]
+    assert sp["total_usd"] > 500                  # a finance-visible bill
+    assert sp["ticket_coverage"] > 0.85           # most spend reaches a ticket
+    assert len(rep["tickets"]) >= 30              # dozens of tickets
+    assert len(rep["team_spend"]) >= 3            # multiple teams for showback
+    cal = rep["calibration"]
+    assert cal["n_evaluated"] >= 20               # enough history to back-test
+    assert cal["mdape"] < 0.6                     # believable error, not 200%+
+    assert rep["anomalies"]                       # at least one flag to show
 
 
 def test_slack_alerts_for_budget_and_anomaly(env, client, monkeypatch):

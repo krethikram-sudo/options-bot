@@ -481,8 +481,11 @@ def sample_report() -> dict:
     can label it honestly and let them clear it."""
     from pathlib import Path
     fix = Path(__file__).resolve().parent.parent / "outlay" / "fixtures"
-    report = build_report((fix / "github_issues.json").read_text(),
-                          (fix / "anthropic_usage.json").read_text(),
+    # Rich demo dataset (dozens of tickets across teams) so the dashboard a
+    # prospect sees is realistic — believable coverage + a measured accuracy
+    # number, not a 6-ticket toy. Regenerate with `python -m outlay.fixtures.gen_demo`.
+    report = build_report((fix / "demo_github_issues.json").read_text(),
+                          (fix / "demo_anthropic_usage.json").read_text(),
                           planned=_SAMPLE_PLAN)
     report["_sample"] = True
     return report
