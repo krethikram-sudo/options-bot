@@ -1,5 +1,11 @@
 # Site redesign — running worklist
 
+**Status: first pass complete** — all 9 pages reviewed; every page with a clear
+weak spot was leveled up (landing, platform, security, compare, accuracy,
+healthcare), and the already-strong pages (pilot, tour, docs) were left as-is.
+Global baseline (fonts, a11y, mobile nav, og:image) done. Future polish can
+continue against `docs/BRAND.md`.
+
 The visual leveling-up of the marketing site, page by page. The Playwright loop
 works **in the web session too** — Chromium is preinstalled at `/opt/pw-browsers`,
 so `npx playwright screenshot` and a small node script (reducedMotion:'reduce' to
@@ -38,13 +44,10 @@ small batch) so regressions are easy to bisect.
 
 ## Per-page visual goals
 
-### `index.html` — landing (in progress)
-Hero is strong; tighten the rest.
-- [x] Compare section restructured from flat text → 3 category cards (it was the
-      one all-text section; now matches the page's card rhythm).
-- [ ] Still to check: hero panel cards at mobile width, `.herogrid` reflow at
-      940px, the dense compatbar wrapping, section vertical rhythm, and the live
-      "count-up" stat on first paint.
+### `index.html` — landing ✓
+- [x] Compare section restructured from flat text → 3 category cards.
+- [x] Hero switched to a text-forward layout (product panel removed) per founder
+      direction; provider logos remain in the strip below.
 
 ### `platform.html` — "Cost it right, plan it, take it anywhere" ✓
 Page is strong (the "costed two ways" comparison and the 6-card grid read well).
@@ -83,12 +86,15 @@ Already strong: rich dark hero with an 87% product panel, two-card sections, a
 - [x] "Honest part on certifications" (not yet SOC-2/HIPAA) styled as a neutral
       `.note` so the disclosure stands out appropriately.
 
-### `tour.html` — product tour
-Most visual page (5 narrative steps). Goals: each step gets a strong mock/panel
-(reuse `.pcard`), consistent left/right alternation, smooth scroll rhythm.
+### `tour.html` — product tour ✓ (no change)
+Already strong: an interactive 5-step demo (Connect → Attribute → Forecast →
+Estimate → Budget) with a live panel and step nav. Reflows well on mobile. Left
+as-is — better than the worklist's scroll-alternating assumption.
 
-### `docs/index.html`
-Lower priority. Goals: readable prose width, code-block styling, doc-nav pills.
+### `docs/index.html` ✓ (no change)
+Fine as-is: docnav pills, dark code blocks, scrollable tables, readable prose
+width, and the flow diagram now stacks on mobile (from the security pass). No
+manufactured churn.
 
 ---
 
