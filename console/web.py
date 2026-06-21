@@ -2258,13 +2258,12 @@ def _trial_banner(plan: dict, trial: dict) -> str:
         d = trial["days_left"]
         if d <= 2:
             return (f'<div class="note warn">⏳ Only <b>{d} day{"" if d == 1 else "s"} left</b> in your free '
-                    f'trial. <a href="/app/billing">Activate billing</a> now to keep your savings — you only '
-                    f'pay 20% of what we save you.</div>')
-        return (f'<div class="note">You\'re on the free trial — <b>{d} days left</b>. '
-                f'<a href="/app/billing">Add billing</a> to keep optimizing after that '
-                f'(you only pay 20% of what we save you).</div>')
-    return ('<div class="note bad">Your free trial has ended — optimization is <b>paused</b> and your traffic '
-            'is passing through unrouted. <a href="/app/billing">Activate billing</a> to resume saving.</div>')
+                    f'trial. Outlay is in early access — your first weeks are free. '
+                    f'<a href="/app/billing">Manage your plan</a> to keep your account active.</div>')
+        return (f'<div class="note">You\'re on the free trial — <b>{d} days left</b>. Your first weeks are '
+                f'free; <a href="/app/billing">see your plan</a> for what happens after.</div>')
+    return ('<div class="note bad">Your free trial has ended. <a href="/app/billing">Manage your plan</a> '
+            'to keep using Outlay.</div>')
 
 
 def _trial_meta(account: dict | None):
@@ -3242,9 +3241,8 @@ def billing_page(account: dict, plan: dict, trial: dict, bill: dict,
     elif flash == "converted":
         flash_html = '<div class="note">Plan activated.</div>'
     if not is_paid and not trial["active"]:
-        flash_html = ('<div class="note bad"><b>Your free trial has ended.</b> Optimization is paused — '
-                      'activate billing below to resume saving on your Claude bill. You only pay 20% of '
-                      'what we save you.</div>' + flash_html)
+        flash_html = ('<div class="note bad"><b>Your free trial has ended.</b> '
+                      'Activate a plan below to keep using Outlay.</div>' + flash_html)
 
     if is_paid:
         action = f"""
