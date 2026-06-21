@@ -351,6 +351,7 @@ _MIGRATIONS = [
     "ALTER TABLE webhook_deliveries ADD COLUMN next_attempt_at REAL",  # when a failed delivery is due to retry; NULL = terminal
     "ALTER TABLE outlay_programs ADD COLUMN enforced_count INTEGER NOT NULL DEFAULT 0",  # times the gateway blocked/route-down'd for this program
     "ALTER TABLE outlay_programs ADD COLUMN last_enforced_at REAL",  # last enforcement action
+    "ALTER TABLE accounts ADD COLUMN demo_mode INTEGER NOT NULL DEFAULT 0",  # 1 = this (gated) account is showing seeded demo data
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -798,6 +799,28 @@ def delete_outlay_report(account_id: int, path: str | None = None) -> None:
     try:
         conn.execute("DELETE FROM outlay_reports WHERE account_id=?", (account_id,))
         conn.execute("DELETE FROM outlay_history WHERE account_id=?", (account_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def delete_outlay_connection(account_id: int, path: str | None = None) -> None:
+    """Remove an account's connector config (used to reset demo mode to a clean
+    standard-customer state)."""
+    conn = connect(path)
+    try:
+        conn.execute("DELETE FROM outlay_connections WHERE account_id=?", (account_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def set_demo_mode(account_id: int, on: bool, path: str | None = None) -> None:
+    """Flip the per-account demo flag. Whether an account is *allowed* to do this is
+    gated separately (DEMO_ACCOUNT_EMAILS); this just records the current state."""
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE accounts SET demo_mode=? WHERE id=?", (1 if on else 0, account_id))
         conn.commit()
     finally:
         conn.close()

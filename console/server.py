@@ -21,7 +21,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import (HTMLResponse, JSONResponse, PlainTextResponse,
                                RedirectResponse)
 
-from . import notify, outlay_app, store, stripe_billing, web
+from . import demo, notify, outlay_app, store, stripe_billing, web
 
 COOKIE = "mp_session"
 PENDING_2FA_COOKIE = "mp_2fa"  # short-lived marker between password and OTP steps
@@ -202,6 +202,9 @@ def _current(request: Request) -> dict | None:
         acct["persona"] = store.get_persona(acct["id"], acct.get("member_id", 0) or 0)
     except Exception:  # noqa: BLE001 — persona is a lens, never a hard dependency
         acct["persona"] = ""
+    # Demo mode: who may toggle it is gated by env; whether it's currently on is the
+    # account flag. Both are surfaced to every page() render.
+    acct["_can_demo"] = demo.is_demo_account(acct.get("email"))
     return acct
 
 
@@ -964,12 +967,52 @@ async def app_outlay_run(request: Request):
     return JSONResponse({"ok": True})
 
 
-@app.post("/app/outlay/sample")
-async def app_outlay_sample(request: Request):
-    """One-click populated dashboard from bundled fixtures — for prospects/demos."""
+@app.post("/app/demo/enter")
+async def app_demo_enter(request: Request):
+    """Turn demo mode on for a gated demo account — seeds a full worked customer
+    (report, budgets, programs, a synced source) and drops into Finance."""
     acct, redir = _require(request)
     if redir:
         return redir
+    if not acct.get("_can_demo"):
+        return _redirect("/app/outlay")
+    demo.enter(acct["id"], member_id=acct.get("member_id", 0) or 0)
+    _audit(acct["id"], "demo.enter", actor=acct.get("display_email", ""))
+    return _redirect("/app/outlay")
+
+
+@app.post("/app/demo/exit")
+async def app_demo_exit(request: Request):
+    """Turn demo mode off and wipe the seeded data back to a clean account."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    if not acct.get("_can_demo"):
+        return _redirect("/app/outlay")
+    demo.exit(acct["id"])
+    _audit(acct["id"], "demo.exit", actor=acct.get("display_email", ""))
+    return _redirect("/app/outlay")
+
+
+@app.get("/app/demo/guide", response_class=HTMLResponse)
+def app_demo_guide(request: Request):
+    """Presenter's talk-track for the live demo — demo accounts only."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    if not acct.get("_can_demo"):
+        return _redirect("/app/outlay")
+    return _html(web.demo_guide_page(acct))
+
+
+@app.post("/app/outlay/sample")
+async def app_outlay_sample(request: Request):
+    """One-click populated dashboard from bundled fixtures — demo accounts only."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    if not acct.get("_can_demo"):
+        return _redirect("/app/outlay")
     report = outlay_app.sample_report()
     store.save_outlay_report(acct["id"], report)
     # Seed a short synthetic history (backdated) so the worked example shows a real

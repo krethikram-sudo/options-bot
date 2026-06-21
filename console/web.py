@@ -185,6 +185,18 @@ pre{background:var(--paper2);color:var(--navy);padding:16px;border-radius:10px;o
 .olinks{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:0 0 18px;font-size:13.5px}
 .olinks .sp{flex:1}
 .syncline{color:var(--muted);font-size:12.5px;margin:-6px 0 16px}
+/* demo-mode banner (gated to demo accounts) */
+.demobar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 18px;padding:9px 14px;
+  border:1px solid #e7d3a1;background:#fbf3dd;border-radius:11px;font-size:13px}
+.demobar.off{background:var(--paper,#f6f8fa);border-color:var(--line)}
+.demobar .dl{font-weight:700;color:#7a5a12;letter-spacing:.02em;white-space:nowrap}
+.demobar.off .dl{color:var(--muted)}
+.demobar .dt{color:#6b5a32}
+.demobar.off .dt{color:var(--muted)}
+.demobar .sp{flex:1}
+.demobar .segwrap{display:inline-flex;border:1px solid #e0c987;border-radius:8px;overflow:hidden}
+.demobar .seg{background:transparent;border:0;padding:5px 12px;font:inherit;font-size:12.5px;cursor:pointer;color:#7a5a12}
+.demobar .seg.on{background:#caa64a;color:#fff;font-weight:600}
 /* form fields used on Connect / Estimate / Budgets */
 .fld{display:flex;flex-direction:column;gap:5px}
 .fld>span{font-size:12.5px;font-weight:600;color:var(--ink)}
@@ -512,7 +524,8 @@ def page(title: str, body: str, account: dict | None = None, active: str = "", b
             f'<div class=side-foot>{_trial_pill(account)}<div class=email>{em}</div>'
             '<form method=post action="/logout" style="margin:0">'
             '<button class="btn sec sm" style="width:100%">Sign out</button></form></div>'
-            f'</aside><main class=main><div class=inner>{_account_trial_banner(account)}{body}</div></main></div>')
+            f'</aside><main class=main><div class=inner>{_demo_banner(account)}'
+            f'{_account_trial_banner(account)}{body}</div></main></div>')
     elif bare:
         # Minimal public header (brand only) — for the pilot-request form etc.
         chrome = (
@@ -645,9 +658,13 @@ def _kpi(label: str, value: str, sub: str = "", color: str = "", sub_raw: bool =
             f'<div style="font-size:26px;font-weight:700;margin-top:6px"{style}>{value}</div>{sub}</div>')
 
 
-def _onboarding(conn: dict | None, report: dict | None, has_budget: bool, persona: str = "") -> str:
+def _onboarding(conn: dict | None, report: dict | None, has_budget: bool, persona: str = "",
+                demo_mode: bool = False) -> str:
     """A first-run checklist that disappears once the customer is set up. Each step
-    reflects real state so it doubles as a 'what's left' guide during a pilot."""
+    reflects real state so it doubles as a 'what's left' guide during a pilot. In
+    demo mode it's hidden — the account is presented as an already-running customer."""
+    if demo_mode:
+        return ""
     conn = conn or {}
     tracker = conn.get("tracker") or "github"
     if tracker == "jira":
@@ -801,6 +818,65 @@ def _persona_switch(persona: str) -> str:
             f'<input type=hidden name=persona value="{other}">'
             f'<button class="btn sec sm" style="padding:2px 9px;font-size:12px">Switch to {label} view</button>'
             f'</form></div>')
+
+
+def _demo_banner(account: dict) -> str:
+    """Global demo-mode strip. ON → persona toggle + guide + exit. For a gated demo
+    account NOT in demo mode → a single 'Enter demo mode' affordance. Hidden for
+    everyone else, so prospects/customers never see demo controls or sample data."""
+    on = bool(account.get("demo_mode"))
+    can = bool(account.get("_can_demo"))
+    if not on and not can:
+        return ""
+    if not on:
+        return ('<div class="demobar off"><span class=dl>Demo mode</span>'
+                '<span class=dt>You’re on the standard customer experience.</span>'
+                '<span class=sp></span>'
+                '<form method=post action="/app/demo/enter" style="margin:0">'
+                '<button class="btn sec sm">Enter demo mode →</button></form></div>')
+    persona = (account.get("persona") or "finance").lower()
+
+    def pbtn(val: str, label: str) -> str:
+        sel = persona == val or (val == "finance" and persona not in ("finance", "eng"))
+        return (f'<form method=post action="/app/persona" style="display:inline;margin:0">'
+                f'<input type=hidden name=persona value="{val}">'
+                f'<button class="seg{" on" if sel else ""}" type=submit>{label}</button></form>')
+    return ('<div class="demobar"><span class=dl>● Demo mode</span>'
+            '<span class=dt>Sample data — for live demos.</span>'
+            '<span class=sp></span>'
+            '<span class=segwrap>' + pbtn("finance", "Finance") + pbtn("eng", "Engineering") + '</span>'
+            '<a class="btn sec sm" href="/app/demo/guide">Demo guide</a>'
+            '<form method=post action="/app/demo/exit" style="margin:0">'
+            '<button class="btn sec sm">Exit demo</button></form></div>')
+
+
+def demo_guide_page(account: dict) -> str:
+    """The presenter's talk track — the order to walk a prospect through each
+    persona. Only reachable in demo mode (gated route)."""
+    from . import demo as _demo
+
+    def flow(persona: str, title: str, blurb: str) -> str:
+        steps = ""
+        for label, href, note in _demo.SCRIPT.get(persona, []):
+            steps += (f'<li style="margin:10px 0;line-height:1.5"><a href="{href}"><b>{_e(label)}</b></a> '
+                      f'<span class=muted>— {_e(note)}</span></li>')
+        switch = (f'<form method=post action="/app/persona" style="margin:0 0 12px">'
+                  f'<input type=hidden name=persona value="{persona}">'
+                  f'<button class="btn sec sm">Switch to {_e(title)} view →</button></form>')
+        return (f'<div class=ocard style="margin-top:16px"><div class=dh>{_e(title)} flow '
+                f'<span class=sub>{_e(blurb)}</span></div>{switch}'
+                f'<ol style="margin:6px 0 0;padding-left:20px">{steps}</ol></div>')
+
+    body = (
+        '<div class=ohead><h1>Demo guide</h1>'
+        '<p>A suggested walkthrough for a live demo. Start with Finance, then switch to '
+        'Engineering — the nav and KPIs change with each persona. Everything here is seeded '
+        'sample data.</p></div>'
+        + flow("finance", "Finance", "allocate · budget · govern")
+        + flow("eng", "Engineering", "forecast · estimate · ship efficiently")
+        + '<p class=muted style="font-size:12.5px;margin-top:16px">Done? Use <b>Exit demo</b> in the '
+          'top banner to wipe the sample data and return to the standard customer experience.</p>')
+    return page("Demo guide", body, account, active="/app/outlay")
 
 
 def _persona_chooser() -> str:
@@ -1017,9 +1093,10 @@ def _model_card(report: dict) -> str:
             f'per-model number is far below a naive token count.</p></div>')
 
 
-def _sample_strip(report: dict) -> str:
-    """Banner shown while viewing the worked sample dataset rather than real spend."""
-    if not report.get("_sample"):
+def _sample_strip(report: dict, account: dict | None = None) -> str:
+    """Banner shown while viewing the worked sample dataset rather than real spend.
+    Suppressed in demo mode — the global demo banner already says so."""
+    if not report.get("_sample") or (account or {}).get("demo_mode"):
         return ""
     return ('<div class=ostrip style="background:#eef2fb;border:1px solid #d3def5">'
             '<span><b style="color:#2451b3">Sample data</b> — a worked example so you can see the '
@@ -1250,7 +1327,7 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     (KPIs, budget status, forecast) with jump-offs into the deeper areas; the
     attribution detail lives on the Spend page."""
     chooser = _persona_chooser() if persona not in ("finance", "eng") else ""
-    checklist = _onboarding(conn, report, has_budget, persona)
+    checklist = _onboarding(conn, report, has_budget, persona, demo_mode=bool(account.get("demo_mode")))
     if not report:
         if persona == "finance":
             intro = (
@@ -1264,10 +1341,12 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
                 '<p>Connect your tracker and AI usage — read-only — and Outlay maps every dollar to the work '
                 'that drove it, forecasts the quarter, estimates planned work, and holds it to budget. '
                 'Prompts never leave your tools.</p></div>')
+        sample_btn = ('<form method=post action="/app/outlay/sample" style="margin:0">'
+                      '<button class="btn sec">See it with sample data</button></form>'
+                      if account.get("_can_demo") else '')
         cta = ('<div class="row" style="margin:0 0 22px">'
                '<a class="btn" href="/app/outlay/connect?tour=connect">Connect your sources →</a>'
-               '<form method=post action="/app/outlay/sample" style="margin:0">'
-               '<button class="btn sec">See it with sample data</button></form>'
+               + sample_btn +
                '<a class="btn sec" href="/app/outlay/connect?tour=connect">Show me how</a></div>')
         return page("Home", chooser + intro + cta + checklist + _outlay_connect(),
                     account, active="/app")
@@ -1296,7 +1375,7 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     unit = f'<div style="margin-top:16px">{unit}</div>' if unit else ""
 
     body = (chooser + head + _persona_switch(persona) + _staleness_banner(report, conn)
-            + _sample_strip(report) + checklist
+            + _sample_strip(report, account) + checklist
             + _budget_strip(statuses) + _anomaly_strip(report, *_anomaly_prefs(conn))
             + _kpis_row(report, history, persona)
             + _recon_strip(report) + _pricing_warn(report)
@@ -1340,7 +1419,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                 history: list[dict] | None = None, conn: dict | None = None,
                 has_budget: bool = False, persona: str = "") -> str:
     chooser = _persona_chooser() if persona not in ("finance", "eng") else ""
-    checklist = _onboarding(conn, report, has_budget, persona)
+    checklist = _onboarding(conn, report, has_budget, persona, demo_mode=bool(account.get("demo_mode")))
     if not report:
         if persona == "finance":
             intro = (
@@ -1354,10 +1433,12 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                 '<p>Connect your tracker and AI usage — read-only — and Outlay maps every dollar to the work '
                 'that drove it, forecasts the quarter, estimates planned work, and holds it to budget. '
                 'Prompts never leave your tools.</p></div>')
+        sample_btn = ('<form method=post action="/app/outlay/sample" style="margin:0">'
+                      '<button class="btn sec">See it with sample data</button></form>'
+                      if account.get("_can_demo") else '')
         cta = ('<div class="row" style="margin:0 0 22px">'
                '<a class="btn" href="/app/outlay/connect?tour=connect">Connect your sources →</a>'
-               '<form method=post action="/app/outlay/sample" style="margin:0">'
-               '<button class="btn sec">See it with sample data</button></form>'
+               + sample_btn +
                '<a class="btn sec" href="/app/outlay/connect?tour=connect">Show me how</a></div>')
         return page("Spend", chooser + intro + cta + checklist + _outlay_connect(),
                     account, active="/app/outlay")
@@ -1481,7 +1562,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     cov_diag = f'<div style="margin:16px 0">{cov_diag}</div>' if cov_diag else ""
 
     body = (chooser + ohead + _persona_switch(persona) + _staleness_banner(report, conn)
-            + _sample_strip(report) + checklist
+            + _sample_strip(report, account) + checklist
             + _budget_strip(statuses) + _data_quality_badge(report, conn)
             + kpis + _recon_strip(report) + _pricing_warn(report)
             + cov_diag + _sync_line(report, conn) + olinks + grid)
