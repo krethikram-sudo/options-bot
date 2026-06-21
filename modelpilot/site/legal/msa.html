@@ -27,16 +27,18 @@
     incorporate this MSA. If an Order Form conflicts with this MSA, the Order Form controls for that order.</p>
 
   <h2 id="2">2. The Service &amp; responsibilities</h2>
-  <p>We provide the routing proxy + hosted console described in our docs. Customer uses the Service with
-    its own model-provider account and API key, is responsible for its users and content, and will
-    comply with the <a href="/legal/aup">Acceptable Use Policy</a> and applicable law. We are not a
-    party to, and do not resell, Customer's model-provider usage.</p>
+  <p>We provide the Outlay hosted console and read-only integrations described in our docs — spend
+    attribution, forecasting, and budgeting — plus the optional opt-in enforcement gateway. Customer
+    uses the Service with its own model-provider account(s) and API key(s), is responsible for its
+    users and content, and will comply with the <a href="/legal/aup">Acceptable Use Policy</a> and
+    applicable law. We are not a party to, and do not resell, Customer's model-provider usage.</p>
 
   <h2 id="3">3. Fees, taxes &amp; payment</h2>
-  <p>Fees are as stated in the Order Form (typically <b>20% of realized savings</b>, metered as the
-    baseline-minus-actual cost the Service delivers), invoiced per the stated cycle with net terms.
-    Fees are exclusive of taxes, which are Customer's responsibility except for taxes on our income.
-    Late amounts may accrue interest as permitted by law.</p>
+  <p>Fees are <b>as stated in the applicable Order Form</b>, scoped to Customer's usage and agreed
+    before any charge, invoiced per the stated cycle with net terms. Any pilot or evaluation period is
+    free unless the Order Form states otherwise. Fees are exclusive of taxes, which are Customer's
+    responsibility except for taxes on our income. Late amounts may accrue interest as permitted by
+    law.</p>
 
   <h2 id="4">4. Confidentiality</h2>
   <p>Each party will protect the other's Confidential Information with reasonable care, use it only to
@@ -50,17 +52,17 @@
 
   <h2 id="6">6. Data protection</h2>
   <p>The <a href="/legal/dpa">DPA</a> and <a href="/legal/privacy">Privacy Policy</a> are
-    incorporated by reference. In the default self-hosted / thin-client deployment, prompt content,
-    model outputs, and Customer's API key are not transmitted to us; in the optional hosted-gateway
-    deployment they are processed in memory only to route the request (read by our classifier to select
-    a model), are not persisted, and are handled per the DPA. Security measures are described at
-    <a href="/security">/security</a>.</p>
+    incorporated by reference. In the default read-only deployment, prompt content, model outputs, and
+    Customer's API keys are not transmitted to us — the Service reads usage metadata and work-tracker
+    references only. In the optional enforcement-gateway deployment, request content and the API key
+    are processed in memory only to enforce the budget Customer sets, are not persisted, and are
+    handled per the DPA. Security measures are described at <a href="/security">/security</a>.</p>
 
   <h2 id="7">7. Warranties &amp; disclaimer</h2>
   <p>We warrant we will provide the Service in a professional manner. EXCEPT AS EXPRESSLY STATED, THE
-    SERVICE IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND. Savings figures are estimates measured
-    from Customer's traffic, not guarantees; model outputs are probabilistic and Customer is responsible
-    for evaluating them.</p>
+    SERVICE IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND. Spend attributions, forecasts, and
+    estimates are measured from Customer's own data, not guarantees; Customer is responsible for
+    evaluating them for its use case.</p>
 
   <h2 id="8">8. Indemnification</h2>
   <p>We will defend Customer against third-party claims that the Service, as provided, infringes that
