@@ -6,9 +6,7 @@
 <meta name="description" content="Outlay attributes every dollar of LLM and coding-agent spend — across Anthropic, OpenAI, Cursor, AWS Bedrock, and Google Vertex — to the Jira/Linear/GitHub tickets, epics, and roadmap that drove it. Forecast by scope, then govern it: set a budget per program and enforce a hard cap that blocks or routes down over-budget work, reallocating compute to the programs that matter most. Reconcile to the invoice, export FOCUS-aligned data, SSO/SCIM/2FA. Prompts never leave your environment.">
 <link rel="canonical" href="https://outlay-ai.com/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="robots" content="index, follow">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://outlay-ai.com/">
@@ -18,12 +16,13 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Outlay — the control plane for AI compute spend">
 <meta name="twitter:description" content="Budget and govern AI compute by scope of work. Attribute spend to tickets, forecast by scope, guardrails before overspend. Prompts never leave your environment.">
-<link rel="stylesheet" href="/outlay.css?v=20260621">
+<link rel="stylesheet" href="/outlay.css?v=20260621-2">
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
 
 <nav><div class="wrap">
-  <span class="brand">Outlay<span class="dot">.ai</span></span>
+  <a class="brand" href="/">Outlay<span class="dot">.ai</span></a>
   <div class="navlinks">
     <a href="/#how">How it works</a>
     <a href="/#proof">Attribution</a>
@@ -39,6 +38,7 @@
   </div>
 </div></nav>
 
+<main id="main">
 <!-- HERO -->
 <header class="hero"><div class="wrap herogrid">
   <div>
@@ -369,9 +369,10 @@ epic Q3-stability <span class="w">on pace $22k · over</span></code>
   </div>
   <p style="font-size:13px;color:#8fa0bd;margin-top:18px">Read-only to start · prompts never leave your environment · no app rewrite</p>
 </div></section>
+</main>
 
 <footer><div class="wrap">
-  <span class="brand">Outlay<span class="dot">.ai</span></span>
+  <a class="brand" href="/">Outlay<span class="dot">.ai</span></a>
   <span class="sep"></span>
   <a href="https://app.outlay-ai.com/login">Sign in</a>
   <a href="/pilot">Design-partner pilot</a>
