@@ -152,6 +152,10 @@ pre{background:var(--paper2);color:var(--navy);padding:16px;border-radius:10px;o
 .kpi .v{font-family:var(--disp);font-weight:700;font-size:27px;color:var(--ink);letter-spacing:-.02em;margin-top:6px;line-height:1.1}
 .kpi .v.grn{color:var(--grn-d)}
 .kpi .s{font-size:11.5px;color:var(--muted);margin-top:3px}
+a.kpi{display:block;text-decoration:none;position:relative;transition:border-color .12s,box-shadow .12s}
+a.kpi:hover{border-color:#cdd3d9;box-shadow:0 2px 12px -7px rgba(0,0,0,.22);text-decoration:none}
+a.kpi .kdrill{position:absolute;top:13px;right:14px;color:var(--faint);font-size:13px;opacity:0;transition:opacity .12s}
+a.kpi:hover .kdrill{opacity:1;color:var(--grn-d)}
 .ocard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px}
 .ocard+.ocard,.ocard{margin-top:0}
 .ogrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -895,9 +899,12 @@ def _persona_chooser() -> str:
         + '</div></div>')
 
 
-def _kpicard(label, value, sub, grn=False) -> str:
-    return (f'<div class=kpi><div class=l>{_e(label)}</div>'
-            f'<div class="v{" grn" if grn else ""}">{value}</div><div class=s>{sub}</div></div>')
+def _kpicard(label, value, sub, grn=False, href=None) -> str:
+    inner = (f'<div class=l>{_e(label)}</div>'
+             f'<div class="v{" grn" if grn else ""}">{value}</div><div class=s>{sub}</div>')
+    if href:
+        return f'<a class=kpi href="{href}">{inner}<span class=kdrill>→</span></a>'
+    return f'<div class=kpi>{inner}</div>'
 
 
 def _kpis_row(report: dict, history: list[dict] | None, persona: str) -> str:
@@ -909,18 +916,25 @@ def _kpis_row(report: dict, history: list[dict] | None, persona: str) -> str:
     fc = report.get("forecast", {})
     cov = sp.get("ticket_coverage", 0.0)
     open_items = fc.get("items_costed", 0) + fc.get("items_unclassified", 0)
+    # Each headline KPI drills into the surface that explains it: the forecast →
+    # the estimator, open work → the estimator, team allocation → that team's
+    # tickets, runaway tickets → the offending work type (runaways flagged there).
     spend_kpi = _kpicard("AI spend · window", money(sp.get("total_usd", 0)), _trend_delta(history or []))
     fc_kpi = _kpicard("Forecast · open work", money(fc.get("expected_usd", 0)),
-                      f"likely {money(fc.get('low_usd', 0))}–{money(fc.get('high_usd', 0))}")
+                      f"likely {money(fc.get('low_usd', 0))}–{money(fc.get('high_usd', 0))}",
+                      href="/app/outlay/estimate")
     open_kpi = _kpicard("Open work items", str(open_items),
-                        f"{fc.get('items_costed', 0)} costed from history")
+                        f"{fc.get('items_costed', 0)} costed from history",
+                        href="/app/outlay/estimate")
     if persona == "finance":
         teams = [t for t in (report.get("team_spend") or []) if t.get("team")]
         top = teams[0] if teams else None
         alloc_kpi = _kpicard(
             "Allocated to teams", str(len(teams)),
             (f"top: {_e(str(top['team']))} · {money(top['spent_usd'])}" if top else "map people to teams"),
-            grn=bool(teams))
+            grn=bool(teams),
+            href=(f'/app/outlay/scope?type=team&id={quote(str(top["team"]))}' if top
+                  else "/app/outlay/connect#teams"))
         return '<div class=kpis>' + spend_kpi + fc_kpi + alloc_kpi + open_kpi + '</div>'
     # engineering (and the default, pre-persona view)
     cov_kpi = _kpicard("Mapped to a ticket", f"{cov*100:.0f}%",
@@ -930,7 +944,9 @@ def _kpis_row(report: dict, history: list[dict] | None, persona: str) -> str:
     anom_kpi = _kpicard(
         "Runaway tickets", str(len(anoms)),
         (f"top: {_e(str(top['ticket_id']))} · {top['ratio']:.1f}× median" if top else "none over threshold"),
-        grn=not anoms)
+        grn=not anoms,
+        href=(f'/app/outlay/scope?type=class&id={quote(str(top.get("task_class") or ""))}'
+              if top and top.get("task_class") else None))
     return '<div class=kpis>' + spend_kpi + cov_kpi + anom_kpi + fc_kpi + '</div>'
 
 
@@ -1405,7 +1421,8 @@ def _unit_econ_card(report: dict) -> str:
             f'<div class=v>{money(ue["cost_per_ticket_usd"])}</div></div>'
             f'{per_closed}{rework}')
     rows = "".join(
-        f'<div class=erow><span class=nm>{_e(c["task_class"])} <small>· {c["tickets"]} tickets</small></span>'
+        f'<div class=erow><a class=nm href="/app/outlay/scope?type=class&id={quote(str(c["task_class"]))}">'
+        f'{_e(c["task_class"])} <small>· {c["tickets"]} tickets</small> <span class=drill>→</span></a>'
         f'<span class=amt>{money(c["per_ticket_usd"])}<small class=muted> /ticket</small></span></div>'
         for c in ue["by_class"])
     by = (f'<div style="margin-top:6px"><div class=muted style="font-size:12px;text-transform:uppercase;'
