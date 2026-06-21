@@ -352,6 +352,7 @@ _MIGRATIONS = [
     "ALTER TABLE outlay_programs ADD COLUMN enforced_count INTEGER NOT NULL DEFAULT 0",  # times the gateway blocked/route-down'd for this program
     "ALTER TABLE outlay_programs ADD COLUMN last_enforced_at REAL",  # last enforcement action
     "ALTER TABLE accounts ADD COLUMN demo_mode INTEGER NOT NULL DEFAULT 0",  # 1 = this (gated) account is showing seeded demo data
+    "ALTER TABLE outlay_connections ADD COLUMN identity_names TEXT",  # JSON {identifier: display name} for usage-by-person
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -1159,6 +1160,45 @@ def get_outlay_identity_map(account_id: int, path: str | None = None) -> str | N
     finally:
         conn.close()
     return (row["identity_map"] if row else None) or None
+
+
+def set_outlay_identity_names(account_id: int, names: dict, path: str | None = None) -> None:
+    """Merge an {identifier: display name} map into the per-account people directory,
+    so spend can be shown by person name rather than a bare email/key id."""
+    import json as _json
+    cur = get_outlay_identity_names(account_id, path)
+    cur.update({k.strip().lower(): v.strip() for k, v in (names or {}).items()
+                if k and k.strip() and v and v.strip()})
+    blob = _json.dumps(cur) if cur else None
+    conn = connect(path)
+    try:
+        exists = conn.execute("SELECT 1 FROM outlay_connections WHERE account_id=?",
+                              (account_id,)).fetchone()
+        if exists:
+            conn.execute("UPDATE outlay_connections SET identity_names=? WHERE account_id=?",
+                         (blob, account_id))
+        else:
+            conn.execute("INSERT INTO outlay_connections(account_id, identity_names) VALUES(?,?)",
+                         (account_id, blob))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_outlay_identity_names(account_id: int, path: str | None = None) -> dict:
+    import json as _json
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT identity_names FROM outlay_connections WHERE account_id=?",
+                          (account_id,)).fetchone()
+    finally:
+        conn.close()
+    if not row or not row["identity_names"]:
+        return {}
+    try:
+        return _json.loads(row["identity_names"]) or {}
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 def save_outlay_connection(account_id: int, github_owner: str | None = None,

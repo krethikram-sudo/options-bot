@@ -2956,7 +2956,7 @@ def test_onboarding_owner_hits_role_gate_then_advances(env, client):
     assert store.get_persona(acct["id"], 0) == "finance"
     w2 = client.get("/app/welcome").text
     assert "You’re set up as Finance" in w2
-    assert "Add your org structure" in w2 and "Invite your counterpart" in w2
+    assert "Upload your org" in w2 and "Invite your counterpart" in w2
     # the gate is cleared — the dashboard is reachable now
     assert client.get("/app", follow_redirects=False).status_code == 200
 
@@ -3008,31 +3008,30 @@ def test_demo_account_allowlist_supports_domains(env, monkeypatch):
     assert not demo.is_demo_account(None)
 
 
-def test_team_roster_bulk_invites_and_maps_org(env, client):
+def test_team_roster_uploads_names_teams_and_invites(env, client):
     _, store = env
     _signup(client, email="owner@acme.com")
     acct = store.get_account_by_email("owner@acme.com")
-    csv = ("email,team,role,access\n"
-           "cfo@acme.com,Finance,finance,admin\n"
-           "alice@acme.com,Platform,eng,member\n"
-           "ci-bot,Platform,,\n"            # service account: mapped, not invited
-           "@contractor.com,External,,\n")  # whole domain: mapped, not invited
+    csv = ("name,email,team,access\n"
+           "Jordan Lee,jordan@acme.com,Platform,member\n"
+           "Priya Shah,priya@acme.com,Payments,admin\n"
+           "CI deploy bot,key_ci,Platform,\n")   # service account: named + mapped, not invited
     boundary = "Bnd"
     body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; "
-            f"filename=\"roster.csv\"\r\n\r\n{csv}\r\n--{boundary}--\r\n")
+            f"filename=\"org.csv\"\r\n\r\n{csv}\r\n--{boundary}--\r\n")
     r = client.post("/app/team/roster", content=body.encode(),
                     headers={"content-type": f"multipart/form-data; boundary={boundary}"},
                     follow_redirects=False)
     assert r.status_code == 303
     members = {m["email"]: m for m in store.list_members(acct["id"])}
-    assert set(members) == {"cfo@acme.com", "alice@acme.com"}          # only real emails invited
-    assert members["cfo@acme.com"]["role"] == "admin"
-    assert store.get_persona(acct["id"], members["cfo@acme.com"]["id"]) == "finance"
-    assert store.get_persona(acct["id"], members["alice@acme.com"]["id"]) == "eng"
+    assert set(members) == {"jordan@acme.com", "priya@acme.com"}        # only real emails invited
+    assert members["priya@acme.com"]["role"] == "admin"
     idmap = store.get_outlay_identity_map(acct["id"])
-    assert "cfo@acme.com, Finance" in idmap
-    assert "ci-bot, Platform" in idmap                                  # service account mapped
-    assert "@contractor.com, External" in idmap                         # domain mapped
+    assert "jordan@acme.com, Platform" in idmap
+    assert "key_ci, Platform" in idmap                                  # service account mapped by key id
+    names = store.get_outlay_identity_names(acct["id"])
+    assert names.get("jordan@acme.com") == "Jordan Lee"
+    assert names.get("key_ci") == "CI deploy bot"                       # name kept for usage-by-person
     # template download works
     assert client.get("/app/team/roster-template.csv").status_code == 200
 

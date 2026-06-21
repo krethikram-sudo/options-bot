@@ -1941,11 +1941,11 @@ def _send_invite_email(email: str) -> None:
             pass
 
 
-_ROSTER_TEMPLATE = ("email,team,role,access\n"
-                    "cfo@acme.com,Finance,finance,admin\n"
-                    "vp.eng@acme.com,Platform,eng,admin\n"
-                    "alice@acme.com,Platform,eng,member\n"
-                    "ci-deploy-bot,Platform,,\n")
+_ROSTER_TEMPLATE = ("name,email,team\n"
+                    "Jordan Lee,jordan@acme.com,Platform\n"
+                    "Priya Shah,priya@acme.com,Payments\n"
+                    "Sam Rivera,sam@acme.com,Growth\n"
+                    "CI deploy bot,key_ci_deploy,Platform\n")
 
 
 @app.get("/app/team/roster-template.csv")
@@ -1954,14 +1954,16 @@ def team_roster_template(request: Request):
     if redir:
         return redir
     return Response(_ROSTER_TEMPLATE, media_type="text/csv",
-                    headers={"Content-Disposition": 'attachment; filename="outlay-roster-template.csv"'})
+                    headers={"Content-Disposition": 'attachment; filename="outlay-org-template.csv"'})
 
 
 @app.post("/app/team/roster")
 async def team_roster(request: Request):
-    """Bulk org-roster upload: one CSV maps everyone to teams AND invites them with
-    their role (persona) + access pre-set. Columns (header row, any order): email,
-    team, role (finance|eng), access (admin|member|billing). Owner-/admin-only."""
+    """One org-structure upload: a CSV of the org that (1) names each person for
+    usage-by-person, (2) maps them to a team for cost allocation, and (3) invites
+    everyone with an email. Columns (header row, any order): name, email, team,
+    and optional access (admin|member|billing; default member). Rows with no email
+    (e.g. a CI/service account) are named + mapped but not invited. Owner/admin-only."""
     import csv as _csv
     import io as _io
     acct, redir = _require_team_admin(request)
@@ -1971,22 +1973,23 @@ async def team_roster(request: Request):
     nxt = (fields.get("next") or "")
     invited = skipped = 0
     map_lines: list[str] = []
+    names: dict[str, str] = {}
     if filetext:
         rows = [r for r in _csv.reader(_io.StringIO(filetext)) if any(c.strip() for c in r)]
-        col = {"email": 0, "team": 1, "role": 2, "access": 3}
+        col = {"name": 0, "email": 1, "team": 2, "access": 3}
         if rows:
             header = [c.strip().lower() for c in rows[0]]
-            if any(h in ("email", "identifier", "team", "role", "experience", "persona",
-                         "access", "permission") for h in header):
+            if any(h in ("name", "email", "identifier", "team", "access", "permission")
+                   for h in header):
                 col = {}
                 for i, h in enumerate(header):
-                    if h in ("email", "identifier"):
+                    if h in ("name", "person", "full name"):
+                        col["name"] = i
+                    elif h in ("email", "identifier"):
                         col["email"] = i
                     elif h == "team":
                         col["team"] = i
-                    elif h in ("role", "experience", "persona"):
-                        col["role"] = i
-                    elif h in ("access", "permission"):
+                    elif h in ("access", "permission", "role"):
                         col["access"] = i
                 rows = rows[1:]
         owner_email = (acct["email"] or "").strip().lower()
@@ -1994,39 +1997,39 @@ async def team_roster(request: Request):
             def cell(key: str) -> str:
                 i = col.get(key)
                 return r[i].strip() if i is not None and i < len(r) else ""
+            name = cell("name")
+            # The "email" column holds the identity we attribute spend to: a person's
+            # email, or a service-account / CI key id. Name is display-only.
             ident = cell("email").strip().lower()
-            if not ident:
-                continue
             team = cell("team")
-            role = cell("role").strip().lower()
-            role = role if role in ("finance", "eng") else ""
             access = cell("access").strip().lower()
             access = access if access in store.TEAM_ROLES else "member"
-            # Every identity with a team is mapped for cost allocation — emails,
-            # @domains, AND service-account / CI key ids (which can't be invited).
+            if not ident:
+                continue
+            if name:
+                names[ident] = name
             if team:
                 map_lines.append(f"{ident}, {team}")
-            # Only a real personal email (has a local part, not a bare @domain, not
-            # the owner) gets an invite.
+            # Only a real personal email (not a bare @domain, not the owner) is invited.
             if "@" not in ident or ident.startswith("@") or ident == owner_email:
                 continue
             try:
-                m = store.create_member(acct["id"], ident, access)
+                store.create_member(acct["id"], ident, access)
             except store.StoreError:        # already owner/member
                 skipped += 1
                 continue
-            if role:
-                store.set_persona(acct["id"], role, member_id=m["id"])
             _send_invite_email(ident)
             invited += 1
     if map_lines:
         merged = _merge_identity_csv(store.get_outlay_identity_map(acct["id"]) or "",
                                      "\n".join(map_lines))
         store.set_outlay_identity_map(acct["id"], merged or None)
+    if names:
+        store.set_outlay_identity_names(acct["id"], names)
     _audit(acct["id"], "team.roster", actor=acct.get("display_email") or acct.get("email", ""),
-           detail=f"invited={invited} mapped={len(map_lines)} skipped={skipped}")
-    summary = (f"Roster processed — invited {invited}, mapped {len(map_lines)} to teams, "
-               f"skipped {skipped} (owner / already on the team).")
+           detail=f"invited={invited} named={len(names)} mapped={len(map_lines)} skipped={skipped}")
+    summary = (f"Org uploaded — invited {invited}, named {len(names)}, mapped "
+               f"{len(map_lines)} to teams, skipped {skipped} (owner / already on the team).")
     if nxt == "welcome":
         return _redirect("/app/welcome")
     return _redirect(f"/app/team?roster={quote(summary)}")
