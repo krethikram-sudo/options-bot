@@ -16,7 +16,8 @@
 
 <nav><div class="wrap">
   <a class="brand" href="/" style="text-decoration:none">Outlay<span class="dot">.ai</span></a>
-  <div class="navlinks">
+  <input type="checkbox" id="nav-t" class="nav-toggle" hidden>
+  <div class="navlinks" id="nav-menu">
     <a href="/#how">How it works</a>
     <a href="/#owners">For eng &amp; finance</a>
     <a href="/#proof">Attribution</a>
@@ -29,6 +30,7 @@
   <div class="navsp"></div>
   <div class="navcta">
     <a class="btn primary" href="https://app.outlay-ai.com/login">Sign in</a>
+    <label for="nav-t" class="hamburger" role="button" tabindex="0" aria-label="Open menu" aria-controls="nav-menu" aria-expanded="false"><span></span><span></span><span></span></label>
   </div>
 </div></nav>
 
@@ -99,4 +101,7 @@
 <div class="wrap" style="margin-top:14px;font-size:12.5px;color:#6c7790">© 2026 Outlay · See AI spend mapped to your work, forecast it, and hold it to budget.</div>
 </footer>
 
+<script>
+(function(){var t=document.getElementById('nav-t'),h=document.querySelector('.hamburger'),m=document.getElementById('nav-menu');if(!t||!h)return;function sync(){var o=t.checked;h.setAttribute('aria-expanded',o?'true':'false');h.setAttribute('aria-label',o?'Close menu':'Open menu');}t.addEventListener('change',sync);h.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();t.checked=!t.checked;sync();}});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&t.checked){t.checked=false;sync();}});if(m)m.addEventListener('click',function(e){if(e.target.closest('a')){t.checked=false;sync();}});})();
+</script>
 </body></html>
