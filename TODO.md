@@ -376,9 +376,16 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 - [x] **No fabricated tickets** — version/release-shaped branches (`release-2.3`, `v1-2`, `hotfix-9`) no
       longer match the PROJ-123 pattern and invent "RELEASE-2"; real keys still resolve.
 - [x] **Negative token counts clamp to zero** in `cost_usd`. 275 tests pass.
+- [x] **Session-based attribution propagation** (coverage lift). A coding-agent session (Claude Code /
+      Cursor run) works one ticket at a time, but only some of its events carry the branch/tag — the rest
+      fell to TEAM/INVOICE and lost the ticket. Now a session that resolved to exactly one ticket lends it
+      to its sibling events at a new **SESSION** fidelity tier (honest: ranked below BRANCH; ambiguous
+      multi-ticket sessions are left untouched). Directly lifts ticket coverage — the headline trust metric —
+      on agentic workloads, with zero branch renaming. 140 outlay + 182 console tests pass.
 - [ ] **Open risk (assumption):** ticket coverage depends on branches encoding ticket ids — trunk-based /
-      personal / bot branches yield low coverage. Surfaced honestly; flag in qualification. Future: a proxy
-      / explicit-tag path for teams without ticket-named branches.
+      personal / bot branches yield low coverage. Surfaced honestly; flag in qualification. Session
+      propagation (above) and PR-closing-ref linking (`outlay/link.py`) already recover much of it without
+      branch renaming; remaining gap is sessions/branches with no ticket signal anywhere.
 - [ ] **Open risk (scale):** report stored as a JSON blob in sqlite; fine now, a ceiling at millions of
       events/month. Future: aggregate storage / pagination.
 

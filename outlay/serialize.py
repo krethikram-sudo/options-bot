@@ -52,7 +52,7 @@ def to_dict(
             "ticket_coverage": _r(result.ticket_coverage, 4),
             "by_fidelity_usd": {
                 t.value: _r(fid.get(t, 0.0))
-                for t in (FidelityTier.CALL, FidelityTier.BRANCH,
+                for t in (FidelityTier.CALL, FidelityTier.BRANCH, FidelityTier.SESSION,
                           FidelityTier.TEAM, FidelityTier.INVOICE)
             },
         },

@@ -69,38 +69,61 @@ def attribute(
     engine = engine or JoinEngine(work_items)
     class_by_ticket = {wi.ticket_id: classify(wi) for wi in work_items}
     status_by_ticket = {wi.ticket_id: wi.status for wi in work_items}
+    team_by_ticket = {wi.ticket_id: wi.team_id for wi in work_items}
+
+    # Pass 1: join every event.
+    joined = [(ev, engine.join(ev)) for ev in events]
+
+    # Session propagation — a coding-agent session (Claude Code / Cursor run)
+    # works one ticket at a time, but only some of its events carry the branch or
+    # explicit tag; the rest would fall to TEAM/INVOICE and lose the ticket. When
+    # a session resolved to exactly ONE ticket (via CALL/BRANCH), lend it to that
+    # session's otherwise-unticketed events at SESSION fidelity (honest: a tier
+    # below BRANCH). Ambiguous sessions (>1 resolved ticket) are left untouched.
+    session_tickets: dict[str, set[str]] = defaultdict(set)
+    for ev, jr in joined:
+        if ev.session_id and jr.ticket_id and jr.fidelity.has_ticket:
+            session_tickets[ev.session_id].add(jr.ticket_id)
+    session_ticket = {
+        sid: next(iter(ts)) for sid, ts in session_tickets.items() if len(ts) == 1
+    }
 
     rows: list[Attribution] = []
     rollups: dict[str, TicketRollup] = {}
 
-    for ev in events:
-        jr = engine.join(ev)
-        tc = class_by_ticket.get(jr.ticket_id, TaskClass.UNKNOWN) if jr.ticket_id else TaskClass.UNKNOWN
+    for ev, jr in joined:
+        ticket_id, fidelity, team = jr.ticket_id, jr.fidelity, jr.team_id
+        if ticket_id is None and ev.session_id in session_ticket:
+            ticket_id = session_ticket[ev.session_id]
+            fidelity = FidelityTier.SESSION
+            team = team or team_by_ticket.get(ticket_id)
+
+        tc = class_by_ticket.get(ticket_id, TaskClass.UNKNOWN) if ticket_id else TaskClass.UNKNOWN
         cost = cost_usd(ev)
         rows.append(
             Attribution(
                 usage_event_id=ev.id,
                 cost_usd=cost,
-                fidelity=jr.fidelity,
+                fidelity=fidelity,
                 model=ev.model,
                 ts=ev.ts,
-                ticket_id=jr.ticket_id,
-                team_id=jr.team_id,
+                ticket_id=ticket_id,
+                team_id=team,
                 user=jr.user,
                 task_class=tc,
             )
         )
 
-        if jr.ticket_id:
-            ru = rollups.get(jr.ticket_id)
+        if ticket_id:
+            ru = rollups.get(ticket_id)
             if ru is None:
                 ru = TicketRollup(
-                    ticket_id=jr.ticket_id,
+                    ticket_id=ticket_id,
                     task_class=tc,
-                    status=status_by_ticket.get(jr.ticket_id, "open"),
-                    team_id=jr.team_id,
+                    status=status_by_ticket.get(ticket_id, "open"),
+                    team_id=team,
                 )
-                rollups[jr.ticket_id] = ru
+                rollups[ticket_id] = ru
             ru.cost_usd += cost
             ru.event_count += 1
             if ev.session_id:

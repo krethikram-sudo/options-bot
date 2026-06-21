@@ -22,7 +22,7 @@ def test_json_schema_and_core_numbers():
     assert sp["total_usd"] > 0
     assert 0 < sp["ticket_coverage"] <= 1
     # fidelity tiers all present
-    assert set(sp["by_fidelity_usd"]) == {"call", "branch", "team", "invoice"}
+    assert set(sp["by_fidelity_usd"]) == {"call", "branch", "session", "team", "invoice"}
 
 
 def test_json_forecast_and_items():

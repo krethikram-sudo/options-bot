@@ -53,6 +53,37 @@ def test_attribute_coverage_and_rework():
     assert any(r.fidelity == FidelityTier.INVOICE for r in res.rows)
 
 
+def test_session_propagation_lends_ticket_to_sibling_events():
+    work = [
+        WorkItem("GH-10", "github", labels=["bug"], branch="fix/10-x", status="open", team_id="platform"),
+        WorkItem("GH-20", "github", labels=["bug"], branch="fix/20-y", status="open"),
+        WorkItem("GH-30", "github", labels=["bug"], branch="fix/30-z", status="open"),
+    ]
+    events = [
+        _ev("a", "claude-opus-4-8", branch="fix/10-x", session="s1", input_tokens=50_000),
+        _ev("b", "claude-haiku-4-5", session="s1", input_tokens=50_000),   # no branch -> inherits GH-10
+        _ev("c", "claude-haiku-4-5", session="s2", input_tokens=10_000),   # session never resolves -> INVOICE
+        _ev("d", "claude-opus-4-8", branch="fix/20-y", session="s3", input_tokens=10_000),
+        _ev("e", "claude-opus-4-8", branch="fix/30-z", session="s3", input_tokens=10_000),
+        _ev("f", "claude-haiku-4-5", session="s3", input_tokens=10_000),   # ambiguous session -> no ticket
+    ]
+    res = attribute(events, work)
+    by_id = {r.usage_event_id: r for r in res.rows}
+    # 'b' inherited GH-10 at SESSION fidelity, with the ticket's team + class.
+    assert by_id["b"].ticket_id == "GH-10"
+    assert by_id["b"].fidelity == FidelityTier.SESSION
+    assert by_id["b"].team_id == "platform"
+    assert by_id["b"].task_class == TaskClass.BUGFIX
+    # 'a' is still the direct BRANCH resolution; not downgraded.
+    assert by_id["a"].fidelity == FidelityTier.BRANCH
+    # session that never resolved a ticket stays INVOICE.
+    assert by_id["c"].ticket_id is None and by_id["c"].fidelity == FidelityTier.INVOICE
+    # ambiguous session (two distinct tickets) does NOT propagate.
+    assert by_id["f"].ticket_id is None
+    # the propagated event rolls into GH-10's spend.
+    assert res.rollups["GH-10"].event_count == 2
+
+
 # ---- forecast ----
 
 def test_forecast_costs_open_items_and_flags_uncosted():
