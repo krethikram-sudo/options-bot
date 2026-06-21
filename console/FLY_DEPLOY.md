@@ -47,8 +47,12 @@ fly secrets set \
 # (the safe default). Only listed accounts ever see "Enter demo mode" or the
 # "See it with sample data" controls; no prospect or customer can reach them.
 # Not sensitive — can also live in fly.toml [env] instead of secrets.
+# Accepts exact emails, comma-separated, AND whole-domain entries (@domain) that
+# match every address at that domain — handy for internal test accounts. These
+# accounts also get the "Restart onboarding" test control.
 # fly secrets set DEMO_ACCOUNT_EMAILS=you@outlay-ai.com
-#   (multiple: DEMO_ACCOUNT_EMAILS='you@outlay-ai.com,demo@outlay-ai.com')
+#   (multiple:        DEMO_ACCOUNT_EMAILS='you@outlay-ai.com,demo@outlay-ai.com')
+#   (whole domain:    DEMO_ACCOUNT_EMAILS='@outlay-ai.com')
 
 # Optional — SMS 2FA via Twilio (the 'sms' channel; email 2FA needs none of this):
 # fly secrets set TWILIO_ACCOUNT_SID=AC... TWILIO_AUTH_TOKEN=... TWILIO_FROM='+15551234567'
