@@ -1,9 +1,10 @@
 # Site redesign — running worklist
 
-The visual leveling-up of the marketing site, page by page. **Do this in local
-Claude Code** so the Playwright loop is live (render → screenshot → iterate);
-the web container can't install a browser. Design against `docs/BRAND.md`;
-screenshot with `tools/shoot.py` (desktop + mobile) and eyeball before committing.
+The visual leveling-up of the marketing site, page by page. The Playwright loop
+works **in the web session too** — Chromium is preinstalled at `/opt/pw-browsers`,
+so `npx playwright screenshot` and a small node script (reducedMotion:'reduce' to
+defeat the scroll-reveal) render real screenshots. Design against `docs/BRAND.md`;
+screenshot desktop + mobile and eyeball before committing.
 
 **Workflow per page:** shoot current → list specific fixes against BRAND.md →
 apply → re-shoot desktop + mobile → diff visually → commit. One PR per page (or
@@ -18,9 +19,8 @@ small batch) so regressions are easy to bisect.
 - [x] `docs/BRAND.md` design spec.
 
 ## Global — do once, affects every page
-- [ ] **Mobile nav (highest priority).** `outlay.css:50` hides `.navlinks` below
-      860px with no replacement — mobile gets only logo + Sign in. Add a
-      zero-JS-or-tiny-JS hamburger that reveals the links. Verify at 390px.
+- [x] **Mobile nav.** Accessible checkbox-driven hamburger across all 9 pages
+      (#167) — frosted dropdown, X morph, keyboard + Esc + close-on-navigate.
 - [ ] **`og:image`.** Points at `favicon.svg`; social cards need a real
       1200×630 PNG (generate one on-brand: navy bg, green accent, the product
       panel). Update `og:image`/`twitter:image` on every page; switch
@@ -37,11 +37,13 @@ small batch) so regressions are easy to bisect.
 
 ## Per-page visual goals
 
-### `index.html` — landing (start here)
-Hero is strong; tighten the rest. Check: hero panel cards at mobile width
-(two stacked `.pcard`s), `.herogrid` reflow at 940px, the dense compatbar
-wrapping, section vertical rhythm, and CTA hierarchy (primary vs ghost). Make
-sure the live "count-up" stat reads well on first paint.
+### `index.html` — landing (in progress)
+Hero is strong; tighten the rest.
+- [x] Compare section restructured from flat text → 3 category cards (it was the
+      one all-text section; now matches the page's card rhythm).
+- [ ] Still to check: hero panel cards at mobile width, `.herogrid` reflow at
+      940px, the dense compatbar wrapping, section vertical rhythm, and the live
+      "count-up" stat on first paint.
 
 ### `platform.html` — "Cost it right, plan it, take it anywhere"
 Feature-heavy. Goals: clear visual grouping of the three pillars, the
