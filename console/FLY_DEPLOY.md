@@ -40,6 +40,16 @@ fly secrets set \
 # (defaults to ADMIN_EMAIL). Also visible in the admin Leads inbox regardless.
 # fly secrets set PILOT_INBOX=you@outlay-ai.com
 
+# Optional — DEMO MODE allowlist. Comma-separated account emails allowed to toggle
+# the in-app "demo mode" (one click seeds a fully worked customer — sample report,
+# budgets, programs, a synced source — for live demos across both personas, then
+# wipes back to a clean account on exit). UNSET = demo mode is hidden for everyone
+# (the safe default). Only listed accounts ever see "Enter demo mode" or the
+# "See it with sample data" controls; no prospect or customer can reach them.
+# Not sensitive — can also live in fly.toml [env] instead of secrets.
+# fly secrets set DEMO_ACCOUNT_EMAILS=you@outlay-ai.com
+#   (multiple: DEMO_ACCOUNT_EMAILS='you@outlay-ai.com,demo@outlay-ai.com')
+
 # Optional — SMS 2FA via Twilio (the 'sms' channel; email 2FA needs none of this):
 # fly secrets set TWILIO_ACCOUNT_SID=AC... TWILIO_AUTH_TOKEN=... TWILIO_FROM='+15551234567'
 
