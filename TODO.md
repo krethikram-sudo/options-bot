@@ -100,6 +100,11 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-21 — per-team / cost-center CSV export (showback / chargeback)
+- [x] We exported tickets/people/classes/models/savings but not the team allocation finance needs for
+      showback. Added a `teams` view to `report_csv` (`team,spend_usd,share_pct,events`) from `team_spend`,
+      allowed in the export route, linked as "by team" on the finance Spend view. 316 tests.
+
 ### 2026-06-21 — weekly spend digest also posts to Slack/Teams
 - [x] The weekly digest emailed the owner only; eng + finance live in Slack. `send_account_digest` now also
       posts the digest (subject + body) to the configured Slack/Teams webhook when one is connected — reusing
