@@ -14,7 +14,6 @@ from urllib.parse import quote
 
 from . import store
 
-ACCENT = "#111111"
 BRAND = "Outlay"
 
 _CSS = """
@@ -121,6 +120,7 @@ pre{background:var(--paper2);color:var(--navy);padding:16px;border-radius:10px;o
 .center{text-align:center}
 .hero{max-width:640px;margin:40px auto 28px;text-align:left}
 .hero h1{font-size:34px;letter-spacing:-.02em;line-height:1.08}
+.eyebrow{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin-bottom:10px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 /* staggered entrance on every page (--rd set per element by JS) */
 .reveal{opacity:0;transform:translateY(14px);transition:opacity .55s var(--ease),transform .55s var(--ease);transition-delay:var(--rd,0ms)}
@@ -2133,17 +2133,19 @@ def status_page(components: list[dict]) -> str:
 def landing() -> str:
     body = f"""
     <div class=hero>
-      <h1>Cut your Claude bill through model optimization.</h1>
-      <p class=muted>Outlay routes each request to the cheapest model that's provably
-      good enough. Drop-in proxy, no prompt data leaves your system. Start free for 7 days;
-      after that you only pay <b>20% of the savings we actually deliver</b>.</p>
+      <div class=eyebrow>The control plane for AI compute spend</div>
+      <h1>Put AI compute on a budget.</h1>
+      <p class=muted>Outlay attributes every dollar of LLM and coding-agent spend to the work you
+      already plan — tickets, epics, roadmap — forecasts cost by scope, and lets you
+      <b>enforce a budget per program</b>, reallocating compute to the work that matters most.
+      Read-only to start; your prompts and keys never leave your environment.</p>
       <div class="row center" style="justify-content:center;margin-top:18px">
-        <a class=btn href="/signup">Start your 7-day free trial</a>
+        <a class=btn href="/signup">Start your free trial</a>
         <a class="btn sec" href="/login">Sign in</a>
       </div>
-      <p class="small muted" style="margin-top:24px">No savings, no bill. Cancel anytime.</p>
+      <p class="small muted" style="margin-top:24px">Read-only · no app rewrite · prompts never leave your environment.</p>
     </div>"""
-    return page("Cut your Claude bill", body)
+    return page("Put AI compute on a budget", body)
 
 
 def twofa_verify_form(error: str = "", note: str = "") -> str:
