@@ -818,22 +818,37 @@ def _kpicard(label, value, sub, grn=False) -> str:
 
 
 def _kpis_row(report: dict, history: list[dict] | None, persona: str) -> str:
-    """The four headline KPIs — shared by Overview and Spend. Order is role-aware:
-    finance leads spend→forecast, engineering leads spend→coverage."""
+    """The four headline KPIs — shared by Overview and Spend. The *set* is
+    role-aware, not just the order: finance leads with money + allocation
+    (cost-center / showback) + the budget forecast; engineering leads with
+    attribution coverage + the runaway tickets to go fix."""
     sp = report.get("spend", {})
     fc = report.get("forecast", {})
     cov = sp.get("ticket_coverage", 0.0)
     open_items = fc.get("items_costed", 0) + fc.get("items_unclassified", 0)
     spend_kpi = _kpicard("AI spend · window", money(sp.get("total_usd", 0)), _trend_delta(history or []))
-    cov_kpi = _kpicard("Mapped to a ticket", f"{cov*100:.0f}%",
-                       money(sp.get("attributed_to_ticket_usd", 0)) + " attributed", grn=cov >= 0.6)
     fc_kpi = _kpicard("Forecast · open work", money(fc.get("expected_usd", 0)),
                       f"likely {money(fc.get('low_usd', 0))}–{money(fc.get('high_usd', 0))}")
     open_kpi = _kpicard("Open work items", str(open_items),
                         f"{fc.get('items_costed', 0)} costed from history")
-    order = (spend_kpi + fc_kpi + cov_kpi + open_kpi) if persona == "finance" \
-        else (spend_kpi + cov_kpi + fc_kpi + open_kpi)
-    return '<div class=kpis>' + order + '</div>'
+    if persona == "finance":
+        teams = [t for t in (report.get("team_spend") or []) if t.get("team")]
+        top = teams[0] if teams else None
+        alloc_kpi = _kpicard(
+            "Allocated to teams", str(len(teams)),
+            (f"top: {_e(str(top['team']))} · {money(top['spent_usd'])}" if top else "map people to teams"),
+            grn=bool(teams))
+        return '<div class=kpis>' + spend_kpi + fc_kpi + alloc_kpi + open_kpi + '</div>'
+    # engineering (and the default, pre-persona view)
+    cov_kpi = _kpicard("Mapped to a ticket", f"{cov*100:.0f}%",
+                       money(sp.get("attributed_to_ticket_usd", 0)) + " attributed", grn=cov >= 0.6)
+    anoms = report.get("anomalies") or []
+    top = anoms[0] if anoms else None
+    anom_kpi = _kpicard(
+        "Runaway tickets", str(len(anoms)),
+        (f"top: {_e(str(top['ticket_id']))} · {top['ratio']:.1f}× median" if top else "none over threshold"),
+        grn=not anoms)
+    return '<div class=kpis>' + spend_kpi + cov_kpi + anom_kpi + fc_kpi + '</div>'
 
 
 def _forecast_card(report: dict) -> str:
