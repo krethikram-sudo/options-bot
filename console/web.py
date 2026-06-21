@@ -19,10 +19,10 @@ BRAND = "Outlay"
 _CSS = """
 /* Outlay console — matches the marketing site theme (outlay.css): cool
    slate-white canvas, green accent, Inter, dark public header. */
-:root{--ink:#0b0f17;--body:#3a4252;--muted:#6b7280;--faint:#9aa1ad;
+:root{--ink:#0b0f17;--body:#3a4252;--muted:#5f6672;--faint:#646b78;
   --line:#e4e7ec;--line2:#eef1f5;--bg:#ffffff;--paper:#f6f8fa;--paper2:#eef1f5;--navy:#13203a;
-  --grn:#0f6b4f;--grn-d:#0a4f3a;--grn-l:#e7f1ec;--warn:#b45309;--bad:#b3261e;
-  --mut:#6b7280;--amber:#b45309;--amber-l:#fbf0df;--red:#b3261e;--red-l:#f8e7e4;
+  --grn:#0f6b4f;--grn-d:#0a4f3a;--grn-l:#e7f1ec;--warn:#9a4708;--bad:#b3261e;
+  --mut:#5f6672;--amber:#9a4708;--amber-l:#fbf0df;--red:#b3261e;--red-l:#f8e7e4;
   --accent:#0f6b4f;--accent-d:#0a4f3a;--grad:linear-gradient(135deg,#0f6b4f,#13203a);
   --disp:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -32,6 +32,7 @@ _CSS = """
 body{margin:0;font:16px/1.6 var(--sans);color:var(--body);-webkit-font-smoothing:antialiased;
   background:linear-gradient(180deg,var(--paper),var(--bg) 60%);background-attachment:fixed}
 a{color:var(--grn-d);text-decoration:none}a:hover{text-decoration:underline}
+p a,li a,td a,.note a,.dh a,.muted a,.ostrip a,.hintbox a,.sub a,small a,.ohead a,.dq a{text-decoration:underline}
 .top{background:rgba(11,16,26,.82);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;z-index:10}
 .top .wrap{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:18px}
 .top .brand{color:#fff}.top .brand .dot{color:#6ee7b7}
@@ -227,7 +228,7 @@ pre{background:var(--paper2);color:var(--navy);padding:16px;border-radius:10px;o
 .ob-tick{color:var(--grn-d);font-weight:700}
 .ob-dot{color:#cbd5e1}
 .ob-label{color:var(--ink)}
-.ob-done .ob-label{color:#94a3b8;text-decoration:line-through}
+.ob-done .ob-label{color:#646b78;text-decoration:line-through}
 .coach-spot{position:fixed;z-index:9998;border-radius:9px;pointer-events:none;
   box-shadow:0 0 0 9999px rgba(8,16,24,.55),0 0 0 2px var(--grn) inset;
   transition:top .2s,left .2s,width .2s,height .2s}
@@ -956,6 +957,7 @@ def _anomaly_card(report: dict, threshold: float = 3.0, muted=None, controls: bo
             f'<form method=post action="/app/outlay/anomaly/threshold" style="margin:0;display:flex;gap:6px;align-items:center">'
             f'<span class=muted style="font-size:12.5px">Flag at</span>'
             f'<input name=threshold type=number min=3 max=50 step=1 value="{threshold:.0f}" '
+            f'aria-label="Anomaly flag threshold, multiples of the class median" '
             f'style="width:64px;padding:5px 8px;border:1px solid var(--line);border-radius:8px">'
             f'<span class=muted style="font-size:12.5px">× class median</span>'
             f'<button class="btn sec sm">Apply</button></form></div>{unmute}')
@@ -2636,7 +2638,7 @@ def _retention_section(account: dict, retention_days: int = 0, purged: bool = Fa
         unaffected. (Prompts and raw usage never leave your environment in the first place.)</p>
       {purged_note}
       <form method=post action="/app/retention" style="display:flex;gap:10px;align-items:center">
-        <select name=retention_days style="padding:7px 10px;border:1px solid var(--line);border-radius:8px">{sel}</select>
+        <select name=retention_days aria-label="Data retention period" style="padding:7px 10px;border:1px solid var(--line);border-radius:8px">{sel}</select>
         <button class="btn sec sm">Save</button>
       </form>
       <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
