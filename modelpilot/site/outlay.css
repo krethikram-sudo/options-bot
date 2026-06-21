@@ -194,15 +194,6 @@
   .card p{font-size:14.5px;color:var(--mut);margin:0}
   .card p b{color:var(--body);font-weight:600}
 
-  /* framed product screenshot ("in the product") */
-  .shot{max-width:1040px;margin:6px auto 0;border:1px solid var(--line);border-radius:14px;overflow:hidden;
-    background:#fff;box-shadow:0 44px 92px -56px rgba(19,32,58,.55)}
-  .shot .bar{display:flex;gap:7px;align-items:center;padding:11px 15px;background:var(--paper);
-    border-bottom:1px solid var(--line2)}
-  .shot .bar i{width:11px;height:11px;border-radius:50%;background:#d6dbe2;display:block}
-  .shot .bar span{margin-left:10px;font-family:var(--mono);font-size:12px;color:var(--mut)}
-  .shot img{display:block;width:100%;height:auto}
-
   /* work-type table */
   .tbl-wrap{max-width:760px;margin:0 auto;overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:#fff}
   table.wt{width:100%;border-collapse:collapse;font-size:14.5px;min-width:540px}
