@@ -2999,6 +2999,15 @@ def test_onboarding_invite_presets_persona_so_counterpart_skips_gate(env, client
     assert "setting this up for my business" not in r.text  # the gate tiles are not shown
 
 
+def test_demo_account_allowlist_supports_domains(env, monkeypatch):
+    from console import demo
+    monkeypatch.setenv("DEMO_ACCOUNT_EMAILS", "@outlay-ai.com, you@gmail.com")
+    assert demo.is_demo_account("test@outlay-ai.com")     # whole-domain match
+    assert demo.is_demo_account("you@gmail.com")           # exact match
+    assert not demo.is_demo_account("stranger@elsewhere.com")
+    assert not demo.is_demo_account(None)
+
+
 def test_onboarding_reset_re_triggers_gate_for_test_accounts(env, client, monkeypatch):
     _, store = env
     _signup(client, email="t@x.com")          # DEMO_ACCOUNT_EMAILS='*' in the fixture → a test account

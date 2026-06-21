@@ -23,11 +23,19 @@ def demo_account_emails() -> set[str]:
 
 
 def is_demo_account(email: str | None) -> bool:
-    """True iff this account is allowed to access demo mode at all."""
+    """True iff this account is allowed to access demo mode / test tooling.
+
+    `DEMO_ACCOUNT_EMAILS` accepts, comma-separated: `*` (any account, for tests),
+    exact addresses (`you@co.com`), and whole-domain entries (`@outlay-ai.com`,
+    matching every address at that domain — handy for internal test accounts)."""
     if not email:
         return False
+    email = email.strip().lower()
     allow = demo_account_emails()
-    return "*" in allow or email.strip().lower() in allow
+    if "*" in allow or email in allow:
+        return True
+    domain = "@" + email.split("@", 1)[1] if "@" in email else ""
+    return bool(domain) and domain in allow
 
 
 # The talk-track a presenter follows, per persona — also rendered as the in-app
