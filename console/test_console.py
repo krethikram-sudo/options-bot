@@ -1479,6 +1479,22 @@ def test_overview_is_role_aware_home(env, client):
     assert "Backlog estimate" not in spend            # estimate card → Estimate page
 
 
+def test_security_compliance_page_for_reviewers(env, client):
+    """The in-app security summary a customer's security reviewer reads — every
+    claim maps to a shipped feature, and the certification status is honest."""
+    _signup(client, email="sec@x.com")
+    r = client.get("/app/security")
+    assert r.status_code == 200
+    t = r.text
+    assert "Security &amp; compliance" in t
+    assert "not a proxy or gateway" in t              # read-only architecture claim
+    assert "SCIM" in t and "SSO" in t                 # real, shipped auth features
+    assert "audit log" in t.lower() and "retention" in t.lower()
+    assert "not yet SOC" in t                          # honest on certifications
+    # reachable from the product nav
+    assert 'href="/app/security"' in client.get("/app").text
+
+
 def test_overview_cost_fidelity_callout(env, client):
     _, store = env
     _signup(client, email="fid@x.com")

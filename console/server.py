@@ -1447,6 +1447,14 @@ def settings_get(request: Request):
                                    purge_error=request.query_params.get("purge_error") == "1"))
 
 
+@app.get("/app/security", response_class=HTMLResponse)
+def security_get(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    return _html(web.security_page(acct))
+
+
 # --- two-factor authentication -------------------------------------------- #
 
 @app.post("/app/2fa/start")
