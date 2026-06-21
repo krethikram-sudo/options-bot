@@ -294,6 +294,15 @@ def _post_auth_dest(account: dict) -> str:
     return "/app"
 
 
+def _needs_welcome(account: dict) -> bool:
+    """The first organic user from a company (the account owner) must answer the
+    role question before reaching the product. Invited members skip it — their
+    persona arrives pre-set on the invite — and the vendor admin is never gated."""
+    return (account.get("team_role") == "owner"
+            and account.get("role") != "admin"
+            and not (account.get("persona") or ""))
+
+
 @app.get("/", response_class=HTMLResponse)
 def root(request: Request):
     if _current(request):
@@ -510,9 +519,27 @@ def _require(request: Request):
     acct = _current(request)
     if not acct:
         return None, _redirect("/login")
+    # First-run gate: an un-onboarded owner can't browse any product page until they
+    # answer the role question. Only GET navigations are gated — POST actions (incl.
+    # /app/persona, which clears the gate, and /logout) still go through.
+    if (request.method == "GET" and _needs_welcome(acct)
+            and request.url.path.startswith("/app")
+            and request.url.path != "/app/welcome"):
+        return acct, _redirect("/app/welcome")
     # Pilots run free for now — trial-expiry gating to Billing is parked along with
     # the routing/savings billing model. (Re-enable by restoring the check below.)
     return acct, None
+
+
+@app.get("/app/welcome", response_class=HTMLResponse)
+def app_welcome(request: Request):
+    """First-run onboarding: the mandatory role gate, then org-structure + invite."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    conn = store.get_outlay_connection(acct["id"])
+    idmap = store.get_outlay_identity_map(acct["id"]) or ""
+    return _html(web.welcome_page(acct, conn, idmap))
 
 
 @app.get("/app", response_class=HTMLResponse)
@@ -926,6 +953,10 @@ async def app_set_persona(request: Request):
     p = (f.get("persona") or "").strip()
     if p in ("finance", "eng"):
         store.set_persona(acct["id"], p, member_id=acct.get("member_id", 0) or 0)
+    # From the first-run gate, advance to the rest of onboarding (org + invite);
+    # the in-app persona switch keeps landing on Spend.
+    if (f.get("next") or "") == "welcome":
+        return _redirect("/app/welcome")
     return _redirect("/app/outlay")
 
 
@@ -1062,6 +1093,82 @@ async def app_outlay_identity_save(request: Request):
     store.set_outlay_identity_map(acct["id"], (f.get("identity_map") or "").strip() or None)
     _audit(acct["id"], "identity.save",
            actor=acct.get("display_email") or acct.get("email", ""))
+    if (f.get("next") or "") == "welcome":
+        return _redirect("/app/welcome")
+    return _redirect("/app/outlay/connect#teams")
+
+
+def _merge_identity_csv(existing: str, csv_text: str) -> str:
+    """Merge an uploaded `email,team` CSV into the existing identity-map text. Keeps
+    one `identifier, team` per line; later (uploaded) rows win on conflict; a
+    header row like `email,team` is skipped."""
+    import csv as _csv
+    import io as _io
+    order: list[str] = []
+    mapping: dict[str, tuple[str, str]] = {}
+
+    def add(ident: str, team: str) -> None:
+        ident, team = (ident or "").strip(), (team or "").strip()
+        if not ident or not team:
+            return
+        key = ident.lower()
+        if key not in mapping:
+            order.append(key)
+        mapping[key] = (ident, team)
+
+    for line in (existing or "").splitlines():
+        if "," in line:
+            a, b = line.split(",", 1)
+            add(a, b)
+    for row in _csv.reader(_io.StringIO(csv_text)):
+        if len(row) >= 2:
+            if row[0].strip().lower() in ("email", "identifier", "user", "person") \
+               and row[1].strip().lower() in ("team", "cost center", "cost_center", "costcenter"):
+                continue
+            add(row[0], row[1])
+    return "\n".join(f"{mapping[k][0]}, {mapping[k][1]}" for k in order)
+
+
+async def _multipart(request: Request) -> tuple[dict, str | None]:
+    """Minimal multipart/form-data parser (the app intentionally avoids the
+    python-multipart dependency). Returns (text fields, uploaded file text)."""
+    import re as _re
+    ctype = request.headers.get("content-type", "")
+    if "multipart/form-data" not in ctype or "boundary=" not in ctype:
+        return {}, None
+    boundary = ctype.split("boundary=", 1)[1].strip().strip('"')
+    body = await request.body()
+    fields: dict[str, str] = {}
+    filetext: str | None = None
+    for part in body.split(("--" + boundary).encode()):
+        part = part.strip(b"\r\n")
+        if not part or part == b"--":
+            continue
+        head, _, content = part.partition(b"\r\n\r\n")
+        head_s = head.decode("utf-8", "replace")
+        if "filename=" in head_s or 'name="file"' in head_s:
+            filetext = content.decode("utf-8", "replace")
+        else:
+            m = _re.search(r'name="([^"]+)"', head_s)
+            if m:
+                fields[m.group(1)] = content.decode("utf-8", "replace").strip()
+    return fields, filetext
+
+
+@app.post("/app/outlay/identity/upload")
+async def app_outlay_identity_upload(request: Request):
+    """Upload an `email,team` CSV of org structure; merged into the identity map."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    fields, filetext = await _multipart(request)
+    if filetext:
+        merged = _merge_identity_csv(store.get_outlay_identity_map(acct["id"]) or "", filetext)
+        store.set_outlay_identity_map(acct["id"], merged or None)
+        _audit(acct["id"], "identity.upload",
+               actor=acct.get("display_email") or acct.get("email", ""))
+    if (fields.get("next") or "") == "welcome":
+        return _redirect("/app/welcome")
     return _redirect("/app/outlay/connect#teams")
 
 
@@ -1779,9 +1886,14 @@ async def team_invite(request: Request):
     try:
         m = store.create_member(acct["id"], f.get("email", ""), f.get("role", "member"))
     except store.StoreError:
-        return _redirect("/app/team")
+        return _redirect("/app/welcome" if (f.get("next") or "") == "welcome" else "/app/team")
+    # Pre-set the invitee's experience so they skip the first-run role gate — for an
+    # invited user we already know who they are and which view fits their role.
+    persona = (f.get("persona") or "").strip()
+    if persona in ("finance", "eng"):
+        store.set_persona(acct["id"], persona, member_id=m["id"])
     _audit(acct["id"], "member.invite", actor=acct.get("display_email") or acct.get("email", ""),
-           detail=f"{m['email']} as {f.get('role', 'member')}")
+           detail=f"{m['email']} as {f.get('role', 'member')}" + (f" ({persona})" if persona else ""))
     out = store.create_reset(m["email"])
     token = out[1] if out else ""
     if token:
@@ -1791,6 +1903,8 @@ async def team_invite(request: Request):
                               f"{notify.reset_link(token)}")
         except Exception:  # noqa: BLE001
             pass
+    if (f.get("next") or "") == "welcome":
+        return _redirect("/app/welcome")
     return _redirect(f"/app/team?invite_token={token}")
 
 

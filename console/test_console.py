@@ -31,8 +31,16 @@ def client(env):
 
 
 def _signup(client, email="a@b.com", pw="password123", company="Acme"):
-    return client.post("/signup", data={"email": email, "password": pw, "company": company,
-                                        "accept": "1"})
+    r = client.post("/signup", data={"email": email, "password": pw, "company": company,
+                                     "accept": "1"})
+    # Move past the first-run role gate by default (eng ≈ the legacy no-persona view)
+    # so existing assertions reach the app. Onboarding-gate tests sign up with a raw
+    # /signup call instead, to exercise the gate.
+    import console.store as _store
+    acct = _store.get_account_by_email(email)
+    if acct:
+        _store.set_persona(acct["id"], "eng", member_id=0)
+    return r
 
 
 def test_signup_requires_terms_consent(env, client):
@@ -2923,6 +2931,72 @@ def test_demo_mode_is_gated_to_demo_accounts(env, client, monkeypatch):
     assert acct["demo_mode"] == 0
     assert store.get_outlay_report(acct["id"]) is None
     assert client.get("/app/demo/guide", follow_redirects=False).status_code == 303
+
+
+def _raw_signup(client, email, pw="password123"):
+    """Sign up WITHOUT the default-persona shortcut, to exercise the first-run gate."""
+    return client.post("/signup", data={"email": email, "password": pw, "accept": "1"})
+
+
+def test_onboarding_owner_hits_role_gate_then_advances(env, client):
+    _, store = env
+    _raw_signup(client, "owner@acme.com")
+    # the first user (owner, no persona yet) is gated to the welcome role question
+    r = client.get("/app", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/app/welcome"
+    assert client.get("/app/outlay", follow_redirects=False).headers["location"] == "/app/welcome"
+    w = client.get("/app/welcome").text
+    assert "I’m a finance leader setting this up for my business" in w
+    assert "I’m an engineering leader using this for my business" in w
+    # picking a role from the gate sets the persona and advances to onboarding step 2
+    r = client.post("/app/persona", data={"persona": "finance", "next": "welcome"},
+                    follow_redirects=False)
+    assert r.headers["location"] == "/app/welcome"
+    acct = store.get_account_by_email("owner@acme.com")
+    assert store.get_persona(acct["id"], 0) == "finance"
+    w2 = client.get("/app/welcome").text
+    assert "You’re set up as Finance" in w2
+    assert "Add your org structure" in w2 and "Invite your counterpart" in w2
+    # the gate is cleared — the dashboard is reachable now
+    assert client.get("/app", follow_redirects=False).status_code == 200
+
+
+def test_onboarding_csv_upload_merges_org_structure(env, client):
+    _, store = env
+    _raw_signup(client, "o2@acme.com")
+    client.post("/app/persona", data={"persona": "finance"})
+    acct = store.get_account_by_email("o2@acme.com")
+    boundary = "B0undary"
+    csv = "email,team\nalice@acme.com,Platform\nbob@acme.com,Growth\n"
+    body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"org.csv\"\r\n"
+            f"Content-Type: text/csv\r\n\r\n{csv}\r\n--{boundary}--\r\n")
+    r = client.post("/app/outlay/identity/upload", content=body.encode(),
+                    headers={"content-type": f"multipart/form-data; boundary={boundary}"},
+                    follow_redirects=False)
+    assert r.status_code == 303
+    idmap = store.get_outlay_identity_map(acct["id"])
+    assert "alice@acme.com, Platform" in idmap and "bob@acme.com, Growth" in idmap
+    assert "email, team" not in idmap  # the header row is skipped
+
+
+def test_onboarding_invite_presets_persona_so_counterpart_skips_gate(env, client):
+    server, store = env
+    _raw_signup(client, "lead@acme.com")
+    client.post("/app/persona", data={"persona": "finance"})
+    acct = store.get_account_by_email("lead@acme.com")
+    # invite the engineering counterpart with their experience pre-set
+    client.post("/app/team/invite", data={"email": "eng@acme.com", "role": "admin", "persona": "eng"})
+    m = store.get_member_by_email("eng@acme.com")
+    assert store.get_persona(acct["id"], m["id"]) == "eng"
+    # the counterpart accepts (sets a password) and signs in on a fresh client
+    token = store.create_reset("eng@acme.com")[1]
+    member = TestClient(server.app, follow_redirects=False)
+    member.post("/reset", data={"token": token, "password": "engpass123"})
+    member.post("/login", data={"email": "eng@acme.com", "password": "engpass123"})
+    # no role gate for the invited member — straight into the dashboard
+    r = member.get("/app", follow_redirects=False)
+    assert r.status_code == 200
+    assert "setting this up for my business" not in r.text  # the gate tiles are not shown
 
 
 def test_webhook_and_slack_urls_are_ssrf_guarded(env, client):
