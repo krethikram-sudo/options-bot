@@ -2424,7 +2424,7 @@ def test_pilot_request_form_and_submit(env, client):
     _, store = env
     # public form renders (no auth)
     r = client.get("/pilot-request")
-    assert r.status_code == 200 and "Request a design-partner pilot" in r.text and "name=email" in r.text
+    assert r.status_code == 200 and "Become an Outlay customer" in r.text and "name=email" in r.text
     assert "name=title" in r.text  # title field present
     # valid submission → stored + redirect to thanks
     r = client.post("/pilot-request", data={"email": "jane@acme.dev", "name": "Jane",
