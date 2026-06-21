@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The platform — Outlay</title>
+<meta name="description" content="Under the hood of Outlay: cache-aware costing, forecasting and backlog estimation, your-data-your-way exports + API, and every integration. Cost AI spend right, plan it, and take it anywhere.">
+<link rel="canonical" href="https://outlay-ai.com/platform">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<meta property="og:title" content="The platform — Outlay">
+<meta property="og:description" content="Cache-aware costing, forecasting + estimation, exports/API, and every integration.">
+<link rel="stylesheet" href="/outlay.css?v=20260621">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Outlay<span class="dot">.ai</span></a>
+  <div class="navlinks">
+    <a href="/#how">How it works</a>
+    <a href="/#proof">Attribution</a>
+    <a href="/#govern">Govern</a>
+    <a href="/platform">Platform</a>
+    <a href="/#compare">Compare</a>
+    <a href="/tour">Product Tour</a>
+  </div>
+  <div class="navsp"></div>
+  <div class="navcta">
+    <a class="btn primary" href="https://app.outlay-ai.com/login">Sign in</a>
+  </div>
+</div></nav>
+
+<div class="page"><div class="wrap">
+  <div class="eyebrow">The platform</div>
+  <h1>Cost it right, plan it, take it anywhere.</h1>
+  <p class="lede">The depth behind the dashboard — how Outlay costs agentic AI usage correctly, forecasts and
+    estimates planned work, and lets your data flow to any BI tool, warehouse, or SIEM. The
+    <a href="/#govern">attribution and governance story lives on the home page</a>; this is everything under it.</p>
+</div></div>
+
+<!-- THE MATH / COST FIDELITY -->
+<section id="math" class="paper"><div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">The math</div>
+    <h2>The same usage, costed two ways.</h2>
+    <p>Agentic coding re-sends a large cached prefix every turn, so <b>cache-read tokens</b> — billed at
+       roughly a tenth of base input — dominate the count. Price every token at the base rate, the way most
+       spend tools and spreadsheets do, and the number balloons. We costed our <b>own</b> Claude Code usage
+       both ways.</p>
+  </div>
+  <div class="proofgrid">
+    <div class="pcard">
+      <div class="ph"><span class="t">Our build · ~$340 of real Claude usage</span><span class="tag ex">measured</span></div>
+      <div class="pbody">
+        <div class="dual">
+          <div class="r"><span>Naive token-count tracker</span><b class="num">$2,516</b></div>
+          <div class="track"><span style="width:100%;background:var(--red)"></span></div>
+          <div class="r"><span>Outlay · cache-aware (correct)</span><b class="num">$340</b></div>
+          <div class="track"><span style="width:13.5%;background:var(--grn)"></span></div>
+        </div>
+        <p class="muted" style="font-size:12.5px;margin:14px 0 0">Measured on our own build sessions:
+          <b>98%</b> of input-side tokens were cache reads, so the naive method overstates by <b>7.4×</b>.
+          Reproduce it yourself: <code>python -m outlay.dogfood --proof-only</code>.</p>
+      </div>
+    </div>
+    <div class="statlist">
+      <div class="s"><div class="v">Cache reads are most of your bill</div><div class="d">On agentic workloads, cache reads are the large majority of tokens — and they bill at ~10× less. Costing them right is the difference between a real number and fiction.</div></div>
+      <div class="s"><div class="v">Per token class, per model</div><div class="d">Input, output, cache read, and cache write are priced separately, per model — across Anthropic, AWS Bedrock, Google Vertex, and OpenAI / Azure.</div></div>
+      <div class="s"><div class="v">Reconciled to the invoice</div><div class="d">The cache-aware total is checked against the provider's billed figure — so finance trusts the number, not a token estimate.</div></div>
+      <div class="s"><div class="v">Shows up the moment you connect</div><div class="d">Your own cache-aware-vs-naive gap appears on your dashboard as soon as real usage lands — no proxy, no setup.</div></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ESTIMATE PLANNED WORK -->
+<section id="estimate"><div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">Plan with numbers, not guesses</div>
+    <h2>Estimate a project's AI cost before you build it.</h2>
+    <p>Roadmap and sprint planning shouldn't guess at compute. Hand Outlay the planned work — epics and
+       tickets with their <b>requirements and design docs</b> — and it prices each one against the cost
+       model it learned from your own delivered work, with a confidence range you can budget against.</p>
+  </div>
+  <div class="proofgrid">
+    <div class="pcard">
+      <div class="ph"><span class="t">Planned Q3 backlog · estimated</span><span class="tag ex">example</span></div>
+      <div class="pbody">
+        <div class="srow"><span class="nm">SSO — SAML + SCIM <small>requirements + design doc</small></span><span class="amt num">$3,800</span><span class="track"><span style="width:40%;background:var(--grn)"></span></span></div>
+        <div class="srow"><span class="nm">Billing v2 migration <small>large · thin scope</small></span><span class="amt num">$9,400</span><span class="track"><span style="width:100%;background:var(--amber)"></span></span></div>
+        <div class="srow"><span class="nm">Flaky-test cleanup <small>well-specified</small></span><span class="amt num">$1,200</span><span class="track"><span style="width:13%;background:var(--grn)"></span></span></div>
+        <div class="dual" style="margin-top:12px">
+          <div class="r"><span><b>Total estimate</b></span><b class="num">~$14,400</b></div>
+          <div class="r"><span class="muted" style="font-size:13px">Likely range</span><span class="muted num" style="font-size:13px">$9,900 – $19,900</span></div>
+        </div>
+        <p class="muted" style="font-size:12.5px;margin:12px 0 0">Illustrative. Each item priced from your own per-work-type history; thin-scope items get a wider band, not a false-precise number.</p>
+      </div>
+    </div>
+    <div class="statlist">
+      <div class="s"><div class="v">From your own history</div><div class="d">Each item is priced against the cost-per-work-type model learned from your <b>delivered</b> tickets — not a generic benchmark.</div></div>
+      <div class="s"><div class="v">Requirements + design docs</div><div class="d">Feed the scope you already wrote. The more context — requirements, design docs, story points — the tighter the range.</div></div>
+      <div class="s"><div class="v">Confidence, not false precision</div><div class="d">Every estimate carries a low–high band and a confidence tier; under-specified work is flagged to tighten, never silently guessed.</div></div>
+      <div class="s"><div class="v">Budget before you commit</div><div class="d">See what an epic or a sprint will cost in AI <b>before</b> it's built — so you can rescope, resource, or defer with eyes open.</div></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- PLATFORM FEATURES -->
+<section class="paper"><div class="wrap">
+  <div class="sec-head"><div class="eyebrow">In the box</div>
+    <h2>From line item to control plane.</h2></div>
+  <div class="feat">
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></div><h3>Spend mapped to your roadmap</h3><p>LLM and coding-agent spend attributed to the <b>ticket, epic, sprint, and team</b> it belongs to — the allocation finance has never had for AI.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><h3>Forecast by scope of work</h3><p>Predict a quarter's AI cost from its open scope, then watch <b>budget-vs-actual</b> burn down in real time.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3>Guardrails — alert or enforce</h3><p>Pace-based alerts (<b>ok → warn → over</b>) by default, read-only. Or set a <a href="/#govern"><b>program hard cap</b></a> the opt-in gateway enforces — block or route-down over-budget work automatically.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><h3>Accuracy you can check</h3><p>Every forecast is back-tested on your own closed tickets, leave-one-out — we show the measured error and the sample size, by work type. No vendor benchmark to take on faith.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div><h3>Works with your stack</h3><p>Jira, Linear, GitHub Issues; Claude Code, Cursor, the API. Reliable attribution even for <b>remote / CI agents</b> via explicit task-tagging.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h3>Privacy by architecture</h3><p>Attribution runs on metadata — connected with read-only tokens. Prompt content, model outputs, and your API key <b>never leave your environment</b>.</p></div>
+  </div>
+</div></section>
+
+<!-- YOUR DATA, YOUR WAY -->
+<section id="data"><div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">Your data, your way</div>
+    <h2>It's your spend data — take it anywhere.</h2>
+    <p>Outlay is a hub, not a silo. Export <b>FOCUS-aligned</b> cost rows for any FinOps/BI tool, pull them
+       programmatically through a read-only API, and stream your audit log to your SIEM — all reconciled to
+       the provider invoice, to the cent. No lock-in, ever.</p>
+  </div>
+  <div class="flow">
+    <span class="node">Outlay<small>spend mapped to work</small></span>
+    <span class="arrow">→</span>
+    <span class="node">FOCUS CSV · BI API<small>Snowflake, BigQuery, your BI</small></span>
+    <span class="node">Audit-log API<small>Splunk, Datadog, S3</small></span>
+  </div>
+  <div class="ways">
+    <div class="way">
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <h3>FOCUS-aligned export</h3>
+      <p>Per-ticket charge rows using the <b>FinOps Open Cost &amp; Usage Spec</b> column names — load straight into any FOCUS-aware FinOps or BI tool.</p>
+      <code><span class="c"># spec column names · per-ticket rows</span>
+BilledCost,ServiceCategory,<span class="g">Tags{team,work_type}</span></code>
+    </div>
+    <div class="way">
+      <div class="ic"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg></div>
+      <h3>BI &amp; warehouse API</h3>
+      <p>A token-authed, rate-limited endpoint returns your latest report as JSON for any warehouse or BI pipeline — the same attributed numbers as the console.</p>
+      <code>GET /api/v1/spend
+<span class="g">→ { total_usd, rows[], data_quality }</span></code>
+    </div>
+    <div class="way">
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></div>
+      <h3>Audit log → your SIEM</h3>
+      <p>Stream every security event to Splunk, Datadog, or S3 — poll the audit API with a cursor for gap-free ingestion, or export CSV for GRC.</p>
+      <code>GET /api/v1/audit?since=<span class="g">cursor</span></code>
+    </div>
+  </div>
+  <p class="igfoot">Plus HMAC-signed <b>webhooks</b> for budget &amp; anomaly events (retried, with a delivery log), and
+    a printable <b>month-end close pack</b> — emailed automatically with the FOCUS CSV attached.</p>
+</div></section>
+
+<!-- INTEGRATIONS (categorized) -->
+<section id="integrations" class="paper"><div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">Integrations</div>
+    <h2>Works with every model and every tool in your stack.</h2>
+    <p>Outlay reads spend from every major provider and connects it to the systems where the work actually
+       happens — read-only, no app rewrite, no prompts leaving your environment.</p>
+  </div>
+  <div class="integrid">
+    <div class="igcol">
+      <div class="cat"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.5 2.5M16.5 16.5L19 19M19 5l-2.5 2.5M7.5 16.5L5 19"/></svg>AI providers</div>
+      <ul>
+        <li>Anthropic <small>API + admin usage</small></li>
+        <li>OpenAI</li>
+        <li>Azure OpenAI</li>
+        <li>AWS Bedrock</li>
+        <li>Google Vertex</li>
+      </ul>
+    </div>
+    <div class="igcol">
+      <div class="cat"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Coding agents</div>
+      <ul>
+        <li>Claude Code <small>session transcripts</small></li>
+        <li>Cursor <small>admin usage</small></li>
+        <li>CI / remote agents <small>task-tagging</small></li>
+      </ul>
+    </div>
+    <div class="igcol">
+      <div class="cat"><svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 0 0-.9-2.6c3-.3 6.2-1.5 6.2-6.7A5.2 5.2 0 0 0 20 4.8a4.9 4.9 0 0 0-.1-3.6s-1.1-.3-3.6 1.4a12.3 12.3 0 0 0-6.6 0C7.2.9 6.1 1.2 6.1 1.2A4.9 4.9 0 0 0 6 4.8a5.2 5.2 0 0 0-1.4 3.7c0 5.2 3.2 6.4 6.2 6.7a3.4 3.4 0 0 0-.9 2.6V22"/></svg>Code &amp; trackers</div>
+      <ul>
+        <li>GitHub <small>issues + PRs</small></li>
+        <li>Jira</li>
+        <li>Linear</li>
+      </ul>
+    </div>
+    <div class="igcol">
+      <div class="cat"><svg viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><polyline points="7 11 12 16 17 11"/><line x1="12" y1="4" x2="12" y2="16"/></svg>Warehouse, BI &amp; SIEM</div>
+      <ul>
+        <li>FOCUS CSV export</li>
+        <li>BI / warehouse API</li>
+        <li>SIEM audit-log export</li>
+        <li>Webhooks</li>
+      </ul>
+    </div>
+  </div>
+  <p class="igfoot"><b>Reconciles against your provider invoice</b> — Anthropic, AWS Cost Explorer, GCP Cloud
+    Billing, OpenAI Costs — so finance trusts the number, not a token estimate.
+    <a href="https://app.outlay-ai.com/signup">Connect your stack →</a></p>
+</div></section>
+
+<section class="final"><div class="wrap">
+  <h2>See it on your own spend.</h2>
+  <p>Connect read-only in minutes — your real AI spend mapped to work, costed correctly, forecast, and yours to export.</p>
+  <div class="center" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <a class="btn onnavy lg" href="https://app.outlay-ai.com/signup">Start free trial →</a>
+  </div>
+  <p style="font-size:13px;color:#8fa0bd;margin-top:18px">Read-only to start · prompts never leave your environment · no app rewrite</p>
+</div></section>
+
+<footer><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Outlay<span class="dot">.ai</span></a>
+  <span class="sep"></span>
+  <a href="/platform">Platform</a>
+  <a href="/#compare">Compare</a>
+  <a href="/tour">Product Tour</a>
+  <a href="/security">Security</a>
+  <a href="/docs/">Docs</a>
+  <a href="/legal/privacy">Privacy</a>
+  <a href="mailto:hello@outlay-ai.com">Contact</a>
+</div>
+<div class="wrap" style="margin-top:14px;font-size:12.5px;color:#6c7790">© 2026 Outlay · See AI spend mapped to your work, forecast it, and hold it to budget.</div>
+</footer>
+
+</body></html>
