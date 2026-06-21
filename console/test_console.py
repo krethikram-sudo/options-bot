@@ -2673,6 +2673,25 @@ def test_weekly_digest_builds_and_respects_cadence(env, client, monkeypatch):
     assert acct["id"] not in store.accounts_due_for_digest(now=time.time() + 30 * 24 * 3600)
 
 
+def test_weekly_digest_also_posts_to_slack(env, client, monkeypatch):
+    from console import spend_digest, store, notify
+    _signup(client, email="digsl@x.com")
+    acct = store.get_account_by_email("digsl@x.com")
+    client.post("/app/outlay/sample", follow_redirects=True)
+    store.set_slack_webhook(acct["id"], "https://hooks.slack.com/services/X")
+
+    posts, mails = [], []
+    monkeypatch.setattr(notify, "send_slack", lambda url, text: (posts.append((url, text)), True)[1])
+    monkeypatch.setattr(notify, "send_email", lambda *a, **k: (mails.append(a), True)[1])
+    assert spend_digest.send_account_digest(acct["id"]) is True
+    # both channels fired; the Slack post carries the digest subject + body
+    assert len(mails) == 1 and len(posts) == 1
+    url, text = posts[0]
+    assert url.startswith("https://hooks.slack.com") and "AI spend" in text and "Where it's going" in text
+    # Settings advertises the Slack delivery
+    assert "when a webhook is connected" in client.get("/app/settings").text
+
+
 def test_digest_cron_requires_token_and_toggle_persists(env, client):
     from console import store
     import os

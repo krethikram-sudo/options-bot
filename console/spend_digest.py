@@ -99,20 +99,27 @@ def build_account_digest(account_id: int, path: Optional[str] = None) -> Optiona
 
 def send_account_digest(account_id: int, path: Optional[str] = None,
                         now: Optional[float] = None) -> bool:
-    """Build + email the digest to the account owner, and stamp the send time.
-    Returns True iff an email was actually dispatched."""
+    """Build the digest, email the owner, and also post it to Slack/Teams when an
+    incoming webhook is configured (eng + finance live there). Stamps the send time.
+    Returns True iff at least one channel actually dispatched."""
     d = build_account_digest(account_id, path)
     if not d:
         return False
     acct = store.get_account(account_id, path)
     email = (acct or {}).get("email")
-    if not email:
-        return False
     sent = False
+    if email:
+        try:
+            sent = notify.send_email(email, d["subject"], d["body"])
+        except Exception:  # noqa: BLE001 — a digest must never crash the cron sweep
+            sent = False
     try:
-        sent = notify.send_email(email, d["subject"], d["body"])
-    except Exception:  # noqa: BLE001 — a digest must never crash the cron sweep
-        sent = False
+        webhook = store.get_slack_webhook(account_id, path)
+        if webhook:
+            text = f":bar_chart: *{d['subject']}*\n\n{d['body']}"
+            sent = notify.send_slack(webhook, text) or sent
+    except Exception:  # noqa: BLE001 — alerting must never break the sweep
+        pass
     store.mark_digest_sent(account_id, now=now, path=path)
     return bool(sent)
 

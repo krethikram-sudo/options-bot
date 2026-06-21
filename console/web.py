@@ -2431,7 +2431,8 @@ def _digest_section(account: dict) -> str:
         <label style="display:flex;gap:8px;align-items:flex-start;font-size:14px;cursor:pointer;margin-bottom:10px">
           <input type=checkbox name=weekly value=1{checked} style="margin-top:3px">
           <span><b>Weekly spend digest</b><br><span class="small muted">A short Monday email — total AI
-          spend and the week-over-week trend, top team &amp; work type, budget status, runaway tickets.</span></span></label>
+          spend and the week-over-week trend, top team &amp; work type, budget status, runaway tickets.
+          Also posted to <b>Slack/Teams</b> when a webhook is connected.</span></span></label>
         <label style="display:flex;gap:8px;align-items:flex-start;font-size:14px;cursor:pointer;margin-bottom:12px">
           <input type=checkbox name=close_pack value=1{cp_checked} style="margin-top:3px">
           <span><b>Monthly finance close pack</b><br><span class="small muted">A month-end email with the

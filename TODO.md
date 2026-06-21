@@ -100,6 +100,11 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-21 — weekly spend digest also posts to Slack/Teams
+- [x] The weekly digest emailed the owner only; eng + finance live in Slack. `send_account_digest` now also
+      posts the digest (subject + body) to the configured Slack/Teams webhook when one is connected — reusing
+      `get_slack_webhook` + `send_slack`, best-effort (never breaks the sweep). Settings note added. 316 tests.
+
 ### 2026-06-20 — Settings IA cleanup
 - [x] Grouped the grown-organically Settings page into labeled sections — Account & team · Security ·
       Notifications · Data & privacy · Danger zone (`_settings_group`, which hides empty role-gated groups).
