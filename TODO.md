@@ -1,6 +1,6 @@
 # ModelPilot — Running TODO (founder)
 
-Living checklist. Claude keeps this current as we work. Last updated: **2026-06-19 (eve)**.
+Living checklist. Claude keeps this current as we work. Last updated: **2026-06-21**.
 (Detailed legal/terms analysis lives in `modelpilot/LAUNCH_CHECKLIST.md`; this is the
 short, prioritized running list.)
 
@@ -11,11 +11,15 @@ Live URLs:
 - Inbound email: hello@outlay-ai.com  (Cloudflare Email Routing → personal inbox; *sending* still needs SMTP)
 - Brain (routing, parked): https://modelpilot-brain-prod.fly.dev/  (health: `/health`)
 
-> **▶️ RESUME HERE next session:** Product is **Outlay** (spend attribution + forecasting); routing/
-> ModelPilot engine is parked. The full product is built and the marketing site + console are on the
-> brand domains. **Latest shipped (2026-06-19): in-app pilot-request form + admin leads inbox (#61),
-> product UI redesigned to match the marketing site, sign-in removed from the public site (pilot-only
-> funnel), Product Tour, forward-estimator surfaced on the landing page.** ⚠️ **Ops now queued:**
+> **▶️ RESUME HERE next session:** Product is **Outlay** (spend attribution + forecasting + budget
+> enforcement); routing/ModelPilot engine is parked. The full product is built and the marketing site +
+> console are on the brand domains. **Latest shipped (2026-06-21): enforce-budget-by-program (opt-in
+> gateway, block/route-down) + reallocate + per-program enforcement history; sign-in funnel replaces
+> pilot-request across the site (#152); landing page simplified — deep-dive sections moved to a new
+> `/platform` page, no content lost (#153); console UI/copy matched to the website — `landing()`
+> rewritten from the stale ModelPilot pitch to the Outlay "Put AI compute on a budget" hero (#154).**
+> *Note for next session:* the marketing site now points at `app.outlay-ai.com/login` + `/signup`
+> (the old `/pilot-request` funnel is retired — that line below is stale). ⚠️ **Ops now queued:**
 > **(1) `fly deploy` the console** so `/pilot-request` (and the redesigned product) are live — the site
 > CTAs already point at it; **(2) set up transactional SMTP** (`SMTP_*` Fly secrets) so 2FA codes,
 > password resets, budget alerts, and pilot-request notifications actually send (logged-only until then);
