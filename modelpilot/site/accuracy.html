@@ -50,14 +50,27 @@
     and we backtest it on <b>your own data</b> instead of quoting a number.</p>
 </div></div>
 
-<section style="padding-top:24px"><div class="wrap"><div class="prose">
+<section style="padding-top:24px"><div class="wrap">
 
-  <h2>"How accurate?" is two questions</h2>
-  <p>Conflating them is how vendors lose credibility. We keep them separate:</p>
-  <ul>
-    <li><span class="ck">1</span><div><b>Allocating spend that already happened</b> — where did last quarter's AI cost go? This is arithmetic, not prediction.</div></li>
-    <li><span class="ck">2</span><div><b>Forecasting spend that hasn't happened yet</b> — what will this quarter, or this backlog, cost? This is genuinely a range.</div></li>
-  </ul>
+  <h2 style="font-size:26px;letter-spacing:-.018em;color:var(--ink)">"How accurate?" is two questions.</h2>
+  <p style="font-size:16.5px;color:var(--mut);max-width:680px;margin:8px 0 22px">Conflating them is how
+    vendors lose credibility — so we keep them separate and answer each honestly.</p>
+  <div class="owners" style="margin:0 0 18px">
+    <div class="owner" style="background:var(--grn-l);border-color:#bfe3d4">
+      <div class="role" style="color:var(--grn-d)">Question 1 · spend already run</div>
+      <h3>Essentially exact</h3>
+      <p class="lead" style="margin:0">“Where did last quarter's AI cost go?” Arithmetic, not prediction —
+        cache-aware dollars straight from your provider's usage API, reconciled to the invoice.</p>
+    </div>
+    <div class="owner">
+      <div class="role">Question 2 · work not yet built</div>
+      <h3>A measured range</h3>
+      <p class="lead" style="margin:0">“What will this quarter cost?” Genuinely a range — a p10–p90 band,
+        back-tested on your own closed tickets, and far tighter in aggregate than for any one ticket.</p>
+    </div>
+  </div>
+
+  <div class="prose">
 
   <h2>Allocating past spend: essentially exact</h2>
   <p>Token counts come straight from your provider's admin/usage API, and we cost them with a

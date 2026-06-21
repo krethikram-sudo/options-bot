@@ -67,10 +67,11 @@ Page is strong (the "costed two ways" comparison and the 6-card grid read well).
       the highlighted column. Desktop table unchanged.
 - Per-category prose below the table left as-is (detail reads fine).
 
-### `accuracy.html` — "How accurate — honestly"
-Credibility page. Goals: make the "two questions" split obvious, present the
-measured-error ranges as instrument-like (not marketing), keep the honest tone
-visually restrained.
+### `accuracy.html` — "How accurate — honestly" ✓
+- [x] Promoted the page's spine — "how accurate? is two questions" — from a
+      buried list into a side-by-side: green "Essentially exact" (past spend) vs
+      neutral "A measured range" (forecasting). Detailed prose follows as
+      elaboration; honest tone kept restrained.
 
 ### `pilot.html` — design-partner pilot
 Conversion page. Goals: the 4-step timeline, the "fit if…" checklist, and a
