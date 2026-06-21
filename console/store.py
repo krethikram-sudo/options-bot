@@ -294,6 +294,13 @@ CREATE TABLE IF NOT EXISTS outlay_programs (
     last_status TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_program_acct ON outlay_programs(account_id);
+CREATE TABLE IF NOT EXISTS outlay_program_enforcement (
+    program_id INTEGER NOT NULL,
+    account_id INTEGER NOT NULL,
+    day TEXT NOT NULL,                -- 'YYYY-MM-DD' (UTC) bucket
+    count INTEGER NOT NULL DEFAULT 0, -- enforcement actions (block + route-down) that day
+    PRIMARY KEY (program_id, day)
+);
 """
 
 WEBHOOK_EVENTS = ("budget.warn", "budget.over", "program.warn", "program.over",
@@ -687,6 +694,7 @@ def delete_account(account_id: int, path: str | None = None) -> None:
                     "budget_alerts", "resets", "members", "sso_configs", "settings", "plans",
                     "personas", "audit_log", "otp_codes",
                     "outlay_reports", "outlay_history", "outlay_connections", "outlay_budgets",
+                    "outlay_programs", "outlay_program_enforcement",
                     "deployments"):
             conn.execute(f"DELETE FROM {tbl} WHERE account_id=?", (account_id,))
         # Feedback is anonymized, not deleted: severing the account link satisfies
@@ -1372,6 +1380,8 @@ def delete_outlay_program(account_id: int, program_id: int, path: str | None = N
     try:
         conn.execute("DELETE FROM outlay_programs WHERE id=? AND account_id=?",
                      (int(program_id), account_id))
+        conn.execute("DELETE FROM outlay_program_enforcement WHERE program_id=? AND account_id=?",
+                     (int(program_id), account_id))
         conn.commit()
     finally:
         conn.close()
@@ -1391,6 +1401,7 @@ def record_program_enforcement(account_id: int, counts: dict, now: float | None 
     """Add the gateway's enforcement tallies to each program (so finance sees the cap
     actually biting). `counts` is {program_id: n}. Returns the number of programs hit."""
     now = now or time.time()
+    day = datetime.fromtimestamp(now, timezone.utc).strftime("%Y-%m-%d")
     conn = connect(path)
     hit = 0
     try:
@@ -1404,11 +1415,39 @@ def record_program_enforcement(account_id: int, counts: dict, now: float | None 
             cur = conn.execute(
                 "UPDATE outlay_programs SET enforced_count=COALESCE(enforced_count,0)+?,"
                 " last_enforced_at=? WHERE id=? AND account_id=?", (n, now, pid, account_id))
-            hit += cur.rowcount or 0
+            if cur.rowcount:  # only bucket for programs that actually belong to this account
+                hit += cur.rowcount
+                conn.execute(
+                    "INSERT INTO outlay_program_enforcement(program_id, account_id, day, count)"
+                    " VALUES(?,?,?,?) ON CONFLICT(program_id, day) DO UPDATE SET count=count+excluded.count",
+                    (pid, account_id, day, n))
         conn.commit()
     finally:
         conn.close()
     return hit
+
+
+def program_enforcement_history(account_id: int, program_id: int, days: int = 14,
+                                now: float | None = None, path: str | None = None) -> list[dict]:
+    """Per-day enforcement counts for one program over the last `days`, oldest→newest
+    and zero-filled (so a sparkline shows gaps as flat, not missing)."""
+    from datetime import timedelta
+    now = now or time.time()
+    end = datetime.fromtimestamp(now, timezone.utc).date()
+    start = end - timedelta(days=days - 1)
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT day, count FROM outlay_program_enforcement WHERE program_id=? AND account_id=?"
+            " AND day >= ?", (int(program_id), account_id, start.strftime("%Y-%m-%d"))).fetchall()
+    finally:
+        conn.close()
+    by_day = {r["day"]: r["count"] for r in rows}
+    out = []
+    for i in range(days):
+        d = (start + timedelta(days=i)).strftime("%Y-%m-%d")
+        out.append({"day": d, "count": by_day.get(d, 0)})
+    return out
 
 
 def activation_funnel(path: str | None = None) -> dict:

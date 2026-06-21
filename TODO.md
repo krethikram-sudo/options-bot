@@ -100,6 +100,13 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-21 — per-program enforcement history (daily trend + sparkline)
+- [x] `outlay_program_enforcement` daily buckets (PK program_id+day); `record_program_enforcement` now also
+      upserts today's bucket; `program_enforcement_history(account, program, days=14)` returns zero-filled
+      per-day counts. Programs page shows a red sparkline ("enforcement · last 14 days · N actions") under each
+      hard program. Fixed: `delete_account` was missing `outlay_programs` entirely — now purges both program
+      tables; `delete_outlay_program` clears its history. 535 tests.
+
 ### 2026-06-21 — reallocate: inline program budget editing
 - [x] Delivered on the "reallocate compute to what matters" promise: `update_outlay_program` (patch in place,
       account-scoped) + `/app/outlay/programs/update` route + an inline "Reallocate budget" control on each

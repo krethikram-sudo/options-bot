@@ -2767,6 +2767,17 @@ def test_program_enforcement_decision_endpoint(env, client):
     assert client.post("/api/v1/enforcement/report", headers=h,
                        json={"counts": {"999999": 9}}).json()["programs_updated"] == 0
 
+    # daily history is bucketed + zero-filled; sparkline shows on the page
+    import time as _t
+    store.record_program_enforcement(acct["id"], {pid: 4}, now=_t.time() - 2 * 86400)
+    hist = store.program_enforcement_history(acct["id"], pid, days=14)
+    assert len(hist) == 14 and hist[-1]["count"] == 5 and hist[-3]["count"] == 4
+    assert sum(h["count"] for h in hist) == 9
+    assert "enforcement · last 14 days" in client.get("/app/outlay/programs").text
+    # history is cleared with the program
+    store.delete_outlay_program(acct["id"], pid)
+    assert all(x["count"] == 0 for x in store.program_enforcement_history(acct["id"], pid))
+
 
 def test_unit_economics_engine_and_card(env, client):
     from console import outlay_app
