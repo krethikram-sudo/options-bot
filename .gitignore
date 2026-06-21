@@ -46,3 +46,6 @@ ingest*.db
 
 # transient golden-set judge-upgrade workdir (scratch; merged results land in modelpilot/goldenset_data/)
 goldenset_data_upgrade/
+
+# Local design-loop screenshots (tools/shoot.py)
+screenshots/
