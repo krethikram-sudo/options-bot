@@ -1238,6 +1238,27 @@ def api_v1_data_quality(request: Request):
                          **outlay_app.data_quality(report or {}, conn)})
 
 
+@app.get("/api/v1/enforcement")
+def api_v1_enforcement(request: Request, ticket: str = "", team: str = "", work_type: str = ""):
+    """The hard-cap enforcement decision the opt-in gateway consults. Token-authed.
+
+    Returns the programs currently over their *hard* cap (`enforced`) so the in-path
+    client can cache this and match each call's attribution tags to a member scope
+    locally. As a convenience it also resolves a single call when `ticket` / `team` /
+    `work_type` are supplied → `{decision: allow|block|downgrade, floor_model, …}`.
+    Read-only: Outlay returns the verdict; the gateway acts on the traffic."""
+    resolved, err = _api_auth(request)
+    if err:
+        return err
+    report = store.get_outlay_report(resolved["account_id"])
+    programs = store.list_outlay_programs(resolved["account_id"])
+    enforced = outlay_app.enforced_programs(report or {}, programs)
+    decision = (outlay_app.program_decision(enforced, ticket_id=ticket, team=team, task_class=work_type)
+                if (ticket or team or work_type) else None)
+    return JSONResponse({"account_id": resolved["account_id"], "enforced": enforced,
+                         "decision": decision})
+
+
 def _audit_iso(ts) -> str:
     from datetime import datetime, timezone
     try:

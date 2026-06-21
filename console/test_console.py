@@ -2705,6 +2705,44 @@ def test_program_budgets_rollup_status_and_alerts(env, client, monkeypatch):
     assert store.list_outlay_programs(acct["id"]) == []
 
 
+def test_program_enforcement_decision_endpoint(env, client):
+    from console import outlay_app, store
+    _signup(client, email="enf@x.com")
+    acct = store.get_account_by_email("enf@x.com")
+    dep = store.deployments_for(acct["id"])[0]["deployment_id"]
+    key = store.create_api_key(acct["id"], dep, "gw")["full_key"]
+    h = {"Authorization": f"Bearer {key}"}
+
+    # over report; two programs — one HARD (downgrade), one ALERT-only
+    report = {"window_days": 30, "spend": {"total_usd": 500.0},
+              "tickets": [{"ticket_id": "PLAT-1", "team_id": "platform", "task_class": "feature", "cost_usd": 500.0}]}
+    store.save_outlay_report(acct["id"], report)
+    store.add_outlay_program(acct["id"], "Platform", [{"scope_type": "project", "scope_id": "PLAT"}],
+                             100.0, 30, enforce_mode="hard", action="downgrade", floor_model="claude-haiku-4-5")
+    store.add_outlay_program(acct["id"], "Growth", [{"scope_type": "team", "scope_id": "growth"}],
+                             1.0, 30, enforce_mode="alert")
+
+    # engine: only the hard+over program is enforced; alert-only never appears
+    enf = outlay_app.enforced_programs(report, store.list_outlay_programs(acct["id"]))
+    assert len(enf) == 1 and enf[0]["name"] == "Platform" and enf[0]["action"] == "downgrade"
+    # per-call decision: a PLAT-* call is downgraded (project match); an unrelated call is allowed
+    assert outlay_app.program_decision(enf, ticket_id="PLAT-7")["decision"] == "downgrade"
+    assert outlay_app.program_decision(enf, ticket_id="GROW-3")["decision"] == "allow"
+    # block wins over downgrade when a call matches both
+    two = [{"name": "A", "action": "downgrade", "members": [{"scope_type": "team", "scope_id": "x"}]},
+           {"name": "B", "action": "block", "members": [{"scope_type": "team", "scope_id": "x"}]}]
+    assert outlay_app.program_decision(two, team="x")["decision"] == "block"
+
+    # endpoint: 401 without key; with key returns enforced + optional per-call decision
+    assert client.get("/api/v1/enforcement").status_code == 401
+    r = client.get("/api/v1/enforcement", headers=h).json()
+    assert r["account_id"] == acct["id"] and len(r["enforced"]) == 1 and r["decision"] is None
+    r2 = client.get("/api/v1/enforcement", params={"ticket": "PLAT-9"}, headers=h).json()
+    assert r2["decision"]["decision"] == "downgrade" and r2["decision"]["floor_model"] == "claude-haiku-4-5"
+    # documented on the API page
+    assert "GET /api/v1/enforcement" in client.get("/app/api").text
+
+
 def test_unit_economics_engine_and_card(env, client):
     from console import outlay_app
     # engine: per-ticket / per-closed / rework / by-class from attributed tickets
