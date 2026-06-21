@@ -3008,14 +3008,14 @@ def test_demo_account_allowlist_supports_domains(env, monkeypatch):
     assert not demo.is_demo_account(None)
 
 
-def test_team_roster_uploads_names_teams_and_invites(env, client):
+def test_team_roster_builds_directory_then_invite_by_tile(env, client):
     _, store = env
     _signup(client, email="owner@acme.com")
     acct = store.get_account_by_email("owner@acme.com")
-    csv = ("name,email,team,access\n"
-           "Jordan Lee,jordan@acme.com,Platform,member\n"
-           "Priya Shah,priya@acme.com,Payments,admin\n"
-           "CI deploy bot,key_ci,Platform,\n")   # service account: named + mapped, not invited
+    csv = ("name,email,team\n"
+           "Jordan Lee,jordan@acme.com,Platform\n"
+           "Priya Shah,priya@acme.com,Payments\n"
+           "CI deploy bot,key_ci,Platform\n")    # service account: named + mapped
     boundary = "Bnd"
     body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; "
             f"filename=\"org.csv\"\r\n\r\n{csv}\r\n--{boundary}--\r\n")
@@ -3023,16 +3023,20 @@ def test_team_roster_uploads_names_teams_and_invites(env, client):
                     headers={"content-type": f"multipart/form-data; boundary={boundary}"},
                     follow_redirects=False)
     assert r.status_code == 303
-    members = {m["email"]: m for m in store.list_members(acct["id"])}
-    assert set(members) == {"jordan@acme.com", "priya@acme.com"}        # only real emails invited
-    assert members["priya@acme.com"]["role"] == "admin"
-    idmap = store.get_outlay_identity_map(acct["id"])
-    assert "jordan@acme.com, Platform" in idmap
-    assert "key_ci, Platform" in idmap                                  # service account mapped by key id
+    # upload builds the directory (names + teams) but does NOT invite anyone yet
+    assert store.list_members(acct["id"]) == []
     names = store.get_outlay_identity_names(acct["id"])
-    assert names.get("jordan@acme.com") == "Jordan Lee"
-    assert names.get("key_ci") == "CI deploy bot"                       # name kept for usage-by-person
-    # template download works
+    assert names.get("jordan@acme.com") == "Jordan Lee" and names.get("key_ci") == "CI deploy bot"
+    assert "jordan@acme.com, Platform" in store.get_outlay_identity_map(acct["id"])
+    # the Team page renders a person tile with an Invite action for each emailed person
+    team = client.get("/app/team").text
+    assert "Jordan Lee" in team and "ptile" in team
+    # clicking a tile's Invite (posts the email) creates exactly that member
+    client.post("/app/team/invite", data={"email": "jordan@acme.com"}, follow_redirects=False)
+    assert {m["email"] for m in store.list_members(acct["id"])} == {"jordan@acme.com"}
+    # 'Invite all' invites the remaining emailed people (not the service account)
+    client.post("/app/team/invite-all", follow_redirects=False)
+    assert {m["email"] for m in store.list_members(acct["id"])} == {"jordan@acme.com", "priya@acme.com"}
     assert client.get("/app/team/roster-template.csv").status_code == 200
 
 
