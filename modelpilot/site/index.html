@@ -273,11 +273,28 @@ epic Q3-stability <span class="w">on pace $22k · over</span></code>
   <div class="sec-head">
     <div class="eyebrow">How we compare</div>
     <h2>A different category, on purpose.</h2>
-    <p>FinOps suites allocate cloud bills. Observability tools trace API calls. Native consoles cap per
-       seat. <b style="color:var(--ink)">None attribute AI spend to the work you plan, or budget it by
-       scope</b> — because they live at the infrastructure layer and can't see your roadmap. And the ones
-       that <i>compute</i> from tokens price cache reads at full rate, so their per-team numbers can run
-       <a href="/platform#math">several times too high</a>.</p>
+    <p>Every adjacent tool stops at the infrastructure layer — so <b style="color:var(--ink)">none of them
+       attribute AI spend to the work you plan, or budget it by scope</b>.</p>
+  </div>
+  <div class="feat">
+    <div class="card">
+      <div class="eyebrow" style="color:var(--grn-d)">FinOps suites</div>
+      <h3>Allocate the cloud bill</h3>
+      <p>Cloudability, Vantage, Kubecost — great for cloud cost, but blind to which <b>ticket or epic</b>
+        your AI spend belongs to.</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow" style="color:var(--grn-d)">LLM observability</div>
+      <h3>Trace the API call</h3>
+      <p>Langfuse, Helicone, Datadog LLM — they debug quality and latency, then stop at an
+        <b>infrastructure tag</b>. No budget by scope.</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow" style="color:var(--grn-d)">Native consoles</div>
+      <h3>Cap per seat</h3>
+      <p>Anthropic, OpenAI, Cursor admin — per-seat limits, and token math that can price cache reads
+        <a href="/platform#math">several times too high</a>.</p>
+    </div>
   </div>
   <p class="cmp-foot"><b>Where they fit:</b> keep a FinOps suite for cloud, and observability for debugging
     quality. Outlay is the layer they can't be — AI spend attributed to the work you plan, forecast by
