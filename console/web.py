@@ -423,9 +423,14 @@ def _sidenav(account: dict, active: str) -> str:
     else:
         analyze = [spend, accuracy, budgets, estimate]
 
-    sources = [("/app/outlay/connect", "Connect")]
-    if is_admin:
-        sources.append(("/app/api", "API"))
+    # Sources is the *setup* surface — connecting trackers + AI usage and the
+    # machine API. That's engineering's job. Finance consumes the spend after
+    # the fact and never connects anything, so it has no Sources group at all.
+    sources: list[tuple[str, str]] = []
+    if persona != "finance":
+        sources.append(("/app/outlay/connect", "Connect"))
+        if is_admin:
+            sources.append(("/app/api", "API"))
 
     workspace: list[tuple[str, str]] = []
     if is_admin:
@@ -442,7 +447,10 @@ def _sidenav(account: dict, active: str) -> str:
         return f'<div class=navgrp>{label}</div>{rows}'
 
     home = f'<a class="{"on" if active == "/app" else ""}" href="/app">Overview</a>'
-    return home + grp("Analyze", analyze) + grp("Sources", sources) + grp("Workspace", workspace)
+    out = home + grp("Analyze", analyze)
+    if sources:
+        out += grp("Sources", sources)
+    return out + grp("Workspace", workspace)
 
 
 # In-house contextual coachmark engine — first-party, zero dependencies, no
@@ -697,6 +705,11 @@ def _onboarding(conn: dict | None, report: dict | None, has_budget: bool, person
     reflects real state so it doubles as a 'what's left' guide during a pilot. In
     demo mode it's hidden — the account is presented as an already-running customer."""
     if demo_mode:
+        return ""
+    # Finance never does setup — connecting trackers, AI usage, running audits and
+    # reconciling are all engineering's job. Finance manages the spend after the
+    # fact, so the setup checklist is hidden entirely for the finance persona.
+    if persona == "finance":
         return ""
     conn = conn or {}
     tracker = conn.get("tracker") or "github"
@@ -1180,12 +1193,14 @@ def _kpis_row(report: dict, history: list[dict] | None, persona: str) -> str:
     if persona == "finance":
         teams = [t for t in (report.get("team_spend") or []) if t.get("team")]
         top = teams[0] if teams else None
+        # No connect link in the fallback — mapping people to teams is engineering's
+        # setup step, not finance's.
         alloc_kpi = _kpicard(
             "Allocated to teams", str(len(teams)),
-            (f"top: {_e(str(top['team']))} · {money(top['spent_usd'])}" if top else "map people to teams"),
+            (f"top: {_e(str(top['team']))} · {money(top['spent_usd'])}" if top
+             else "engineering maps people to teams"),
             grn=bool(teams),
-            href=(f'/app/outlay/scope?type=team&id={quote(str(top["team"]))}' if top
-                  else "/app/outlay/connect#teams"))
+            href=(f'/app/outlay/scope?type=team&id={quote(str(top["team"]))}' if top else None))
         return '<div class=kpis>' + spend_kpi + fc_kpi + alloc_kpi + open_kpi + '</div>'
     # engineering (and the default, pre-persona view)
     cov_kpi = _kpicard("Mapped to a ticket", f"{cov*100:.0f}%",
@@ -1587,6 +1602,38 @@ def _explore_card(persona: str) -> str:
     return f'<div class=ocard><div class=dh>Explore</div>{rows}</div>'
 
 
+def _finance_waiting(account: dict) -> str:
+    """The finance empty-state. Finance never connects anything — engineering does
+    all the setup. So instead of a 'Connect your sources' CTA, finance sees a calm
+    'your data is on its way' state with a one-click invite for the engineering
+    counterpart who actually wires up the sources."""
+    intro = (
+        '<div class=ohead><h1>Your AI spend dashboard is on its way.</h1>'
+        '<p>Outlay connects to your AI usage and work tracker — read-only — and turns it into '
+        'total spend, a quarter forecast against budget, and a breakdown by team and project. '
+        '<b>That setup is engineering’s job</b>, not yours. Once your engineering counterpart connects '
+        'the sources, your numbers fill in here automatically — nothing for you to install.</p></div>')
+    steps = (
+        '<div class=ocard style="margin-top:4px"><div class=dh>What happens next</div>'
+        '<ol style="margin:6px 0 0;padding-left:20px;font-size:14px;line-height:1.7">'
+        '<li>Your engineering counterpart connects the AI provider + tracker (read-only).</li>'
+        '<li>Outlay runs the first audit and reconciles it to the real invoice.</li>'
+        '<li>Your spend, forecast, and per-team breakdown appear on this page.</li>'
+        '</ol></div>')
+    invite = (
+        '<div class=ocard style="margin-top:16px"><div class=dh>Invite your engineering counterpart</div>'
+        '<p class=muted style="margin:-4px 0 10px;font-size:13.5px">They’ll land straight in their own '
+        'engineering view and do the one-time connection. You’ll see the data the moment they sync.</p>'
+        '<form method=post action="/app/team/invite" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">'
+        '<input type=hidden name=role value="admin"><input type=hidden name=persona value="eng">'
+        '<label class=fld style="flex:1;min-width:260px"><span>Their work email</span>'
+        '<input name=email type=email placeholder="vp.eng@company.com" required></label>'
+        '<button class=btn>Send invite</button></form>'
+        '<p class=muted style="font-size:12.5px;margin-top:6px">Manage everyone on the '
+        '<a href="/app/team">Team</a> page.</p></div>')
+    return intro + steps + invite
+
+
 def overview_page(account: dict, report: dict | None, statuses: list[dict] | None = None,
                   history: list[dict] | None = None, conn: dict | None = None,
                   has_budget: bool = False, persona: str = "") -> str:
@@ -1597,17 +1644,14 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     checklist = _onboarding(conn, report, has_budget, persona, demo_mode=bool(account.get("demo_mode")))
     if not report:
         if persona == "finance":
-            intro = (
-                '<div class=ohead><h1>Put your AI spend on a budget.</h1>'
-                '<p>Connect your AI usage and your tracker — read-only — and Outlay shows total AI spend, '
-                'forecasts the quarter against budget, breaks it down by team and project, and alerts you '
-                '<b>before</b> you overspend. Nothing sensitive leaves your environment.</p></div>')
-        else:
-            intro = (
-                '<div class=ohead><h1>Your AI spend, on your roadmap.</h1>'
-                '<p>Connect your tracker and AI usage — read-only — and Outlay maps every dollar to the work '
-                'that drove it, forecasts the quarter, estimates planned work, and holds it to budget. '
-                'Prompts never leave your tools.</p></div>')
+            # Finance does no setup — show the 'data on its way' + invite-engineering
+            # state instead of a connect CTA and form.
+            return page("Home", chooser + _finance_waiting(account), account, active="/app")
+        intro = (
+            '<div class=ohead><h1>Your AI spend, on your roadmap.</h1>'
+            '<p>Connect your tracker and AI usage — read-only — and Outlay maps every dollar to the work '
+            'that drove it, forecasts the quarter, estimates planned work, and holds it to budget. '
+            'Prompts never leave your tools.</p></div>')
         sample_btn = ('<form method=post action="/app/outlay/sample" style="margin:0">'
                       '<button class="btn sec">See it with sample data</button></form>'
                       if account.get("_can_demo") else '')
@@ -1690,17 +1734,12 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     checklist = _onboarding(conn, report, has_budget, persona, demo_mode=bool(account.get("demo_mode")))
     if not report:
         if persona == "finance":
-            intro = (
-                '<div class=ohead><h1>Put your AI spend on a budget.</h1>'
-                '<p>Connect your AI usage and your tracker — read-only — and Outlay shows total AI spend, '
-                'forecasts the quarter against budget, breaks it down by team and project, and alerts you '
-                '<b>before</b> you overspend. Nothing sensitive leaves your environment.</p></div>')
-        else:
-            intro = (
-                '<div class=ohead><h1>Your AI spend, on your roadmap.</h1>'
-                '<p>Connect your tracker and AI usage — read-only — and Outlay maps every dollar to the work '
-                'that drove it, forecasts the quarter, estimates planned work, and holds it to budget. '
-                'Prompts never leave your tools.</p></div>')
+            return page("Spend", chooser + _finance_waiting(account), account, active="/app/outlay")
+        intro = (
+            '<div class=ohead><h1>Your AI spend, on your roadmap.</h1>'
+            '<p>Connect your tracker and AI usage — read-only — and Outlay maps every dollar to the work '
+            'that drove it, forecasts the quarter, estimates planned work, and holds it to budget. '
+            'Prompts never leave your tools.</p></div>')
         sample_btn = ('<form method=post action="/app/outlay/sample" style="margin:0">'
                       '<button class="btn sec">See it with sample data</button></form>'
                       if account.get("_can_demo") else '')
@@ -1831,7 +1870,9 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                   '<a href="/app/outlay/export.csv?view=classes">work types</a>'
                   '<a href="/app/outlay/export.csv?view=people">engineers</a></div>')
 
-    cov_diag = _coverage_diag(report)
+    # The coverage diagnostic tells you to connect PRs / map teams — an engineering
+    # setup action. Finance doesn't do setup, so it's hidden for that persona.
+    cov_diag = "" if persona == "finance" else _coverage_diag(report)
     cov_diag = f'<div style="margin:16px 0">{cov_diag}</div>' if cov_diag else ""
 
     body = (chooser + ohead + _persona_switch(persona) + _staleness_banner(report, conn)
@@ -2586,10 +2627,16 @@ def auth_form(kind: str, error: str = "", email: str = "") -> str:
 # Customer dashboard
 # --------------------------------------------------------------------------- #
 
-def _trial_banner(plan: dict, trial: dict) -> str:
+def _trial_banner(plan: dict, trial: dict, persona: str = "") -> str:
     if plan.get("plan") == "paid":
         return ""
     if trial.get("not_started"):
+        if persona == "finance":
+            # Finance doesn't connect anything — engineering does. Point them at the
+            # invite, not at the setup form.
+            return (f'<div class="note">Your <b>{store.TRIAL_DAYS}-day free trial starts once your data is '
+                    f'connected</b> — your engineering counterpart wires up the sources. '
+                    f'<a href="/app/team">Invite engineering →</a></div>')
         return (f'<div class="note">Your <b>{store.TRIAL_DAYS}-day free trial starts once you connect your '
                 f'data</b> — so the clock only runs while you\'re actually evaluating. '
                 f'<a href="/app/outlay/connect">Connect your sources →</a></div>')
@@ -2617,15 +2664,19 @@ def _trial_meta(account: dict | None):
 
 def _account_trial_banner(account: dict | None) -> str:
     plan, trial = _trial_meta(account)
-    return _trial_banner(plan, trial) if plan else ""
+    persona = ((account or {}).get("persona") or "").lower()
+    return _trial_banner(plan, trial, persona) if plan else ""
 
 
 def _trial_pill(account: dict | None) -> str:
     plan, trial = _trial_meta(account)
     if not plan or plan.get("plan") == "paid":
         return ""
+    persona = ((account or {}).get("persona") or "").lower()
     if trial.get("not_started"):
-        return f'<a class="trialpill" href="/app/outlay/connect">Trial · starts at setup</a>'
+        # Finance never visits Connect — its trial starts when engineering connects.
+        href = "/app/team" if persona == "finance" else "/app/outlay/connect"
+        return f'<a class="trialpill" href="{href}">Trial · starts at setup</a>'
     if trial["active"]:
         d = trial["days_left"]
         cls = "warn" if d <= 2 else ""

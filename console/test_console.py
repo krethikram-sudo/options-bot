@@ -1668,6 +1668,37 @@ def test_outlay_sync_pulls_live(env, client):
     assert "_model" in report  # estimator can reuse the learned model
 
 
+def test_outlay_sync_backfills_a_quarter_window(env, client):
+    """The live sync pulls a 90-day rolling window (not 30) so the first sync
+    backfills a rich dashboard, and every sync shares the same window so trends
+    stay comparable. The pulled date range is what the engine sees as starting_at."""
+    from datetime import datetime, timezone
+    from console import outlay_app
+    assert outlay_app.SYNC_WINDOW_DAYS == 90
+    seen = {}
+
+    def t(method, url, headers, body):
+        if "api.github.com" in url:
+            import json
+            return json.loads((_fixtures() / "github_issues.json").read_text())["issues"]
+        # capture the lookback start the Anthropic admin pull was asked for
+        import urllib.parse as up
+        q = up.parse_qs(up.urlparse(url).query)
+        if "starting_at" in q:
+            seen["starting_at"] = q["starting_at"][0]
+        import json
+        return json.loads((_fixtures() / "anthropic_admin_report.json").read_text())
+
+    conn = {"github_owner": "acme", "github_repo": "web",
+            "github_token": "ghp_x", "anthropic_key": "sk-admin"}
+    report = outlay_app.sync(conn, transport=t)
+    assert report["window_days"] == 90
+    if seen.get("starting_at"):
+        start = datetime.fromisoformat(seen["starting_at"].replace("Z", "+00:00"))
+        age_days = (datetime.now(timezone.utc) - start).days
+        assert 88 <= age_days <= 91, f"expected ~90-day lookback, got {age_days}"
+
+
 def _fake_transport_with_cursor():
     """GitHub issues + Anthropic admin + Cursor events, by URL."""
     import json
@@ -2996,6 +3027,34 @@ def test_onboarding_engineering_step2_has_direct_reports_and_finance_share(env, 
     assert "Share with your finance partner" in w
     assert "Invite your counterpart" not in w
     assert "Engineering leader" not in w        # the same-role invite option is gone
+
+
+def test_finance_persona_has_no_setup_surfaces(env, client):
+    """Finance manages spend after the fact — it does no setup. So the finance
+    experience must NOT expose Connect/API (Sources), the setup checklist, or a
+    connect form. Instead its empty state invites the engineering counterpart who
+    does the wiring."""
+    server, store = env
+    _raw_signup(client, "cfo@acme.com")
+    client.post("/app/persona", data={"persona": "finance"})
+    home = client.get("/app").text
+    # nav: no Sources group, no Connect/API setup links
+    assert ">Sources<" not in home
+    assert "/app/outlay/connect" not in home
+    assert "/app/api" not in home
+    # empty state: the 'data on its way' + invite-engineering state, not a connect CTA
+    assert "Your AI spend dashboard is on its way." in home
+    assert "Invite your engineering counterpart" in home
+    assert "Connect your sources" not in home
+    # the setup checklist is hidden for finance
+    assert "Run your first audit" not in home
+
+    # engineering, by contrast, keeps every setup surface
+    eng = TestClient(server.app, follow_redirects=False)
+    _raw_signup(eng, "vpe@beta.com")
+    eng.post("/app/persona", data={"persona": "eng"})
+    eng_home = eng.get("/app").text
+    assert ">Sources<" in eng_home and "/app/outlay/connect" in eng_home
 
 
 def test_onboarding_csv_upload_merges_org_structure(env, client):
