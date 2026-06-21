@@ -2999,6 +2999,21 @@ def test_onboarding_invite_presets_persona_so_counterpart_skips_gate(env, client
     assert "setting this up for my business" not in r.text  # the gate tiles are not shown
 
 
+def test_create_test_customer_script(env, client):
+    _, store = env
+    from console import create_test_customer
+    assert create_test_customer.main(["tester@x.com", "testpass123"]) == 0
+    acct = store.get_account_by_email("tester@x.com")
+    assert acct and acct["role"] == "customer"
+    assert store.get_persona(acct["id"], 0) == ""        # no persona → hits the onboarding gate
+    # first login lands on the welcome role gate
+    client.post("/login", data={"email": "tester@x.com", "password": "testpass123"})
+    assert client.get("/app", follow_redirects=False).headers["location"] == "/app/welcome"
+    # re-run refuses to clobber; weak password rejected
+    assert create_test_customer.main(["tester@x.com", "testpass123"]) == 1
+    assert create_test_customer.main(["other@x.com", "x"]) == 2
+
+
 def test_webhook_and_slack_urls_are_ssrf_guarded(env, client):
     from console import notify
     _, store = env
