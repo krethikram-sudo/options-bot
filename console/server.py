@@ -531,14 +531,12 @@ def app_dashboard(request: Request):
 
 @app.get("/app/estimate", response_class=HTMLResponse)
 def app_estimate(request: Request):
+    # Parked: the ModelPilot savings-projection page is hidden while Outlay leads
+    # with spend forecasting. Redirect any stray bookmark to the Outlay estimate.
     acct, redir = _require(request)
     if redir:
         return redir
-    plan = store.get_plan(acct["id"])
-    bill = store.bill_estimate(acct["id"])
-    cycle = store.savings_summary(acct["id"], since=bill["cycle_start"])
-    lifetime = store.savings_summary(acct["id"])
-    return _html(web.estimate_page(acct, plan, cycle, lifetime, bill))
+    return _redirect("/app/outlay/estimate")
 
 
 def _slack_notify(account_id: int, text: str) -> None:

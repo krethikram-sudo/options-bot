@@ -2309,6 +2309,9 @@ def _budget_card(budget: dict | None) -> str:
       <a href="/app/settings">Settings</a>.</p></div>"""
 
 
+# PARKED (not wired to any route): the ModelPilot routing dashboard with savings
+# telemetry. Hidden while Outlay leads with spend attribution/forecasting. Kept for
+# reference / possible revival — do not link it from customer-facing nav.
 def dashboard(account: dict, plan: dict, trial: dict, settings: dict,
               cycle: dict, lifetime: dict, bill: dict, deployment: dict,
               cats: list[dict], proof: dict, budget: dict | None = None) -> str:
@@ -2386,7 +2389,8 @@ _PROJECTOR_JS = """<script>(function(){
 
 
 def estimate_page(account: dict, plan: dict, cycle: dict, lifetime: dict, bill: dict) -> str:
-    """Logged-in savings view: MEASURED savings from the customer's own traffic +
+    """PARKED (its /app/estimate route now redirects to the Outlay estimate).
+    Logged-in savings view: MEASURED savings from the customer's own traffic +
     an annualized run-rate, plus a what-if projector seeded with their real baseline."""
     rate = float(bill.get("rate", 0.20))
     base_m = float(cycle.get("baseline") or 0.0)      # this cycle's baseline spend (~monthly)
