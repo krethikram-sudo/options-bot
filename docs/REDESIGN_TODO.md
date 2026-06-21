@@ -46,9 +46,11 @@ Hero is strong; tighten the rest.
       940px, the dense compatbar wrapping, section vertical rhythm, and the live
       "count-up" stat on first paint.
 
-### `platform.html` — "Cost it right, plan it, take it anywhere"
-Feature-heavy. Goals: clear visual grouping of the three pillars, the
-"costed two ways" comparison legibility, and the `#math` cache-cost callout.
+### `platform.html` — "Cost it right, plan it, take it anywhere" ✓
+Page is strong (the "costed two ways" comparison and the 6-card grid read well).
+- [x] Added a numbered jump-nav (`.pillnav`, reusable) under the flat hero —
+      maps the h1's three clauses to the #math / #estimate / #data sections, so
+      the long page has wayfinding and the hero isn't bare text.
 
 ### `security.html` — "Governance without shipping us your prompts"
 Trust page → make it feel auditable and calm. Goals: the "what never leaves /
