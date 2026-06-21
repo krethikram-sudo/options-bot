@@ -10,9 +10,9 @@ dependency to the app.
 ## The point: give Claude eyes
 
 By default Claude edits HTML/CSS blind. The single biggest quality lever is a
-**visual loop** — render a page, screenshot it, look, iterate. Two pieces:
+**visual loop** — render a page, screenshot it, look, iterate.
 
-### 1. Playwright MCP (browser control)
+### Playwright MCP (browser control)
 Configured in `.mcp.json` (project scope, so it's available to anyone who opens
 this repo in Claude Code). It lets Claude open a page, screenshot it, check it at
 mobile/tablet/desktop widths, click through flows, and read computed styles.
@@ -26,16 +26,11 @@ mobile/tablet/desktop widths, click through flows, and read computed styles.
   download host, or pre-install Chromium in the environment's setup script /
   image. See https://code.claude.com/docs/en/claude-code-on-the-web.
 
-### 2. Figma Dev Mode MCP (design source of truth)
-We design in Figma, so this lets Claude read the actual frames, tokens, and
-specs instead of guessing from CSS. Configured in `.mcp.json` as a local SSE
-server — it talks to the **Figma desktop app**, so no API token is committed.
-
-To enable (once, on your machine):
-1. Figma desktop → **Preferences → Enable Dev Mode MCP Server**.
-2. It serves on `http://127.0.0.1:3845`. If your Figma build exposes `/mcp`
-   (streamable HTTP) instead of `/sse`, update the `url` in `.mcp.json`.
-3. Select a frame in Figma, then ask Claude to implement it.
+### Design happens in code
+There's no external design tool — UI is designed directly with Claude in HTML/CSS.
+The source of truth for look-and-feel is **`docs/BRAND.md`** (tokens, type scale,
+spacing, components, voice), extracted from `outlay.css` + the console CSS. Point
+Claude at it when building or restyling a page so output stays consistent.
 
 ## Non-MCP fallback: `tools/shoot.py`
 A dev-only screenshot script for anywhere a Playwright browser is installed
@@ -49,8 +44,7 @@ python3 tools/shoot.py http://localhost:8000/legal/terms.html http://localhost:8
 ```
 
 ## Recommended next steps (not yet wired)
-- **Brand spec** extracted from `outlay.css` (color tokens, type scale, spacing,
-  radius, voice) as a single source of truth — ask Claude to draft it.
+- **Brand spec** — done: see `docs/BRAND.md` (keep it updated as the system evolves).
 - **Visual-regression snapshots** on key pages (pricing, legal, overview) so a
   CSS tweak can't silently break a page.
 - **Lighthouse / axe** passes for performance + accessibility (the console
