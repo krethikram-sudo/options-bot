@@ -100,6 +100,12 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-21 — unit economics (cost per ticket / per closed / rework tax)
+- [x] Reframed raw spend as efficiency — `outlay_app.unit_economics(report)` computes cost per attributed
+      ticket, per *closed* ticket, the share of spend on reworked tickets, and the priciest work types per
+      unit. Overview card (`_unit_econ_card`), gated on ≥3 attributed tickets + ≥30% coverage so the per-unit
+      number stays honest. The differentiated FinOps metric, from data we already have. 319 tests.
+
 ### 2026-06-21 — forecast scenarios ("if we commit this backlog…")
 - [x] Combined the two planning surfaces: the Estimate page now shows a **scenario card** rolling up the
       open-work forecast + the pasted backlog estimate into a single projected quarter total (with combined

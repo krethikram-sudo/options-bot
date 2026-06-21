@@ -1266,16 +1266,48 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
 
     fidelity = _fidelity_callout(report, persona)
     fidelity = f'<div style="margin-top:16px">{fidelity}</div>' if fidelity else ""
+    unit = _unit_econ_card(report)
+    unit = f'<div style="margin-top:16px">{unit}</div>' if unit else ""
 
     body = (chooser + head + _persona_switch(persona) + _staleness_banner(report, conn)
             + _sample_strip(report) + checklist
             + _budget_strip(statuses) + _anomaly_strip(report, *_anomaly_prefs(conn))
             + _kpis_row(report, history, persona)
             + _recon_strip(report) + _pricing_warn(report)
-            + fidelity + tm_row
+            + fidelity + unit + tm_row
             + '<div class=ogrid style="margin-top:16px">' + _forecast_card(report)
             + _explore_card(persona) + '</div>' + _sync_line(report, conn))
     return page("Home", body, account, active="/app")
+
+
+def _unit_econ_card(report: dict) -> str:
+    """Unit economics — cost per ticket / per closed ticket, the rework tax, and the
+    priciest work types per unit. Reframes spend as efficiency. Hidden until there's
+    enough attributed coverage that the per-unit number means something."""
+    from . import outlay_app
+    cov = (report or {}).get("spend", {}).get("ticket_coverage", 0.0)
+    ue = outlay_app.unit_economics(report)
+    if not ue or ue["tickets"] < 3 or cov < 0.3:
+        return ""  # too little attributed for a per-ticket number to be honest
+    per_closed = (f'<div class=kpi><div class=l>per closed ticket · {ue["closed_tickets"]} closed</div>'
+                  f'<div class=v>{money(ue["cost_per_closed_usd"])}</div></div>'
+                  if ue.get("cost_per_closed_usd") is not None else "")
+    rework = ""
+    if ue["rework_share"] > 0.01:
+        rework = (f'<div class=kpi><div class=l>spend on reworked tickets · {ue["reworked_tickets"]} reworked</div>'
+                  f'<div class=v>{ue["rework_share"]*100:.0f}%</div></div>')
+    kpis = (f'<div class=kpi><div class=l>per attributed ticket · {ue["tickets"]} tickets</div>'
+            f'<div class=v>{money(ue["cost_per_ticket_usd"])}</div></div>'
+            f'{per_closed}{rework}')
+    rows = "".join(
+        f'<div class=erow><span class=nm>{_e(c["task_class"])} <small>· {c["tickets"]} tickets</small></span>'
+        f'<span class=amt>{money(c["per_ticket_usd"])}<small class=muted> /ticket</small></span></div>'
+        for c in ue["by_class"])
+    by = (f'<div style="margin-top:6px"><div class=muted style="font-size:12px;text-transform:uppercase;'
+          f'letter-spacing:.04em;margin-bottom:4px">Priciest work, per ticket</div>{rows}</div>') if rows else ""
+    return (f'<div class=ocard><div class=dh>Unit economics'
+            f'<span class=sub>cost per unit of work</span></div>'
+            f'<div class=kpirow style="display:flex;gap:26px;flex-wrap:wrap;margin:2px 0 10px">{kpis}</div>{by}</div>')
 
 
 def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None = None,

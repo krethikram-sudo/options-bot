@@ -2660,6 +2660,35 @@ def test_scope_drilldown_from_spend(env, client):
                       follow_redirects=False).status_code in (302, 303, 307)
 
 
+def test_unit_economics_engine_and_card(env, client):
+    from console import outlay_app
+    # engine: per-ticket / per-closed / rework / by-class from attributed tickets
+    report = {
+        "spend": {"total_usd": 300.0, "ticket_coverage": 0.9},
+        "tickets": [
+            {"ticket_id": "A", "task_class": "feature", "status": "closed", "cost_usd": 100.0, "rework_iterations": 2},
+            {"ticket_id": "B", "task_class": "feature", "status": "open", "cost_usd": 50.0, "rework_iterations": 0},
+            {"ticket_id": "C", "task_class": "bugfix", "status": "closed", "cost_usd": 30.0, "rework_iterations": 0},
+            {"ticket_id": "D", "task_class": "bugfix", "status": "closed", "cost_usd": 0.0, "rework_iterations": 0},
+        ],
+        "class_spend": [{"task_class": "feature", "tickets": 2, "spent_usd": 150.0},
+                        {"task_class": "bugfix", "tickets": 1, "spent_usd": 30.0}],
+    }
+    ue = outlay_app.unit_economics(report)
+    assert ue["tickets"] == 3 and ue["cost_per_ticket_usd"] == 60.0   # 180 / 3 (zero-cost excluded)
+    assert ue["closed_tickets"] == 2 and ue["cost_per_closed_usd"] == 65.0  # (100+30)/2
+    assert ue["reworked_tickets"] == 1 and round(ue["rework_share"], 3) == round(100 / 180, 3)
+    assert ue["by_class"][0]["task_class"] == "feature" and ue["by_class"][0]["per_ticket_usd"] == 75.0
+    # nothing to divide by → None
+    assert outlay_app.unit_economics({"tickets": []}) is None
+
+    # the Overview card renders for sample data
+    _signup(client, email="unit@x.com")
+    client.post("/app/outlay/sample", follow_redirects=True)
+    home = client.get("/app").text
+    assert "Unit economics" in home and "per attributed ticket" in home
+
+
 def test_showback_page_per_team(env, client):
     _, store = env
     _signup(client, email="show@x.com")

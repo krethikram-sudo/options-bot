@@ -208,6 +208,43 @@ def data_quality(report: dict, conn: dict | None = None, now: float | None = Non
     return {"score": score, "checks": checks}
 
 
+_CLOSED_STATUSES = {"closed", "done", "resolved", "merged", "completed", "closed/done"}
+
+
+def unit_economics(report: dict) -> Optional[dict]:
+    """Reframe raw spend as efficiency — cost *per ticket* and per *closed* ticket,
+    the rework tax, and the priciest work types per unit. The differentiated FinOps
+    metric (unit cost), computed from the attributed tickets we already have. Returns
+    None when there's nothing attributed to divide by (the number would be noise)."""
+    tickets = [t for t in ((report or {}).get("tickets") or []) if (t.get("cost_usd") or 0) > 0]
+    n = len(tickets)
+    if n == 0:
+        return None
+    total = sum(t.get("cost_usd", 0.0) for t in tickets)
+    closed = [t for t in tickets if str(t.get("status") or "").lower() in _CLOSED_STATUSES]
+    closed_cost = sum(t.get("cost_usd", 0.0) for t in closed)
+    reworked = [t for t in tickets if (t.get("rework_iterations") or 0) > 0]
+    rework_cost = sum(t.get("cost_usd", 0.0) for t in reworked)
+    # Priciest work types per unit (avg cost per ticket within the class).
+    by_class = []
+    for c in (report.get("class_spend") or []):
+        ntix = c.get("tickets") or 0
+        if ntix:
+            by_class.append({"task_class": c.get("task_class"),
+                             "per_ticket_usd": round((c.get("spent_usd", 0.0)) / ntix, 2),
+                             "tickets": ntix})
+    by_class.sort(key=lambda x: x["per_ticket_usd"], reverse=True)
+    return {
+        "tickets": n,
+        "cost_per_ticket_usd": round(total / n, 2),
+        "closed_tickets": len(closed),
+        "cost_per_closed_usd": round(closed_cost / len(closed), 2) if closed else None,
+        "rework_share": round(rework_cost / total, 4) if total else 0.0,
+        "reworked_tickets": len(reworked),
+        "by_class": by_class[:5],
+    }
+
+
 def parse_cost_export(text):
     """Auto-detect and sum a pasted *provider cost/billing export* into (usd, source).
 
