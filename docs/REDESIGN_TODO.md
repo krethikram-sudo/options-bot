@@ -73,14 +73,15 @@ Page is strong (the "costed two ways" comparison and the 6-card grid read well).
       neutral "A measured range" (forecasting). Detailed prose follows as
       elaboration; honest tone kept restrained.
 
-### `pilot.html` — design-partner pilot
-Conversion page. Goals: the 4-step timeline, the "fit if…" checklist, and a
-single strong CTA. Tighten to feel like a focused offer.
+### `pilot.html` — design-partner pilot ✓ (no change)
+Already strong: rich dark hero with an 87% product panel, two-card sections, a
+4-step timeline, and a single clear CTA. Left as-is — no manufactured churn.
 
-### `healthcare.html` — vertical landing (PHI)
-Goals: lead with the compliance-review framing, honest-on-certifications note
-styled as a `.note`, and the economics section. Mirror the landing structure
-but shorter.
+### `healthcare.html` — vertical landing (PHI) ✓
+- [x] Compliance checklist → scannable 2×2 card grid (the section a reviewer
+      skims first).
+- [x] "Honest part on certifications" (not yet SOC-2/HIPAA) styled as a neutral
+      `.note` so the disclosure stands out appropriately.
 
 ### `tour.html` — product tour
 Most visual page (5 narrative steps). Goals: each step gets a strong mock/panel

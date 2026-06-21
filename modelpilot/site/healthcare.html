@@ -58,24 +58,18 @@
     environment; Outlay is not a proxy and isn't in the path of your AI calls.</div>
 
   <h2>What that means for your security &amp; compliance review</h2>
-  <ul>
-    <li><span class="ck">&#10003;</span><div><b>No PHI egress to Outlay.</b> The sensitive data physically can't
-      reach us — we read usage metadata and ticket references, never request or response bodies.</div></li>
-    <li><span class="ck">&#10003;</span><div><b>You keep your own Anthropic relationship.</b> Your calls go to
-      Anthropic directly with your key; Outlay isn't a proxy and isn't in the path of your prompt content.
-      Configure Anthropic's data terms (e.g. zero-retention) with them as you do today.</div></li>
-    <li><span class="ck">&#10003;</span><div><b>Read-only by design.</b> Connect with read-only tokens; remove
-      Outlay anytime and nothing about how your calls are made changes — it was never in the path.</div></li>
-    <li><span class="ck">&#10003;</span><div><b>Defensible forecasts.</b> Cost forecasts are back-tested on your
-      own closed tickets (leave-one-out) and shown with the sample size — a number you can defend
-      internally.</div></li>
-  </ul>
+  <div class="owners" style="margin:10px 0 4px">
+    <div class="card"><h3 style="margin:0 0 8px;display:flex;gap:9px;align-items:baseline"><span style="color:var(--grn);font-weight:800">&#10003;</span>No PHI egress to Outlay</h3><p>The sensitive data physically can't reach us — we read usage metadata and ticket references, never request or response bodies.</p></div>
+    <div class="card"><h3 style="margin:0 0 8px;display:flex;gap:9px;align-items:baseline"><span style="color:var(--grn);font-weight:800">&#10003;</span>You keep your own Anthropic relationship</h3><p>Your calls go to Anthropic directly with your key; Outlay isn't a proxy and isn't in the path of your prompt content. Configure Anthropic's data terms (e.g. zero-retention) with them as you do today.</p></div>
+    <div class="card"><h3 style="margin:0 0 8px;display:flex;gap:9px;align-items:baseline"><span style="color:var(--grn);font-weight:800">&#10003;</span>Read-only by design</h3><p>Connect with read-only tokens; remove Outlay anytime and nothing about how your calls are made changes — it was never in the path.</p></div>
+    <div class="card"><h3 style="margin:0 0 8px;display:flex;gap:9px;align-items:baseline"><span style="color:var(--grn);font-weight:800">&#10003;</span>Defensible forecasts</h3><p>Cost forecasts are back-tested on your own closed tickets (leave-one-out) and shown with the sample size — a number you can defend internally.</p></div>
+  </div>
 
   <h2>The honest part on certifications</h2>
-  <p>Our PHI-never-leaves-your-environment guarantee is a property of the <b>architecture</b>, verifiable in
-    the (inspectable) client. We are <b>not yet SOC&#8209;2 or HIPAA certified</b>, and we won't claim what
-    we don't hold. If you need a <b>BAA</b>, a security questionnaire, or our compliance roadmap, email us —
-    we'll share exactly where we are. (See <a href="/security">Security &amp; trust</a>.)</p>
+  <div class="note">Our PHI-never-leaves-your-environment guarantee is a property of the <b>architecture</b>,
+    verifiable in the (inspectable) client. We are <b>not yet SOC&#8209;2 or HIPAA certified</b>, and we
+    won't claim what we don't hold. If you need a <b>BAA</b>, a security questionnaire, or our compliance
+    roadmap, email us — we'll share exactly where we are. (See <a href="/security">Security &amp; trust</a>.)</div>
 
   <h2>The economics</h2>
   <p>Pilots run free. For a team spending five or six figures a month on Claude across clinical and
