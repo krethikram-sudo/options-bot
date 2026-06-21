@@ -2999,6 +2999,28 @@ def test_onboarding_invite_presets_persona_so_counterpart_skips_gate(env, client
     assert "setting this up for my business" not in r.text  # the gate tiles are not shown
 
 
+def test_onboarding_reset_re_triggers_gate_for_test_accounts(env, client, monkeypatch):
+    _, store = env
+    _signup(client, email="t@x.com")          # DEMO_ACCOUNT_EMAILS='*' in the fixture → a test account
+    acct = store.get_account_by_email("t@x.com")
+    store.add_outlay_budget(acct["id"], "team", "platform", 100.0)
+    # the test/demo bar offers a Restart onboarding control
+    assert "Restart onboarding" in client.get("/app/outlay").text
+    # reset → first-run state: persona + data cleared, redirected to the gate
+    r = client.post("/app/onboarding/reset", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/app/welcome"
+    acct = store.get_account_by_email("t@x.com")
+    assert store.get_persona(acct["id"], 0) == ""
+    assert store.list_outlay_budgets(acct["id"]) == []
+    assert client.get("/app", follow_redirects=False).headers["location"] == "/app/welcome"
+    # a non-test (non-allowlisted) account never sees the button and the route refuses
+    monkeypatch.setenv("DEMO_ACCOUNT_EMAILS", "someone-else@x.com")
+    store.set_persona(acct["id"], "eng", 0)   # move past the gate so the page renders
+    assert "Restart onboarding" not in client.get("/app/outlay").text
+    client.post("/app/onboarding/reset", follow_redirects=False)
+    assert store.get_persona(acct["id"], 0) == "eng"   # unchanged — refused
+
+
 def test_create_test_customer_script(env, client):
     _, store = env
     from console import create_test_customer

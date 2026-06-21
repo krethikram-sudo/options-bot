@@ -848,9 +848,16 @@ def _demo_banner(account: dict) -> str:
     if not on and not can:
         return ""
     if not on:
-        return ('<div class="demobar off"><span class=dl>Demo mode</span>'
-                '<span class=dt>You’re on the standard customer experience.</span>'
-                '<span class=sp></span>'
+        # Internal/test bar: standard experience + testing tools (re-run onboarding,
+        # enter demo mode). Only ever shown to DEMO_ACCOUNT_EMAILS accounts.
+        reset = ('<form method=post action="/app/onboarding/reset" style="margin:0" '
+                 'onsubmit="return confirm(\'Reset this account to the first-run new-user '
+                 'state? This clears the role choice and any spend data so you can re-run '
+                 'onboarding.\')">'
+                 '<button class="btn sec sm">Restart onboarding</button></form>')
+        return ('<div class="demobar off"><span class=dl>Test account</span>'
+                '<span class=dt>Standard customer experience.</span>'
+                '<span class=sp></span>' + reset +
                 '<form method=post action="/app/demo/enter" style="margin:0">'
                 '<button class="btn sec sm">Enter demo mode →</button></form></div>')
     persona = (account.get("persona") or "finance").lower()
