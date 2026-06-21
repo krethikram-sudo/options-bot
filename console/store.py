@@ -2353,20 +2353,26 @@ def deliver_event(account_id: int, event_type: str, data: dict, path: str | None
     _sleep = sleep_fn if sleep_fn is not None else time.sleep
 
     def _send(wid, url, secret):
-        headers = _webhook_headers(event_type, secret, body)
-        ok, code, err = False, None, ""
-        for i in range(WEBHOOK_MAX_ATTEMPTS):
-            if i and _sleep:
-                _sleep(WEBHOOK_BACKOFF[min(i, len(WEBHOOK_BACKOFF) - 1)])
-            ok, code, err = _webhook_attempt(url, body, headers, post_fn)
-            if ok:
-                break
-        next_at = None if ok else (time.time() + WEBHOOK_REDELIVER_BACKOFF[0])
-        record_webhook_delivery(account_id, wid, event_type,
-                                "delivered" if ok else "failed",
-                                attempts=i + 1, status_code=code, error=err,
-                                payload=(None if ok else body.decode("utf-8", "replace")),
-                                next_attempt_at=next_at, path=path)
+        # Runs in a daemon thread for the live path — must never raise out of it
+        # (an unhandled thread exception is noise at best, and the recording write
+        # can fail, e.g. a transient DB lock). Best-effort, top to bottom.
+        try:
+            headers = _webhook_headers(event_type, secret, body)
+            ok, code, err = False, None, ""
+            for i in range(WEBHOOK_MAX_ATTEMPTS):
+                if i and _sleep:
+                    _sleep(WEBHOOK_BACKOFF[min(i, len(WEBHOOK_BACKOFF) - 1)])
+                ok, code, err = _webhook_attempt(url, body, headers, post_fn)
+                if ok:
+                    break
+            next_at = None if ok else (time.time() + WEBHOOK_REDELIVER_BACKOFF[0])
+            record_webhook_delivery(account_id, wid, event_type,
+                                    "delivered" if ok else "failed",
+                                    attempts=i + 1, status_code=code, error=err,
+                                    payload=(None if ok else body.decode("utf-8", "replace")),
+                                    next_attempt_at=next_at, path=path)
+        except Exception:  # noqa: BLE001 — delivery is best-effort; never crash the thread
+            pass
 
     for w in hooks:
         if post_fn is not None:
