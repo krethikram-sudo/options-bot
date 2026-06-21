@@ -362,9 +362,12 @@ def _sidenav(account: dict, active: str) -> str:
 
     The IA is grouped: ANALYZE (the spend/forecast surfaces a user works in daily),
     SOURCES (where data comes in), and WORKSPACE (team/settings/activity admin).
-    Persona (finance/eng) only reorders the ANALYZE group so each role sees its
-    primary surface first — finance leads with budgets, engineering with estimates —
-    without hiding anything. Team/Activity are owner/admin-only."""
+    The ANALYZE group is role-aware — each persona surfaces *different* primary
+    capabilities, not just a reorder: finance/FinOps gets the allocate-budget-govern
+    tools (Showback chargeback + Programs enforcement); engineering gets the
+    ship-efficiently tools (Accuracy + Estimate). Nothing is truly hidden — the
+    other surfaces stay reachable via the Overview's Explore hub and contextual
+    links on Spend. Team/Activity are owner/admin-only."""
     persona = (account.get("persona") or "").lower()
     is_admin = account.get("team_role") in ("owner", "admin")
 
@@ -372,10 +375,14 @@ def _sidenav(account: dict, active: str) -> str:
     accuracy = ("/app/outlay/accuracy", "Accuracy")
     budgets = ("/app/outlay/budgets", "Budgets")
     estimate = ("/app/outlay/estimate", "Estimate")
-    if persona == "eng":
+    showback = ("/app/outlay/showback", "Showback")
+    programs = ("/app/outlay/programs", "Programs")
+    if persona == "finance":
+        # Allocate, budget, govern: chargeback (Showback) + program enforcement.
+        analyze = [spend, budgets, showback, programs]
+    elif persona == "eng":
+        # Ship efficiently: measure forecast accuracy + price the backlog.
         analyze = [spend, accuracy, estimate, budgets]
-    elif persona == "finance":
-        analyze = [spend, budgets, accuracy, estimate]
     else:
         analyze = [spend, accuracy, budgets, estimate]
 
@@ -1224,8 +1231,12 @@ def _explore_card(persona: str) -> str:
                     "Set limits by scope and get warned before you overspend."),
         "estimate": ("/app/outlay/estimate", "Estimate planned work",
                      "Price a backlog before you build it, from your learned cost model."),
+        "showback": ("/app/outlay/showback", "Showback by team",
+                     "Allocate spend to teams and cost centers for chargeback."),
+        "programs": ("/app/outlay/programs", "Program budgets",
+                     "Budget a program across teams and enforce a hard cap."),
     }
-    order = (["spend", "budgets", "accuracy", "estimate"] if persona == "finance"
+    order = (["spend", "budgets", "showback", "programs"] if persona == "finance"
              else ["spend", "estimate", "accuracy", "budgets"])
     rows = ""
     for key in order:
