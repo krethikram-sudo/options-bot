@@ -30,6 +30,15 @@ from outlay.size import fit_size_models
 from outlay.estimate import estimate_plan, parse_planned
 
 
+# Live-sync lookback. We pull a 90-day (rolling quarter) window so the very first
+# sync backfills a rich dashboard on day one — enough history for per-team/model
+# breakdowns, unit economics, anomaly detection, and forecast calibration — instead
+# of a sparse 30-day slice. Every sync uses the same window, so snapshot-to-snapshot
+# trends stay apples-to-apples, and a 90-day rolling view lines up with the quarterly
+# budget/forecast framing the product already speaks in.
+SYNC_WINDOW_DAYS = 90
+
+
 def _tmp(text) -> str:
     f = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
     f.write(text if isinstance(text, str) else json.dumps(text))
@@ -741,7 +750,7 @@ def report_csv(report: dict, view: str = "tickets") -> str:
     return buf.getvalue()
 
 
-def sync(conn: dict, window_days: int = 30, transport=None) -> dict:
+def sync(conn: dict, window_days: int = SYNC_WINDOW_DAYS, transport=None) -> dict:
     """Pull live from the customer's connected sources and run the pipeline.
 
     `conn`: tracker creds + at least one AI-usage key (`anthropic_key` and/or
