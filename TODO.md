@@ -100,6 +100,12 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-21 — reallocate: inline program budget editing
+- [x] Delivered on the "reallocate compute to what matters" promise: `update_outlay_program` (patch in place,
+      account-scoped) + `/app/outlay/programs/update` route + an inline "Reallocate budget" control on each
+      program card (change the cap, flip alert↔hard) without re-creating it. Enforcement follows on the next
+      sweep / gateway refresh. 321 tests.
+
 ### 2026-06-21 — program budgets (foundation for hard-cap enforcement) [slice 1]
 - [x] Founder asked to enforce budget *by program*; chose hard-cap-via-gateway. Slice 1 = the program model:
 - [x] **`outlay_programs`** table + CRUD; a program = name + members ([{scope_type, scope_id}] across

@@ -1339,6 +1339,34 @@ def list_outlay_programs(account_id: int, path: str | None = None) -> list[dict]
     return out
 
 
+def update_outlay_program(account_id: int, program_id: int, *, limit_usd=None,
+                          period_days=None, enforce_mode=None, action=None,
+                          floor_model=None, path: str | None = None) -> bool:
+    """Patch a program in place (reallocate budget, flip enforcement, …). Only the
+    provided fields change. Returns True if a row was updated. Account-scoped."""
+    sets, vals = [], []
+    if limit_usd is not None:
+        sets.append("limit_usd=?"); vals.append(float(limit_usd))
+    if period_days is not None:
+        sets.append("period_days=?"); vals.append(int(period_days))
+    if enforce_mode is not None and enforce_mode in PROGRAM_ENFORCE_MODES:
+        sets.append("enforce_mode=?"); vals.append(enforce_mode)
+    if action is not None and action in PROGRAM_ACTIONS:
+        sets.append("action=?"); vals.append(action)
+    if floor_model is not None:
+        sets.append("floor_model=?"); vals.append((floor_model or "").strip() or None)
+    if not sets:
+        return False
+    vals += [int(program_id), account_id]
+    conn = connect(path)
+    try:
+        cur = conn.execute(f"UPDATE outlay_programs SET {', '.join(sets)} WHERE id=? AND account_id=?", vals)
+        conn.commit()
+        return (cur.rowcount or 0) > 0
+    finally:
+        conn.close()
+
+
 def delete_outlay_program(account_id: int, program_id: int, path: str | None = None) -> None:
     conn = connect(path)
     try:

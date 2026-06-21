@@ -1957,7 +1957,20 @@ def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> s
                  f'projected <b style="color:{txt}">{money(s.get("projected_usd",0))}</b> / {int(s.get("period_days") or 90)}d</span>'
                  f'<form method=post action="/app/outlay/programs/delete" style="margin:0">'
                  f'<input type=hidden name=id value="{s["id"]}">'
-                 f'<button class="btn sec sm">Remove</button></form></div></div>')
+                 f'<button class="btn sec sm">Remove</button></form></div>'
+                 # Reallocate inline: change the cap, or flip alert <-> hard, in place.
+                 f'<form method=post action="/app/outlay/programs/update" '
+                 f'style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;'
+                 f'border-top:1px solid var(--line);padding-top:10px">'
+                 f'<input type=hidden name=id value="{s["id"]}">'
+                 f'<span class=muted style="font-size:12px">Reallocate budget</span>'
+                 f'<input name=limit_usd type=number step=any placeholder="{int(s.get("limit_usd") or 0)}" '
+                 f'style="width:110px;padding:6px 9px;border:1px solid var(--line);border-radius:8px">'
+                 f'<select name=enforce_mode style="padding:6px 9px;border:1px solid var(--line);border-radius:8px">'
+                 f'<option value="">enforcement…</option>'
+                 f'<option value="alert"{" selected" if s.get("enforce_mode")!="hard" else ""}>alert only</option>'
+                 f'<option value="hard"{" selected" if s.get("enforce_mode")=="hard" else ""}>hard cap</option></select>'
+                 f'<button class="btn sec sm">Save</button></form></div>')
     rows = (f'<div class=ocard><div class=dh>Your programs</div>{rows}</div>' if statuses
             else '<div class=ocard><p class=muted style="margin:0">No programs yet — define one below.</p></div>')
     add = """<div class=ocard style="margin-top:16px"><div class=dh>Define a program</div>
