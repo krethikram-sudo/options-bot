@@ -39,6 +39,14 @@ p a,li a,td a,.note a,.dh a,.muted a,.ostrip a,.hintbox a,.sub a,small a,.ohead 
 .top .nav a{color:#c4cddb}.top .nav a:hover{color:#fff}
 /* left sidebar shell (signed-in) */
 .shell{display:flex;min-height:100vh;align-items:stretch}
+/* first-run takeover: blur the whole app behind a centered, undismissable modal */
+.shell.blurred{filter:blur(6px);pointer-events:none;user-select:none}
+.takeover{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+  padding:24px;background:rgba(17,22,32,.34);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.tk-card{background:#fff;border:1px solid var(--line);border-radius:18px;width:100%;max-width:780px;
+  padding:30px 34px;box-shadow:0 40px 90px -30px rgba(0,0,0,.55);max-height:92vh;overflow-y:auto}
+.tk-card h1{font-size:25px;margin:.15em 0 .25em}
+@media(max-width:760px){.tk-card{padding:24px 20px}}
 .side{width:236px;flex-shrink:0;display:flex;flex-direction:column;padding:18px 14px;
   border-right:1px solid var(--line);background:var(--paper);
   position:sticky;top:0;height:100vh;overflow-y:auto}
@@ -511,7 +519,8 @@ _CONNECT_TOUR_JS = r"""
 """
 
 
-def page(title: str, body: str, account: dict | None = None, active: str = "", bare: bool = False) -> str:
+def page(title: str, body: str, account: dict | None = None, active: str = "", bare: bool = False,
+         overlay: str = "") -> str:
     if account:
         links = _sidenav(account, active)
         # Routing-era vendor Overview/Review are parked; keep just the leads inbox.
@@ -521,15 +530,21 @@ def page(title: str, body: str, account: dict | None = None, active: str = "", b
                      f'<a class="{"on" if active == "/admin/leads" else ""}" href="/admin/leads">Pilot requests</a>'
                      f'<a class="{"on" if active == "/admin/health" else ""}" href="/admin/health">Scheduler health</a>')
         em = _e(account.get("display_email") or account["email"])
+        # `overlay` is an undismissable, centered takeover (the first-run role gate):
+        # the app renders behind it, blurred and non-interactive, so the customer
+        # can't move on until they choose.
+        shell_cls = "shell blurred" if overlay else "shell"
+        takeover = f'<div class=takeover><div class=tk-card>{overlay}</div></div>' if overlay else ""
         chrome = (
-            '<div class=shell><aside class=side>'
+            f'<div class="{shell_cls}"><aside class=side>'
             '<a class=brand href="/app">Outlay<span class=dot>.ai</span></a>'
             f'<nav class=sidenav>{links}{admin}</nav>'
             f'<div class=side-foot>{_trial_pill(account)}<div class=email>{em}</div>'
             '<form method=post action="/logout" style="margin:0">'
             '<button class="btn sec sm" style="width:100%;color:var(--red)">Sign out</button></form></div>'
             f'</aside><main class=main><div class=inner>{_demo_banner(account)}'
-            f'{_account_trial_banner(account)}{body}</div></main></div>')
+            f'{_account_trial_banner(account)}{body}</div></main></div>'
+            f'{takeover}')
     elif bare:
         # Minimal public header (brand only) — for the pilot-request form etc.
         chrome = (
@@ -921,7 +936,7 @@ def _role_gate(next_to: str = "welcome") -> str:
         + tile("eng", "I’m an engineering leader using this for my business",
                "You’ll lead with spend by ticket, epic and engineer, runaway-ticket flags, and estimates "
                "for planned work before you build it."))
-    return f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" class=cols-2>{tiles}</div>'
+    return f'<div class=cols-2 style="display:grid;gap:16px">{tiles}</div>'
 
 
 def _csv_upload_form(next_to: str = "") -> str:
@@ -942,11 +957,24 @@ def welcome_page(account: dict, conn: dict | None, idmap: str = "") -> str:
     counterpart — with a clear jump to the dashboard."""
     persona = (account.get("persona") or "").lower()
     if persona not in ("finance", "eng"):
-        body = ('<div class=ohead><h1>Welcome to Outlay</h1>'
-                '<p>First, tell us who you are — it tailors your whole experience. You’ll invite your '
-                'counterpart in a moment, and you can switch views anytime in Settings.</p></div>'
+        # Step 1 — an undismissable, centered takeover over the blurred app. The
+        # customer can't proceed to anything until they identify their role.
+        gate = ('<div class=eyebrow style="font-size:11.5px;font-weight:600;letter-spacing:.1em;'
+                'text-transform:uppercase;color:var(--grn-d)">Welcome to Outlay</div>'
+                '<h1>First, who are you?</h1>'
+                '<p class=muted style="margin:-2px 0 18px;max-width:60ch">This tailors your whole '
+                'experience. You’ll invite your counterpart next, and can switch views anytime in '
+                'Settings.</p>'
                 + _role_gate("welcome"))
-        return page("Welcome", body, account, active="/app")
+        # A faint dashboard skeleton sits behind the blur so the takeover reads as a
+        # modal over the product, not a blank page.
+        skel_kpi = '<div class=kpi><div class=l>&nbsp;</div><div class=v>—</div><div class=s>&nbsp;</div></div>'
+        behind = ('<div class=ohead><h1>Your AI spend at a glance</h1>'
+                  '<p>Setting up your workspace…</p></div>'
+                  f'<div class=kpis>{skel_kpi * 4}</div>'
+                  '<div class=ocard style="height:150px"></div>'
+                  '<div class=ocard style="height:150px;margin-top:16px"></div>')
+        return page("Welcome", behind, account, active="/app", overlay=gate)
 
     fin = persona == "finance"
     me = "Finance" if fin else "Engineering"
@@ -2402,7 +2430,7 @@ def auth_form(kind: str, error: str = "", email: str = "") -> str:
     body = f"""
     <div class=auth><div class=card>
       <h1>{_e(title)}</h1>
-      <p class=muted small>{'7 days free · full features · no card required to start.' if is_signup else 'Welcome back.'}</p>
+      <p class=muted small>{'14 days free · full features · no card required to start.' if is_signup else 'Welcome back.'}</p>
       {err}
       <form method=post action="/{kind}">
         <div class=field><label>Work email</label>

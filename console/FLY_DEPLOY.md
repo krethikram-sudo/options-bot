@@ -105,7 +105,7 @@ the app under a new name — see "Renaming the app" below.)
   always-on / no cold start.
 - **Backups:** `fly volumes` snapshots the disk; take a snapshot before migrations.
   To pull a copy of the DB: `fly ssh sftp get /data/console.db ./console-backup.db`.
-- **Customers** don't need any of this — they self-serve at `/signup` (7-day trial).
+- **Customers** don't need any of this — they self-serve at `/signup` (14-day trial).
   This runbook is only for standing up the service + your admin login.
 - This is the **console** only. `brain/` and `ingest/` deploy the same way (their
   own Dockerfiles); wire the brain to the console with `CONSOLE_URL=https://<app>`.
