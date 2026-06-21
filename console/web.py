@@ -3229,131 +3229,46 @@ def reset_form(token: str, error: str = "") -> str:
 def billing_page(account: dict, plan: dict, trial: dict, bill: dict,
                  stripe_on: bool, flash: str = "") -> str:
     is_paid = plan.get("plan") == "paid"
-    tier = plan.get("tier") or "payg"
-    tier_badge = f'<span class="badge admin">{_e(store.TIER_LABELS.get(tier, tier))}</span>'
-    status_badge = (('<span class="badge paid">Paid plan</span>' if is_paid else
+    status_badge = ('<span class="badge paid">Active plan</span>' if is_paid else
                     (f'<span class="badge trial">Trial · {trial["days_left"]}d left</span>'
-                     if trial["active"] else '<span class="badge suspended">Trial ended</span>')) + " " + tier_badge)
+                     if trial["active"] else '<span class="badge suspended">Trial ended</span>'))
     flash_html = ""
     if flash == "success":
-        flash_html = '<div class="note">Billing is active — thanks! Your savings are now being metered.</div>'
+        flash_html = '<div class="note">Your plan is active — thanks!</div>'
     elif flash == "cancel":
-        flash_html = '<div class="note warn">Checkout canceled — no changes made.</div>'
+        flash_html = '<div class="note warn">No changes made.</div>'
     elif flash == "converted":
         flash_html = '<div class="note">Plan activated.</div>'
     if not is_paid and not trial["active"]:
         flash_html = ('<div class="note bad"><b>Your free trial has ended.</b> '
-                      'Activate a plan below to keep using Outlay.</div>' + flash_html)
+                      '<a href="mailto:hello@outlay-ai.com?subject=Outlay%20plan">Talk to us</a> to '
+                      'continue on a plan.</div>' + flash_html)
 
     if is_paid:
-        action = f"""
-        <p>You're on the usage-based plan: <b>{int(bill['rate']*100)}% of realized savings</b>.</p>
-        <div class="grid cols-2">
-          <div><div class=label>Savings this cycle</div><div class="stat green">{money(bill['cycle_savings'])}</div></div>
-          <div><div class=label>Your bill this cycle</div><div class=stat>{money(bill['bill'])}</div></div>
-        </div>
-        <p class="small muted" style="margin-top:10px">Invoiced automatically each cycle via Stripe.
-        Net value to you this cycle: <b>{money(bill['net_customer_value'])}</b>.</p>"""
+        plan_line = ('<p>Your plan is <b>active</b>, on the terms set out in your Outlay order form '
+                     'or agreement.</p>')
+    elif trial["active"]:
+        plan_line = (f'<p>You\'re on the free trial — <b>{trial["days_left"]} days left</b>. Your first '
+                     'weeks are free; we\'ll scope ongoing pricing with you before anything is charged.</p>')
     else:
-        stripe_note = ("" if stripe_on else
-                       '<p class="small muted">Card collection via Stripe isn\'t configured on this '
-                       'instance yet — activating records your plan so metering continues; we\'ll '
-                       'reconcile billing when Stripe is connected.</p>')
-        action = f"""
-        <p>After your trial you pay only <b>{int(bill['rate']*100)}% of the savings we deliver</b> —
-        if we don't save you money, you don't pay. Based on this cycle so far, that would be
-        <b>{money(bill['would_bill'])}</b> on {money(bill['cycle_savings'])} of savings.</p>
-        <form method=post action="/app/billing/convert">
-          <button class=btn>{'Add billing & activate paid plan' if stripe_on else 'Activate paid plan'}</button>
-        </form>{stripe_note}"""
+        plan_line = '<p>Your free trial has ended.</p>'
     body = f"""
-    <div class=row><h1>Billing</h1><div class=spacer></div>{status_badge}</div>
+    <div class=row><h1>Billing &amp; plan</h1><div class=spacer></div>{status_badge}</div>
     {flash_html}
-    <div class=card>{action}</div>
-    {_tier_decision_panel(bill, tier)}
-    {_tier_options(plan, stripe_on)}
+    <div class=card>
+      {plan_line}
+      <p class="small muted">Outlay's pricing is scoped to your usage and set with you — there are no
+      self-serve tiers here. Your plan and fees are governed by your Outlay order form or written
+      agreement.</p>
+      <p style="margin-top:14px"><a class=btn href="mailto:hello@outlay-ai.com?subject=Outlay%20pricing%20consultation">Book a pricing consultation →</a></p>
+    </div>
     <div class=card style="margin-top:16px">
-      <div class=label>How billing works</div>
-      <p class="small muted">We meter the realized savings on every routed request (baseline cost minus
-      actual cost — dollars only, never prompt content). Your bill each cycle is {int(bill['rate']*100)}%
-      of that. Lifetime savings delivered: <b>{money(bill['lifetime_savings'])}</b>.</p>
+      <div class=label>How pricing works</div>
+      <p class="small muted">We scope pricing to your AI spend, team size, and how much you want to
+      govern — agreed in a short consultation before you're charged. No prompt content is ever used in
+      billing; figures come from usage metadata only.</p>
     </div>"""
     return page("Billing", body, account, "/app/billing")
-
-
-# Self-optimize uplift: how much MORE the bill is cut when routing is tuned on the
-# customer's own traffic vs. the global PAYG floors. Range is honest/illustrative —
-# the exact figure is measured on each customer's own data once they're on the tier.
-# (Methodology + measurement in modelpilot/SELF_OPTIMIZE_EVAL.md.)
-SELFOPT_UPLIFT_LO = 0.15
-SELFOPT_UPLIFT_HI = 0.35
-SELFOPT_FEE = 99.0
-_PAYG_RATE, _SUB_RATE = 0.20, 0.15
-
-
-def _tier_decision_panel(bill: dict, current_tier: str) -> str:
-    """Personalized PAYG-vs-Self-optimize comparison from the customer's own savings,
-    so they can decide with real numbers. Two value drivers, both shown: the rate cut
-    (20%->15%, guaranteed) and the tuning uplift (estimated 15-35% more savings)."""
-    S = float(bill.get("cycle_savings") or 0.0)
-    u_mid = (SELFOPT_UPLIFT_LO + SELFOPT_UPLIFT_HI) / 2
-    breakeven = SELFOPT_FEE / ((1 + u_mid) * (1 - _SUB_RATE) - (1 - _PAYG_RATE))
-    if S < 1:
-        return (f'<div class=card style="margin-top:16px"><div class=label>Which tier is right for you?</div>'
-                f'<p class="small muted">Once you have a billing cycle of routed traffic, a personalized '
-                f'comparison appears here. Rule of thumb: <b>Pay-as-you-go</b> (20% of savings, no fee) is best '
-                f'while you ramp; <b>Self-optimize</b> ($99/mo + 15%) pulls ahead once your monthly savings clear '
-                f'~{money(breakeven)} — it both cuts the rate <i>and</i> tunes routing on your own traffic for an '
-                f'estimated {int(SELFOPT_UPLIFT_LO*100)}–{int(SELFOPT_UPLIFT_HI*100)}% more savings.</p></div>')
-    payg_keep = (1 - _PAYG_RATE) * S
-    rate_only = (1 - _SUB_RATE) * S - SELFOPT_FEE                 # guaranteed: rate cut, zero tuning uplift
-    keep_lo = (1 - _SUB_RATE) * S * (1 + SELFOPT_UPLIFT_LO) - SELFOPT_FEE
-    keep_hi = (1 - _SUB_RATE) * S * (1 + SELFOPT_UPLIFT_HI) - SELFOPT_FEE
-    delta_mid = ((keep_lo + keep_hi) / 2) - payg_keep
-    verdict = ("Self-optimize likely nets you more" if delta_mid > 0
-               else "Pay-as-you-go is likely the better deal for now")
-    sign = "+" if delta_mid >= 0 else "−"
-    return f"""<div class=card style="margin-top:16px">
-      <div class=label>Which tier is right for you? <span class="small muted">— from your own savings</span></div>
-      <p class="small muted" style="margin:6px 0 12px">Your savings this cycle: <b>{money(S)}</b>. Self-optimize has
-      two effects: a <b>guaranteed rate cut</b> (20% → 15%) and an <b>estimated {int(SELFOPT_UPLIFT_LO*100)}–{int(SELFOPT_UPLIFT_HI*100)}%
-      more savings</b> from tuning routing on your own traffic.</p>
-      <table><thead><tr><th>Plan</th><th>You keep this cycle</th></tr></thead><tbody>
-        <tr><td>Pay-as-you-go (20%, no fee)</td><td>{money(payg_keep)}</td></tr>
-        <tr><td>Self-optimize — rate cut only (worst case)</td><td>{money(rate_only)}</td></tr>
-        <tr><td>Self-optimize — with {int(SELFOPT_UPLIFT_LO*100)}–{int(SELFOPT_UPLIFT_HI*100)}% tuning uplift</td>
-            <td>{money(keep_lo)} – {money(keep_hi)}</td></tr>
-      </tbody></table>
-      <p class="small muted" style="margin-top:10px"><b>{_e(verdict)}</b> — about <b>{sign}{money(abs(delta_mid))}</b>/cycle
-      vs pay-as-you-go at the midpoint estimate. The uplift range is illustrative; your <i>exact</i> figure is
-      measured on your own traffic (held-out control arm) once you switch — never a guess after the fact.</p>
-    </div>"""
-
-
-def _tier_options(plan: dict, stripe_on: bool) -> str:
-    """The three pricing tiers with switch/upgrade controls; current tier marked."""
-    current = plan.get("tier") or "payg"
-    defs = [
-        ("payg", "Pay-as-you-go", "20% of savings",
-         "No subscription — pure pay-for-savings."),
-        ("self_optimize", "Self-optimize", "$99/mo + 15%",
-         "Routing tuned to your own traffic (metadata only — never your content)."),
-        ("managed", "Managed", "Subscription + 15%",
-         "We continuously tune routing to your traffic for you (metadata only). Subscription pricing coming soon."),
-    ]
-    cards = ""
-    for key, name, price, desc in defs:
-        if key == current:
-            ctl = '<span class="badge paid">Current plan</span>'
-        else:
-            label = "Switch" if key == "payg" else "Upgrade"
-            ctl = (f'<form method=post action="/app/billing/convert" style="margin:0">'
-                   f'<input type=hidden name=tier value="{key}">'
-                   f'<button class="btn sm">{label}</button></form>')
-        cards += (f'<div class=card style="margin:0"><div class=label>{_e(name)}</div>'
-                  f'<div class=stat style="font-size:21px">{_e(price)}</div>'
-                  f'<p class="small muted" style="min-height:54px">{_e(desc)}</p>{ctl}</div>')
-    return f'<h2 style="margin-top:22px">Plans</h2><div class="grid cols-3">{cards}</div>'
 
 
 # --------------------------------------------------------------------------- #

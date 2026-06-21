@@ -31,13 +31,13 @@
     agreement between the parties for use of the Service.</p>
 
   <h2 id="2">2. Scope &amp; nature of processing</h2>
-  <p>The Service routes Claude API requests to cost-efficient models. <b>In the default self-hosted /
-    thin-client deployment, prompt content, model outputs, and Customer's API keys are not transmitted to
-    or processed by Outlay</b> — they pass from Customer's infrastructure directly to Anthropic using
-    Customer's key, and any task classification runs locally on Customer's own infrastructure (no
-    Outlay system inspects prompt content). (In the optional <b>hosted-gateway</b> deployment,
-    Customer's request content and API key are processed in memory solely to route the request — read by
-    Outlay's classifier to select a model — and are not persisted; Outlay acts as processor for
+  <p>The Service attributes Customer's model spend to its work, forecasts it, and helps hold it to
+    budget, reading usage metadata read-only. <b>In the default read-only deployment, prompt content,
+    model outputs, and Customer's API keys are not transmitted to or processed by Outlay</b> — model
+    calls pass from Customer's infrastructure directly to the provider using Customer's key (no Outlay
+    system inspects prompt content). (In the optional <b>enforcement-gateway</b> deployment, Customer's
+    request content and API key are processed in memory solely to enforce the budget Customer sets —
+    blocking or routing down over-budget traffic — and are not persisted; Outlay acts as processor for
     that processing and does not store prompt content or model outputs.) In both deployments,
     Outlay additionally processes only:</p>
   <ul>

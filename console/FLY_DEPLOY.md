@@ -28,13 +28,17 @@ fly secrets set CONSOLE_SECRET=$(openssl rand -hex 32)
 fly secrets set ADMIN_EMAIL=you@yourco.com ADMIN_PASSWORD='a-strong-passphrase'
 
 # Email (SMTP) — REQUIRED for transactional email: 2FA codes, password resets,
-# budget alerts. Without it those flows still "work" but the message is only
-# logged server-side (dev mode), never delivered — so set this before relying on
-# 2FA in production. Use any SMTP provider (e.g. Postmark, SES, SendGrid, Resend).
+# pilot-request notifications, and budget/anomaly/sync alerts. Without it those
+# flows still "work" but the message is only logged server-side (dev mode), never
+# delivered — so set this before relying on 2FA or pilot-request alerts in
+# production. Use any SMTP provider (e.g. Postmark, SES, SendGrid, Resend).
 fly secrets set \
   SMTP_HOST=smtp.your-provider.com SMTP_PORT=587 \
   SMTP_USER=your-smtp-username SMTP_PASSWORD='your-smtp-password' \
-  SMTP_FROM='ModelPilot <no-reply@yourdomain.com>'
+  SMTP_FROM='Outlay <no-reply@outlay-ai.com>'
+# Optional — where pilot-request ("Become a customer") form submissions are emailed
+# (defaults to ADMIN_EMAIL). Also visible in the admin Leads inbox regardless.
+# fly secrets set PILOT_INBOX=you@outlay-ai.com
 
 # Optional — SMS 2FA via Twilio (the 'sms' channel; email 2FA needs none of this):
 # fly secrets set TWILIO_ACCOUNT_SID=AC... TWILIO_AUTH_TOKEN=... TWILIO_FROM='+15551234567'

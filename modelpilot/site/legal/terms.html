@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Terms of Service (template) — Outlay</title>
-<meta name="description" content="Outlay Terms of Service template — service, fees (20% of realized savings), warranties, liability, and savings disclaimer.">
+<meta name="description" content="Outlay Terms of Service template — service, fees (as set out in your order form), warranties, liability, and estimates disclaimer.">
 <link rel="canonical" href="https://outlay-ai.com/legal/terms">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="/docs/docs.css">
@@ -21,10 +21,14 @@
     counsel-reviewed. Have a qualified attorney finalize before you rely on it.</div>
 
   <h2 id="1">1. The service</h2>
-  <p>Outlay ("we") provides a drop-in proxy and hosted console that route Claude API requests
-    to cost-efficient models and report savings ("Service"). You ("Customer") use the Service with
-    your own Anthropic account and API key; we are not a party to your agreement with Anthropic and
-    do not resell model usage.</p>
+  <p>Outlay ("we") provides a hosted console and read-only integrations that attribute your LLM and
+    coding-agent spend to the work that drove it, forecast it by scope, and help you hold it to budget
+    ("Service"). The Service connects <b>read-only</b> to your work tracker and your model provider's
+    usage/billing data. Optionally, you may run our <b>opt-in enforcement gateway</b> in front of your
+    own model calls to enforce a budget you set (blocking or routing down over-budget traffic); that
+    gateway is the only component that sits in your request path, it is entirely opt-in, and it fails
+    open. You ("Customer") use the Service with your own model-provider account(s) and API key(s); we
+    are not a party to your agreement with any model provider and do not resell model usage.</p>
 
   <h2 id="2">2. Accounts &amp; acceptable use</h2>
   <p>You are responsible for your account, your users, and keeping credentials secure. Your use must
@@ -32,22 +36,25 @@
     Anthropic's usage policies.</p>
 
   <h2 id="3">3. Fees</h2>
-  <p>After any free trial, fees are <b>20% of the realized savings</b> the Service delivers in a
-    billing cycle, billed via our payment processor. "Realized savings" is the metered difference
-    between the baseline cost (the model you requested) and the actual cost of the model that ran, as
-    computed by the Service. If no savings are delivered, no fee is owed for that usage. Taxes are
-    your responsibility where applicable.</p>
+  <p>Fees are <b>as set out in the order form, quote, or written agreement</b> between you and us.
+    Pricing is scoped to your usage and agreed before you are charged; any pilot or evaluation period
+    is free unless otherwise agreed in writing. If no order form or written agreement is in place, the
+    Service is provided for evaluation only and no fee is owed. Fees are billed via our payment
+    processor, and taxes are your responsibility where applicable.</p>
 
-  <h2 id="4">4. Savings disclaimer</h2>
-  <p>Savings figures are <b>estimates measured from your traffic</b>, not guarantees. Actual results
-    depend on your workload, prompts, cache state, and model availability. We do not warrant any
-    particular savings percentage or dollar amount. Routing aims to preserve quality but model
-    outputs are probabilistic; you remain responsible for evaluating outputs for your use case.</p>
+  <h2 id="4">4. Estimates &amp; forecasts disclaimer</h2>
+  <p>The spend attributions, forecasts, and estimates the Service produces are <b>estimates measured
+    from your own data</b>, not guarantees. Actual results depend on your workload, prompts, cache
+    state, model pricing, and how your work is tracked. We do not warrant any particular figure,
+    forecast accuracy, or savings amount; you remain responsible for evaluating the Service's outputs
+    for your use case.</p>
 
   <h2 id="5">5. Availability</h2>
-  <p>The proxy is designed to <b>fail open</b> — if the Service is unreachable, requests pass through
-    to the Claude API unrouted. We do not guarantee uninterrupted operation and, except where a
-    separate written SLA applies, the Service is provided without uptime commitments.</p>
+  <p>The Service's read-only attribution and forecasting do <b>not</b> sit in your request path —
+    removing the Service does not change how your model calls are made. The optional enforcement
+    gateway is designed to <b>fail open</b>: if it is unreachable, requests pass through to your model
+    provider rather than being blocked. We do not guarantee uninterrupted operation and, except where
+    a separate written SLA applies, the Service is provided without uptime commitments.</p>
 
   <h2 id="6">6. Warranties</h2>
   <p>THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR
@@ -65,11 +72,11 @@
   <h2 id="8">8. Data</h2>
   <p>Our handling of data is described in the <a href="/legal/privacy">Privacy Policy</a> and, for
     personal data processed on your behalf, the <a href="/legal/dpa">DPA</a>. In the default
-    self-hosted / thin-client deployment, prompt content, model outputs, and your API key are not
-    transmitted to us by the proxy. If you opt into a <b>hosted-gateway</b> deployment, your API key
-    and request content are processed in memory solely to route the request (read by our classifier to
-    select a model) and are not persisted — handled as your processor under the DPA; we do not store
-    prompt content or model outputs.</p>
+    read-only deployment, prompt content, model outputs, and your API keys are <b>not transmitted to
+    us</b> — the Service reads usage metadata and work-tracker references only. If you opt into running
+    the <b>enforcement gateway</b>, your API key and request content are processed in memory solely to
+    enforce the budget you set and are not persisted — handled as your processor under the DPA; we do
+    not store prompt content or model outputs.</p>
 
   <h2 id="9">9. Term &amp; termination</h2>
   <p>You may stop using and cancel at any time. We may suspend or terminate for breach (including AUP
