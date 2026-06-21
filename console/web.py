@@ -2906,6 +2906,26 @@ def api_page(account: dict, keys: list[dict], deployments: list[dict],
     </div>
 
     <div class=card style="margin-top:16px">
+      <h2 style="margin-top:0"><code>GET /api/v1/enforcement</code></h2>
+      <p class="small muted">The hard-cap decision the opt-in <b>gateway</b> consults for
+      <a href="/app/outlay/programs">program budgets</a>. Returns the programs currently over their
+      <code>hard</code> cap so the in-path client can cache it and match each call's attribution tags
+      (team / project / work type) to a member scope locally. Pass <code>?ticket=&amp;team=&amp;work_type=</code>
+      to also resolve a single call.</p>
+      <pre>{{
+  "account_id": 42,
+  "enforced": [
+    {{"name": "Platform", "action": "downgrade", "floor_model": "claude-haiku-4-5",
+     "members": [{{"scope_type": "team", "scope_id": "platform"}}],
+     "projected_usd": 61000, "limit_usd": 50000}}
+  ],
+  "decision": {{"decision": "downgrade", "program": "Platform", "floor_model": "claude-haiku-4-5"}}
+}}</pre>
+      <p class="small muted">Read-only: Outlay returns the verdict; the gateway enforces on the traffic.
+      Programs set to <b>alert only</b> never appear here — they fire a <code>program.over</code> webhook instead.</p>
+    </div>
+
+    <div class=card style="margin-top:16px">
       <h2 style="margin-top:0">CSV exports</h2>
       <p class="small muted">Prefer a file? Download from the Spend page, or link directly (these need a
       signed-in session, not an API key):</p>

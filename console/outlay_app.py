@@ -582,6 +582,50 @@ def program_statuses(report: dict, programs: list[dict]) -> list[dict]:
     return out
 
 
+def enforced_programs(report: dict, programs: list[dict]) -> list[dict]:
+    """Programs the gateway should currently ENFORCE — i.e. enforce_mode='hard' and
+    over their cap. Returns the action + members + numbers so the in-path client can
+    cache this and decide per request by matching the call's attribution tags to a
+    member scope. Read-only by design; this is just the verdict, never the traffic."""
+    out = []
+    for s in program_statuses(report, programs):
+        if s.get("enforce_mode") == "hard" and s.get("status") == "over":
+            out.append({
+                "id": s.get("id"), "name": s.get("name"),
+                "action": s.get("action") or "block",
+                "floor_model": s.get("floor_model"),
+                "members": s.get("members") or [],
+                "spent_usd": s.get("spent_usd"), "limit_usd": s.get("limit_usd"),
+                "projected_usd": s.get("projected_usd"), "period_days": s.get("period_days"),
+            })
+    return out
+
+
+def program_decision(enforced: list[dict], ticket_id=None, team=None, task_class=None) -> dict:
+    """Given the enforced-programs list, decide what to do with one request described
+    by its attribution tags. 'block' wins over 'downgrade'; 'allow' when nothing
+    matches. Lets the gateway (or a test) resolve a per-call verdict locally."""
+    ticket_id = ticket_id or ""
+    proj = _project_key(ticket_id) if ticket_id else ""
+    matched = []
+    for p in enforced:
+        for m in p.get("members") or []:
+            st, sid = m.get("scope_type"), m.get("scope_id")
+            if (st == "overall"
+                    or (st == "team" and team and team == sid)
+                    or (st == "class" and task_class and task_class == sid)
+                    or (st == "project" and proj and proj == sid)):
+                matched.append(p)
+                break
+    if not matched:
+        return {"decision": "allow"}
+    block = next((p for p in matched if (p.get("action") or "block") == "block"), None)
+    chosen = block or matched[0]
+    return {"decision": chosen.get("action") or "block",
+            "program": chosen.get("name"), "program_id": chosen.get("id"),
+            "floor_model": chosen.get("floor_model")}
+
+
 def budget_statuses(report: dict, budgets: list[dict]) -> list[dict]:
     """Compute spend-vs-budget with pace projection from the stored report.
 

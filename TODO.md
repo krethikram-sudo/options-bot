@@ -111,8 +111,11 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 - [x] **`/app/outlay/programs`** page (define/list/delete, members textarea, enforcement selector) +
       `_check_programs` firing **`program.warn`/`program.over`** webhooks + email + Slack on transition (the
       over event is the automation hook *and* the future gateway signal). 320 tests.
-- [ ] Slice 2: machine enforcement-decision endpoint the gateway queries (programs over hard cap + action).
-- [ ] Slice 3: gateway/brain wiring (block / route-down at request time).
+- [x] **Slice 2: enforcement-decision endpoint** — `GET /api/v1/enforcement` (token-authed) returns programs
+      over their *hard* cap (`enforced`) so the gateway caches + matches locally; `?ticket=/team=/work_type=`
+      resolves a single call → `{decision: allow|block|downgrade, floor_model}`. Engine: `enforced_programs`
+      + `program_decision` (block wins over downgrade; project key from ticket). Documented on the API page.
+- [ ] Slice 3: gateway/brain wiring (consume `/api/v1/enforcement`; block / route-down at request time).
 
 ### 2026-06-21 — unit economics (cost per ticket / per closed / rework tax)
 - [x] Reframed raw spend as efficiency — `outlay_app.unit_economics(report)` computes cost per attributed
