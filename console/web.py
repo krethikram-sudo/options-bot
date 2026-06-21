@@ -1668,7 +1668,51 @@ bob@acme.com, Growth
     return page("Connect", form + _CONNECT_TOUR_JS, account, active="/app/outlay/connect")
 
 
-def estimate_backlog_page(account: dict, report: dict | None) -> str:
+def _scenario_card(report: dict, overall_budget_usd: float = 0.0) -> str:
+    """'If we commit this backlog…' — the planner's question. Combines the open-work
+    forecast (what's already in flight) with the pasted backlog estimate, and shows
+    the combined projection against the quarter budget. Only renders once a backlog
+    has been estimated."""
+    est = (report or {}).get("estimate") or {}
+    if not est:
+        return ""
+    fc = (report or {}).get("forecast") or {}
+    f_exp, f_lo, f_hi = fc.get("expected_usd", 0.0), fc.get("low_usd", 0.0), fc.get("high_usd", 0.0)
+    e_exp, e_lo, e_hi = est.get("expected_usd", 0.0), est.get("low_usd", 0.0), est.get("high_usd", 0.0)
+    total, lo, hi = f_exp + e_exp, f_lo + e_lo, f_hi + e_hi
+
+    lines = (f'<div class=dual style="margin-top:4px">'
+             f'<div class=r><span>Open work, forecast</span><b class=num>{money(f_exp)}</b></div>'
+             f'<div class=r><span>+ this backlog, if committed</span><b class=num>{money(e_exp)}</b></div>'
+             f'<div class=r style="border-top:1px solid var(--line);padding-top:7px;margin-top:3px">'
+             f'<span><b>= Projected total</b></span><b class=num>{money(total)}</b></div></div>')
+
+    if overall_budget_usd and overall_budget_usd > 0:
+        delta = total - overall_budget_usd
+        over = delta > 0
+        tone = "over" if over else "ok"
+        col = "var(--red)" if over else "var(--grn-d)"
+        verdict = (f'<b style="color:{col}">{money(abs(delta))} {"over" if over else "under"}</b> '
+                   f'your {money(overall_budget_usd)} budget')
+        bmax = max(total, overall_budget_usd) or 1
+        bars = (f'<div class=dual style="margin-top:12px">'
+                f'<div class=r><span>Quarter budget</span><span class=num>{money(overall_budget_usd)}</span></div>'
+                f'<div class=track><span style="width:{overall_budget_usd/bmax*100:.0f}%;background:#9aa3b3"></span></div>'
+                f'<div class=r><span>Projected if you commit this</span><span class=num>{money(total)}</span></div>'
+                f'<div class=track><span style="width:{total/bmax*100:.0f}%;background:{col}"></span></div></div>')
+        foot = f'<p class=muted style="font-size:12.5px;margin:12px 0 0">Committing this backlog lands you {verdict} — likely {money(lo)}–{money(hi)} combined.</p>'
+        tag = f'<span class="otag {tone}">{"over" if over else "on track"}</span>'
+    else:
+        bars = ""
+        foot = (f'<p class=muted style="font-size:12.5px;margin:12px 0 0">Likely {money(lo)}–{money(hi)} combined. '
+                f'<a href="/app/outlay/budgets">Set a quarter budget</a> to see this against your target.</p>')
+        tag = '<span class="otag ex">scenario</span>'
+    return (f'<div class=ocard style="margin-top:16px"><div class=dh>If you commit this backlog{tag}</div>'
+            f'<div class=bignum><span class=v>{money(total)}</span>'
+            f'<span class=of>projected quarter total</span></div>{lines}{bars}{foot}</div>')
+
+
+def estimate_backlog_page(account: dict, report: dict | None, overall_budget_usd: float = 0.0) -> str:
     """Budget planned work against the cost model learned from connected history."""
     head = ('<div class=ohead><h1>Estimate your backlog</h1>'
             '<p>Price planned work before it\'s built. Outlay costs each item against the model it learned '
@@ -1717,7 +1761,8 @@ def estimate_backlog_page(account: dict, report: dict | None) -> str:
                   f'<span class=of>likely {money(est.get("low_usd", 0))}–{money(est.get("high_usd", 0))}</span></div>'
                   f'<div class=muted style="font-size:12.5px;margin:2px 0 12px">{est.get("items_costed", 0)} '
                   f'estimated, {est.get("items_unknown", 0)} declined.</div>{rows}{tighten}</div>')
-    return page("Estimate", head + form + result, account, active="/app/outlay/estimate")
+    scenario = _scenario_card(report, overall_budget_usd)
+    return page("Estimate", head + form + result + scenario, account, active="/app/outlay/estimate")
 
 
 def _pct(x, digits: int = 0) -> str:

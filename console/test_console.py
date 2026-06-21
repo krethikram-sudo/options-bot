@@ -1554,6 +1554,17 @@ def test_outlay_backlog_estimator(env, client):
     assert r.status_code == 200 and "Backlog estimate" in r.text
     assert "estimated," in r.text and "likely" in r.text
 
+    # the scenario card combines open-work forecast + this backlog
+    assert "If you commit this backlog" in r.text and "Projected total" in r.text
+    # with no budget set it nudges to set one
+    assert "Set a quarter budget" in r.text
+
+    # with an overall budget, the scenario verdicts against it
+    client.post("/app/outlay/budgets", data={"scope_type": "overall", "scope_id": "",
+                "limit_usd": "1", "period_days": "90"}, follow_redirects=True)
+    r = client.get("/app/outlay/estimate")
+    assert "your $1.00 budget" in r.text and "over" in r.text
+
 
 def test_outlay_estimator_needs_history(env, client):
     _signup(client, email="c@d.com")
