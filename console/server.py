@@ -729,8 +729,10 @@ def _run_maintenance() -> dict:
     summary = spend_digest.run_due_digests()
     close = close_pack.run_due_close_packs()
     webhooks = store.redeliver_due_webhooks()
+    pruned = store.prune_webhook_deliveries()  # cap the delivery-log table
     retention = store.purge_due_outlay_history()
-    result = {**summary, "close_pack": close, "webhooks": webhooks, "retention": retention}
+    result = {**summary, "close_pack": close, "webhooks": webhooks,
+              "deliveries_pruned": pruned, "retention": retention}
     store.mark_cron_run("digest-due", result)
     return result
 
@@ -817,6 +819,17 @@ def app_outlay_scope(request: Request, type: str = "team", id: str = ""):
     return _html(web.scope_page(acct, store.get_outlay_report(acct["id"]), scope_type, id))
 
 
+@app.get("/app/outlay/showback", response_class=HTMLResponse)
+def app_outlay_showback(request: Request):
+    """Per-team / cost-center showback statement (printable)."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    report = store.get_outlay_report(acct["id"])
+    statuses = outlay_app.budget_statuses(report, store.list_outlay_budgets(acct["id"])) if report else []
+    return _html(web.showback_page(acct, report, statuses))
+
+
 @app.post("/app/outlay/anomaly/mute")
 async def app_anomaly_mute(request: Request):
     acct, redir = _require(request)
@@ -861,7 +874,10 @@ async def app_outlay_slack(request: Request):
     if redir:
         return redir
     f = await _form(request)
-    store.set_slack_webhook(acct["id"], f.get("slack_webhook"))
+    try:
+        store.set_slack_webhook(acct["id"], f.get("slack_webhook"))
+    except store.StoreError:
+        return _redirect("/app/outlay/connect?slack_error=1#alerts")
     _audit(acct["id"], "slack.save",
            actor=acct.get("display_email") or acct.get("email", ""),
            detail="set" if (f.get("slack_webhook") or "").strip() else "cleared")

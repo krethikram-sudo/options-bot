@@ -101,10 +101,47 @@ def send_pilot_request(lead: dict) -> bool:
     return send_email(to, f"Pilot request — {lead.get('company') or lead.get('email')}", body)
 
 
+def is_safe_url(url: str) -> bool:
+    """SSRF guard for customer-supplied delivery URLs (webhooks, Slack). Allows only
+    http(s), and rejects any host that resolves to a loopback / link-local / private /
+    ULA / multicast / reserved / unspecified address — so a customer can't point us at
+    cloud metadata (169.254.169.254), localhost, or internal services. A host that
+    doesn't resolve is allowed (the request will just fail; it's not an SSRF target).
+    Re-checked at each delivery, not only at save, to blunt DNS rebinding."""
+    import ipaddress
+    import socket
+    from urllib.parse import urlparse
+    try:
+        p = urlparse(url or "")
+    except ValueError:
+        return False
+    if p.scheme not in ("http", "https") or not p.hostname:
+        return False
+    try:
+        port = p.port or (443 if p.scheme == "https" else 80)
+    except ValueError:
+        return False
+    try:
+        infos = socket.getaddrinfo(p.hostname, port, proto=socket.IPPROTO_TCP)
+    except socket.gaierror:
+        return True  # unresolvable now → not a reachable internal target
+    except (UnicodeError, ValueError):
+        return False
+    for info in infos:
+        try:
+            addr = ipaddress.ip_address(info[4][0])
+        except ValueError:
+            return False
+        if (addr.is_loopback or addr.is_link_local or addr.is_private or addr.is_multicast
+                or addr.is_reserved or addr.is_unspecified):
+            return False
+    return True
+
+
 def send_slack(webhook_url: str, text: str) -> bool:
     """Post a message to a Slack (or Teams-compatible) incoming webhook. Best-effort
-    — alerting must never break the path that triggered it."""
-    if not webhook_url or not text:
+    — alerting must never break the path that triggered it. SSRF-guarded."""
+    if not webhook_url or not text or not is_safe_url(webhook_url):
         return False
     import json as _json
     import urllib.request
@@ -112,10 +149,21 @@ def send_slack(webhook_url: str, text: str) -> bool:
     req = urllib.request.Request(webhook_url, data=body,
                                  headers={"content-type": "application/json"}, method="POST")
     try:
-        urllib.request.urlopen(req, timeout=5).close()
+        _no_redirect_opener().open(req, timeout=5).close()
         return True
     except Exception:  # noqa: BLE001
         return False
+
+
+def _no_redirect_opener():
+    """A urllib opener that does NOT follow redirects — so a validated public URL
+    can't 30x us to an internal address (SSRF amplification)."""
+    import urllib.request
+
+    class _NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *a, **k):  # noqa: D401
+            return None
+    return urllib.request.build_opener(_NoRedirect)
 
 
 def send_anomaly_alert(email: str, anomalies: list, product: str = "Outlay") -> bool:

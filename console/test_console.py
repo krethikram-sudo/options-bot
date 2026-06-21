@@ -2649,6 +2649,46 @@ def test_scope_drilldown_from_spend(env, client):
                       follow_redirects=False).status_code in (302, 303, 307)
 
 
+def test_showback_page_per_team(env, client):
+    _, store = env
+    _signup(client, email="show@x.com")
+    acct = store.get_account_by_email("show@x.com")
+    # no team-attributed data yet → helpful empty state
+    assert "No team-attributed spend yet" in client.get("/app/outlay/showback").text
+
+    client.post("/app/outlay/sample", follow_redirects=True)
+    r = client.get("/app/outlay/showback")
+    assert r.status_code == 200
+    assert "Showback" in r.text and "by team / cost-center" in r.text
+    assert "Allocation" in r.text and "of attributed" in r.text
+    # links to the team CSV + print, and is reachable from the finance Spend view
+    assert "/app/outlay/export.csv?view=teams" in r.text and "window.print()" in r.text
+    store.set_persona(acct["id"], "finance", 0)
+    assert "/app/outlay/showback" in client.get("/app/outlay").text
+
+
+def test_webhook_and_slack_urls_are_ssrf_guarded(env, client):
+    from console import notify
+    _, store = env
+    a = store.create_account("ssrf@x.com", "password123")
+    # public hostnames pass (or are allowed when unresolvable); internal ones are blocked
+    assert notify.is_safe_url("https://hooks.slack.com/services/x") is True
+    assert notify.is_safe_url("https://nonexistent.invalid/h") is True   # NXDOMAIN → not a target
+    for bad in ("http://169.254.169.254/latest/meta-data/", "http://localhost:8700/admin",
+                "http://127.0.0.1/", "http://10.0.0.5/hook", "ftp://x/y", "http://[::1]/"):
+        assert notify.is_safe_url(bad) is False, bad
+    # store rejects an internal webhook / slack URL at save
+    import pytest as _pytest
+    with _pytest.raises(store.StoreError):
+        store.create_webhook(a["id"], "http://169.254.169.254/")
+    with _pytest.raises(store.StoreError):
+        store.set_slack_webhook(a["id"], "http://localhost:8700/x")
+    # the route surfaces the rejection rather than 500ing
+    _signup(client, email="ssrf2@x.com")
+    r = client.post("/app/outlay/slack", data={"slack_webhook": "http://127.0.0.1/x"})
+    assert r.status_code in (302, 303, 307) and "slack_error=1" in r.headers["location"]
+
+
 def test_weekly_digest_builds_and_respects_cadence(env, client, monkeypatch):
     from console import spend_digest, store, notify
     _signup(client, email="dig@x.com")

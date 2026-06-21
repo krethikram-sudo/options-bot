@@ -667,8 +667,8 @@ def delete_account(account_id: int, path: str | None = None) -> None:
             conn.execute(f"DELETE FROM proofs WHERE deployment_id IN ({placeholders})", deps)
         # tables keyed directly by account_id (incl. all ingested Outlay data, audit
         # log, personas, OTP codes, and feedback — full erasure for DPA/right-to-be-forgotten)
-        for tbl in ("api_keys", "request_logs", "proposals", "webhooks", "budget_alerts",
-                    "resets", "members", "sso_configs", "settings", "plans",
+        for tbl in ("api_keys", "request_logs", "proposals", "webhooks", "webhook_deliveries",
+                    "budget_alerts", "resets", "members", "sso_configs", "settings", "plans",
                     "personas", "audit_log", "otp_codes",
                     "outlay_reports", "outlay_history", "outlay_connections", "outlay_budgets",
                     "deployments"):
@@ -940,7 +940,12 @@ def get_anomaly_prefs(account_id: int, path: str | None = None) -> tuple[float, 
 
 
 def set_slack_webhook(account_id: int, url: str | None, path: str | None = None) -> None:
-    _upsert_connection_field(account_id, "slack_webhook", (url or "").strip() or None, path)
+    url = (url or "").strip() or None
+    if url:
+        from . import notify
+        if not notify.is_safe_url(url):
+            raise StoreError("Slack webhook must be a public https URL (not localhost / internal / metadata).")
+    _upsert_connection_field(account_id, "slack_webhook", url, path)
 
 
 def get_slack_webhook(account_id: int, path: str | None = None) -> str | None:
@@ -2222,6 +2227,9 @@ def create_webhook(account_id: int, url: str, events: str = "all",
                    path: str | None = None, now: float | None = None) -> dict:
     if not (url or "").startswith(("http://", "https://")):
         raise StoreError("webhook url must be http(s)")
+    from . import notify
+    if not notify.is_safe_url(url):
+        raise StoreError("webhook url must be a public address (not localhost / internal / metadata)")
     now = now or time.time()
     secret = "whsec_" + secrets.token_urlsafe(24)
     conn = connect(path)
@@ -2294,10 +2302,15 @@ def _webhook_attempt(url: str, body: bytes, headers: dict, post_fn=None) -> tupl
             return False, None, str(e)[:200]
         code = code if isinstance(code, int) else 200
         return (200 <= code < 300), code, ""
+    from . import notify
+    # SSRF guard, re-checked at delivery (not just at save) to blunt DNS rebinding,
+    # and a no-redirect opener so a public URL can't 30x us to an internal address.
+    if not notify.is_safe_url(url):
+        return False, None, "blocked: url resolves to a private/internal address"
     import urllib.request
     req = urllib.request.Request(url, data=body, headers=headers, method="POST")
     try:
-        resp = urllib.request.urlopen(req, timeout=5)
+        resp = notify._no_redirect_opener().open(req, timeout=5)
         code = getattr(resp, "status", 200)
         resp.close()
         return (200 <= code < 300), code, ""
@@ -2431,13 +2444,33 @@ def redeliver_due_webhooks(now: float | None = None, path: str | None = None,
 
 def _update_delivery(delivery_id: int, status: str, attempts: int, status_code,
                      error: str, next_attempt_at, path: str | None = None) -> None:
+    # Once a delivery is terminal (delivered/dead) drop its stored payload — it's the
+    # exact event body (customer data) and only needed while the row can still retry.
+    drop_payload = status != "failed"
     conn = connect(path)
     try:
         conn.execute(
             "UPDATE webhook_deliveries SET status=?, attempts=?, status_code=?, error=?,"
-            " next_attempt_at=? WHERE id=?",
+            " next_attempt_at=?" + (", payload=NULL" if drop_payload else "") + " WHERE id=?",
             (status, attempts, status_code, (error or "")[:200], next_attempt_at, delivery_id))
         conn.commit()
+    finally:
+        conn.close()
+
+
+def prune_webhook_deliveries(now: float | None = None, keep_days: int = 30,
+                             path: str | None = None) -> int:
+    """Delete terminal (delivered/dead) delivery-log rows older than keep_days so the
+    table doesn't grow without bound. 'failed' rows are the live redelivery queue and
+    are never pruned here. Returns rows removed."""
+    cutoff = (now or time.time()) - keep_days * 86400
+    conn = connect(path)
+    try:
+        cur = conn.execute(
+            "DELETE FROM webhook_deliveries WHERE status IN ('delivered','dead') AND created_at < ?",
+            (cutoff,))
+        conn.commit()
+        return cur.rowcount or 0
     finally:
         conn.close()
 

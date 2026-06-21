@@ -100,6 +100,20 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-21 — post-review hardening (SSRF + privacy + cadence) & per-team showback page
+- [x] Ran parallel security + correctness reviews over the session's new code. Fixed every real finding:
+- [x] **SSRF (HIGH)** — webhook + Slack delivery URLs were unvalidated; a trial account could point us at
+      `169.254.169.254` / localhost / internal IPs. Added `notify.is_safe_url` (rejects loopback/link-local/
+      private/ULA/multicast/reserved hosts; allows unresolvable), enforced at **save** (`create_webhook`,
+      `set_slack_webhook`) and at **every delivery**, plus a **no-redirect opener** (no 30x SSRF amplification).
+- [x] **Unbounded `webhook_deliveries` (HIGH)** — `prune_webhook_deliveries` drops terminal rows >30d in the
+      maintenance sweep; terminal rows also **null their stored payload** (event-body PII). Account deletion now
+      purges `webhook_deliveries` too.
+- [x] **Cadence reset (MED)** — digest/close-pack sweeps no longer stamp the cadence when there was nothing to
+      send (no spend yet / no email), so the first genuine pack isn't suppressed for a week/month.
+- [x] **Showback page** (`/app/outlay/showback`) — per-team/cost-center allocation statement (spend, share,
+      budget status, top work type), print-friendly, linked from the finance Spend view. 318 tests.
+
 ### 2026-06-21 — per-team / cost-center CSV export (showback / chargeback)
 - [x] We exported tickets/people/classes/models/savings but not the team allocation finance needs for
       showback. Added a `teams` view to `report_csv` (`team,spend_usd,share_pct,events`) from `team_spend`,
