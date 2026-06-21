@@ -539,7 +539,7 @@ def app_welcome(request: Request):
         return redir
     conn = store.get_outlay_connection(acct["id"])
     idmap = store.get_outlay_identity_map(acct["id"]) or ""
-    return _html(web.welcome_page(acct, conn, idmap))
+    return _html(web.welcome_page(acct, conn, idmap, members=store.list_members(acct["id"])))
 
 
 @app.get("/app", response_class=HTMLResponse)
@@ -1959,11 +1959,10 @@ def team_roster_template(request: Request):
 
 @app.post("/app/team/roster")
 async def team_roster(request: Request):
-    """One org-structure upload: a CSV of the org that (1) names each person for
-    usage-by-person, (2) maps them to a team for cost allocation, and (3) invites
-    everyone with an email. Columns (header row, any order): name, email, team,
-    and optional access (admin|member|billing; default member). Rows with no email
-    (e.g. a CI/service account) are named + mapped but not invited. Owner/admin-only."""
+    """One org-structure upload that builds the people directory: a CSV that (1)
+    names each person for usage-by-person and (2) maps them to a team for cost
+    allocation. Columns (header row, any order): name, email, team. It does NOT
+    invite — people are invited one click at a time from their tile. Owner/admin-only."""
     import csv as _csv
     import io as _io
     acct, redir = _require_team_admin(request)
@@ -1971,7 +1970,6 @@ async def team_roster(request: Request):
         return redir
     fields, filetext = await _multipart(request)
     nxt = (fields.get("next") or "")
-    invited = skipped = 0
     map_lines: list[str] = []
     names: dict[str, str] = {}
     if filetext:
@@ -1992,7 +1990,6 @@ async def team_roster(request: Request):
                     elif h in ("access", "permission", "role"):
                         col["access"] = i
                 rows = rows[1:]
-        owner_email = (acct["email"] or "").strip().lower()
         for r in rows:
             def cell(key: str) -> str:
                 i = col.get(key)
@@ -2002,24 +1999,12 @@ async def team_roster(request: Request):
             # email, or a service-account / CI key id. Name is display-only.
             ident = cell("email").strip().lower()
             team = cell("team")
-            access = cell("access").strip().lower()
-            access = access if access in store.TEAM_ROLES else "member"
             if not ident:
                 continue
             if name:
                 names[ident] = name
             if team:
                 map_lines.append(f"{ident}, {team}")
-            # Only a real personal email (not a bare @domain, not the owner) is invited.
-            if "@" not in ident or ident.startswith("@") or ident == owner_email:
-                continue
-            try:
-                store.create_member(acct["id"], ident, access)
-            except store.StoreError:        # already owner/member
-                skipped += 1
-                continue
-            _send_invite_email(ident)
-            invited += 1
     if map_lines:
         merged = _merge_identity_csv(store.get_outlay_identity_map(acct["id"]) or "",
                                      "\n".join(map_lines))
@@ -2027,12 +2012,40 @@ async def team_roster(request: Request):
     if names:
         store.set_outlay_identity_names(acct["id"], names)
     _audit(acct["id"], "team.roster", actor=acct.get("display_email") or acct.get("email", ""),
-           detail=f"invited={invited} named={len(names)} mapped={len(map_lines)} skipped={skipped}")
-    summary = (f"Org uploaded — invited {invited}, named {len(names)}, mapped "
-               f"{len(map_lines)} to teams, skipped {skipped} (owner / already on the team).")
+           detail=f"named={len(names)} mapped={len(map_lines)}")
+    summary = (f"Org uploaded — {len(names)} people added to your directory, "
+               f"{len(map_lines)} mapped to teams. Invite anyone with one click below.")
     if nxt == "welcome":
         return _redirect("/app/welcome")
     return _redirect(f"/app/team?roster={quote(summary)}")
+
+
+@app.post("/app/team/invite-all")
+async def team_invite_all(request: Request):
+    """Invite every person in the directory who has an email and isn't on the team
+    yet — the bulk companion to the per-tile Invite button. Owner/admin-only."""
+    acct, redir = _require_team_admin(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    owner_email = (acct["email"] or "").strip().lower()
+    existing = {(m["email"] or "").strip().lower() for m in store.list_members(acct["id"])}
+    invited = 0
+    for ident in store.get_outlay_identity_names(acct["id"]):
+        ident = ident.strip().lower()
+        if "@" not in ident or ident.startswith("@") or ident == owner_email or ident in existing:
+            continue
+        try:
+            store.create_member(acct["id"], ident, "member")
+        except store.StoreError:
+            continue
+        _send_invite_email(ident)
+        invited += 1
+    _audit(acct["id"], "team.invite_all", actor=acct.get("display_email") or acct.get("email", ""),
+           detail=f"invited={invited}")
+    if (f.get("next") or "") == "welcome":
+        return _redirect("/app/welcome")
+    return _redirect(f"/app/team?roster={quote(f'Invited {invited} people from your org directory.')}")
 
 
 @app.post("/app/team/role")

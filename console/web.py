@@ -8,6 +8,7 @@ consistent with the existing dashboard/ingest pages.
 import html
 import json as _json
 import os
+import re
 import time
 from datetime import datetime, timezone
 from urllib.parse import quote
@@ -197,6 +198,19 @@ a.kpi:hover .kdrill{opacity:1;color:var(--grn-d)}
 .olinks{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:0 0 18px;font-size:13.5px}
 .olinks .sp{flex:1}
 .syncline{color:var(--muted);font-size:12.5px;margin:-6px 0 16px}
+/* org directory — a visual tile per person */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:6px}
+.ptile{display:flex;align-items:flex-start;gap:11px;border:1px solid var(--line);border-radius:12px;
+  padding:12px 13px;background:#fff}
+.pav{flex:none;width:34px;height:34px;border-radius:50%;background:var(--grn-l,#e7f1ec);color:var(--grn-d);
+  font-weight:700;font-size:12.5px;display:flex;align-items:center;justify-content:center;letter-spacing:.02em}
+.pmeta{flex:1;min-width:0}
+.pnm{font-size:14px;font-weight:600;color:var(--ink);line-height:1.25;overflow:hidden;text-overflow:ellipsis}
+.psub{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ptt{display:inline-block;margin-top:6px;font-size:11px;color:var(--mut);background:var(--paper,#f6f8fa);
+  border:1px solid var(--line2);border-radius:999px;padding:1px 8px}
+.pact{flex:none;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.pact select{padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:12px}
 /* demo-mode banner (gated to demo accounts) */
 .demobar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 18px;padding:9px 14px;
   border:1px solid #e7d3a1;background:#fbf3dd;border-radius:11px;font-size:13px}
@@ -953,24 +967,113 @@ def _org_upload_form(next_to: str = "") -> str:
     nx = f'<input type=hidden name=next value="{next_to}">' if next_to else ""
     return (
         '<div class=ocard style="margin-top:16px"><div class=dh>Upload your org '
-        '<span class=sub>names + teams + invites, in one file</span></div>'
-        '<p class=muted style="margin:-4px 0 12px;font-size:13.5px">One CSV sets up your whole org. Each '
-        'row is one person — we use their <b>name</b> to show spend by person (not just an email), put them '
-        'on a <b>team</b> for cost-center allocation, and email them an <b>invite</b>. '
-        'Columns: <code>name</code>, <code>email</code>, <code>team</code> '
-        '(optional <code>access</code>: admin / member). For a <b>service account / CI key</b>, put its '
-        'key id in the email column and a friendly name — it’s named and mapped, just not invited.</p>'
+        '<span class=sub>names + teams, in one file</span></div>'
+        '<p class=muted style="margin:-4px 0 12px;font-size:13.5px">One CSV builds your org directory. Each '
+        'row is one person — we use their <b>name</b> to show spend by person (not just an email) and put '
+        'them on a <b>team</b> for cost-center allocation. Columns: <code>name</code>, <code>email</code>, '
+        '<code>team</code>. For a <b>service account / CI key</b>, put its key id in the email column and a '
+        'friendly name. <b>Then invite anyone with one click</b> from their tile below.</p>'
         f'<form method=post action="/app/team/roster" enctype="multipart/form-data" '
         f'style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">{nx}'
         '<input type=file name=file accept=".csv,text/csv" required style="font-size:13px;max-width:240px">'
         '<button class="btn">Upload</button>'
         '<a class="btn sec sm" href="/app/team/roster-template.csv">Download template</a></form>'
         '<p class=muted style="font-size:12px;margin-top:8px">Example row: '
-        '<code>Jordan&nbsp;Lee, jordan@acme.com, Platform</code>. You (the owner) and anyone already '
-        'on the team are skipped.</p></div>')
+        '<code>Jordan&nbsp;Lee, jordan@acme.com, Platform</code>.</p></div>')
 
 
-def welcome_page(account: dict, conn: dict | None, idmap: str = "") -> str:
+def _parse_team_map(text: str) -> dict:
+    """identity-map text → {identifier: team} (exact ids; includes @domain rules)."""
+    out: dict[str, str] = {}
+    for line in (text or "").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        sep = "->" if "->" in line else ("," if "," in line else None)
+        if not sep:
+            continue
+        a, b = line.split(sep, 1)
+        a, b = a.strip().lower(), b.strip()
+        if a and b:
+            out[a] = b
+    return out
+
+
+def _org_directory(account: dict, members: list[dict], next_to: str = "") -> str:
+    """The org as a grid of person tiles — name, email/id, team — each with a
+    one-click action: Invite (someone not yet on the team), role/remove (a member),
+    or a 'service account' tag (a non-email identity). Built from the uploaded org
+    (names + team map) unioned with actual members. Hidden until there's anyone."""
+    from .store import TEAM_ROLES
+    aid = account.get("id")
+    names = store.get_outlay_identity_names(aid) if aid else {}
+    teammap = _parse_team_map(store.get_outlay_identity_map(aid) if aid else "")
+    owner = (account.get("email") or "").strip().lower()
+    member_by = {(m.get("email") or "").strip().lower(): m for m in (members or [])}
+    nx = f'<input type=hidden name=next value="{next_to}">' if next_to else ""
+
+    ids = {i for i in (set(names) | set(member_by)) if not i.startswith("@") and i != owner}
+    if not names and not members:
+        return ""
+
+    def initials(label: str) -> str:
+        parts = [p for p in re.split(r"[\s@._-]+", label) if p]
+        return _e((parts[0][:1] + (parts[1][:1] if len(parts) > 1 else "")).upper() or "?")
+
+    def team_tag(i: str) -> str:
+        t = teammap.get(i, "")
+        return f'<span class=ptt>{_e(t)}</span>' if t else ""
+
+    def tile(disp: str, sub: str, i: str, action: str, badge: str = "") -> str:
+        return (f'<div class=ptile><div class=pav>{initials(disp or sub)}</div>'
+                f'<div class=pmeta><div class=pnm>{_e(disp)}{badge}</div>'
+                f'<div class=psub>{_e(sub)}</div>{team_tag(i)}</div>'
+                f'<div class=pact>{action}</div></div>')
+
+    tiles = (tile(account.get("email", ""), "account owner", owner,
+                  '<span class="otag ok">owner</span>'))
+    n_invitable = 0
+    for i in sorted(ids, key=lambda x: (names.get(x) or x).lower()):
+        nm = names.get(i)
+        is_email = "@" in i and not i.startswith("@")
+        m = member_by.get(i)
+        if m:
+            opts = "".join(f'<option value="{r}"{" selected" if m["role"]==r else ""}>{r}</option>'
+                           for r in TEAM_ROLES)
+            badge = ("" if m["status"] == "active"
+                     else f' <span class="otag warn">{_e(m["status"])}</span>')
+            action = (f'<form method=post action="/app/team/role" style="margin:0;display:flex;gap:6px">'
+                      f'<input type=hidden name=member_id value="{m["id"]}">'
+                      f'<select name=role>{opts}</select><button class="btn sec sm">Save</button></form>'
+                      f'<form method=post action="/app/team/remove" style="margin:6px 0 0">'
+                      f'<input type=hidden name=member_id value="{m["id"]}">'
+                      f'<button class="btn sec sm">Remove</button></form>')
+            tiles += tile(nm or m["email"], i, i, action, badge)
+        elif is_email:
+            n_invitable += 1
+            action = (f'<form method=post action="/app/team/invite" style="margin:0">'
+                      f'{nx}<input type=hidden name=email value="{_e(i)}">'
+                      f'<button class="btn sm">Invite</button></form>')
+            tiles += tile(nm or i, i, i, action)
+        else:
+            tiles += tile(nm or i, "service account", i,
+                          '<span class=muted style="font-size:12px">mapped</span>')
+
+    invite_all = ""
+    if n_invitable:
+        invite_all = (f'<form method=post action="/app/team/invite-all" style="margin:0">{nx}'
+                      f'<button class="btn sec sm">Invite all {n_invitable} not yet invited</button></form>')
+    count = 1 + len(ids)
+    return (f'<div class=ocard style="margin-top:16px"><div class=dh '
+            f'style="display:flex;justify-content:space-between;align-items:center;gap:10px">'
+            f'<span>Your org <span class=sub>{count} {"person" if count == 1 else "people"}</span></span>'
+            f'{invite_all}</div><div class=pgrid>{tiles}</div></div>')
+
+
+
+
+def welcome_page(account: dict, conn: dict | None, idmap: str = "",
+                 members: list[dict] | None = None) -> str:
     """First-run onboarding takeover. Step 1 (no persona yet) is the mandatory role
     gate; once a role is chosen it becomes Step 2 — add org structure + invite the
     counterpart — with a clear jump to the dashboard."""
@@ -1025,7 +1128,8 @@ def welcome_page(account: dict, conn: dict | None, idmap: str = "") -> str:
     body = (f'<div class=ohead><h1>You’re set up as {me}</h1>'
             '<p>Set up your org — upload your whole team in one file, or just invite your counterpart — '
             'then jump into the product.</p></div>'
-            + _org_upload_form("welcome") + invite_card + done)
+            + _org_upload_form("welcome") + _org_directory(account, members or [], "welcome")
+            + invite_card + done)
     return page("Welcome", body, account, active="/app")
 
 
@@ -3454,8 +3558,9 @@ def team_page(account: dict, members: list[dict], invite_link: str = "",
       <p class=muted style="font-size:12.5px;margin-top:6px">They'll get a link to set a password and sign in.</p>
     </div>"""
     roster_note = (f'<div class=okbox style="margin-bottom:16px">{_e(roster)}</div>' if roster else "")
-    body = (head + invite_note + roster_note + members_card + invite_card
-            + _org_upload_form() + _sso_section(sso or {}, scim_token))
+    directory = _org_directory(account, members) or members_card
+    body = (head + invite_note + roster_note + directory
+            + _org_upload_form() + invite_card + _sso_section(sso or {}, scim_token))
     return page("Team", body, account, "/app/team")
 
 
