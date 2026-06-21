@@ -59,23 +59,31 @@
     <span class="node">Outlay<small>spend mapped to work, forecast, budgets</small></span>
   </div>
 
-  <div class="prose">
-    <h2>What never leaves your environment</h2>
-    <ul>
-      <li><span class="ck">✓</span><div><b>Prompt text and model outputs.</b> Outlay connects read-only to your tracker and your provider's usage data — we never receive request or response bodies.</div></li>
-      <li><span class="ck">✓</span><div><b>Your API keys.</b> Your provider key stays on your side and is used to call Anthropic directly.</div></li>
-      <li><span class="ck">✓</span><div><b>Customer / PII data.</b> Anything inside a prompt stays inside your boundary.</div></li>
-    </ul>
-    <div class="note">Our ingestion endpoints <b>reject any payload</b> that contains prompt text, outputs,
-      or secret-looking keys (HTTP 422). The boundary is enforced, not just promised.</div>
+  <div class="owners" style="margin:6px 0 14px">
+    <div class="owner" style="background:var(--grn-l);border-color:#bfe3d4">
+      <div class="role" style="color:var(--grn-d)">Stays in your environment</div>
+      <h3>What never leaves</h3>
+      <ul>
+        <li><span class="ck">✓</span><div><b>Prompt text &amp; model outputs.</b> We connect read-only to your tracker and your provider's usage data — never request or response bodies.</div></li>
+        <li><span class="ck">✓</span><div><b>Your API keys.</b> Your provider key stays on your side and calls Anthropic directly.</div></li>
+        <li><span class="ck">✓</span><div><b>Customer / PII data.</b> Anything inside a prompt stays inside your boundary.</div></li>
+      </ul>
+      <p class="muted" style="font-size:13px;margin:14px 0 0">Ingestion <b>rejects any payload</b> with prompt
+        text, outputs, or secret-looking keys (HTTP 422) — the boundary is enforced, not just promised.</p>
+    </div>
+    <div class="owner">
+      <div class="role">Metadata only</div>
+      <h3>What we do see</h3>
+      <p class="lead" style="margin:0 0 16px">To attribute spend to work, we receive a small, non-sensitive set:</p>
+      <ul>
+        <li><span class="ck" style="color:var(--faint)">·</span><div>A <b>task category</b> and numeric features (token counts, flags).</div></li>
+        <li><span class="ck" style="color:var(--faint)">·</span><div>The <b>ticket / branch identifier</b> the work belongs to (e.g. <code>PROJ-123</code>).</div></li>
+        <li><span class="ck" style="color:var(--faint)">·</span><div>Per-request <b>cost</b> figures from your provider's usage data — dollars and counts, never content.</div></li>
+      </ul>
+    </div>
+  </div>
 
-    <h2>What we do see — metadata only</h2>
-    <p>To attribute spend to work, Outlay receives a small, non-sensitive set of metadata:</p>
-    <ul>
-      <li><span class="ck">·</span><div>A <b>task category</b> and numeric features (token counts, flags).</div></li>
-      <li><span class="ck">·</span><div>The <b>ticket / branch identifier</b> the work belongs to (e.g. <code>PROJ-123</code>).</div></li>
-      <li><span class="ck">·</span><div>Per-request <b>cost</b> figures from your provider's usage data, as dollars and counts — never content.</div></li>
-    </ul>
+  <div class="prose">
 
     <h2>Architecture: read-only, and never in your traffic path</h2>
     <p>Outlay is <b>not a proxy or gateway</b> — your AI calls never flow through us. It connects to your
