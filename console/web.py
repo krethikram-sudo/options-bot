@@ -1940,11 +1940,19 @@ def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> s
         else:
             enf = '<span class="otag ex" title="detect &amp; notify; your automation enforces">alert only</span>'
         bit = ""
+        spark_row = ""
         if s.get("enforce_mode") == "hard" and (s.get("enforced_count") or 0) > 0:
             n = int(s["enforced_count"])
             when = f' · last {_fmt_date(s["last_enforced_at"])}' if s.get("last_enforced_at") else ""
             bit = (f'<span style="color:var(--red);font-weight:600"> · enforced {n:,} '
                    f'time{"s" if n != 1 else ""}{when}</span>')
+            hist = store.program_enforcement_history(account["id"], s["id"], days=14)
+            sv = _sparkline([h["count"] for h in hist], w=140, h=24, color="var(--red)")
+            if sv:
+                tot = sum(h["count"] for h in hist)
+                spark_row = (f'<div style="display:flex;align-items:center;gap:10px;margin-top:8px">{sv}'
+                             f'<span class=muted style="font-size:11.5px">enforcement · last 14 days '
+                             f'({tot:,} action{"s" if tot != 1 else ""})</span></div>')
         rows += (f'<div class=bcard><div style="display:flex;justify-content:space-between;align-items:center;gap:10px">'
                  f'<b style="font-size:14.5px">{_e(s.get("name"))}</b>'
                  f'<span style="display:flex;gap:6px;align-items:center">{enf}'
@@ -1958,6 +1966,7 @@ def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> s
                  f'<form method=post action="/app/outlay/programs/delete" style="margin:0">'
                  f'<input type=hidden name=id value="{s["id"]}">'
                  f'<button class="btn sec sm">Remove</button></form></div>'
+                 f'{spark_row}'
                  # Reallocate inline: change the cap, or flip alert <-> hard, in place.
                  f'<form method=post action="/app/outlay/programs/update" '
                  f'style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;'
