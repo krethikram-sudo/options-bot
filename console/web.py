@@ -2589,6 +2589,10 @@ def auth_form(kind: str, error: str = "", email: str = "") -> str:
 def _trial_banner(plan: dict, trial: dict) -> str:
     if plan.get("plan") == "paid":
         return ""
+    if trial.get("not_started"):
+        return (f'<div class="note">Your <b>{store.TRIAL_DAYS}-day free trial starts once you connect your '
+                f'data</b> — so the clock only runs while you\'re actually evaluating. '
+                f'<a href="/app/outlay/connect">Connect your sources →</a></div>')
     if trial["active"]:
         d = trial["days_left"]
         if d <= 2:
@@ -2620,6 +2624,8 @@ def _trial_pill(account: dict | None) -> str:
     plan, trial = _trial_meta(account)
     if not plan or plan.get("plan") == "paid":
         return ""
+    if trial.get("not_started"):
+        return f'<a class="trialpill" href="/app/outlay/connect">Trial · starts at setup</a>'
     if trial["active"]:
         d = trial["days_left"]
         cls = "warn" if d <= 2 else ""
@@ -3684,6 +3690,9 @@ def billing_page(account: dict, plan: dict, trial: dict, bill: dict,
     if is_paid:
         plan_line = ('<p>Your plan is <b>active</b>, on the terms set out in your Outlay order form '
                      'or agreement.</p>')
+    elif trial.get("not_started"):
+        plan_line = (f'<p>Your <b>{store.TRIAL_DAYS}-day free trial</b> starts when you connect your data and '
+                     'run your first sync — the clock only runs while you\'re evaluating.</p>')
     elif trial["active"]:
         plan_line = (f'<p>You\'re on the free trial — <b>{trial["days_left"]} days left</b>. Your first '
                      'weeks are free; we\'ll scope ongoing pricing with you before anything is charged.</p>')
