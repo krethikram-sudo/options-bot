@@ -9,7 +9,7 @@ The customer-facing SaaS control plane. Runs on **our** infrastructure (alongsid
 A single FastAPI service (server-rendered, no build step) that delivers the whole
 product through the browser:
 
-**Customers** — land → sign up → 7-day free trial → convert to a paid plan
+**Customers** — land → sign up → 14-day free trial → convert to a paid plan
 (billed **20% of the savings we deliver**). Once signed in they get a dashboard
 (realized savings, baseline vs actual, current bill), a **mode toggle**
 (shadow / guidance / autopilot), routing-policy settings (risk, quality floor,

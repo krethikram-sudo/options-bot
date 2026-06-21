@@ -21,7 +21,7 @@ import sqlite3
 import time
 from datetime import datetime, timezone
 
-TRIAL_DAYS = 7
+TRIAL_DAYS = 14
 DEFAULT_RATE = 0.20            # we bill 20% of realized savings (Pay-as-you-go)
 # Pricing tiers: Pay-as-you-go (20% of savings), and two subscription tiers that
 # unlock per-customer tuning on the customer's own (local) prompt data at 15%.
