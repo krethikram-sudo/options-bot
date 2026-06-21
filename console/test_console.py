@@ -455,6 +455,9 @@ def test_settings_update(env, client):
     s = store.get_settings(acct["id"])
     assert s["risk"] == "aggressive" and s["min_model"] == "claude-sonnet-4-6"
     assert s["telemetry_opt_in"] == 0  # checkbox absent -> off
+    # the "Settings saved." confirmation is announced to assistive tech (WCAG 2.1 4.1.3)
+    saved = client.post("/app/settings", data={"risk": "balanced"}, follow_redirects=True).text
+    assert 'role=status>Settings saved.' in saved or 'role="status">Settings saved.' in saved
 
 
 def test_convert_without_stripe_marks_paid(env, client):

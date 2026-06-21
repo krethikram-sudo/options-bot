@@ -84,7 +84,7 @@ checks; automated checks via axe-core.
 | 3.2.4 Consistent Identification | Supports | Components with the same function are labeled consistently. |
 | 3.3.3 Error Suggestion | Supports | Errors include correction guidance (e.g. "type: delete"). |
 | 3.3.4 Error Prevention (Legal/Financial) | Supports | Destructive/financial actions require explicit confirmation (typed confirm + `confirm()` dialog). |
-| 4.1.3 Status Messages | Partially Supports | Most status updates are server-rendered on navigation; some inline confirmations are not yet announced via `aria-live`. **Planned fix.** |
+| 4.1.3 Status Messages | Supports | Post-action confirmations (settings saved, data erased, 2FA on/off, plan activated) carry `role=status` (implicit `aria-live=polite`) so they're announced without a focus change; async sync reports success via navigation and errors via an alert dialog. |
 
 ## Table 3 — Revised Section 508 / EN 301 549
 
@@ -103,10 +103,11 @@ Nonvisual Access standards for procured IT.
 
 ## Known gaps & remediation plan
 
-1. **4.1.3 Status Messages** — add `aria-live` regions for inline confirmations
-   (purge, save, sync) so screen-reader users hear them without navigating.
-2. **Independent audit** — commission a third-party VPAT validation before final
+1. **Independent audit** — commission a third-party VPAT validation before final
    Maryland submission; replace the "DRAFT / self-assessment" banner on sign-off.
+
+*Resolved since first draft: 4.1.3 Status Messages — post-action confirmations
+now use `role=status` and are announced to assistive tech.*
 
 ---
 

@@ -2140,11 +2140,11 @@ def _twofa_section(account: dict, state: str = "") -> str:
     tf = store.get_2fa(account["id"])
     note = ""
     if state == "on":
-        note = '<div class="note">Two-factor authentication is on.</div>'
+        note = '<div class="note" role=status>Two-factor authentication is on.</div>'
     elif state == "off":
-        note = '<div class="note">Two-factor authentication turned off.</div>'
+        note = '<div class="note" role=status>Two-factor authentication turned off.</div>'
     elif state == "bad":
-        note = '<div class="note bad">That code was wrong or expired — start again.</div>'
+        note = '<div class="note bad" role=status>That code was wrong or expired — start again.</div>'
     if tf["enabled"]:
         inner = (f'<p class="small muted">On — a one-time code is sent to <b>{_e(tf["dest"])}</b> '
                  f'({_e(tf["channel"])}) at each sign-in.</p>'
@@ -2560,7 +2560,7 @@ def settings_page(account: dict, settings: dict, saved: bool = False,
     # Danger zone. Each group hides itself when its cards are empty (role-gated), so
     # a member sees a shorter page than an owner. (Budgets live at /app/outlay/budgets;
     # the /app/settings POST still accepts the legacy routing fields.)
-    saved_note = '<div class="note">Settings saved.</div>' if saved else ""
+    saved_note = '<div class="note" role=status>Settings saved.</div>' if saved else ""
     body = (f"<h1>Settings</h1>{saved_note}"
             + _settings_group("Account &amp; team", _settings_links(account))
             + _settings_group("Security", _twofa_section(account, twofa))
@@ -2682,8 +2682,8 @@ def _retention_section(account: dict, retention_days: int = 0, purged: bool = Fa
             (180, "180 days"), (365, "1 year")]
     sel = "".join(f'<option value="{d}"{" selected" if d == (retention_days or 0) else ""}>{label}</option>'
                   for d, label in opts)
-    purged_note = ('<div class="note">Ingested spend data wiped.</div>' if purged else "")
-    perr = ('<div class="note warn">Type <b>delete</b> to confirm.</div>' if purge_error else "")
+    purged_note = ('<div class="note" role=status>Ingested spend data wiped.</div>' if purged else "")
+    perr = ('<div class="note warn" role=status>Type <b>delete</b> to confirm.</div>' if purge_error else "")
     return f"""
     <div class=card style="margin-top:16px" id=retention>
       <div class=label>Data retention</div>
@@ -3295,11 +3295,11 @@ def billing_page(account: dict, plan: dict, trial: dict, bill: dict,
                      if trial["active"] else '<span class="badge suspended">Trial ended</span>'))
     flash_html = ""
     if flash == "success":
-        flash_html = '<div class="note">Your plan is active — thanks!</div>'
+        flash_html = '<div class="note" role=status>Your plan is active — thanks!</div>'
     elif flash == "cancel":
-        flash_html = '<div class="note warn">No changes made.</div>'
+        flash_html = '<div class="note warn" role=status>No changes made.</div>'
     elif flash == "converted":
-        flash_html = '<div class="note">Plan activated.</div>'
+        flash_html = '<div class="note" role=status>Plan activated.</div>'
     if not is_paid and not trial["active"]:
         flash_html = ('<div class="note bad"><b>Your free trial has ended.</b> '
                       '<a href="mailto:hello@outlay-ai.com?subject=Outlay%20plan">Talk to us</a> to '
