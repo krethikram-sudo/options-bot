@@ -3008,6 +3008,35 @@ def test_demo_account_allowlist_supports_domains(env, monkeypatch):
     assert not demo.is_demo_account(None)
 
 
+def test_team_roster_bulk_invites_and_maps_org(env, client):
+    _, store = env
+    _signup(client, email="owner@acme.com")
+    acct = store.get_account_by_email("owner@acme.com")
+    csv = ("email,team,role,access\n"
+           "cfo@acme.com,Finance,finance,admin\n"
+           "alice@acme.com,Platform,eng,member\n"
+           "ci-bot,Platform,,\n"            # service account: mapped, not invited
+           "@contractor.com,External,,\n")  # whole domain: mapped, not invited
+    boundary = "Bnd"
+    body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; "
+            f"filename=\"roster.csv\"\r\n\r\n{csv}\r\n--{boundary}--\r\n")
+    r = client.post("/app/team/roster", content=body.encode(),
+                    headers={"content-type": f"multipart/form-data; boundary={boundary}"},
+                    follow_redirects=False)
+    assert r.status_code == 303
+    members = {m["email"]: m for m in store.list_members(acct["id"])}
+    assert set(members) == {"cfo@acme.com", "alice@acme.com"}          # only real emails invited
+    assert members["cfo@acme.com"]["role"] == "admin"
+    assert store.get_persona(acct["id"], members["cfo@acme.com"]["id"]) == "finance"
+    assert store.get_persona(acct["id"], members["alice@acme.com"]["id"]) == "eng"
+    idmap = store.get_outlay_identity_map(acct["id"])
+    assert "cfo@acme.com, Finance" in idmap
+    assert "ci-bot, Platform" in idmap                                  # service account mapped
+    assert "@contractor.com, External" in idmap                         # domain mapped
+    # template download works
+    assert client.get("/app/team/roster-template.csv").status_code == 200
+
+
 def test_onboarding_reset_re_triggers_gate_for_test_accounts(env, client, monkeypatch):
     _, store = env
     _signup(client, email="t@x.com")          # DEMO_ACCOUNT_EMAILS='*' in the fixture → a test account

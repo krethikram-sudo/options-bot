@@ -15,11 +15,11 @@ Env: CONSOLE_DB, CONSOLE_SECRET, CONSOLE_BASE_URL, MODELPILOT_BRAIN_URL,
 import asyncio
 import os
 import secrets
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, quote
 
 from fastapi import FastAPI, Request
 from fastapi.responses import (HTMLResponse, JSONResponse, PlainTextResponse,
-                               RedirectResponse)
+                               RedirectResponse, Response)
 
 from . import demo, notify, outlay_app, store, stripe_billing, web
 
@@ -1885,7 +1885,8 @@ def team_get(request: Request):
     tok = request.query_params.get("invite_token", "")
     invite_link = notify.reset_link(tok) if tok else ""
     return _html(web.team_page(acct, store.list_members(acct["id"]), invite_link,
-                               store.get_sso(acct["id"]), request.query_params.get("scim_token", "")))
+                               store.get_sso(acct["id"]), request.query_params.get("scim_token", ""),
+                               roster=request.query_params.get("roster", "")))
 
 
 @app.get("/app/audit", response_class=HTMLResponse)
@@ -1925,6 +1926,110 @@ async def team_invite(request: Request):
     if (f.get("next") or "") == "welcome":
         return _redirect("/app/welcome")
     return _redirect(f"/app/team?invite_token={token}")
+
+
+def _send_invite_email(email: str) -> None:
+    """Create a set-password link for an invited member and email it (best-effort)."""
+    out = store.create_reset(email)
+    token = out[1] if out else ""
+    if token:
+        try:
+            notify.send_email(email, "You're invited to Outlay",
+                              f"You've been added to an Outlay team. Set your password:\n\n"
+                              f"{notify.reset_link(token)}")
+        except Exception:  # noqa: BLE001
+            pass
+
+
+_ROSTER_TEMPLATE = ("email,team,role,access\n"
+                    "cfo@acme.com,Finance,finance,admin\n"
+                    "vp.eng@acme.com,Platform,eng,admin\n"
+                    "alice@acme.com,Platform,eng,member\n"
+                    "ci-deploy-bot,Platform,,\n")
+
+
+@app.get("/app/team/roster-template.csv")
+def team_roster_template(request: Request):
+    acct, redir = _require_team_admin(request)
+    if redir:
+        return redir
+    return Response(_ROSTER_TEMPLATE, media_type="text/csv",
+                    headers={"Content-Disposition": 'attachment; filename="outlay-roster-template.csv"'})
+
+
+@app.post("/app/team/roster")
+async def team_roster(request: Request):
+    """Bulk org-roster upload: one CSV maps everyone to teams AND invites them with
+    their role (persona) + access pre-set. Columns (header row, any order): email,
+    team, role (finance|eng), access (admin|member|billing). Owner-/admin-only."""
+    import csv as _csv
+    import io as _io
+    acct, redir = _require_team_admin(request)
+    if redir:
+        return redir
+    fields, filetext = await _multipart(request)
+    nxt = (fields.get("next") or "")
+    invited = skipped = 0
+    map_lines: list[str] = []
+    if filetext:
+        rows = [r for r in _csv.reader(_io.StringIO(filetext)) if any(c.strip() for c in r)]
+        col = {"email": 0, "team": 1, "role": 2, "access": 3}
+        if rows:
+            header = [c.strip().lower() for c in rows[0]]
+            if any(h in ("email", "identifier", "team", "role", "experience", "persona",
+                         "access", "permission") for h in header):
+                col = {}
+                for i, h in enumerate(header):
+                    if h in ("email", "identifier"):
+                        col["email"] = i
+                    elif h == "team":
+                        col["team"] = i
+                    elif h in ("role", "experience", "persona"):
+                        col["role"] = i
+                    elif h in ("access", "permission"):
+                        col["access"] = i
+                rows = rows[1:]
+        owner_email = (acct["email"] or "").strip().lower()
+        for r in rows:
+            def cell(key: str) -> str:
+                i = col.get(key)
+                return r[i].strip() if i is not None and i < len(r) else ""
+            ident = cell("email").strip().lower()
+            if not ident:
+                continue
+            team = cell("team")
+            role = cell("role").strip().lower()
+            role = role if role in ("finance", "eng") else ""
+            access = cell("access").strip().lower()
+            access = access if access in store.TEAM_ROLES else "member"
+            # Every identity with a team is mapped for cost allocation — emails,
+            # @domains, AND service-account / CI key ids (which can't be invited).
+            if team:
+                map_lines.append(f"{ident}, {team}")
+            # Only a real personal email (has a local part, not a bare @domain, not
+            # the owner) gets an invite.
+            if "@" not in ident or ident.startswith("@") or ident == owner_email:
+                continue
+            try:
+                m = store.create_member(acct["id"], ident, access)
+            except store.StoreError:        # already owner/member
+                skipped += 1
+                continue
+            if role:
+                store.set_persona(acct["id"], role, member_id=m["id"])
+            _send_invite_email(ident)
+            invited += 1
+    if map_lines:
+        merged = _merge_identity_csv(store.get_outlay_identity_map(acct["id"]) or "",
+                                     "\n".join(map_lines))
+        store.set_outlay_identity_map(acct["id"], merged or None)
+    _audit(acct["id"], "team.roster", actor=acct.get("display_email") or acct.get("email", ""),
+           detail=f"invited={invited} mapped={len(map_lines)} skipped={skipped}")
+    summary = (f"Roster processed — invited {invited}, mapped {len(map_lines)} to teams, "
+               f"skipped {skipped} (owner / already on the team).")
+    if nxt == "welcome":
+        return _redirect("/app/welcome")
+    return _redirect(f"/app/team?roster={quote(summary)}")
 
 
 @app.post("/app/team/role")
