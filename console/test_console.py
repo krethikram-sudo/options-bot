@@ -2700,8 +2700,21 @@ def test_program_budgets_rollup_status_and_alerts(env, client, monkeypatch):
     assert slacks and "downgrade" in slacks[0] and "claude-haiku-4-5" in slacks[0]
     assert "program.over" in store.WEBHOOK_EVENTS
 
+    # reallocate in place: bump the cap + flip alert→hard, no re-create
+    pid = progs[0]["id"]
+    client.post("/app/outlay/programs/update",
+                data={"id": str(pid), "limit_usd": "999", "enforce_mode": "alert"},
+                follow_redirects=True)
+    p = [x for x in store.list_outlay_programs(acct["id"]) if x["id"] == pid][0]
+    assert p["limit_usd"] == 999.0 and p["enforce_mode"] == "alert"
+    # members untouched by an in-place edit; a stranger's id can't be patched
+    assert p["members"] == progs[0]["members"]
+    assert store.update_outlay_program(acct["id"], 999999, limit_usd=1.0) is False
+    # the inline reallocate control is on the page
+    assert "Reallocate budget" in client.get("/app/outlay/programs").text
+
     # delete
-    client.post("/app/outlay/programs/delete", data={"id": str(progs[0]["id"])}, follow_redirects=True)
+    client.post("/app/outlay/programs/delete", data={"id": str(pid)}, follow_redirects=True)
     assert store.list_outlay_programs(acct["id"]) == []
 
 

@@ -1162,6 +1162,30 @@ async def app_outlay_programs_add(request: Request):
     return _redirect("/app/outlay/programs")
 
 
+@app.post("/app/outlay/programs/update")
+async def app_outlay_programs_update(request: Request):
+    """Reallocate / retune a program in place — change its budget, or flip between
+    alert-only and a hard cap — without redefining it."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    pid = int(f.get("id") or 0)
+    kwargs = {}
+    if f.get("limit_usd"):
+        try:
+            kwargs["limit_usd"] = float(f.get("limit_usd"))
+        except ValueError:
+            pass
+    if f.get("enforce_mode") in ("alert", "hard"):
+        kwargs["enforce_mode"] = f.get("enforce_mode")
+    if kwargs and store.update_outlay_program(acct["id"], pid, **kwargs):
+        _audit(acct["id"], "program.update",
+               actor=acct.get("display_email") or acct.get("email", ""),
+               detail=f"id={pid} " + " ".join(f"{k}={v}" for k, v in kwargs.items()))
+    return _redirect("/app/outlay/programs")
+
+
 @app.post("/app/outlay/programs/delete")
 async def app_outlay_programs_delete(request: Request):
     acct, redir = _require(request)
