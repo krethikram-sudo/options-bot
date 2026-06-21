@@ -60,9 +60,12 @@ Page is strong (the "costed two ways" comparison and the 6-card grid read well).
       with down-arrows below 560px (also helps platform + docs).
 - Architecture + data-handling prose left as-is (reviewers want the detail).
 
-### `compare.html` — category positioning
-Comparison tables are the core. Goals: table readability at mobile (horizontal
-scroll affordance), the "us" column highlight, and the per-category cards.
+### `compare.html` — category positioning ✓
+- [x] Mobile table readability: the green "Outlay" win column was the last column
+      and off-screen on mobile. Added a scroll hint naming it, plus a sticky
+      feature-label column so row context stays pinned while scrolling to reach
+      the highlighted column. Desktop table unchanged.
+- Per-category prose below the table left as-is (detail reads fine).
 
 ### `accuracy.html` — "How accurate — honestly"
 Credibility page. Goals: make the "two questions" split obvious, present the
