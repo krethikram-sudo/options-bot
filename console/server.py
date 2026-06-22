@@ -1378,7 +1378,9 @@ def app_outlay_budgets(request: Request):
         return redir
     report = store.get_outlay_report(acct["id"])
     statuses = outlay_app.budget_statuses(report, store.list_outlay_budgets(acct["id"]))
-    return _html(web.budgets_page(acct, report, statuses, outlay_app.project_spend(report)))
+    programs = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"])) if report else []
+    return _html(web.budgets_page(acct, report, statuses, outlay_app.project_spend(report),
+                                  program_statuses=programs))
 
 
 @app.post("/app/outlay/budgets")
