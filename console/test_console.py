@@ -3071,6 +3071,62 @@ def test_admin_enforced_mfa_gate(env, client):
     assert client.get("/app/security").status_code == 200
 
 
+def _enroll_member_totp(server, store, client, member_id):
+    """Helper: enroll the currently-signed-in member in TOTP; return the secret."""
+    import re
+    html = client.post("/app/2fa/totp/start").text
+    secret = re.search(r'name=secret value="([A-Z2-7]+)"', html).group(1)
+    client.post("/app/2fa/totp/confirm", data={"secret": secret, "code": store.totp_code(secret)},
+                follow_redirects=True)
+    return secret
+
+
+def test_member_totp_enroll_and_login_challenge(env):
+    """C1 build: an invited member can enroll TOTP, and a fresh member login is then
+    challenged for the authenticator code (members are AAL2 TOTP-only)."""
+    server, store = env
+    owner = store.create_account("mowner@x.com", "k7-otter-ledger")
+    m = store.create_member(owner["id"], "mmate@x.com", "member")
+    store.consume_reset(store.create_reset("mmate@x.com")[1], "matepassword1")
+    c = TestClient(server.app, follow_redirects=False)
+    c.post("/login", data={"email": "mmate@x.com", "password": "matepassword1"})
+    secret = _enroll_member_totp(server, store, c, m["id"])
+    assert store.get_2fa(owner["id"], member_id=m["id"])["channel"] == "totp"
+    # the member's 2FA is independent of the owner's (owner still has none)
+    assert store.get_2fa(owner["id"])["enabled"] is False
+    # a fresh member login is now challenged and verified with an authenticator code
+    fresh = TestClient(server.app, follow_redirects=False)
+    r = fresh.post("/login", data={"email": "mmate@x.com", "password": "matepassword1"})
+    assert r.headers["location"] == "/login/verify"
+    r2 = fresh.post("/login/verify", data={"code": store.totp_code(secret)})
+    assert r2.status_code in (302, 303, 307) and "/login" not in r2.headers["location"]
+    assert fresh.get("/app/outlay").status_code == 200
+    # a bad code is rejected
+    bad = TestClient(server.app, follow_redirects=False)
+    bad.post("/login", data={"email": "mmate@x.com", "password": "matepassword1"})
+    assert bad.post("/login/verify", data={"code": "000000"}).status_code == 401
+
+
+def test_admin_mfa_policy_gates_members(env):
+    """C1 build: with org require_mfa on, an invited member (not just the owner) is
+    blocked until they enroll, and enrolling clears the gate."""
+    server, store = env
+    owner = store.create_account("gowner@x.com", "k7-otter-ledger")
+    m = store.create_member(owner["id"], "gmate@x.com", "member")
+    store.consume_reset(store.create_reset("gmate@x.com")[1], "matepassword1")
+    store.update_security_policy(owner["id"], require_mfa=True)
+    c = TestClient(server.app, follow_redirects=False)
+    c.post("/login", data={"email": "gmate@x.com", "password": "matepassword1"})
+    # member without MFA is bounced to enroll
+    r = c.get("/app/outlay", follow_redirects=False)
+    assert r.status_code in (302, 303, 307) and "mfa=required" in r.headers["location"]
+    # the Security page stays reachable so they can enroll
+    assert c.get("/app/security").status_code == 200
+    _enroll_member_totp(server, store, c, m["id"])
+    # gate now clears for the member
+    assert c.get("/app/outlay", follow_redirects=False).status_code == 200
+
+
 def test_logout_everywhere_revokes_other_sessions(env):
     server, store = env
     store.init_db()

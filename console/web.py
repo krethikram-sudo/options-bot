@@ -3230,7 +3230,7 @@ def twofa_verify_form(error: str = "", note: str = "") -> str:
 
 
 def _twofa_section(account: dict, state: str = "") -> str:
-    tf = store.get_2fa(account["id"])
+    tf = store.get_2fa(account["id"], member_id=account.get("member_id", 0) or 0)
     note = ""
     if state == "on":
         note = '<div class="note" role=status>Two-factor authentication is on.</div>'
@@ -3706,8 +3706,8 @@ def _trust_controls(account: dict, policy: dict, twofa: dict, enroll_secret: str
                        '<form method=post action="/app/2fa/disable" style="display:inline">'
                        '<button class="btn sec sm">Turn off 2FA</button></form>')
     elif enroll_secret:
-        uri = (f"otpauth://totp/Outlay:{quote(account.get('email',''))}?secret={enroll_secret}"
-               f"&issuer=Outlay")
+        uri = (f"otpauth://totp/Outlay:{quote(account.get('display_email') or account.get('email',''))}"
+               f"?secret={enroll_secret}&issuer=Outlay")
         twofa_block = (
             '<p style="margin:6px 0 8px">Scan this in your authenticator app (or enter the key), then '
             'confirm a code:</p>'
@@ -3720,14 +3720,20 @@ def _trust_controls(account: dict, policy: dict, twofa: dict, enroll_secret: str
             'style="width:120px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;letter-spacing:2px">'
             '<button class=btn>Confirm &amp; enable</button></form>')
     else:
+        # Owners can also choose email codes; invited members are authenticator-only (AAL2).
+        email_opt = ('' if account.get("member_id") else
+                     '<form method=post action="/app/2fa/start" style="margin:0">'
+                     '<button class="btn sec">Use email codes</button></form>')
+        rec = ('<b>authenticator app (TOTP)</b> is phishing-resistant-grade and recommended.'
+               if account.get("member_id") else
+               'An <b>authenticator app (TOTP)</b> is phishing-resistant-grade and recommended; '
+               'email codes also work.')
         twofa_block = (
-            '<p class=muted style="margin:6px 0 10px;font-size:13.5px">Add a second factor. An '
-            '<b>authenticator app (TOTP)</b> is phishing-resistant-grade and recommended; email codes also work.</p>'
+            f'<p class=muted style="margin:6px 0 10px;font-size:13.5px">Add a second factor. {rec}</p>'
             '<div class=row>'
             '<form method=post action="/app/2fa/totp/start" style="margin:0">'
             '<button class="btn">Set up authenticator app →</button></form>'
-            '<form method=post action="/app/2fa/start" style="margin:0">'
-            '<button class="btn sec">Use email codes</button></form></div>')
+            f'{email_opt}</div>')
     signin = (f'<div class=ocard style="margin-top:16px"><div class=dh>Your sign-in security</div>'
               f'{twofa_block}'
               '<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">'
@@ -3748,8 +3754,8 @@ def _trust_controls(account: dict, policy: dict, twofa: dict, enroll_secret: str
             '<form method=post action="/app/security/policy">'
             f'<label style="display:flex;gap:8px;align-items:center;margin:6px 0 12px;font-size:14px">'
             f'<input type=checkbox name=require_mfa value=1 {ck}> <b>Require multi-factor authentication</b> '
-            f'for account owners &amp; admins (IA-2). <span class=muted>Invited members authenticate via '
-            f'your SSO/IdP, which enforces its own MFA policy.</span></label>'
+            f'for everyone in this workspace (IA-2). <span class=muted>Owners, admins, and invited '
+            f'members are each gated to enroll an authenticator before access.</span></label>'
             '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:end">'
             '<label class=fld><span>Idle timeout (minutes, 0 = none)</span>'
             f'<input name=session_idle_min type=number min=0 max=1440 value="{idle}"></label>'

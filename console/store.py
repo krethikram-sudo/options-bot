@@ -421,6 +421,10 @@ _MIGRATIONS = [
     "ALTER TABLE accounts ADD COLUMN session_epoch INTEGER NOT NULL DEFAULT 0",  # bump to invalidate all sessions (logout-everywhere / password change)
     "ALTER TABLE accounts ADD COLUMN totp_secret TEXT",  # base32 TOTP secret (encrypted at rest); set when channel='totp'
     "ALTER TABLE members ADD COLUMN session_epoch INTEGER NOT NULL DEFAULT 0",  # same, per invited member
+    # Per-member MFA (TOTP) so an org require_mfa policy can compel invited teammates, not just owners/admins.
+    "ALTER TABLE members ADD COLUMN twofa_enabled INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE members ADD COLUMN twofa_channel TEXT",          # 'totp' (members are authenticator-only)
+    "ALTER TABLE members ADD COLUMN totp_secret TEXT",            # base32 TOTP secret, encrypted at rest
     "ALTER TABLE settings ADD COLUMN require_mfa INTEGER NOT NULL DEFAULT 0",  # admin policy: every member must have MFA enrolled
     "ALTER TABLE settings ADD COLUMN session_idle_min INTEGER NOT NULL DEFAULT 0",  # idle timeout (minutes); 0 = default
     "ALTER TABLE settings ADD COLUMN session_max_hours INTEGER NOT NULL DEFAULT 0",  # absolute session lifetime (hours); 0 = default
@@ -784,7 +788,14 @@ def clear_login_throttle(email: str, path: str | None = None) -> None:
 # Two-factor authentication (email/SMS one-time codes)
 # --------------------------------------------------------------------------- #
 
-def get_2fa(account_id: int, path: str | None = None) -> dict:
+def get_2fa(account_id: int, path: str | None = None, member_id: int = 0) -> dict:
+    """2FA state for a principal: the account owner (member_id=0) or an invited member.
+    Members are authenticator-only (TOTP), so dest is always None for them."""
+    if member_id:
+        m = get_member(member_id, path)
+        if not m:
+            return {"enabled": False, "channel": None, "dest": None}
+        return {"enabled": bool(m.get("twofa_enabled")), "channel": m.get("twofa_channel"), "dest": None}
     acct = get_account(account_id, path)
     if not acct:
         return {"enabled": False, "channel": None, "dest": None}
@@ -802,12 +813,16 @@ def set_2fa(account_id: int, channel: str, dest: str, path: str | None = None) -
         conn.close()
 
 
-def disable_2fa(account_id: int, path: str | None = None) -> None:
+def disable_2fa(account_id: int, path: str | None = None, member_id: int = 0) -> None:
     conn = connect(path)
     try:
-        conn.execute("UPDATE accounts SET twofa_enabled=0, twofa_channel=NULL, twofa_dest=NULL,"
-                     " totp_secret=NULL WHERE id=?", (account_id,))
-        conn.execute("DELETE FROM otp_codes WHERE account_id=?", (account_id,))
+        if member_id:
+            conn.execute("UPDATE members SET twofa_enabled=0, twofa_channel=NULL, totp_secret=NULL"
+                         " WHERE id=?", (member_id,))
+        else:
+            conn.execute("UPDATE accounts SET twofa_enabled=0, twofa_channel=NULL, twofa_dest=NULL,"
+                         " totp_secret=NULL WHERE id=?", (account_id,))
+            conn.execute("DELETE FROM otp_codes WHERE account_id=?", (account_id,))
         conn.commit()
     finally:
         conn.close()
@@ -829,24 +844,32 @@ def totp_code(secret_b32: str, now: float | None = None, step: int = 30, digits:
     return str(val).zfill(digits)
 
 
-def set_totp(account_id: int, secret_b32: str, path: str | None = None) -> None:
-    """Enable TOTP 2FA, storing the secret encrypted at rest."""
+def set_totp(account_id: int, secret_b32: str, path: str | None = None, member_id: int = 0) -> None:
+    """Enable TOTP 2FA for the principal (owner or member), secret encrypted at rest."""
     from . import secret_box
+    enc = secret_box.encrypt(secret_b32)
     conn = connect(path)
     try:
-        conn.execute("UPDATE accounts SET twofa_enabled=1, twofa_channel='totp', twofa_dest=NULL,"
-                     " totp_secret=? WHERE id=?", (secret_box.encrypt(secret_b32), account_id))
+        if member_id:
+            conn.execute("UPDATE members SET twofa_enabled=1, twofa_channel='totp', totp_secret=?"
+                         " WHERE id=?", (enc, member_id))
+        else:
+            conn.execute("UPDATE accounts SET twofa_enabled=1, twofa_channel='totp', twofa_dest=NULL,"
+                         " totp_secret=? WHERE id=?", (enc, account_id))
         conn.commit()
     finally:
         conn.close()
 
 
 def verify_totp(account_id: int, code: str, path: str | None = None,
-                now: float | None = None, window: int = 1) -> bool:
-    """Verify a TOTP code (±1 time step for clock drift)."""
+                now: float | None = None, window: int = 1, member_id: int = 0) -> bool:
+    """Verify a TOTP code for the principal (owner or member); ±1 step for clock drift."""
     from . import secret_box
-    acct = get_account(account_id, path)
-    enc = acct.get("totp_secret") if acct else None
+    if member_id:
+        principal = get_member(member_id, path)
+    else:
+        principal = get_account(account_id, path)
+    enc = principal.get("totp_secret") if principal else None
     if not enc:
         return False
     secret = secret_box.decrypt(enc)
@@ -945,25 +968,27 @@ def verify_otp(account_id: int, code: str, path: str | None = None, now: float |
         conn.close()
 
 
-def make_pending_2fa(account_id: int, path: str | None = None) -> str:
-    """Short-lived signed marker carried between the password step and the OTP step."""
-    payload = f"p2fa:{account_id}:{int(time.time())}"
+def make_pending_2fa(account_id: int, path: str | None = None, member_id: int = 0) -> str:
+    """Short-lived signed marker carried between the password step and the OTP step.
+    Carries the member_id so an invited teammate's 2FA challenge resolves to them."""
+    payload = f"p2fa:{account_id}:{int(member_id or 0)}:{int(time.time())}"
     sig = hmac.new(_secret(path), payload.encode(), hashlib.sha256).hexdigest()
     return f"{payload}:{sig}"
 
 
-def read_pending_2fa(token: str, path: str | None = None, max_age: int = 600) -> int | None:
+def read_pending_2fa(token: str, path: str | None = None, max_age: int = 600) -> tuple[int, int] | None:
+    """Return (account_id, member_id) or None. member_id is 0 for an account owner."""
     try:
-        marker, aid, issued, sig = token.split(":")
+        marker, aid, mid, issued, sig = token.split(":")
     except (ValueError, AttributeError):
         return None
     if marker != "p2fa":
         return None
-    payload = f"{marker}:{aid}:{issued}"
+    payload = f"{marker}:{aid}:{mid}:{issued}"
     good = hmac.new(_secret(path), payload.encode(), hashlib.sha256).hexdigest()
     if not hmac.compare_digest(good, sig) or time.time() - int(issued) > max_age:
         return None
-    return int(aid)
+    return int(aid), int(mid)
 
 
 def list_accounts(path: str | None = None) -> list[dict]:
