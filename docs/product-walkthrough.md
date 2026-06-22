@@ -63,7 +63,9 @@ screen-by-screen customer flow for **each persona** (Finance and Engineering).*
 > 16. **Phase 2 — lens bar + saved views.** The Home breakdown card re-slices by
 >     group-by (team / work type / project / engineer) + top-N; users save named views
 >     and set a default landing (per-person, stored in `dashboard_views`).
-> *(Phase 3 = pin/reorder/hide cards with a persisted layout. Coming next.)*
+> 17. **Phase 3 — customizable layout.** A per-person Customize mode to reorder /
+>     hide / show / reset the Home card deck, persisted in `dashboard_prefs`. Completes
+>     the consolidate → change-view → personalize arc.
 
 **Status of this audit:** A live end-to-end smoke test was run against the actual
 app (FastAPI test client driving real routes). **54 of 55 checks passed**; the one
@@ -278,6 +280,11 @@ away:
 - **Consolidated drill-in cards:** *By {lens}* (→ Spend) · *Governance* status roll-up
   (→ Governance) · *Forecast · open work* (→ Estimate) · *Reports & deep views* (board
   readout, full breakdown, budgets & programs).
+- **⚙ Customize** *(Phase 3)* — a per-person mode to **reorder**, **hide/show**, and
+  reset the card deck; the layout is saved to the login (`dashboard_prefs`). The
+  attention panel + KPI scorecard stay fixed as the always-on summary.
+
+![Finance Home — customize mode](images/walkthrough/07d_fin_customize.png)
 
 *(The old `/app/outlay/summary` URL now redirects here.)*
 

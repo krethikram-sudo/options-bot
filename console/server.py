@@ -557,11 +557,14 @@ def app_dashboard(request: Request):
     member_id = acct.get("member_id", 0) or 0
     persona = store.get_persona(acct["id"], member_id)
     lens, views, active_view_id = _resolve_home_lens(request, acct["id"], member_id, persona)
+    layout = store.get_dashboard_layout(acct["id"], member_id) if persona == "finance" else {}
+    customize = persona == "finance" and request.query_params.get("customize") == "1"
     return _html(web.overview_page(acct, report, statuses, hist,
                                    store.get_outlay_connection(acct["id"]),
                                    has_budget=bool(budgets), persona=persona,
                                    program_statuses=programs, lens=lens, views=views,
-                                   active_view_id=active_view_id))
+                                   active_view_id=active_view_id, layout=layout,
+                                   customize=customize))
 
 
 def _resolve_home_lens(request: Request, account_id: int, member_id: int, persona: str):
@@ -640,6 +643,42 @@ async def app_views_delete(request: Request):
     if vid:
         store.delete_dashboard_view(acct["id"], vid, member_id=acct.get("member_id", 0) or 0)
     return _redirect("/app")
+
+
+@app.post("/app/layout")
+async def app_layout(request: Request):
+    """Persist the finance Home card layout — reorder / hide / show / reset (Phase 3)."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    member_id = acct.get("member_id", 0) or 0
+    f = await _form(request)
+    action = f.get("action") or ""
+    if action == "reset":
+        store.set_dashboard_layout(acct["id"], member_id, {})
+        return _redirect("/app?customize=1")
+    layout = store.get_dashboard_layout(acct["id"], member_id)
+    order = web._home_module_order(layout)
+    hidden = [k for k in (layout.get("hidden") or []) if k in web.HOME_MODULES]
+    key = f.get("key") or ""
+    if key not in web.HOME_MODULES:
+        return _redirect("/app?customize=1")
+    if action == "hide":
+        if key not in hidden:
+            hidden.append(key)
+    elif action == "show":
+        hidden = [k for k in hidden if k != key]
+    elif action == "move":
+        visible = [k for k in order if k not in hidden]
+        if key in visible:
+            i = visible.index(key)
+            j = i - 1 if f.get("dir") == "up" else i + 1
+            if 0 <= j < len(visible):
+                visible[i], visible[j] = visible[j], visible[i]
+                # rebuild full order: visible (new order) interleaved with hidden at the end
+                order = visible + [k for k in order if k in hidden]
+    store.set_dashboard_layout(acct["id"], member_id, {"order": order, "hidden": hidden})
+    return _redirect("/app?customize=1")
 
 
 @app.get("/app/estimate", response_class=HTMLResponse)

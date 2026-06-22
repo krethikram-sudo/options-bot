@@ -266,6 +266,17 @@ a.kpi:hover .kdrill{opacity:1;color:var(--grn-d)}
 .vchip-wrap{display:inline-flex;align-items:center;gap:2px}
 .vx{border:none;background:none;color:var(--faint);cursor:pointer;font-size:14px;line-height:1;padding:0 2px}
 .vx:hover{color:var(--red)}
+.custbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px;padding:10px 14px;border-radius:10px;background:var(--grn-l);border:1px solid var(--grn);font-size:13px;color:var(--grn-d)}
+.modcell{position:relative}
+.modhdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.modname{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);font-weight:600}
+.modctrls{display:flex;align-items:center;gap:4px}
+.modctrls form{margin:0}
+.modbtn{border:1px solid var(--line);background:#fff;border-radius:7px;font-size:12px;padding:3px 8px;cursor:pointer;color:var(--body)}
+.modbtn:hover:not(:disabled){border-color:var(--grn);color:var(--grn-d)}
+.modbtn:disabled{opacity:.35;cursor:default}
+.hidetray{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px;padding:12px;border:1px dashed var(--line);border-radius:10px}
+.hidetray form{margin:0}.hidetray .vchip{cursor:pointer}
 .exrow{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;padding:11px 2px;border-top:1px solid var(--line);text-decoration:none}
 .exrow:first-of-type{border-top:none}
 .exrow:hover{text-decoration:none}
@@ -1877,7 +1888,8 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
                   has_budget: bool = False, persona: str = "",
                   program_statuses: list[dict] | None = None,
                   lens: dict | None = None, views: list[dict] | None = None,
-                  active_view_id: int = 0) -> str:
+                  active_view_id: int = 0, layout: dict | None = None,
+                  customize: bool = False) -> str:
     """The role-aware home — the first screen after sign-in. A concise glance
     (KPIs, budget status, forecast) with jump-offs into the deeper areas; the
     attribution detail lives on the Spend page."""
@@ -1940,17 +1952,19 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
         group_by = lens.get("group_by", "team")
         top_n = int(lens.get("top_n", 5))
         lens_bar = _lens_bar(group_by, top_n, views or [], active_view_id)
-        consolidated = ('<div class=ogrid style="margin-top:16px">'
-                        + _home_breakdown_card(report, group_by, top_n)
-                        + _home_governance_card(program_statuses, statuses)
-                        + '</div><div class=ogrid style="margin-top:16px">' + _forecast_card(report)
-                        + _home_actions_card() + '</div>')
+        cards = {
+            "breakdown": _home_breakdown_card(report, group_by, top_n),
+            "governance": _home_governance_card(program_statuses, statuses),
+            "forecast": _forecast_card(report),
+            "actions": _home_actions_card(),
+        }
+        modules = _home_modules(cards, layout or {}, customize)
         body = (tb + head + _persona_switch(persona) + _staleness_banner(report, conn)
                 + _sample_strip(report, account) + checklist
                 + attention
                 + _kpis_row(report, history, persona)
                 + _recon_strip(report) + _pricing_warn(report) + fidelity + tm_row
-                + lens_bar + consolidated + _sync_line(report, conn))
+                + lens_bar + modules + _sync_line(report, conn))
         return page("Home", body, account, active="/app")
 
     # Engineering (and pre-persona) keep the operate-focused layout.
@@ -1976,6 +1990,64 @@ def _home_actions_card() -> str:
             '<span class=exd>Every dollar by team, work type, and ticket.</span><span class=exarr>→</span></a>'
             '<a class=exrow href="/app/outlay/governance"><span class=nm>Budgets &amp; programs</span>'
             '<span class=exd>Caps, timelines, and enforcement.</span><span class=exarr>→</span></a></div>')
+
+
+HOME_MODULES = ["breakdown", "governance", "forecast", "actions"]
+HOME_MODULE_TITLES = {"breakdown": "Where it landed", "governance": "Governance",
+                      "forecast": "Forecast · open work", "actions": "Reports & deep views"}
+
+
+def _home_module_order(layout: dict) -> list[str]:
+    """Saved order, filtered to known modules, with any new modules appended — so the
+    layout survives us adding cards later."""
+    saved = [k for k in (layout.get("order") or []) if k in HOME_MODULES]
+    return saved + [k for k in HOME_MODULES if k not in saved]
+
+
+def _home_modules(cards: dict, layout: dict, customize: bool) -> str:
+    """The customizable module deck on the finance Home — render the cards in the
+    person's saved order, omitting hidden ones. In customize mode each card gets
+    move/hide controls and hidden cards can be re-added, all persisted per person."""
+    order = _home_module_order(layout)
+    hidden = set(layout.get("hidden") or [])
+    visible = [k for k in order if k not in hidden]
+
+    if not customize:
+        bar = ('<div style="display:flex;justify-content:flex-end;margin-top:16px">'
+               '<a class="btn sec sm" href="/app?customize=1">⚙ Customize</a></div>')
+        cells = "".join(f'<div>{cards[k]}</div>' for k in visible if k in cards)
+        return bar + f'<div class=ogrid style="margin-top:8px">{cells}</div>'
+
+    # Customize mode: control header per card + hidden tray + toolbar.
+    bar = ('<div class=custbar><span><b>Customizing your dashboard</b> — reorder with ↑ ↓, hide cards '
+           'you don\'t use. Saved to your login.</span><span class=lsp></span>'
+           '<form method=post action="/app/layout" style="margin:0"><input type=hidden name=action value=reset>'
+           '<button class="btn sec sm">Reset to default</button></form>'
+           '<a class="btn sm" href="/app">Done</a></div>')
+    cells = ""
+    for i, k in enumerate(visible):
+        if k not in cards:
+            continue
+        up = (f'<form method=post action="/app/layout"><input type=hidden name=action value=move>'
+              f'<input type=hidden name=key value="{k}"><input type=hidden name=dir value=up>'
+              f'<button class=modbtn title="Move up"{" disabled" if i == 0 else ""}>↑</button></form>')
+        down = (f'<form method=post action="/app/layout"><input type=hidden name=action value=move>'
+                f'<input type=hidden name=key value="{k}"><input type=hidden name=dir value=down>'
+                f'<button class=modbtn title="Move down"{" disabled" if i == len(visible)-1 else ""}>↓</button></form>')
+        hide = (f'<form method=post action="/app/layout"><input type=hidden name=action value=hide>'
+                f'<input type=hidden name=key value="{k}"><button class=modbtn title="Hide">Hide ✕</button></form>')
+        ctrl = (f'<div class=modhdr><span class=modname>{_e(HOME_MODULE_TITLES.get(k, k))}</span>'
+                f'<span class=modctrls>{up}{down}{hide}</span></div>')
+        cells += f'<div class=modcell>{ctrl}{cards[k]}</div>'
+    grid = f'<div class=ogrid style="margin-top:8px">{cells}</div>'
+    tray = ""
+    if hidden:
+        chips = "".join(
+            f'<form method=post action="/app/layout" style="display:inline"><input type=hidden name=action value=show>'
+            f'<input type=hidden name=key value="{k}"><button class="vchip">+ {_e(HOME_MODULE_TITLES.get(k, k))}</button></form>'
+            for k in order if k in hidden)
+        tray = (f'<div class=hidetray><span class=lab>Hidden cards</span>{chips}</div>')
+    return bar + grid + tray
 
 
 def _unit_econ_card(report: dict) -> str:

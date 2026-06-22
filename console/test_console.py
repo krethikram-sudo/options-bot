@@ -2967,6 +2967,30 @@ def test_finance_home_lens_and_saved_views(env, client):
     assert "By team / cost-center" in client.get("/app").text
 
 
+def test_finance_home_customizable_layout(env, client):
+    """Phase 3: per-person customizable Home — reorder, hide/show, reset the card deck."""
+    from console import store
+    _signup(client, email="cust@x.com")
+    acct = store.get_account_by_email("cust@x.com")
+    store.set_persona(acct["id"], "finance", acct.get("member_id", 0) or 0)
+    client.post("/app/outlay/sample", follow_redirects=True)
+    assert "Customize" in client.get("/app").text
+    cm = client.get("/app?customize=1").text
+    assert "Customizing your dashboard" in cm and "Move up" in cm
+    # hide a card → persisted + omitted from the normal Home + shown in the tray
+    client.post("/app/layout", data={"action": "hide", "key": "governance"}, follow_redirects=True)
+    assert store.get_dashboard_layout(acct["id"], 0)["hidden"] == ["governance"]
+    assert "Hidden cards" in client.get("/app?customize=1").text
+    # reorder a card to the front
+    client.post("/app/layout", data={"action": "move", "key": "forecast", "dir": "up"}, follow_redirects=True)
+    assert store.get_dashboard_layout(acct["id"], 0)["order"][0] == "forecast"
+    # show it again, then reset to the opinionated default
+    client.post("/app/layout", data={"action": "show", "key": "governance"}, follow_redirects=True)
+    assert store.get_dashboard_layout(acct["id"], 0)["hidden"] == []
+    client.post("/app/layout", data={"action": "reset"}, follow_redirects=True)
+    assert store.get_dashboard_layout(acct["id"], 0) == {}
+
+
 def test_unit_economics_engine_and_card(env, client):
     from console import outlay_app
     # engine: per-ticket / per-closed / rework / by-class from attributed tickets

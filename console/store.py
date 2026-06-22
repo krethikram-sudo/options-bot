@@ -105,6 +105,12 @@ CREATE TABLE IF NOT EXISTS dashboard_views (
     is_default INTEGER NOT NULL DEFAULT 0         -- 1 = the view that loads on Home for this person
 );
 CREATE INDEX IF NOT EXISTS idx_dashviews ON dashboard_views(account_id, member_id);
+CREATE TABLE IF NOT EXISTS dashboard_prefs (
+    account_id INTEGER NOT NULL,
+    member_id INTEGER NOT NULL DEFAULT 0,
+    layout TEXT NOT NULL DEFAULT '{}',            -- JSON: {order:[card keys], hidden:[card keys]}
+    PRIMARY KEY (account_id, member_id)
+);
 CREATE TABLE IF NOT EXISTS audit_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ts REAL NOT NULL,
@@ -1905,6 +1911,35 @@ def delete_dashboard_view(account_id: int, view_id: int, member_id: int = 0,
     try:
         conn.execute("DELETE FROM dashboard_views WHERE id=? AND account_id=? AND member_id=?",
                      (view_id, account_id, member_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_dashboard_layout(account_id: int, member_id: int = 0, path: str | None = None) -> dict:
+    """This person's Home card layout — {order:[keys], hidden:[keys]}. Empty = the
+    opinionated default order with nothing hidden."""
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT layout FROM dashboard_prefs WHERE account_id=? AND member_id=?",
+                           (account_id, member_id)).fetchone()
+    finally:
+        conn.close()
+    if not row:
+        return {}
+    try:
+        return json.loads(row["layout"] or "{}") or {}
+    except (ValueError, TypeError):
+        return {}
+
+
+def set_dashboard_layout(account_id: int, member_id: int, layout: dict, path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute(
+            "INSERT INTO dashboard_prefs(account_id, member_id, layout) VALUES(?,?,?) "
+            "ON CONFLICT(account_id, member_id) DO UPDATE SET layout=excluded.layout",
+            (account_id, member_id, json.dumps(layout or {})))
         conn.commit()
     finally:
         conn.close()
