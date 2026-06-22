@@ -2922,14 +2922,18 @@ def test_finance_attention_panel_and_summary_view(env, client):
     client.post("/app/outlay/programs", data={
         "name": "Overspender", "limit_usd": "1000", "members": "overall"}, follow_redirects=True)
     ov = client.get("/app").text
-    assert ">Summary<" in ov                      # finance nav has the Summary item
+    # Consolidated finance Home: nav is Home · Spend · Governance (Summary folded in)
+    assert ">Home<" in ov and ">Governance<" in ov and ">Summary<" not in ov
     assert "Needs your attention" in ov           # auto-flag panel present
     assert "Overspender" in ov and "over budget" in ov
-    # quarterly summary view
-    sm = client.get("/app/outlay/summary").text
-    assert "summary" in sm.lower() and "Where it landed" in sm
-    assert "Needs your attention" in sm and "Programs" in sm
-    assert "close-report.html" in sm              # printable board readout linked
+    # Home carries the consolidated drill-in cards + board readout
+    assert "By team / cost-center" in ov and "Governance" in ov
+    assert "close-report.html" in ov              # printable board readout linked
+    # the old summary URL now lands on Home
+    assert client.get("/app/outlay/summary", follow_redirects=False).status_code in (302, 303, 307)
+    # Governance deep view merges budgets + programs
+    gov = client.get("/app/outlay/governance").text
+    assert "Governance" in gov and "Overspender" in gov and "Add a budget" in gov
 
     # with nothing off track, the panel shows the calm all-clear
     from console import web

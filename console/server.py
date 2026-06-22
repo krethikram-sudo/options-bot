@@ -1302,18 +1302,27 @@ def app_outlay_programs(request: Request):
     return _html(web.programs_page(acct, report, statuses))
 
 
-@app.get("/app/outlay/summary", response_class=HTMLResponse)
+@app.get("/app/outlay/summary")
 def app_outlay_summary(request: Request):
-    """Finance's quarterly summary — headline numbers, the auto-flagged attention
-    panel, by-team allocation, and program timelines, with the printable readout."""
+    """The quarterly summary is now consolidated into the finance Home — keep the URL
+    working (bookmarks, the close-report link) by redirecting there."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    return _redirect("/app")
+
+
+@app.get("/app/outlay/governance", response_class=HTMLResponse)
+def app_outlay_governance(request: Request):
+    """Consolidated finance governance — budgets + programs in one deep view."""
     acct, redir = _require(request)
     if redir:
         return redir
     report = store.get_outlay_report(acct["id"])
     budgets = outlay_app.budget_statuses(report, store.list_outlay_budgets(acct["id"])) if report else []
     programs = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"])) if report else []
-    persona = store.get_persona(acct["id"], acct.get("member_id", 0) or 0)
-    return _html(web.summary_page(acct, report, budgets, programs, persona=persona))
+    projects = outlay_app.project_spend(report) if report else []
+    return _html(web.governance_page(acct, report, budgets, programs, projects))
 
 
 @app.post("/app/outlay/programs")
