@@ -4,6 +4,10 @@
 Covers: what we've built, how it's architected, what the engine computes, and a
 screen-by-screen customer flow for **each persona** (Finance and Engineering).*
 
+> **Every screen below has an actual rendered screenshot** (captured from the live
+> app with sample data), embedded inline under its heading. 27 screens in
+> `docs/images/walkthrough/`.
+
 **Status of this audit:** A live end-to-end smoke test was run against the actual
 app (FastAPI test client driving real routes). **54 of 55 checks passed**; the one
 miss was a test-script omission (a Program requires at least one scope line — when
@@ -132,6 +136,11 @@ mapping, and reconciling is engineering's job. Finance only consumes dashboards.
 ## Part 5 — FINANCE persona: screen-by-screen flow
 
 ### F0 · Landing → Sign up
+
+![Landing page](images/walkthrough/01_landing.png)
+![Sign up](images/walkthrough/02_signup.png)
+![Become a customer / pilot request](images/walkthrough/03_pilot.png)
+
 - **Landing (`/`)** — H1 **"Put AI compute on a budget."** Eyebrow "The control plane
   for AI compute spend." Value prop + "Read-only to start; your prompts and keys never
   leave your environment." CTAs: **Become a customer →** (`/pilot-request`) · **Sign in**.
@@ -140,6 +149,9 @@ mapping, and reconciling is engineering's job. Finance only consumes dashboards.
   password, terms consent. → **Create account**.
 
 ### F1 · The role gate (`/app/welcome`, first screen)
+
+![Role gate takeover](images/walkthrough/04_rolegate.png)
+
 A **full-screen centered takeover** over a blurred dashboard skeleton — undismissable;
 the new customer cannot proceed until they pick a role.
 - H1 **"First, who are you?"**
@@ -148,6 +160,9 @@ the new customer cannot proceed until they pick a role.
 - Finance picks the finance tile → persona set → advances to F2.
 
 ### F2 · Finance onboarding (Step 2)
+
+![Finance onboarding](images/walkthrough/05_fin_welcome.png)
+
 - H1 **"You're set up as Finance."**
 - Copy: "Invite your engineering counterpart, then jump into the product."
 - One card: **"Invite your counterpart"** — enter the engineering leader's work email;
@@ -156,6 +171,9 @@ the new customer cannot proceed until they pick a role.
 - **"Go to my dashboard →"** (these steps are optional).
 
 ### F3 · Finance overview — *empty state* (`/app`, before data)
+
+![Finance empty state](images/walkthrough/06_fin_overview_empty.png)
+
 This is what finance sees until engineering has connected the sources:
 - H1 **"Your AI spend dashboard is on its way."**
 - Body: explains Outlay turns AI usage + tracker into spend/forecast/breakdown, and
@@ -170,6 +188,9 @@ This is what finance sees until engineering has connected the sources:
   connect form.
 
 ### F4 · Finance overview — *with data* (`/app`)
+
+![Finance overview with data](images/walkthrough/07_fin_overview_data.png)
+
 Once engineering connects and the first sync lands (a 90-day backfill):
 - H1 **"Your AI spend at a glance."**
 - **Four KPIs (clickable drill-downs):** *AI spend · window* · *Forecast · open work*
@@ -183,6 +204,9 @@ Once engineering connects and the first sync lands (a 90-day backfill):
 - **Explore** — role-ordered jump-offs (Spend, Budgets, Programs, Accuracy).
 
 ### F5 · Spend (`/app/outlay`)
+
+![Finance spend page](images/walkthrough/08_fin_spend.png)
+
 - H1 **"Where your AI spend goes."**
 - Finance-first sections: **Spend by team / cost-center** (the chargeback view) →
   **Where your AI spend went** (by ticket) → **Spend by work type** → **Spend by
@@ -193,12 +217,18 @@ Once engineering connects and the first sync lands (a 90-day backfill):
 - The engineering-only "lift your coverage" diagnostic is **hidden** for finance.
 
 ### F6 · Budgets & guardrails (`/app/outlay/budgets`)
+
+![Budgets & guardrails](images/walkthrough/09_fin_budgets.png)
+
 - H1 **"Budgets & guardrails."**
 - **Spend by project / epic** with live status, and **"Add a budget"** — set a limit
   by scope (overall / team / work-type / project) and period; pace projection flags
   *over / warn / ok* **before** you overspend.
 
 ### F7 · Program budgets (`/app/outlay/programs`)
+
+![Program budgets](images/walkthrough/10_fin_programs.png)
+
 - H1 **"Program budgets."**
 - **"Define a program"** — budget a program across multiple scopes (teams/classes),
   set a hard cap and period, choose an **enforcement mode** (alert vs enforce), an
@@ -207,11 +237,17 @@ Once engineering connects and the first sync lands (a 90-day backfill):
   (`/api/v1/enforcement`) the gateway consults.
 
 ### F8 · Drill-down / scope (`/app/outlay/scope`)
+
+![Scope drill-down by team](images/walkthrough/21_scope_team.png)
+
 - Reached by clicking any team or work-type row. H1 e.g. **"growth · team /
   cost-center"** — the tickets behind that scope, biggest first, with runaway outliers
   flagged. Back link to Spend.
 
 ### F9 · Close report (`/app/outlay/close-report.html`)
+
+![Printable close report](images/walkthrough/11_fin_closereport.png)
+
 - A printable, standalone **AI spend audit readout** (the VP/board read-in) — total
   spend, attribution, by-team allocation, period — opens in a new tab, print-to-PDF.
 
@@ -223,9 +259,12 @@ Finance does not see Connect or API.)*
 ## Part 6 — ENGINEERING persona: screen-by-screen flow
 
 ### E1 · Role gate
-Same takeover as F1; engineering picks **"I'm an engineering leader…"** → persona set.
+*(Same takeover as F1 — see image above.)* Engineering picks **"I'm an engineering leader…"** → persona set.
 
 ### E2 · Engineering onboarding (Step 2)
+
+![Engineering onboarding](images/walkthrough/12_eng_welcome.png)
+
 - H1 **"You're set up as Engineering."**
 - **"Upload your direct reports"** — CSV (`name, email, job title`) building the
   identity directory; powers usage-by-person and one-click invites. Each person renders
@@ -235,6 +274,9 @@ Same takeover as F1; engineering picks **"I'm an engineering leader…"** → pe
 - **"Go to my dashboard →"**
 
 ### E3 · Engineering overview — *empty state* (`/app`, before data)
+
+![Engineering empty state](images/walkthrough/13_eng_overview_empty.png)
+
 - H1 **"Your AI spend, on your roadmap."**
 - CTA row: **Connect your sources →** · **See it with sample data** (demo accounts
   only) · **Show me how** (launches the contextual connect walkthrough).
@@ -243,6 +285,9 @@ Same takeover as F1; engineering picks **"I'm an engineering leader…"** → pe
 - **Nav has the Sources group** (Connect · API) plus Analyze and Workspace.
 
 ### E4 · Connect your sources (`/app/outlay/connect`)
+
+![Connect your sources](images/walkthrough/14_eng_connect.png)
+
 - H1 **"Connect your sources · read-only"** with a **"Show me how"** guided tour.
 - **Tracker** — GitHub Issues / Jira / Linear (owner+repo+token, or base+email+token,
   or API key). **AI usage** — Anthropic admin key and/or Cursor key (BYOK, read-only).
@@ -253,6 +298,9 @@ Same takeover as F1; engineering picks **"I'm an engineering leader…"** → pe
   dashboard is rich on day one.
 
 ### E5 · Engineering overview — *with data* (`/app`)
+
+![Engineering overview with data](images/walkthrough/15_eng_overview_data.png)
+
 - H1 **"AI spend at a glance."**
 - **Four KPIs (eng-specific):** *AI spend · window* · **Mapped to a ticket** (coverage
   %, the trust metric) · **Runaway tickets** (count, top offender) · *Forecast · open
@@ -261,6 +309,9 @@ Same takeover as F1; engineering picks **"I'm an engineering leader…"** → pe
   but ordered for shipping (Spend, Estimate, Accuracy, Budgets).
 
 ### E6 · Spend (`/app/outlay`)
+
+![Engineering spend page](images/walkthrough/16_eng_spend.png)
+
 - H1 **"Where your AI spend goes."**
 - Eng-first sections: **Where your AI spend went** (by ticket) → **Spend by work type**
   → **Spend by engineer** → **Spend by model** → **Runaway tickets**.
@@ -268,12 +319,18 @@ Same takeover as F1; engineering picks **"I'm an engineering leader…"** → pe
   no-effort fix: connect PRs / map teams) — engineering-only.
 
 ### E7 · Accuracy (`/app/outlay/accuracy`)
+
+![Forecast accuracy](images/walkthrough/17_eng_accuracy.png)
+
 - H1 **"How accurate is this?"**
 - KPIs: **Median error (MdAPE)** · **Within the p90 band** · **Tickets back-tested** —
   the leave-one-out calibration on the team's own closed tickets, plus **Accuracy by
   work type**. This is what makes the forecast credible.
 
 ### E8 · Estimate your backlog (`/app/outlay/estimate`)
+
+![Estimate your backlog](images/walkthrough/18_eng_estimate.png)
+
 - H1 **"Estimate your backlog."**
 - **"Paste a planned backlog"** → **"Backlog estimate"** (per-item cost with confidence
   tiers: high = has points + fitted size model; medium = class history; low = thin) →
@@ -284,6 +341,9 @@ Same takeover as F1; engineering picks **"I'm an engineering leader…"** → pe
 Same as F6 — engineering sets/uses budgets too.
 
 ### E10 · Drill-down / scope
+
+![Scope drill-down by work type](images/walkthrough/20_scope_class.png)
+
 Same as F8 — e.g. H1 **"bugfix · work type."**
 
 *(Engineering also has full access to the API & data-export page — see §7.)*
@@ -291,6 +351,13 @@ Same as F8 — e.g. H1 **"bugfix · work type."**
 ---
 
 ## Part 7 — Shared Workspace screens (both personas)
+
+![Settings](images/walkthrough/22_settings.png)
+![Security & compliance](images/walkthrough/23_security.png)
+![Team & access](images/walkthrough/24_team.png)
+![API & data export](images/walkthrough/25_api.png)
+![Billing & plan](images/walkthrough/26_billing.png)
+![Activity & audit log](images/walkthrough/27_audit.png)
 
 - **Settings (`/app/settings`)** — H1 **"Settings."** Account/workspace prefs,
   persona switch, retention controls, feedback.
