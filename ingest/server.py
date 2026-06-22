@@ -22,6 +22,7 @@ Env: INGEST_DB (default ingest.db).
 
 import json
 import os
+import re
 import sqlite3
 import time
 from collections import defaultdict
@@ -38,6 +39,14 @@ _FORBIDDEN_KEYS = {
     "completion", "api_key", "apikey", "x-api-key", "authorization", "secret",
     "example", "examples", "baseline_text", "routed_text",
 }
+
+# Value-level scan: refuse a payload whose string VALUES look like a credential, so a
+# secret slipped under an unlisted field name is still caught (not just key-name match).
+_SECRET_VALUE_RE = re.compile(
+    r"(sk-[A-Za-z0-9-]{16,}|sk-ant-[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9]{20,}"
+    r"|xox[baprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{12,}|AIza[0-9A-Za-z_-]{20,}"
+    r"|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{6,}"
+    r"|[Bb]earer\s+[A-Za-z0-9._-]{16,})")
 
 _DB = os.environ.get("INGEST_DB", "ingest.db")
 _SCHEMA = """
@@ -60,7 +69,8 @@ def _conn():
 
 
 def _forbidden_path(obj, path=""):
-    """Return the first forbidden key path found, or None. Defense in depth."""
+    """Return the first forbidden key path / credential-looking value found, or None.
+    Defense in depth — matches both sensitive key NAMES and secret-looking VALUES."""
     if isinstance(obj, dict):
         for k, v in obj.items():
             if str(k).lower() in _FORBIDDEN_KEYS:
@@ -73,6 +83,8 @@ def _forbidden_path(obj, path=""):
             hit = _forbidden_path(v, f"{path}[{i}]")
             if hit:
                 return hit
+    elif isinstance(obj, str) and _SECRET_VALUE_RE.search(obj):
+        return f"{path}=<credential-like value>".lstrip(".")
     return None
 
 

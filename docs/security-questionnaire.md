@@ -18,9 +18,13 @@ citizen data is ever transmitted to or stored by Outlay.
 **Consequences for this review:**
 - **FIPS 199 categorization: Low.** No high-water-mark data type is present.
 - **Out of scope by architecture:** HIPAA, IRS Pub 1075 (FTI), FBI CJIS (CJI), PCI-DSS, FERPA,
-  and FedRAMP High — Outlay never receives the data that triggers them. Our ingestion endpoints
-  **reject any payload containing prompt text, outputs, or secret-looking keys (HTTP 422)** — the
-  boundary is enforced, not just promised.
+  and FedRAMP High — Outlay never receives the data that triggers them. The privacy guarantee is
+  primarily **structural**: the client sends only aggregates, and our serializer stores only
+  metadata (token counts, ticket IDs, task classes, dollar figures) — ticket titles/bodies are
+  dropped before storage. As **defense in depth**, the metadata/telemetry endpoints additionally
+  **reject (HTTP 422) any payload that carries a sensitive field name** (`prompt`, `messages`,
+  `content`, `output`, `api_key`, `authorization`, …) **or a string value matching a credential
+  pattern** (`sk-…`, `Bearer …`, JWTs, cloud-provider keys) at any nesting depth.
 - Most "how do you protect [sensitive data]?" questions are answered by: *we never receive it.*
 
 ---
@@ -41,7 +45,7 @@ citizen data is ever transmitted to or stored by Outlay.
 
 | Control | Our answer | Evidence |
 |---|---|---|
-| **IA-2 MFA (all users)** | MFA supported for every user; **admin policy can require MFA org-wide** (users are gated to enroll before access). | Trust Center → *Organization security policy* |
+| **IA-2 MFA** | MFA (TOTP or email OTP) available to all account principals. **Admin policy enforces MFA for account owners/admins** — the privileged accounts that hold connector secrets, billing, and team management — gating them to enroll before app access. *(Per-member self-service MFA enrollment, so the org policy can compel every invited teammate, is the next near-term item; SSO/IdP-enforced MFA already covers SSO-provisioned members today.)* | Trust Center → *Organization security policy* |
 | **IA-2 phishing-resistant / AAL2** | **TOTP authenticator (RFC 6238)** — AAL2, not a shared/phishable channel; email one-time codes also available. *(WebAuthn/passkeys is on the roadmap as the FIDO2 phishing-resistant upgrade.)* | Trust Center → *Set up authenticator app* |
 | **IA-2(12) SSO** | **SSO via OIDC**, email-domain routed. | `/sso/start`, `/sso/callback` |
 | **IA-5 Authenticator management (passwords)** | NIST 800-63B: **length over complexity**, no forced rotation, **screened against common/breached passwords** (bundled denylist + optional HIBP k-anonymity). Hashed with **PBKDF2-HMAC-SHA256 (200k iterations) + per-user salt**. | signup/reset validation |
@@ -54,8 +58,8 @@ citizen data is ever transmitted to or stored by Outlay.
 |---|---|---|
 | **AU-2 / AU-12 Auditable events** | Privileged + **authentication** events logged: logins, **failed logins**, 2FA enable/disable, password reset, member invite/role/remove, connection/identity changes, security-policy changes, **log-out-everywhere**, retention/purge, program/budget changes. | Activity page (`/app/audit`) |
 | **AU-3 Content** | Each entry: timestamp, actor, action, detail. | Activity page |
-| **AU-6 Review / AU-9 export** | **CSV export** of the full audit log for ingestion into your **SIEM**; an **incident/breach webhook** posts a signed alert to your SOC on a security event (supports your reporting SLA, e.g. Maryland's 1-hour MD-SOC rule). | `/app/audit/export.csv`; Trust Center webhook |
-| **AU-11 Retention** | Audit log **retained ≥ 90 days** (kept indefinitely by default; data-retention controls govern *spend snapshots*, never the audit trail). | Trust Center status |
+| **AU-6 Review / AU-9 export** | **CSV export** of the full audit log for ingestion into your **SIEM**; an **incident/breach webhook** fires an **HMAC-SHA256-signed** alert (`x-outlay-signature`) to your SOC on each security event — failed login, account lockout, MFA enable/disable, password reset, security-policy change, log-out-everywhere — supporting your reporting SLA (e.g. Maryland's 1-hour MD-SOC rule). | `/app/audit/export.csv`; Trust Center webhook |
+| **AU-11 Retention** | Audit log **kept for the life of the account** — never auto-purged, and the configurable spend-data retention/auto-purge controls **never touch the audit trail**. (Full-account erasure removes it together with all tenant data, by design, to honor a right-to-be-forgotten request.) | Trust Center status |
 
 ---
 
@@ -73,10 +77,13 @@ citizen data is ever transmitted to or stored by Outlay.
 
 ## 5. Incident Response (NIST 800-53 **IR** · SOC 2 CC7.3-7.5)
 
-- **IR-8 plan:** documented IR process (separate runbook). **IR-6 notification:** a customer-set
-  **incident/breach webhook** posts a signed alert to your SOC/SIEM on a security event, so you can
-  meet your own notification SLA. We commit to contractual breach-notification timelines (e.g.,
-  Maryland's 1-hour MD-SOC reporting; the state consumer-breach AG-first rule).
+- **IR-8 plan:** documented IR process (`incident-response-plan.md` + a private runbook). **IR-6
+  notification:** a customer-set **incident/breach webhook** fires an HMAC-signed alert to your
+  SOC/SIEM on each security event (failed login, lockout, MFA/password/policy change,
+  log-out-everywhere), so you can meet your own notification SLA. We commit to contractual
+  breach-notification timelines (e.g., Maryland's 1-hour MD-SOC reporting; the state consumer-breach
+  AG-first rule). The webhook is a best-effort signal layered on an on-call human; it is not a
+  substitute for a 24/7 staffed SOC (which we don't yet operate, and state plainly).
 - Evidence: Trust Center → *Incident / breach notification webhook*.
 
 ---
@@ -95,8 +102,8 @@ citizen data is ever transmitted to or stored by Outlay.
 
 | Topic | Our answer |
 |---|---|
-| **Data retention / disposal** | Customer-**configurable retention** (keep, or auto-purge ingested spend data after 30/90/180/365 days) and **self-serve erasure** of ingested data or the entire account. |
-| **Data residency** | US data residency; region is surfaced in the Trust Center. *(US-only hosting confirmed with the FedRAMP-Moderate cloud move; metadata-only scope doesn't trigger US-Persons-only staffing.)* |
+| **Data retention / disposal** | Customer-**configurable retention** (keep, or auto-purge ingested spend data after 30/90/180/365 days) and **self-serve erasure** of ingested data or the entire account. The audit trail is exempt from auto-purge (kept for the account's life). |
+| **Data residency** | The configured region is **surfaced and attestable in the Trust Center**; today's hosting (Fly.io) is a US-based commercial cloud. A **contractually-guaranteed US-only residency** (region-pinned storage/processing) **ships with the FedRAMP-Moderate cloud re-host** — see `gov-tech-security-requirements.md` §4. Metadata-only scope doesn't trigger US-Persons-only staffing. *(Stated as roadmap, not a present guarantee.)* |
 | **PS-3 background checks** *(process)* | Personnel with data access undergo background screening. (No CJIS fingerprint requirement — no CJI in scope.) |
 | **Tenant isolation** | Per-deployment isolation; metadata scoped to the customer's deployment. |
 | **Sub-processors** | Hosting + email-routing sub-processors listed on request. |
@@ -117,9 +124,12 @@ citizen data is ever transmitted to or stored by Outlay.
 
 ## 9. Accessibility (Section 508 / WCAG 2.1 AA / Maryland NTIAA)
 
-- Built to **WCAG 2.1 AA / Section 508**; automated axe-core audit passes with **zero violations**;
-  MFA offers a non-visual-access-compliant mechanism. **VPAT/ACR** available in-product (Trust
-  Center → *VPAT / ACR*) and as a signed report on request.
+- Built to **WCAG 2.1 AA / Section 508**, with an **automated accessibility gate in CI** (every
+  rendered form control has a programmatic name; images carry `alt`; pages declare language + title)
+  plus manual keyboard/screen-reader and **axe-core** spot-checks. MFA offers a non-visual-access
+  mechanism. **VPAT/ACR** available in-product (Trust Center → *VPAT / ACR*). *(An independent
+  third-party VPAT validation — to drop the "self-assessment" qualifier — is on the roadmap before
+  final state submission.)*
 
 ---
 

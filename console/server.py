@@ -275,11 +275,19 @@ def _require_team_admin(request: Request):
 
 
 def _audit(account_id: int, action: str, actor: str = "", detail: str = "") -> None:
-    """Record a security-relevant event; never let an audit write break the request."""
+    """Record a security-relevant event; never let an audit write break the request.
+    Authentication/security events (login.fail, 2fa.*, password.reset, policy change,
+    log-out-everywhere, lockout) ALSO fire the account's incident/breach webhook so a
+    SOC/SIEM gets a signed alert in real time (gov-readiness IR-6 / MD-SOC path)."""
     try:
         store.record_audit(account_id, action, actor=actor, detail=detail)
     except Exception:  # noqa: BLE001
         pass
+    if action in store.SECURITY_EVENT_ACTIONS:
+        try:
+            store.notify_security_event(account_id, action, actor=actor, detail=detail)
+        except Exception:  # noqa: BLE001
+            pass
 
 
 def _redirect(url: str):
@@ -431,6 +439,10 @@ async def login(request: Request):
     locked = store.login_locked(email)
     if locked:
         mins = max(1, locked // 60)
+        existing = store.get_account_by_email(email)
+        if existing:  # AC-7: a locked account is a security signal — audit + alert the SOC
+            _audit(existing["id"], "login.locked", actor=email,
+                   detail=f"locked {mins}m after repeated failures")
         return _html(web.auth_form("login", f"Too many failed attempts — try again in {mins} minute"
                                    f"{'s' if mins != 1 else ''}.", email), 429)
     acct = store.authenticate(email, f.get("password", ""))
@@ -1475,6 +1487,9 @@ async def app_outlay_budgets_add(request: Request):
     if limit > 0:
         store.add_outlay_budget(acct["id"], scope, f.get("scope_id"), limit,
                                 int(f.get("period_days") or 30))
+        _audit(acct["id"], "budget.add", actor=acct.get("display_email") or acct["email"],
+               detail=f"{scope}{('/' + f.get('scope_id')) if f.get('scope_id') else ''} "
+                      f"${limit:,.0f} / {int(f.get('period_days') or 30)}d")
     return _redirect("/app/outlay/budgets")
 
 
@@ -1484,7 +1499,10 @@ async def app_outlay_budgets_delete(request: Request):
     if redir:
         return redir
     f = await _form(request)
-    store.delete_outlay_budget(acct["id"], int(f.get("id") or 0))
+    bid = int(f.get("id") or 0)
+    store.delete_outlay_budget(acct["id"], bid)
+    _audit(acct["id"], "budget.delete", actor=acct.get("display_email") or acct["email"],
+           detail=f"budget #{bid}")
     return _redirect("/app/outlay/budgets")
 
 
@@ -2654,9 +2672,9 @@ async def api_meter(request: Request):
     body = await request.json()
     if not isinstance(body, dict):
         return JSONResponse({"error": "object required"}, status_code=400)
-    lowered = {str(k).lower() for k in body}
-    if lowered & store.FORBIDDEN_METER_KEYS:
-        return JSONResponse({"error": "payload contains forbidden keys"}, status_code=422)
+    reason = store.forbidden_payload_reason(body)
+    if reason:
+        return JSONResponse({"error": f"payload rejected: {reason}"}, status_code=422)
     dep = key_dep or body.get("deployment_id")
     if not dep:
         return JSONResponse({"error": "deployment_id required"}, status_code=400)
@@ -2713,8 +2731,9 @@ async def api_proposals(request: Request):
     body = await request.json()
     if not isinstance(body, dict):
         return JSONResponse({"error": "object required"}, status_code=400)
-    if {str(k).lower() for k in body} & store.FORBIDDEN_METER_KEYS:
-        return JSONResponse({"error": "payload contains forbidden keys"}, status_code=422)
+    reason = store.forbidden_payload_reason(body)
+    if reason:
+        return JSONResponse({"error": f"payload rejected: {reason}"}, status_code=422)
     dep = key_dep or body.get("deployment_id")
     kind = body.get("kind")
     category = body.get("category")
@@ -2746,13 +2765,10 @@ async def api_logs(request: Request):
     logs = body.get("logs") or []
     if not dep:
         return JSONResponse({"error": "deployment_id required"}, status_code=400)
-    # forbidden keys at the batch level OR in any row
-    seen = {str(k).lower() for k in body}
-    for r in logs:
-        if isinstance(r, dict):
-            seen |= {str(k).lower() for k in r}
-    if seen & store.FORBIDDEN_METER_KEYS:
-        return JSONResponse({"error": "payload contains forbidden keys"}, status_code=422)
+    # forbidden key NAMES or credential-looking VALUES at any depth (batch + rows)
+    reason = store.forbidden_payload_reason(body)
+    if reason:
+        return JSONResponse({"error": f"payload rejected: {reason}"}, status_code=422)
     try:
         res = store.record_logs(dep, logs)
     except store.StoreError as e:

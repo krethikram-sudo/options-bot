@@ -4,7 +4,13 @@
 audit of the actual console code (June 2026). Separates **product build** (code we write)
 from **infra/process** (hosting, audits, paperwork — not features).*
 
-## ✅ Status — all product gaps built (208 tests passing)
+## ✅ Status — all product gaps built (224 tests passing)
+> **June 2026 audit:** a control-by-control verification (`security-audit-2026-06.md`) found the
+> foundations solid but caught 4 claims that overstated the code (member-MFA scope, the security
+> webhook not firing, name-only ingest filtering, an unsubstantiated axe-core claim) plus secondary
+> secrets in cleartext. All fixed in code or honestly re-scoped; +16 tests added.
+
+
 Shipped: #1 admin-enforced MFA · #2 TOTP authenticator (WebAuthn/passkeys is the remaining
 phishing-resistant upgrade) · #3 session idle timeout + epoch + log-out-everywhere · #4 account
 lockout + login throttle · #5 password breach screening (+ optional HIBP) · #6 auth-event audit

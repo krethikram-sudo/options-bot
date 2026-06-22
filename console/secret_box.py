@@ -43,7 +43,23 @@ def _key() -> bytes:
     managed = os.environ.get("CONSOLE_SECRETBOX_KEY")
     if managed:
         return managed.encode()
-    sec = os.environ.get("CONSOLE_SECRET") or "dev-insecure-console-secret"
+    sec = os.environ.get("CONSOLE_SECRET")
+    if not sec:
+        # Fail safe (gov-readiness): NEVER silently fall back to a world-known
+        # default key in production — that would make every stored secret trivially
+        # decryptable by anyone with the (open-source) repo. Production always sets
+        # CONSOLE_SECRET (sessions need it too); bare local dev can opt in explicitly.
+        if os.environ.get("CONSOLE_ALLOW_INSECURE_SECRETBOX") == "1":
+            sec = "dev-insecure-console-secret"
+        else:
+            raise RuntimeError(
+                "secret_box: no key material. Set CONSOLE_SECRETBOX_KEY (a KMS-managed "
+                "Fernet key) or CONSOLE_SECRET. For local dev only, set "
+                "CONSOLE_ALLOW_INSECURE_SECRETBOX=1 to use an insecure default.")
+    # NOTE: single-pass SHA-256 derivation is retained for backward-compatibility with
+    # already-stored `enc:` values. Strengthening to a salted KDF requires a key-rotation
+    # migration (re-encrypt on read); the supported hardening path is a KMS key via
+    # CONSOLE_SECRETBOX_KEY (above), which sidesteps derivation entirely.
     return base64.urlsafe_b64encode(hashlib.sha256(sec.encode()).digest())
 
 

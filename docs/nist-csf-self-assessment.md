@@ -37,7 +37,7 @@ PII/PHI/CJI/FTI/citizen data received → CJIS, IRS-1075, HIPAA, FedRAMP-High ou
 
 | Subcategory | Status | Our posture | 800-53 / evidence |
 |---|---|---|---|
-| **PR.AA** Identity, auth & access control | ✅ | SSO/OIDC + SCIM; RBAC (owner/admin/member, least privilege); **admin-enforced MFA**; **TOTP (AAL2)** + email OTP; **account lockout** (5→15 min); password breach-screening (800-63B, length>complexity, no forced rotation, HIBP optional); **session idle + absolute TTL + log-out-everywhere** (epoch). | AC-2/3/6/7/11/12, IA-2/2(1)/2(12)/5 |
+| **PR.AA** Identity, auth & access control | ✅ | SSO/OIDC + SCIM; RBAC (owner/admin/member, least privilege); **MFA enforced for owners/admins** (per-member self-enroll = near-term; SSO members covered by IdP MFA); **TOTP (AAL2)** + email OTP; **account lockout** (5→15 min); password breach-screening (800-63B, length>complexity, no forced rotation, HIBP optional); **session idle + absolute TTL + log-out-everywhere** (epoch). | AC-2/3/6/7/11/12, IA-2/2(1)/2(12)/5 |
 | **PR.DS** Data security | ✅ | **TLS** in transit; DB at rest + **app-layer Fernet/AES encryption of connector secrets** (`secret_box`); **pluggable KMS key** hook for a FIPS module with the cloud move; configurable retention + self-serve erasure. | SC-8, SC-12, SC-28; MP-6 |
 | **PR.PS** Platform security | 🟡 | Pinned deps; secure SDLC (SSDF); monthly dependency/image scanning *(process)*. | CM-2/6, SA-15 |
 | **PR.IR** Tech infrastructure resilience | 🟡 | Platform backups; tenant isolation per deployment; US data residency surfaced in Trust Center. | CP-9, SC-7 |
@@ -48,7 +48,7 @@ PII/PHI/CJI/FTI/citizen data received → CJIS, IRS-1075, HIPAA, FedRAMP-High ou
 | Subcategory | Status | Our posture | 800-53 / evidence |
 |---|---|---|---|
 | **DE.CM** Continuous monitoring | ✅ | **Auth + privileged-action audit log** (logins, **failed logins**, 2FA enable/disable, password reset, invites/role/removal, connection/identity, policy, log-out-everywhere, retention/purge, program/budget) → `/app/audit`, **CSV + SIEM stream**. | AU-2/3/6/12 |
-| **DE.AE** Adverse-event analysis | 🟡 | Lockout/throttle surfaces brute-force; **incident/breach webhook** posts signed alerts to the customer SOC/SIEM. | AU-6, IR-4, SI-4 |
+| **DE.AE** Adverse-event analysis | ✅ | Lockout/throttle surfaces brute-force; **incident/breach webhook** fires HMAC-signed alerts to the customer SOC/SIEM on each security event (failed login, lockout, MFA/password/policy change, log-out-everywhere). | AU-6, IR-4, SI-4 |
 
 ## RESPOND (RS)
 
@@ -56,7 +56,7 @@ PII/PHI/CJI/FTI/citizen data received → CJIS, IRS-1075, HIPAA, FedRAMP-High ou
 |---|---|---|---|
 | **RS.MA** Incident management | 🟡 | Documented **Incident Response Plan** with severity model + IC roles. | IR-4, IR-8; `incident-response-plan.md` |
 | **RS.AN/RS.MI** Analysis & mitigation | 🟡 | Containment runbook (secret rotation, session revocation, hotfix). | IR-4 |
-| **RS.CO** Reporting & communication | 🟡 | **Incident webhook** shipped; **Maryland 1-hour MD-SOC** reporting as a contractual/operational commitment per engagement. | IR-6; IR plan §4 |
+| **RS.CO** Reporting & communication | 🟡 | **Incident webhook fires signed alerts on security events** (shipped); **Maryland 1-hour MD-SOC** reporting as a contractual/operational commitment (best-effort webhook + on-call human; no 24/7 SOC yet). | IR-6; IR plan §4 |
 
 ## RECOVER (RC)
 
