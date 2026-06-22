@@ -2922,19 +2922,73 @@ def test_finance_attention_panel_and_summary_view(env, client):
     client.post("/app/outlay/programs", data={
         "name": "Overspender", "limit_usd": "1000", "members": "overall"}, follow_redirects=True)
     ov = client.get("/app").text
-    assert ">Summary<" in ov                      # finance nav has the Summary item
+    # Consolidated finance Home: nav is Home · Spend · Governance (Summary folded in)
+    assert ">Home<" in ov and ">Governance<" in ov and ">Summary<" not in ov
     assert "Needs your attention" in ov           # auto-flag panel present
     assert "Overspender" in ov and "over budget" in ov
-    # quarterly summary view
-    sm = client.get("/app/outlay/summary").text
-    assert "summary" in sm.lower() and "Where it landed" in sm
-    assert "Needs your attention" in sm and "Programs" in sm
-    assert "close-report.html" in sm              # printable board readout linked
+    # Home carries the consolidated drill-in cards + board readout
+    assert "By team / cost-center" in ov and "Governance" in ov
+    assert "close-report.html" in ov              # printable board readout linked
+    # the old summary URL now lands on Home
+    assert client.get("/app/outlay/summary", follow_redirects=False).status_code in (302, 303, 307)
+    # Governance deep view merges budgets + programs
+    gov = client.get("/app/outlay/governance").text
+    assert "Governance" in gov and "Overspender" in gov and "Add a budget" in gov
 
     # with nothing off track, the panel shows the calm all-clear
     from console import web
     clear = web._finance_attention({"anomalies": []}, [], [])
     assert "on track" in clear and "Needs your attention" not in clear
+
+
+def test_finance_home_lens_and_saved_views(env, client):
+    """Phase 2: the finance Home has a group-by lens (team/work-type/project/engineer)
+    and per-person saved views with a default-landing picker."""
+    from console import store
+    _signup(client, email="lens@x.com")
+    acct = store.get_account_by_email("lens@x.com")
+    store.set_persona(acct["id"], "finance", acct.get("member_id", 0) or 0)
+    client.post("/app/outlay/sample", follow_redirects=True)
+    home = client.get("/app").text
+    assert "class=lensbar" in home and "By team / cost-center" in home   # opinionated default
+    # ad-hoc re-slice by the lens
+    assert "By work type" in client.get("/app?group=class").text
+    assert "By engineer" in client.get("/app?group=person&top=10").text
+    # save a default view (group by engineer)
+    client.post("/app/views", data={"name": "People view", "group": "person", "top": "10",
+                                     "make_default": "1"}, follow_redirects=True)
+    vs = store.list_dashboard_views(acct["id"], 0)
+    assert len(vs) == 1 and vs[0]["is_default"] == 1 and vs[0]["lens"]["group_by"] == "person"
+    assert "By engineer" in client.get("/app").text          # default applied on bare /app
+    assert "People view" in client.get("/app").text          # chip shows
+    # delete → back to the opinionated default (team)
+    client.post("/app/views/delete", data={"id": str(vs[0]["id"])}, follow_redirects=True)
+    assert store.list_dashboard_views(acct["id"], 0) == []
+    assert "By team / cost-center" in client.get("/app").text
+
+
+def test_finance_home_customizable_layout(env, client):
+    """Phase 3: per-person customizable Home — reorder, hide/show, reset the card deck."""
+    from console import store
+    _signup(client, email="cust@x.com")
+    acct = store.get_account_by_email("cust@x.com")
+    store.set_persona(acct["id"], "finance", acct.get("member_id", 0) or 0)
+    client.post("/app/outlay/sample", follow_redirects=True)
+    assert "Customize" in client.get("/app").text
+    cm = client.get("/app?customize=1").text
+    assert "Customizing your dashboard" in cm and "Move up" in cm
+    # hide a card → persisted + omitted from the normal Home + shown in the tray
+    client.post("/app/layout", data={"action": "hide", "key": "governance"}, follow_redirects=True)
+    assert store.get_dashboard_layout(acct["id"], 0)["hidden"] == ["governance"]
+    assert "Hidden cards" in client.get("/app?customize=1").text
+    # reorder a card to the front
+    client.post("/app/layout", data={"action": "move", "key": "forecast", "dir": "up"}, follow_redirects=True)
+    assert store.get_dashboard_layout(acct["id"], 0)["order"][0] == "forecast"
+    # show it again, then reset to the opinionated default
+    client.post("/app/layout", data={"action": "show", "key": "governance"}, follow_redirects=True)
+    assert store.get_dashboard_layout(acct["id"], 0)["hidden"] == []
+    client.post("/app/layout", data={"action": "reset"}, follow_redirects=True)
+    assert store.get_dashboard_layout(acct["id"], 0) == {}
 
 
 def test_unit_economics_engine_and_card(env, client):

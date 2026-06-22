@@ -96,6 +96,21 @@ CREATE TABLE IF NOT EXISTS personas (
     persona TEXT NOT NULL DEFAULT '',             -- 'finance' | 'eng' : which experience this person sees
     PRIMARY KEY (account_id, member_id)
 );
+CREATE TABLE IF NOT EXISTS dashboard_views (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL,
+    member_id INTEGER NOT NULL DEFAULT 0,         -- whose saved view (per-person personalization)
+    name TEXT NOT NULL,                           -- e.g. "Board readout", "Platform deep-dive"
+    lens TEXT NOT NULL DEFAULT '{}',              -- JSON: {group_by, top_n} (the Home lens)
+    is_default INTEGER NOT NULL DEFAULT 0         -- 1 = the view that loads on Home for this person
+);
+CREATE INDEX IF NOT EXISTS idx_dashviews ON dashboard_views(account_id, member_id);
+CREATE TABLE IF NOT EXISTS dashboard_prefs (
+    account_id INTEGER NOT NULL,
+    member_id INTEGER NOT NULL DEFAULT 0,
+    layout TEXT NOT NULL DEFAULT '{}',            -- JSON: {order:[card keys], hidden:[card keys]}
+    PRIMARY KEY (account_id, member_id)
+);
 CREATE TABLE IF NOT EXISTS audit_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ts REAL NOT NULL,
@@ -1823,6 +1838,108 @@ def set_persona(account_id: int, persona: str, member_id: int = 0, path: str | N
             "INSERT INTO personas(account_id, member_id, persona) VALUES(?,?,?) "
             "ON CONFLICT(account_id, member_id) DO UPDATE SET persona=excluded.persona",
             (account_id, member_id, persona))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+# --- Saved dashboard views (per-person Home lens personalization) ------------- #
+
+def list_dashboard_views(account_id: int, member_id: int = 0, path: str | None = None) -> list[dict]:
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT * FROM dashboard_views WHERE account_id=? AND member_id=? ORDER BY id",
+            (account_id, member_id)).fetchall()
+    finally:
+        conn.close()
+    out = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d["lens"] = json.loads(d.get("lens") or "{}") or {}
+        except (ValueError, TypeError):
+            d["lens"] = {}
+        out.append(d)
+    return out
+
+
+def add_dashboard_view(account_id: int, name: str, lens: dict, member_id: int = 0,
+                       make_default: bool = False, path: str | None = None) -> int:
+    """Save a named Home lens for this person. Optionally make it their default."""
+    conn = connect(path)
+    try:
+        cur = conn.execute(
+            "INSERT INTO dashboard_views(account_id, member_id, name, lens) VALUES(?,?,?,?)",
+            (account_id, member_id, (name or "View").strip()[:60], json.dumps(lens or {})))
+        vid = cur.lastrowid
+        if make_default:
+            conn.execute("UPDATE dashboard_views SET is_default=0 WHERE account_id=? AND member_id=?",
+                         (account_id, member_id))
+            conn.execute("UPDATE dashboard_views SET is_default=1 WHERE id=?", (vid,))
+        conn.commit()
+        return vid
+    finally:
+        conn.close()
+
+
+def set_default_dashboard_view(account_id: int, view_id: int, member_id: int = 0,
+                               path: str | None = None) -> None:
+    """Mark one saved view as this person's default (0 clears the default → opinionated default)."""
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE dashboard_views SET is_default=0 WHERE account_id=? AND member_id=?",
+                     (account_id, member_id))
+        if view_id:
+            conn.execute("UPDATE dashboard_views SET is_default=1 WHERE id=? AND account_id=? AND member_id=?",
+                         (view_id, account_id, member_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_default_dashboard_view(account_id: int, member_id: int = 0, path: str | None = None) -> dict | None:
+    for v in list_dashboard_views(account_id, member_id, path=path):
+        if v.get("is_default"):
+            return v
+    return None
+
+
+def delete_dashboard_view(account_id: int, view_id: int, member_id: int = 0,
+                          path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute("DELETE FROM dashboard_views WHERE id=? AND account_id=? AND member_id=?",
+                     (view_id, account_id, member_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_dashboard_layout(account_id: int, member_id: int = 0, path: str | None = None) -> dict:
+    """This person's Home card layout — {order:[keys], hidden:[keys]}. Empty = the
+    opinionated default order with nothing hidden."""
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT layout FROM dashboard_prefs WHERE account_id=? AND member_id=?",
+                           (account_id, member_id)).fetchone()
+    finally:
+        conn.close()
+    if not row:
+        return {}
+    try:
+        return json.loads(row["layout"] or "{}") or {}
+    except (ValueError, TypeError):
+        return {}
+
+
+def set_dashboard_layout(account_id: int, member_id: int, layout: dict, path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute(
+            "INSERT INTO dashboard_prefs(account_id, member_id, layout) VALUES(?,?,?) "
+            "ON CONFLICT(account_id, member_id) DO UPDATE SET layout=excluded.layout",
+            (account_id, member_id, json.dumps(layout or {})))
         conn.commit()
     finally:
         conn.close()

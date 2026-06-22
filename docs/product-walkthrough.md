@@ -52,6 +52,20 @@ screen-by-screen customer flow for **each persona** (Finance and Engineering).*
 > 13. **Pace-projection bug fixed** — the sample report built with a stale 30-day window
 >     while live sync uses 90, inflating program/budget projections ~3×. Sample now uses
 >     the 90-day window, so projections are realistic.
+>
+> **Review round 5 — finance UX consolidation (Phase 1 of 3):**
+> 14. **Consolidated finance Home** — the near-duplicate Overview + Summary are merged
+>     into one opinionated F-pattern Home (attention → KPI scorecard → trust → trend →
+>     drill-in cards), so finance starts consolidated and drills for detail. Backed by a
+>     short design study (`docs/finance-ux-proposal.md`) of FinOps/Datadog/Ramp/BI patterns.
+> 15. **Nav trimmed to Home · Spend · Governance** — Budgets + Programs merge into one
+>     **Governance** deep view; the Summary nav item is folded into Home.
+> 16. **Phase 2 — lens bar + saved views.** The Home breakdown card re-slices by
+>     group-by (team / work type / project / engineer) + top-N; users save named views
+>     and set a default landing (per-person, stored in `dashboard_views`).
+> 17. **Phase 3 — customizable layout.** A per-person Customize mode to reorder /
+>     hide / show / reset the Home card deck, persisted in `dashboard_prefs`. Completes
+>     the consolidate → change-view → personalize arc.
 
 **Status of this audit:** A live end-to-end smoke test was run against the actual
 app (FastAPI test client driving real routes). **54 of 55 checks passed**; the one
@@ -167,7 +181,7 @@ already known from the invite, so they **skip the gate**.
 | | **Finance** (consumes spend after the fact) | **Engineering** (does all the setup) |
 |---|---|---|
 | Mental model | Govern & allocate the bill | Operate & ship efficiently |
-| Nav: Analyze | **Summary** · Spend · Budgets · Programs | Spend · Accuracy · Estimate · Budgets |
+| Nav: Analyze | **Home · Spend · Governance** (consolidated) | Spend · Accuracy · Estimate · Budgets |
 | Nav: Sources | **none** (no setup) | Connect · API |
 | Onboarding | Invite engineering counterpart only | Upload direct reports + connect sources |
 | Headline KPIs | Spend · Forecast · **Allocated to teams** · Open work | Spend · **Mapped to a ticket** · **Runaway tickets** · Forecast |
@@ -241,41 +255,49 @@ This is what finance sees until engineering has connected the sources:
   connect form. (The full trial banner shows on Overview only — the sidebar pill
   persists status elsewhere, so it's no longer repeated on every page.)
 
-### F4 · Finance overview — *with data* (`/app`)
+### F4 · Finance **Home** — the consolidated default (`/app`)
 
-![Finance overview with data](images/walkthrough/07_fin_overview_data.png)
+![Finance consolidated Home](images/walkthrough/07_fin_overview_data.png)
 
-Once engineering connects and the first sync lands (a 90-day backfill):
-- H1 **"Your AI spend at a glance."**
-- **"Needs your attention" panel (top of page)** — auto-flags what's off track so
-  finance never has to drill to find it: programs/budgets **already over** or
-  **projected to overspend** (with the dollar amount over and *which month* it breaches)
-  and runaway tickets — ranked worst-first, each with a one-click **Review →**. When
-  nothing's off track it shows a calm green "all on track."
-- **Four KPIs (clickable drill-downs):** *AI spend · window* · *Forecast · open work*
-  · **Allocated to teams** (top cost-center) · *Open work items*.
-- **"Why this number is the right one"** — the cost-fidelity callout (cache-aware vs
-  naive, with the inflation factor) — the trust artifact.
-- **Unit economics** — cost per attributed ticket, per closed ticket, % spend on
-  reworked tickets, priciest work-types per ticket.
-- **Spend trend** + **Top movers** (once there are ≥2 syncs to compare).
-- **Forecast · open work** — expected spend from open scope with a p10–p90 band.
-- **Explore** — role-ordered jump-offs (Spend, Budgets, Programs, Accuracy).
+The single, opinionated finance landing (Overview + the old Summary, merged), laid out
+**overview→detail (F-pattern)** so it reads as a glance, with the deep detail one click
+away:
+- H1 **"Q2 2026 at a glance."**
+- **"Needs your attention" panel (act-first, top of page)** — auto-flags what's off
+  track so finance never has to drill to find it: programs/budgets **already over** or
+  **projected to overspend** (with the amount over and *which month* it breaches) and
+  runaway tickets — ranked worst-first, one-click **Review →**. Calm green all-clear when
+  nothing's off.
+- **KPI scorecard (clickable):** *AI spend · window* · *Forecast · open work* ·
+  **Allocated to teams** · *Open work items*.
+- **"Why this number is the right one"** — the cache-aware-vs-naive trust callout.
+- **Spend trend** + **Top movers**.
+- **Lens bar + saved views** *(Phase 2)* — a control row to **Group by** (team / work
+  type / project / engineer) and **Show** top-N, re-slicing the breakdown card without
+  leaving Home. Save a configured lens as a named **view** ("Board readout", "By work
+  type"); pick one as your **default landing**. Per-person, so finance and an analyst can
+  each have their own.
+- **Consolidated drill-in cards:** *By {lens}* (→ Spend) · *Governance* status roll-up
+  (→ Governance) · *Forecast · open work* (→ Estimate) · *Reports & deep views* (board
+  readout, full breakdown, budgets & programs).
+- **⚙ Customize** *(Phase 3)* — a per-person mode to **reorder**, **hide/show**, and
+  reset the card deck; the layout is saved to the login (`dashboard_prefs`). The
+  attention panel + KPI scorecard stay fixed as the always-on summary.
 
-### F4b · Quarterly Summary (`/app/outlay/summary`) — finance nav "Summary"
+![Finance Home — customize mode](images/walkthrough/07d_fin_customize.png)
 
-![Quarterly summary](images/walkthrough/07b_fin_summary.png)
+*(The old `/app/outlay/summary` URL now redirects here.)*
 
-The finance-leading nav item: an in-app **quarter review** finance can act on without
-drilling, and take to a board.
-- H1 **"Q2 2026 summary"** (the current quarter).
-- **Headline KPIs:** *Spend · this window* · *Projected · incl. open work* · *Programs
-  over budget* · *Budgeted* (total program caps).
-- The same **"Needs your attention"** auto-flag panel.
-- **"Where it landed"** — spend by team / cost-center, top 8, with drill-downs.
-- **Programs** — each program's status + **timeline** + month-by-month projection.
-- Actions: **Open board readout (print to PDF) →** (the printable Close report),
-  full spend breakdown, and CSV export by team.
+### F4b · Governance — the merged deep view (`/app/outlay/governance`)
+
+![Governance](images/walkthrough/07c_fin_governance.png)
+
+The single **Governance** nav destination merges Budgets + Programs:
+- The **"Needs your attention"** panel up top.
+- **Programs** — each program's status + **timeline** + month-by-month projection, the
+  reallocate control, and the "Define a program" form (with start/end dates).
+- **Budgets** — single-scope budget status, the project/epic pick-list, and "Add a
+  budget." (The standalone `/budgets` and `/programs` pages still exist as edit targets.)
 
 ### F5 · Spend (`/app/outlay`)
 

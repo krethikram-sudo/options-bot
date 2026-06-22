@@ -251,6 +251,32 @@ a.kpi:hover .kdrill{opacity:1;color:var(--grn-d)}
 .mbar .mt{flex:1;height:7px;border-radius:999px;background:var(--paper2);overflow:hidden;position:relative}
 .mbar .mt span{position:absolute;left:0;top:0;bottom:0;border-radius:999px}
 .mbar .mv{width:74px;text-align:right;flex:none;font-variant-numeric:tabular-nums}
+.lensbar{margin-top:16px;border:1px solid var(--line);border-radius:12px;background:var(--paper);padding:10px 12px}
+.lensrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lensbar .lab{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);font-weight:600}
+.lensform{display:flex;align-items:center;gap:8px;margin:0}
+.lensform select{padding:5px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff}
+.lensbar .lsp{flex:1}
+.saveview{display:flex;align-items:center;gap:6px;margin:0}
+.saveview input[name=name]{padding:5px 9px;border:1px solid var(--line);border-radius:8px;font-size:13px;width:160px}
+.defck{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:3px}
+.vchips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:9px;padding-top:9px;border-top:1px solid var(--line2)}
+.vchip{font-size:12.5px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--body);text-decoration:none}
+.vchip.on{background:var(--grn-l);border-color:var(--grn);color:var(--grn-d);font-weight:600}
+.vchip-wrap{display:inline-flex;align-items:center;gap:2px}
+.vx{border:none;background:none;color:var(--faint);cursor:pointer;font-size:14px;line-height:1;padding:0 2px}
+.vx:hover{color:var(--red)}
+.custbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px;padding:10px 14px;border-radius:10px;background:var(--grn-l);border:1px solid var(--grn);font-size:13px;color:var(--grn-d)}
+.modcell{position:relative}
+.modhdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.modname{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);font-weight:600}
+.modctrls{display:flex;align-items:center;gap:4px}
+.modctrls form{margin:0}
+.modbtn{border:1px solid var(--line);background:#fff;border-radius:7px;font-size:12px;padding:3px 8px;cursor:pointer;color:var(--body)}
+.modbtn:hover:not(:disabled){border-color:var(--grn);color:var(--grn-d)}
+.modbtn:disabled{opacity:.35;cursor:default}
+.hidetray{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px;padding:12px;border:1px dashed var(--line);border-radius:10px}
+.hidetray form{margin:0}.hidetray .vchip{cursor:pointer}
 .exrow{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;padding:11px 2px;border-top:1px solid var(--line);text-decoration:none}
 .exrow:first-of-type{border-top:none}
 .exrow:hover{text-decoration:none}
@@ -428,11 +454,11 @@ def _sidenav(account: dict, active: str) -> str:
     budgets = ("/app/outlay/budgets", "Budgets")
     estimate = ("/app/outlay/estimate", "Estimate")
     programs = ("/app/outlay/programs", "Programs")
-    summary = ("/app/outlay/summary", "Summary")
+    governance = ("/app/outlay/governance", "Governance")
     if persona == "finance":
-        # Allocate, budget, govern: the quarterly review (Summary) leads, then
-        # per-team chargeback (Spend) + program enforcement.
-        analyze = [summary, spend, budgets, programs]
+        # Consolidated finance IA: the Overview (Home) is the consolidated default;
+        # Spend is the attribution detail; Governance merges budgets + programs.
+        analyze = [spend, governance]
     elif persona == "eng":
         # Ship efficiently: measure forecast accuracy + price the backlog.
         analyze = [spend, accuracy, estimate, budgets]
@@ -462,7 +488,8 @@ def _sidenav(account: dict, active: str) -> str:
             for href, text in items)
         return f'<div class=navgrp>{label}</div>{rows}'
 
-    home = f'<a class="{"on" if active == "/app" else ""}" href="/app">Overview</a>'
+    home_label = "Home" if persona == "finance" else "Overview"
+    home = f'<a class="{"on" if active == "/app" else ""}" href="/app">{home_label}</a>'
     out = home + grp("Analyze", analyze)
     if sources:
         out += grp("Sources", sources)
@@ -1738,10 +1765,131 @@ def _finance_attention(report: dict | None, budget_statuses: list[dict] | None,
             f'<div class=fa-list>{rows}</div></div>')
 
 
+HOME_GROUPINGS = {
+    "team": "Team / cost-center", "class": "Work type",
+    "project": "Project / epic", "person": "Engineer",
+}
+
+
+def _breakdown_rows(report: dict, group_by: str) -> tuple[str, list[dict]]:
+    """(card title, rows) for a Home breakdown dimension. Each row: label, usd, share,
+    and a drill href (a scope page where one exists, else the Spend tab)."""
+    from . import outlay_app
+    if group_by == "class":
+        data = [{"label": c["task_class"], "usd": c.get("spent_usd", 0), "share": c.get("share", 0),
+                 "href": f'/app/outlay/scope?type=class&id={quote(str(c["task_class"]))}'}
+                for c in outlay_app.class_spend(report)]
+        return "By work type", data
+    if group_by == "project":
+        data = [{"label": p["project"], "usd": p.get("spent_usd", 0), "share": p.get("share", 0),
+                 "href": "/app/outlay"} for p in outlay_app.project_spend(report) if p.get("project")]
+        return "By project / epic", data
+    if group_by == "person":
+        total = (report.get("spend", {}) or {}).get("total_usd", 0) or 1
+        data = [{"label": p["user"], "usd": p.get("spent_usd", 0),
+                 "share": p.get("share", p.get("spent_usd", 0) / total), "href": "/app/outlay"}
+                for p in (report.get("people") or []) if p.get("user")]
+        return "By engineer", data
+    data = [{"label": t["team"], "usd": t.get("spent_usd", 0), "share": t.get("share", 0),
+             "href": f'/app/outlay/scope?type=team&id={quote(str(t["team"]))}'}
+            for t in (report.get("team_spend") or []) if t.get("team")]
+    return "By team / cost-center", data
+
+
+def _home_breakdown_card(report: dict, group_by: str = "team", top_n: int = 5) -> str:
+    """The consolidated 'where it landed' card on the finance Home — re-sliced by the
+    Home lens (team / work type / project / engineer), top-N, with per-row drill-downs."""
+    title, data = _breakdown_rows(report, group_by)
+    if not data:
+        return (f'<div class=ocard><div class=dh>{_e(title)}</div>'
+                '<p class=muted style="margin:0;font-size:13px">No data for this breakdown yet.</p></div>')
+    dmax = max([d["usd"] for d in data] + [1]) or 1
+    shown = data if (top_n or 0) <= 0 else data[:top_n]
+    rows = "".join(
+        f'<div class=erow><a class=nm href="{d["href"]}">{_e(str(d["label"]))} '
+        f'<small>· {d["share"]*100:.0f}%</small> <span class=drill>→</span></a>'
+        f'<span class=amt>{money(d["usd"])}</span>'
+        f'<div class=ebar><span style="width:{d["usd"]/dmax*100:.0f}%;background:var(--grn)"></span></div></div>'
+        for d in shown)
+    more = (f'<a class=sub href="/app/outlay">all {len(data)} →</a>' if len(data) > len(shown)
+            else '<a class=sub href="/app/outlay">details →</a>')
+    return f'<div class=ocard><div class=dh>{_e(title)}{more}</div>{rows}</div>'
+
+
+def _lens_bar(group_by: str, top_n: int, views: list[dict], active_view_id: int = 0) -> str:
+    """The finance Home lens + saved-views control. Group-by + Top-N re-slice the
+    breakdown card (GET, server-rendered); saved views capture a named lens, one of
+    which can be the person's default landing."""
+    def opt(v, cur, label):
+        return f'<option value="{v}"{" selected" if str(cur) == str(v) else ""}>{_e(label)}</option>'
+    grp = "".join(opt(k, group_by, lbl) for k, lbl in HOME_GROUPINGS.items())
+    tops = "".join(opt(n, top_n, ("All" if n == 0 else f"Top {n}")) for n in (5, 10, 0))
+    lens_form = (
+        '<form method=get action="/app" class=lensform>'
+        f'<span class=lab>Group by</span><select name=group onchange="this.form.submit()">{grp}</select>'
+        f'<span class=lab>Show</span><select name=top onchange="this.form.submit()">{tops}</select>'
+        '<noscript><button class="btn sec sm">Apply</button></noscript></form>')
+    chips = '<a class="vchip' + (' on' if not active_view_id else '') + '" href="/app">Default</a>'
+    for v in views:
+        on = " on" if v["id"] == active_view_id else ""
+        star = "★ " if v.get("is_default") else ""
+        chips += (f'<span class=vchip-wrap><a class="vchip{on}" href="/app?view={v["id"]}">{star}{_e(v["name"])}</a>'
+                  f'<form method=post action="/app/views/delete" style="display:inline">'
+                  f'<input type=hidden name=id value="{v["id"]}">'
+                  f'<button class=vx title="Delete view">×</button></form></span>')
+    save = (
+        '<form method=post action="/app/views" class=saveview>'
+        f'<input type=hidden name=group value="{_e(group_by)}"><input type=hidden name=top value="{int(top_n)}">'
+        '<input name=name placeholder="Save this view as…" maxlength=60 required>'
+        '<label class=defck><input type=checkbox name=make_default value=1> default</label>'
+        '<button class="btn sec sm">Save</button></form>')
+    setdef = ""
+    if active_view_id:
+        setdef = (f'<form method=post action="/app/views/default" style="display:inline">'
+                  f'<input type=hidden name=id value="{active_view_id}">'
+                  f'<button class="btn sec sm">Make default</button></form>')
+    return (f'<div class=lensbar><div class=lensrow>{lens_form}<span class=lsp></span>{setdef}{save}</div>'
+            f'<div class=vchips><span class=lab>Views</span>{chips}</div></div>')
+
+
+def _home_governance_card(program_statuses: list[dict], budget_statuses: list[dict]) -> str:
+    """Consolidated governance card for the finance Home — a roll-up of program/budget
+    status with a drill into the Governance deep view."""
+    progs = program_statuses or []
+    buds = budget_statuses or []
+    n = len(progs) + len(buds)
+    if not n:
+        return ('<div class=ocard><div class=dh>Governance<a class=sub href="/app/outlay/governance">set up →</a></div>'
+                '<p class=muted style="margin:0;font-size:13px">No budgets or programs yet. Cap a body of work '
+                'across teams with a <a href="/app/outlay/governance">program budget</a>.</p></div>')
+    over = [s for s in progs + buds if s.get("status") == "over"]
+    warn = [s for s in progs + buds if s.get("status") == "warn"]
+    if over:
+        tag = f'<span class="otag over">{len(over)} over</span>'
+    elif warn:
+        tag = f'<span class="otag warn">{len(warn)} tracking hot</span>'
+    else:
+        tag = '<span class="otag ok">all on track</span>'
+    rows = ""
+    for s in (progs[:4] or []):
+        st = s.get("status", "ok")
+        col = {"ok": "var(--grn-d)", "warn": "var(--amber)", "over": "var(--red)"}.get(st)
+        tl = s.get("timeline") or {}
+        when = f' · breach {_e(tl["breach_month"])}' if tl.get("breach_month") else ""
+        rows += (f'<div class=erow><a class=nm href="/app/outlay/governance">{_e(s.get("name"))} '
+                 f'<small style="color:{col}">· {st}{when}</small> <span class=drill>→</span></a>'
+                 f'<span class=amt>{money(s.get("spent_usd",0))}<small class=muted> / {money(s.get("limit_usd",0))}</small></span></div>')
+    return (f'<div class=ocard><div class=dh style="display:flex;align-items:center;gap:8px">Governance {tag}'
+            f'<a class=sub href="/app/outlay/governance" style="margin-left:auto">manage →</a></div>{rows}</div>')
+
+
 def overview_page(account: dict, report: dict | None, statuses: list[dict] | None = None,
                   history: list[dict] | None = None, conn: dict | None = None,
                   has_budget: bool = False, persona: str = "",
-                  program_statuses: list[dict] | None = None) -> str:
+                  program_statuses: list[dict] | None = None,
+                  lens: dict | None = None, views: list[dict] | None = None,
+                  active_view_id: int = 0, layout: dict | None = None,
+                  customize: bool = False) -> str:
     """The role-aware home — the first screen after sign-in. A concise glance
     (KPIs, budget status, forecast) with jump-offs into the deeper areas; the
     attribution detail lives on the Spend page."""
@@ -1771,8 +1919,9 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
                     account, active="/app")
 
     if persona == "finance":
-        head = ('<div class=ohead><h1>Your AI spend at a glance</h1>'
-                '<p>Total spend, the forecast against budget, and where to look next.</p></div>')
+        head = (f'<div class=ohead><h1>{_quarter_label()} at a glance</h1>'
+                '<p>What needs action, the headline numbers, and where your spend landed — '
+                'drill into any card for the detail.</p></div>')
     else:
         head = ('<div class=ohead><h1>AI spend at a glance</h1>'
                 '<p>The headline numbers, your budget status, and where to dig in.</p></div>')
@@ -1793,12 +1942,33 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     unit = _unit_econ_card(report)
     unit = f'<div style="margin-top:16px">{unit}</div>' if unit else ""
 
-    # Finance leads with the auto-flagged "needs your attention" review panel (so they
-    # never have to drill to find overspend); engineering keeps the lighter strips.
     if persona == "finance":
+        # Consolidated finance Home, F-pattern: act-first attention panel → KPI
+        # scorecard → trust callout → trend band → consolidated drill-in cards
+        # (where it landed · governance · forecast). The deep detail lives one click
+        # away on Spend / Governance / Estimate, so Home stays a glance, not a scroll.
         attention = _finance_attention(report, statuses, program_statuses)
-    else:
-        attention = _budget_strip(statuses) + _anomaly_strip(report, *_anomaly_prefs(conn))
+        lens = lens or {}
+        group_by = lens.get("group_by", "team")
+        top_n = int(lens.get("top_n", 5))
+        lens_bar = _lens_bar(group_by, top_n, views or [], active_view_id)
+        cards = {
+            "breakdown": _home_breakdown_card(report, group_by, top_n),
+            "governance": _home_governance_card(program_statuses, statuses),
+            "forecast": _forecast_card(report),
+            "actions": _home_actions_card(),
+        }
+        modules = _home_modules(cards, layout or {}, customize)
+        body = (tb + head + _persona_switch(persona) + _staleness_banner(report, conn)
+                + _sample_strip(report, account) + checklist
+                + attention
+                + _kpis_row(report, history, persona)
+                + _recon_strip(report) + _pricing_warn(report) + fidelity + tm_row
+                + lens_bar + modules + _sync_line(report, conn))
+        return page("Home", body, account, active="/app")
+
+    # Engineering (and pre-persona) keep the operate-focused layout.
+    attention = _budget_strip(statuses) + _anomaly_strip(report, *_anomaly_prefs(conn))
     body = (tb + chooser + head + _persona_switch(persona) + _staleness_banner(report, conn)
             + _sample_strip(report, account) + checklist
             + attention
@@ -1808,6 +1978,76 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
             + '<div class=ogrid style="margin-top:16px">' + _forecast_card(report)
             + _explore_card(persona) + '</div>' + _sync_line(report, conn))
     return page("Home", body, account, active="/app")
+
+
+def _home_actions_card() -> str:
+    """Finance Home quick-actions card — the board readout and the deep views."""
+    return ('<div class=ocard><div class=dh>Reports &amp; deep views</div>'
+            '<a class=exrow href="/app/outlay/close-report.html" target=_blank>'
+            '<span class=nm>Board readout (print to PDF)</span>'
+            '<span class=exd>A one-page AI-spend audit for the board.</span><span class=exarr>→</span></a>'
+            '<a class=exrow href="/app/outlay"><span class=nm>Full spend breakdown</span>'
+            '<span class=exd>Every dollar by team, work type, and ticket.</span><span class=exarr>→</span></a>'
+            '<a class=exrow href="/app/outlay/governance"><span class=nm>Budgets &amp; programs</span>'
+            '<span class=exd>Caps, timelines, and enforcement.</span><span class=exarr>→</span></a></div>')
+
+
+HOME_MODULES = ["breakdown", "governance", "forecast", "actions"]
+HOME_MODULE_TITLES = {"breakdown": "Where it landed", "governance": "Governance",
+                      "forecast": "Forecast · open work", "actions": "Reports & deep views"}
+
+
+def _home_module_order(layout: dict) -> list[str]:
+    """Saved order, filtered to known modules, with any new modules appended — so the
+    layout survives us adding cards later."""
+    saved = [k for k in (layout.get("order") or []) if k in HOME_MODULES]
+    return saved + [k for k in HOME_MODULES if k not in saved]
+
+
+def _home_modules(cards: dict, layout: dict, customize: bool) -> str:
+    """The customizable module deck on the finance Home — render the cards in the
+    person's saved order, omitting hidden ones. In customize mode each card gets
+    move/hide controls and hidden cards can be re-added, all persisted per person."""
+    order = _home_module_order(layout)
+    hidden = set(layout.get("hidden") or [])
+    visible = [k for k in order if k not in hidden]
+
+    if not customize:
+        bar = ('<div style="display:flex;justify-content:flex-end;margin-top:16px">'
+               '<a class="btn sec sm" href="/app?customize=1">⚙ Customize</a></div>')
+        cells = "".join(f'<div>{cards[k]}</div>' for k in visible if k in cards)
+        return bar + f'<div class=ogrid style="margin-top:8px">{cells}</div>'
+
+    # Customize mode: control header per card + hidden tray + toolbar.
+    bar = ('<div class=custbar><span><b>Customizing your dashboard</b> — reorder with ↑ ↓, hide cards '
+           'you don\'t use. Saved to your login.</span><span class=lsp></span>'
+           '<form method=post action="/app/layout" style="margin:0"><input type=hidden name=action value=reset>'
+           '<button class="btn sec sm">Reset to default</button></form>'
+           '<a class="btn sm" href="/app">Done</a></div>')
+    cells = ""
+    for i, k in enumerate(visible):
+        if k not in cards:
+            continue
+        up = (f'<form method=post action="/app/layout"><input type=hidden name=action value=move>'
+              f'<input type=hidden name=key value="{k}"><input type=hidden name=dir value=up>'
+              f'<button class=modbtn title="Move up"{" disabled" if i == 0 else ""}>↑</button></form>')
+        down = (f'<form method=post action="/app/layout"><input type=hidden name=action value=move>'
+                f'<input type=hidden name=key value="{k}"><input type=hidden name=dir value=down>'
+                f'<button class=modbtn title="Move down"{" disabled" if i == len(visible)-1 else ""}>↓</button></form>')
+        hide = (f'<form method=post action="/app/layout"><input type=hidden name=action value=hide>'
+                f'<input type=hidden name=key value="{k}"><button class=modbtn title="Hide">Hide ✕</button></form>')
+        ctrl = (f'<div class=modhdr><span class=modname>{_e(HOME_MODULE_TITLES.get(k, k))}</span>'
+                f'<span class=modctrls>{up}{down}{hide}</span></div>')
+        cells += f'<div class=modcell>{ctrl}{cards[k]}</div>'
+    grid = f'<div class=ogrid style="margin-top:8px">{cells}</div>'
+    tray = ""
+    if hidden:
+        chips = "".join(
+            f'<form method=post action="/app/layout" style="display:inline"><input type=hidden name=action value=show>'
+            f'<input type=hidden name=key value="{k}"><button class="vchip">+ {_e(HOME_MODULE_TITLES.get(k, k))}</button></form>'
+            for k in order if k in hidden)
+        tray = (f'<div class=hidetray><span class=lab>Hidden cards</span>{chips}</div>')
+    return bar + grid + tray
 
 
 def _unit_econ_card(report: dict) -> str:
@@ -2378,9 +2618,10 @@ def accuracy_page(account: dict, report: dict | None) -> str:
     return page("Accuracy", head + low + kpis + by_class + size_card + foot, account, active="/app/outlay/accuracy")
 
 
-def budgets_page(account: dict, report: dict | None, statuses: list[dict],
-                 projects: list[dict] | None = None) -> str:
-    """Set budgets by scope and see spend-vs-budget with pace projection."""
+def _budgets_section(account: dict, report: dict | None, statuses: list[dict],
+                     projects: list[dict] | None = None) -> str:
+    """The budgets management UI (status list + project pick-list + add form), without
+    the page chrome — composed by both the standalone Budgets page and Governance."""
     tones = {"ok": ("var(--grn)", "var(--grn-d)"), "warn": ("var(--amber)", "var(--amber)"),
              "over": ("var(--red)", "var(--red)")}
     note = "" if report else ('<div class=ocard style="margin-bottom:16px"><p class=muted style="margin:0">'
@@ -2424,11 +2665,18 @@ def budgets_page(account: dict, report: dict | None, statuses: list[dict],
         </div>
         <button class="btn" style="margin-top:14px">Add budget</button>
       </form></div>"""
+    return note + rows + pref + add
+
+
+def budgets_page(account: dict, report: dict | None, statuses: list[dict],
+                 projects: list[dict] | None = None) -> str:
+    """Set budgets by scope and see spend-vs-budget with pace projection."""
     head = ('<div class=ohead><h1>Budgets &amp; guardrails</h1>'
             '<p>Set a budget by scope; Outlay projects your spend to the period and flags it '
             '<b>before</b> you go over — not at month-end. Need to budget a body of work across several '
             'teams or projects? Use <a href="/app/outlay/programs">program budgets</a>.</p></div>')
-    return page("Budgets", head + note + rows + pref + add, account, active="/app/outlay/budgets")
+    return page("Budgets", head + _budgets_section(account, report, statuses, projects),
+                account, active="/app/outlay/budgets")
 
 
 def _program_timeline_html(s: dict) -> str:
@@ -2466,9 +2714,9 @@ def _program_timeline_html(s: dict) -> str:
             f'{mrows}</div>')
 
 
-def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> str:
-    """Program budgets — a named budget across several teams/projects/work types, with
-    optional hard-cap enforcement handed to the opt-in gateway."""
+def _programs_section(account: dict, report: dict | None, statuses: list[dict]) -> str:
+    """The programs management UI (status cards with timelines + define form), without
+    the page chrome — composed by both the standalone Programs page and Governance."""
     tones = {"ok": ("var(--grn)", "var(--grn-d)"), "warn": ("var(--amber)", "var(--amber)"),
              "over": ("var(--red)", "var(--red)")}
     note = "" if report else ('<div class=ocard style="margin-bottom:16px"><p class=muted style="margin:0">'
@@ -2568,10 +2816,35 @@ def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> s
         <a href="/app/outlay/connect">Outlay gateway</a> in front of your calls — it consults Outlay and
         blocks or routes down once a program is over. <b>Alert only</b> works read-only: we fire a
         <code>program.over</code> webhook so your own automation enforces.</p></div>"""
+    return note + rows + add
+
+
+def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> str:
+    """Program budgets — a named budget across several teams/projects/work types, with
+    optional hard-cap enforcement handed to the opt-in gateway."""
     head = ('<div class=ohead><h1>Program budgets</h1>'
             '<p>Budget a <b>program</b> — a body of work spanning several teams, projects, or work types — '
             'as one number. Alert on it, or hand a <b>hard cap</b> to the gateway to enforce.</p></div>')
-    return page("Programs", head + note + rows + add, account, active="/app/outlay/programs")
+    return page("Programs", head + _programs_section(account, report, statuses),
+                account, active="/app/outlay/programs")
+
+
+def governance_page(account: dict, report: dict | None, budget_statuses: list[dict],
+                    program_statuses: list[dict], projects: list[dict] | None = None) -> str:
+    """The consolidated finance governance deep-view — budgets + programs in one place
+    (the merged 'Governance' nav destination). Programs lead (cross-team caps with
+    timelines), then single-scope budgets."""
+    head = ('<div class=ohead><h1>Governance</h1>'
+            '<p>Hold spend to budget. <b>Programs</b> cap a body of work across several teams or '
+            'projects with a timeline; <b>budgets</b> cap a single scope. Both project your pace and '
+            'flag a breach <b>before</b> month-end.</p></div>')
+    attention = _finance_attention(report, budget_statuses, program_statuses)
+    programs = (f'<h2 style="font-size:16px;margin:18px 0 6px">Programs</h2>'
+                f'{_programs_section(account, report, program_statuses)}')
+    budgets = (f'<h2 style="font-size:16px;margin:24px 0 6px">Budgets</h2>'
+               f'{_budgets_section(account, report, budget_statuses, projects)}')
+    return page("Governance", head + attention + programs + budgets,
+                account, active="/app/outlay/governance")
 
 
 def _quarter_label(ts: float | None = None) -> str:
@@ -2579,80 +2852,6 @@ def _quarter_label(ts: float | None = None) -> str:
     d = datetime.fromtimestamp(ts, timezone.utc) if ts else datetime.now(timezone.utc)
     return f"Q{(d.month - 1) // 3 + 1} {d.year}"
 
-
-def summary_page(account: dict, report: dict | None, statuses: list[dict],
-                 program_statuses: list[dict], persona: str = "") -> str:
-    """Finance's quarterly review-at-a-glance: the headline numbers, the auto-flagged
-    attention panel, where the spend landed by team, and every program's status +
-    timeline — an in-app close-read finance can act on, with the printable Close
-    report one click away."""
-    head = (f'<div class=ohead><h1>{_quarter_label()} summary</h1>'
-            '<p>Your quarter at a glance — spend, what\'s tracking off budget, where it '
-            'landed, and every program\'s timeline. The printable board readout is one click away.</p></div>')
-    if not report:
-        body = (head + '<div class=ocard><p class=muted style="margin:0 0 12px">No spend yet — your '
-                'engineering counterpart connects the sources and your quarter summary fills in here.</p>'
-                '<a class="btn sec" href="/app">Back to overview →</a></div>')
-        return page("Summary", body, account, active="/app/outlay/summary")
-
-    sp = report.get("spend", {}) or {}
-    fc = report.get("forecast", {}) or {}
-    total = sp.get("total_usd", 0.0)
-    open_fc = fc.get("expected_usd", 0.0)
-    n_over = sum(1 for s in program_statuses if s.get("status") == "over") + \
-        sum(1 for s in statuses if s.get("status") == "over")
-    total_cap = sum((s.get("limit_usd", 0) or 0) for s in program_statuses)
-    cap_line = (f"{money(total_cap)} across {len(program_statuses)} programs" if total_cap
-                else "no program caps set")
-    kpis = ('<div class=kpis>'
-            + _kpicard("Spend · this window", money(total), _quarter_label() + " to date")
-            + _kpicard("Projected · incl. open work", money(total + open_fc),
-                       f"+{money(open_fc)} open forecast", href="/app/outlay/estimate")
-            + _kpicard("Programs over budget", str(n_over),
-                       ("needs action" if n_over else "all on track"), grn=not n_over,
-                       href="/app/outlay/programs")
-            + _kpicard("Budgeted", cap_line if total_cap else "0",
-                       "program caps", href="/app/outlay/programs")
-            + '</div>')
-
-    attention = _finance_attention(report, statuses, program_statuses)
-
-    # Where it landed — by team / cost-center.
-    teams = [t for t in (report.get("team_spend") or []) if t.get("team")]
-    tmax = max([t.get("spent_usd", 0) for t in teams] + [1]) or 1
-    trows = "".join(
-        f'<div class=erow><a class=nm href="/app/outlay/scope?type=team&id={quote(str(t["team"]))}">'
-        f'{_e(str(t["team"]))} <small>· {t.get("share",0)*100:.0f}%</small> <span class=drill>→</span></a>'
-        f'<span class=amt>{money(t.get("spent_usd",0))}</span>'
-        f'<div class=ebar><span style="width:{t.get("spent_usd",0)/tmax*100:.0f}%;background:var(--grn)"></span></div></div>'
-        for t in teams[:8])
-    team_card = (f'<div class=ocard style="margin-top:16px"><div class=dh>Where it landed '
-                 f'<span class=sub>by team / cost-center</span></div>{trows}</div>') if trows else ""
-
-    # Programs with status + timeline (compact).
-    tones = {"ok": "var(--grn-d)", "warn": "var(--amber)", "over": "var(--red)"}
-    prows = ""
-    for s in program_statuses:
-        st = s.get("status", "ok")
-        prows += (f'<div class=bcard><div style="display:flex;justify-content:space-between;align-items:center">'
-                  f'<b style="font-size:14px">{_e(s.get("name"))}</b>'
-                  f'<span class="otag {st}">{_e(st)}</span></div>'
-                  f'<div class=muted style="font-size:12.5px;margin-top:4px">{money(s.get("spent_usd",0))} of '
-                  f'{money(s.get("limit_usd",0))} · projected <b style="color:{tones.get(st)}">'
-                  f'{money(s.get("projected_usd",0))}</b></div>{_program_timeline_html(s)}</div>')
-    prog_card = (f'<div class=ocard style="margin-top:16px"><div class=dh>Programs '
-                 f'<a class=sub href="/app/outlay/programs">manage →</a></div>{prows}</div>') if prows else \
-        ('<div class=ocard style="margin-top:16px"><div class=dh>Programs</div>'
-         '<p class=muted style="margin:0;font-size:13px">No programs yet — '
-         '<a href="/app/outlay/programs">define one</a> to budget a body of work across teams with a timeline.</p></div>')
-
-    actions = ('<div class="row" style="margin-top:18px">'
-               '<a class="btn" href="/app/outlay/close-report.html" target=_blank>Open board readout (print to PDF) →</a>'
-               '<a class="btn sec" href="/app/outlay">Full spend breakdown →</a>'
-               '<a class="btn sec" href="/app/outlay/export.csv?view=teams">Export by team (CSV)</a></div>')
-
-    return page("Summary", head + kpis + attention + team_card + prog_card + actions,
-                account, active="/app/outlay/summary")
 
 
 def pilot_request_page(error: str = "", values: dict | None = None) -> str:
