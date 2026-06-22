@@ -222,6 +222,7 @@ def _current(request: Request) -> dict | None:
         acct["team_role"] = sess["team_role"]
         acct["member_id"] = m["id"]
         acct["display_email"] = m["email"]
+        acct["twofa_enabled"] = bool(m.get("twofa_enabled"))   # the member's own MFA state, not the org's
     else:
         acct["team_role"] = "owner"
         acct["member_id"] = 0
@@ -465,6 +466,14 @@ async def login(request: Request):
     if member:  # invited teammate
         store.clear_login_throttle(email)
         org = store.get_account(member["account_id"])
+        tf = store.get_2fa(org["id"], member_id=member["id"])
+        if tf["enabled"]:  # members are TOTP-only — code comes from their authenticator, nothing to send
+            resp = _redirect("/login/verify")
+            secure = os.environ.get("CONSOLE_SECURE_COOKIES") == "1"
+            resp.set_cookie(PENDING_2FA_COOKIE,
+                            store.make_pending_2fa(org["id"], member_id=member["id"]),
+                            httponly=True, samesite="lax", secure=secure, max_age=600)
+            return resp
         resp = _redirect("/app")
         _set_session(resp, org, member["role"], member["id"], platform_role="customer")
         _audit(org["id"], "login", actor=member["email"], detail=f"member · role {member['role']}")
@@ -495,13 +504,26 @@ def verify_2fa_form(request: Request):
 
 @app.post("/login/verify")
 async def verify_2fa(request: Request):
-    aid = store.read_pending_2fa(request.cookies.get(PENDING_2FA_COOKIE, ""))
-    if not aid:
+    pend = store.read_pending_2fa(request.cookies.get(PENDING_2FA_COOKIE, ""))
+    if not pend:
         return _redirect("/login")
+    aid, mid = pend
     f = await _form(request)
+    code = f.get("code", "")
+    if mid:  # invited member — TOTP only
+        if store.verify_totp(aid, code, member_id=mid):
+            member = store.get_member(mid)
+            org = store.get_account(aid)
+            resp = _redirect("/app")
+            _set_session(resp, org, member["role"], member["id"], platform_role="customer")
+            resp.delete_cookie(PENDING_2FA_COOKIE)
+            _audit(org["id"], "login", actor=member["email"],
+                   detail=f"member · password + 2FA (totp) · role {member['role']}")
+            return resp
+        return _html(web.twofa_verify_form("That code didn't match or has expired."), 401)
     tf = store.get_2fa(aid)
-    ok = (store.verify_totp(aid, f.get("code", "")) if tf["channel"] == "totp"
-          else store.verify_otp(aid, f.get("code", "")))
+    ok = (store.verify_totp(aid, code) if tf["channel"] == "totp"
+          else store.verify_otp(aid, code))
     if ok:
         acct = store.get_account(aid)
         resp = _redirect(_post_auth_dest(acct))
@@ -515,9 +537,12 @@ async def verify_2fa(request: Request):
 
 @app.post("/login/verify/resend")
 async def verify_2fa_resend(request: Request):
-    aid = store.read_pending_2fa(request.cookies.get(PENDING_2FA_COOKIE, ""))
-    if not aid:
+    pend = store.read_pending_2fa(request.cookies.get(PENDING_2FA_COOKIE, ""))
+    if not pend:
         return _redirect("/login")
+    aid, mid = pend
+    if mid:  # member TOTP — nothing to resend (the code lives in their authenticator app)
+        return _html(web.twofa_verify_form(note="Open your authenticator app for the current code."))
     acct = store.get_account(aid)
     if acct:
         _issue_and_send_otp(acct, store.get_2fa(aid))
@@ -605,10 +630,11 @@ def _require(request: Request):
             and request.url.path.startswith("/app")
             and request.url.path != "/app/welcome"):
         return acct, _redirect("/app/welcome")
-    # Admin-enforced MFA (IA-2): when the org requires MFA, the owner can't use the app
-    # until 2FA is enrolled. The Security page (where you enroll), the 2FA endpoints, and
-    # logout stay reachable so there's no lock-out loop.
-    if (request.method == "GET" and not acct.get("member_id") and not _needs_welcome(acct)
+    # Admin-enforced MFA (IA-2): when the org requires MFA, NO principal — owner, admin,
+    # or invited member — can use the app until 2FA is enrolled. The Security page (where
+    # you enroll), the 2FA endpoints, and logout stay reachable so there's no lock-out loop.
+    # acct["twofa_enabled"] reflects the *current principal's* own MFA (member or owner).
+    if (request.method == "GET" and not _needs_welcome(acct)
             and request.url.path.startswith("/app")
             and request.url.path not in ("/app/security", "/app/settings")):
         try:
@@ -1876,7 +1902,7 @@ _SEC_FLASH = {"mfa": "mfa-required", "policy": "policy-saved", "totp": "totp-on"
 def _security_html(acct, enroll_secret="", flash_key=""):
     flash = _SEC_FLASH.get(flash_key, "")
     return _html(web.security_page(acct, policy=store.get_security_policy(acct["id"]),
-                                   twofa=store.get_2fa(acct["id"]),
+                                   twofa=store.get_2fa(acct["id"], member_id=acct.get("member_id", 0) or 0),
                                    enroll_secret=enroll_secret, flash=flash))
 
 
@@ -1945,6 +1971,8 @@ async def twofa_start(request: Request):
     acct, redir = _require(request)
     if redir:
         return redir
+    if acct.get("member_id"):   # invited members are authenticator-only (TOTP), no email OTP
+        return _redirect("/app/security")
     code = store.issue_otp(acct["id"])
     try:  # email channel: code goes to the account email (no tampering possible)
         notify.send_otp(acct["email"], code, "email")
@@ -1958,6 +1986,8 @@ async def twofa_confirm(request: Request):
     acct, redir = _require(request)
     if redir:
         return redir
+    if acct.get("member_id"):   # TOTP-only for members
+        return _redirect("/app/security")
     f = await _form(request)
     if store.verify_otp(acct["id"], f.get("code", "")):
         store.set_2fa(acct["id"], "email", acct["email"])
@@ -1985,8 +2015,9 @@ async def twofa_totp_confirm(request: Request):
     code = (f.get("code") or "").strip().replace(" ", "")
     ok = bool(secret) and any(store.totp_code(secret, time.time() + d * 30) == code for d in (-1, 0, 1))
     if ok:
-        store.set_totp(acct["id"], secret)
-        _audit(acct["id"], "2fa.enable", actor=acct["email"], detail="authenticator app (totp)")
+        store.set_totp(acct["id"], secret, member_id=acct.get("member_id", 0) or 0)
+        _audit(acct["id"], "2fa.enable", actor=acct.get("display_email") or acct["email"],
+               detail="authenticator app (totp)")
         return _redirect("/app/security?ok=totp")
     return _security_html(acct, enroll_secret=secret, flash_key="totpbad")
 
@@ -1996,7 +2027,7 @@ async def twofa_disable(request: Request):
     acct, redir = _require(request)
     if redir:
         return redir
-    store.disable_2fa(acct["id"])
+    store.disable_2fa(acct["id"], member_id=acct.get("member_id", 0) or 0)
     _audit(acct["id"], "2fa.disable", actor=acct.get("display_email") or acct["email"])
     return _redirect("/app/security")
 

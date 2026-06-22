@@ -32,7 +32,7 @@ cross-doc honesty on SOC 2 / FIPS / Fly.io.
 
 | # | Sev | Finding | Resolution |
 |---|---|---|---|
-| **C1** | 🔴 | **Admin-enforced MFA gated owners only, not invited members** (`_require` excluded `member_id`). Members have no 2FA-enrollment path, so gating them would lock them out. | **Doc-corrected** (code change deferred — needs a real member-MFA feature). Claims now say MFA is enforced for **owners/admins** (the privileged accounts); SSO members are covered by IdP MFA; per-member self-enroll is the named near-term build. |
+| **C1** | 🔴 | **Admin-enforced MFA gated owners only, not invited members** (`_require` excluded `member_id`). Members had no 2FA-enrollment path. | **Fixed in code** (follow-up build). Added per-member TOTP (AAL2): members table 2FA columns, member-aware `get_2fa`/`set_totp`/`verify_totp`/`disable_2fa`, a member second-factor challenge at login, and the `require_mfa` gate now covers **every principal** (member enrolls via `/app/security`). Tested (`test_member_totp_enroll_and_login_challenge`, `test_admin_mfa_policy_gates_members`). |
 | **C2** | 🔴 | **The "incident/breach webhook posts a signed alert on a security event" did not fire** — `security_webhook` was a dead field; the signed-webhook machinery only carried spend/budget events. | **Fixed in code.** New `notify_security_event()` (HMAC-SHA256-signed, `x-outlay-signature`, per-account verifiable secret) fires from `_audit()` on every security action (failed login, lockout, MFA enable/disable, password reset, policy change, log-out-everywhere). Tested. |
 | **C3** | 🔴 | **The 422 ingest boundary was field-NAME denylisting only** — a secret/prompt under an unlisted field name passed; console endpoints scanned top-level only. | **Fixed in code.** Added recursive `forbidden_payload_reason()` (any depth) with **credential-VALUE scanning** (`sk-`, `Bearer`, JWT, `ghp_`, `AKIA`, `AIza`, `xox*`) in both `console/store.py` and standalone `ingest/server.py`. Wired into `/api/meter`, `/api/proposals`, `/api/logs`, `/ingest`. **Doc-corrected** to describe it as name+value defense-in-depth atop the structural guarantee (not absolute content inspection). Tested. |
 | **C4** | 🔴 | **"axe-core passes with zero violations" was unsubstantiated** — no a11y test existed; a real violation existed (placeholder-only input). | **Fixed in code.** Added `test_accessibility_structural_gate` (CI gate: programmatic name on every control, `alt`, `lang`, `title`) and fixed **~20 unlabeled controls** across auth/forgot/SSO-config/feedback/saved-views/account-deletion with `aria-label`. **Doc-corrected** to "automated structural gate in CI + manual axe-core spot-checks; independent VPAT on roadmap." |
@@ -47,9 +47,9 @@ cross-doc honesty on SOC 2 / FIPS / Fly.io.
 ---
 
 ## Remaining (tracked, not regressions)
-- **Member-MFA enrollment** — build per-member 2FA so an org `require_mfa` policy can compel every
-  invited teammate directly (today: owners/admins + SSO/IdP-enforced members). The one C-item
-  resolved by documentation rather than code; scoped as a dedicated follow-up.
+- ~~**Member-MFA enrollment**~~ — ✅ **built** (per-member TOTP; `require_mfa` now compels every
+  invited teammate). The remaining phishing-resistant step is **WebAuthn/passkeys (FIDO2)** for both
+  owners and members.
 - **secret_box KDF** — current single-pass SHA-256 derivation is retained for backward-compat;
   hardening is the KMS-key path (`CONSOLE_SECRETBOX_KEY`) or a key-rotation migration.
 - **Independent third-party VPAT** validation; **SOC 2 Type II**; the **FedRAMP-Moderate re-host** —
