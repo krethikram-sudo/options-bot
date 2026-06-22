@@ -519,6 +519,30 @@ Same as F8 — e.g. H1 **"bugfix · work type."**
 - **Account security extras** — 2FA enroll/confirm/disable, account deletion
   (self-serve erasure), password reset.
 
+### Trust Center — government-readiness controls (`/app/security`)
+
+The Security page doubles as the **Trust Center** that answers a state/enterprise
+security questionnaire in-product. Two flows a reviewer will exercise:
+
+**TOTP authenticator enrollment (AAL2, phishing-resistant-grade).** *Your sign-in
+security* shows the secret + `otpauth://` URI to scan into an authenticator app, then a
+6-digit *Confirm & enable*. Email one-time codes remain available as a fallback. Below
+it, the **Organization security policy** card (admin-only) sets *Require MFA for everyone*,
+idle timeout, absolute session lifetime, data region, and the incident/breach webhook.
+
+![TOTP authenticator enrollment + org security policy](images/walkthrough/28_totp_enroll.png)
+
+**Admin-enforced MFA gate.** When an admin checks *Require multi-factor authentication*,
+every member is redirected here with the amber banner — *"Your organization requires
+multi-factor authentication — enroll below to continue"* — and is blocked from the rest
+of the app until they enroll. This is the most-cited gov/SOC 2 control (IA-2(1)/(2)).
+
+![Admin-enforced MFA gate](images/walkthrough/29_mfa_gate.png)
+
+These map control-by-control to NIST 800-53 / SOC 2 in
+[`security-questionnaire.md`](security-questionnaire.md); the bar they answer is in
+[`gov-tech-security-requirements.md`](gov-tech-security-requirements.md).
+
 ---
 
 ## Part 8 — Vendor-internal & machine surfaces (not customer-facing)
