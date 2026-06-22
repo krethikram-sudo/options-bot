@@ -32,7 +32,7 @@
 "milestone": {
 "title": "Relevance v3"
 },
-"points": 8,
+"points": 5,
 "additions": 475,
 "deletions": 37
 },
@@ -50,7 +50,7 @@
 "milestone": {
 "title": "Billing v2"
 },
-"points": 5,
+"points": 3,
 "additions": 31,
 "deletions": 107
 },
@@ -104,7 +104,7 @@
 "milestone": {
 "title": "Q3 Stability"
 },
-"points": 2,
+"points": 3,
 "additions": 494,
 "deletions": 144
 },
@@ -140,7 +140,7 @@
 "milestone": {
 "title": "Billing v2"
 },
-"points": 8,
+"points": 13,
 "additions": 331,
 "deletions": 63
 },
@@ -194,7 +194,7 @@
 "milestone": {
 "title": "Warehouse migration"
 },
-"points": 2,
+"points": 3,
 "additions": 259,
 "deletions": 261
 },
@@ -230,7 +230,7 @@
 "milestone": {
 "title": "Cluster autoscaling"
 },
-"points": 8,
+"points": 5,
 "additions": 477,
 "deletions": 93
 },
@@ -302,7 +302,7 @@
 "milestone": {
 "title": "Warehouse migration"
 },
-"points": 1,
+"points": 2,
 "additions": 640,
 "deletions": 81
 },
@@ -320,7 +320,7 @@
 "milestone": {
 "title": "Payments hardening"
 },
-"points": 13,
+"points": 8,
 "additions": 665,
 "deletions": 300
 },
@@ -338,7 +338,7 @@
 "milestone": {
 "title": "One-click checkout"
 },
-"points": 5,
+"points": 3,
 "additions": 659,
 "deletions": 154
 },
@@ -356,7 +356,7 @@
 "milestone": {
 "title": "Q3 Stability"
 },
-"points": 3,
+"points": 5,
 "additions": 137,
 "deletions": 175
 },
@@ -392,7 +392,7 @@
 "milestone": {
 "title": "Billing v2"
 },
-"points": 8,
+"points": 5,
 "additions": 307,
 "deletions": 145
 },
@@ -428,7 +428,7 @@
 "milestone": {
 "title": "Warehouse migration"
 },
-"points": 5,
+"points": 8,
 "additions": 676,
 "deletions": 55
 },
@@ -464,7 +464,7 @@
 "milestone": {
 "title": "One-click checkout"
 },
-"points": 2,
+"points": 5,
 "additions": 379,
 "deletions": 175
 },
@@ -626,7 +626,7 @@
 "milestone": {
 "title": "Cluster autoscaling"
 },
-"points": 2,
+"points": 3,
 "additions": 189,
 "deletions": 24
 },
@@ -662,7 +662,7 @@
 "milestone": {
 "title": "Payments hardening"
 },
-"points": 2,
+"points": 3,
 "additions": 213,
 "deletions": 235
 },
@@ -734,7 +734,7 @@
 "milestone": {
 "title": "One-click checkout"
 },
-"points": 5,
+"points": 3,
 "additions": 655,
 "deletions": 61
 },
@@ -752,7 +752,7 @@
 "milestone": {
 "title": "Payments hardening"
 },
-"points": 1,
+"points": 3,
 "additions": 407,
 "deletions": 140
 },
@@ -770,7 +770,7 @@
 "milestone": {
 "title": "Payments hardening"
 },
-"points": 1,
+"points": 2,
 "additions": 598,
 "deletions": 262
 },
@@ -788,7 +788,7 @@
 "milestone": {
 "title": "Warehouse migration"
 },
-"points": 8,
+"points": 3,
 "additions": 420,
 "deletions": 57
 },
@@ -806,7 +806,7 @@
 "milestone": {
 "title": "Billing v2"
 },
-"points": 13,
+"points": 8,
 "additions": 128,
 "deletions": 208
 },
@@ -896,7 +896,7 @@
 "milestone": {
 "title": "One-click checkout"
 },
-"points": 2,
+"points": 3,
 "additions": 252,
 "deletions": 177
 },
@@ -914,7 +914,7 @@
 "milestone": {
 "title": "Billing v2"
 },
-"points": 3,
+"points": 5,
 "additions": 123,
 "deletions": 254
 },
@@ -932,7 +932,7 @@
 "milestone": {
 "title": "Q3 Stability"
 },
-"points": 3,
+"points": 5,
 "additions": 386,
 "deletions": 122
 },
@@ -986,7 +986,7 @@
 "milestone": {
 "title": "Cluster autoscaling"
 },
-"points": 2,
+"points": 3,
 "additions": 402,
 "deletions": 153
 },
@@ -1022,7 +1022,7 @@
 "milestone": {
 "title": "Payments hardening"
 },
-"points": 3,
+"points": 5,
 "additions": 156,
 "deletions": 203
 },
@@ -1076,7 +1076,7 @@
 "milestone": {
 "title": "One-click checkout"
 },
-"points": 2,
+"points": 3,
 "additions": 443,
 "deletions": 173
 },
@@ -1094,7 +1094,7 @@
 "milestone": {
 "title": "Cluster autoscaling"
 },
-"points": 2,
+"points": 3,
 "additions": 631,
 "deletions": 291
 },
@@ -1112,7 +1112,7 @@
 "milestone": {
 "title": "Q3 Stability"
 },
-"points": 5,
+"points": 3,
 "additions": 452,
 "deletions": 168
 },
@@ -1130,7 +1130,7 @@
 "milestone": {
 "title": "Relevance v3"
 },
-"points": 8,
+"points": 5,
 "additions": 12,
 "deletions": 298
 },
@@ -1148,7 +1148,7 @@
 "milestone": {
 "title": "Q3 Stability"
 },
-"points": 8,
+"points": 5,
 "additions": 393,
 "deletions": 129
 },
@@ -1202,7 +1202,7 @@
 "milestone": {
 "title": "Mobile GA"
 },
-"points": 21,
+"points": 13,
 "additions": 415,
 "deletions": 132
 },
@@ -1238,7 +1238,7 @@
 "milestone": {
 "title": "Payments hardening"
 },
-"points": 13,
+"points": 8,
 "additions": 684,
 "deletions": 55
 },
@@ -1310,7 +1310,7 @@
 "milestone": {
 "title": "Relevance v3"
 },
-"points": 5,
+"points": 8,
 "additions": 187,
 "deletions": 63
 },
@@ -1328,7 +1328,7 @@
 "milestone": {
 "title": "Cluster autoscaling"
 },
-"points": 8,
+"points": 13,
 "additions": 454,
 "deletions": 175
 },
@@ -1346,7 +1346,7 @@
 "milestone": {
 "title": "Q3 Stability"
 },
-"points": 13,
+"points": 8,
 "additions": 463,
 "deletions": 298
 },
@@ -1364,7 +1364,7 @@
 "milestone": {
 "title": "Cluster autoscaling"
 },
-"points": 8,
+"points": 13,
 "additions": 190,
 "deletions": 274
 },
@@ -1508,7 +1508,7 @@
 "milestone": {
 "title": "Mobile GA"
 },
-"points": 8,
+"points": 13,
 "additions": 455,
 "deletions": 107
 },
@@ -1580,7 +1580,7 @@
 "milestone": {
 "title": "Payments hardening"
 },
-"points": 13,
+"points": 8,
 "additions": 606,
 "deletions": 163
 },
@@ -1598,7 +1598,7 @@
 "milestone": {
 "title": "Cluster autoscaling"
 },
-"points": 5,
+"points": 8,
 "additions": 181,
 "deletions": 160
 },
@@ -1616,7 +1616,7 @@
 "milestone": {
 "title": "Relevance v3"
 },
-"points": 21,
+"points": 13,
 "additions": 565,
 "deletions": 52
 },
@@ -1634,7 +1634,7 @@
 "milestone": {
 "title": "Relevance v3"
 },
-"points": 5,
+"points": 8,
 "additions": 566,
 "deletions": 101
 },
@@ -1706,7 +1706,7 @@
 "milestone": {
 "title": "Q3 Stability"
 },
-"points": 13,
+"points": 21,
 "additions": 549,
 "deletions": 38
 },
@@ -1760,7 +1760,7 @@
 "milestone": {
 "title": "Payments hardening"
 },
-"points": 5,
+"points": 8,
 "additions": 76,
 "deletions": 120
 },
@@ -1778,7 +1778,7 @@
 "milestone": {
 "title": "Billing v2"
 },
-"points": 8,
+"points": 13,
 "additions": 344,
 "deletions": 138
 },
@@ -1796,7 +1796,7 @@
 "milestone": {
 "title": "Relevance v3"
 },
-"points": 21,
+"points": 13,
 "additions": 554,
 "deletions": 110
 },
@@ -1868,7 +1868,7 @@
 "milestone": {
 "title": "Payments hardening"
 },
-"points": 21,
+"points": 13,
 "additions": 519,
 "deletions": 33
 },
@@ -1904,7 +1904,7 @@
 "milestone": {
 "title": "One-click checkout"
 },
-"points": 5,
+"points": 8,
 "additions": 80,
 "deletions": 190
 },
@@ -1940,7 +1940,7 @@
 "milestone": {
 "title": "Cluster autoscaling"
 },
-"points": 21,
+"points": 13,
 "additions": 42,
 "deletions": 240
 },
@@ -1958,7 +1958,7 @@
 "milestone": {
 "title": "Relevance v3"
 },
-"points": 5,
+"points": 8,
 "additions": 13,
 "deletions": 81
 },
@@ -1976,7 +1976,7 @@
 "milestone": {
 "title": "Warehouse migration"
 },
-"points": 21,
+"points": 13,
 "additions": 385,
 "deletions": 104
 },
@@ -2084,7 +2084,7 @@
 "milestone": {
 "title": "Warehouse migration"
 },
-"points": 5,
+"points": 8,
 "additions": 216,
 "deletions": 93
 },
@@ -2120,7 +2120,7 @@
 "milestone": {
 "title": "Q3 Stability"
 },
-"points": 3,
+"points": 5,
 "additions": 501,
 "deletions": 56
 },
@@ -2174,7 +2174,7 @@
 "milestone": {
 "title": "Payments hardening"
 },
-"points": 8,
+"points": 5,
 "additions": 533,
 "deletions": 197
 },
@@ -2192,7 +2192,7 @@
 "milestone": {
 "title": "Q3 Stability"
 },
-"points": 5,
+"points": 8,
 "additions": 437,
 "deletions": 118
 },
@@ -2300,7 +2300,7 @@
 "milestone": {
 "title": "Mobile GA"
 },
-"points": 13,
+"points": 8,
 "additions": 275,
 "deletions": 147
 },
@@ -2318,7 +2318,7 @@
 "milestone": {
 "title": "Warehouse migration"
 },
-"points": 5,
+"points": 8,
 "additions": 610,
 "deletions": 164
 },
@@ -2354,7 +2354,7 @@
 "milestone": {
 "title": "Warehouse migration"
 },
-"points": 5,
+"points": 8,
 "additions": 525,
 "deletions": 52
 },
@@ -2372,7 +2372,7 @@
 "milestone": {
 "title": "Billing v2"
 },
-"points": 13,
+"points": 8,
 "additions": 434,
 "deletions": 107
 },
@@ -2408,7 +2408,7 @@
 "milestone": {
 "title": "Warehouse migration"
 },
-"points": 3,
+"points": 5,
 "additions": 393,
 "deletions": 118
 },
@@ -2462,7 +2462,7 @@
 "milestone": {
 "title": "Billing v2"
 },
-"points": 13,
+"points": 8,
 "additions": 339,
 "deletions": 258
 },
@@ -2498,7 +2498,7 @@
 "milestone": {
 "title": "Payments hardening"
 },
-"points": 3,
+"points": 5,
 "additions": 614,
 "deletions": 39
 },
@@ -2606,7 +2606,7 @@
 "milestone": {
 "title": "Q3 Stability"
 },
-"points": 8,
+"points": 5,
 "additions": 441,
 "deletions": 26
 },
@@ -2714,7 +2714,7 @@
 "milestone": {
 "title": "Relevance v3"
 },
-"points": 2,
+"points": 3,
 "additions": 182,
 "deletions": 197
 },
@@ -2786,7 +2786,7 @@
 "milestone": {
 "title": "Billing v2"
 },
-"points": 1,
+"points": 2,
 "additions": 269,
 "deletions": 153
 },
@@ -2858,7 +2858,7 @@
 "milestone": {
 "title": "Payments hardening"
 },
-"points": 13,
+"points": 8,
 "additions": 390,
 "deletions": 257
 },
@@ -2876,7 +2876,7 @@
 "milestone": {
 "title": "Relevance v3"
 },
-"points": 1,
+"points": 2,
 "additions": 611,
 "deletions": 218
 },
@@ -2912,7 +2912,7 @@
 "milestone": {
 "title": "Mobile GA"
 },
-"points": 1,
+"points": 2,
 "additions": 80,
 "deletions": 136
 },
@@ -2966,7 +2966,7 @@
 "milestone": {
 "title": "Relevance v3"
 },
-"points": 3,
+"points": 2,
 "additions": 559,
 "deletions": 52
 },
@@ -2984,7 +2984,7 @@
 "milestone": {
 "title": "Mobile GA"
 },
-"points": 5,
+"points": 3,
 "additions": 36,
 "deletions": 245
 },
@@ -3038,7 +3038,7 @@
 "milestone": {
 "title": "Billing v2"
 },
-"points": 3,
+"points": 2,
 "additions": 617,
 "deletions": 55
 },
@@ -3128,7 +3128,7 @@
 "milestone": {
 "title": "One-click checkout"
 },
-"points": 5,
+"points": 3,
 "additions": 482,
 "deletions": 205
 },
@@ -3218,7 +3218,7 @@
 "milestone": {
 "title": "Warehouse migration"
 },
-"points": 5,
+"points": 3,
 "additions": 27,
 "deletions": 96
 },
@@ -3254,7 +3254,7 @@
 "milestone": {
 "title": "Payments hardening"
 },
-"points": 3,
+"points": 2,
 "additions": 446,
 "deletions": 290
 },
@@ -3308,7 +3308,7 @@
 "milestone": {
 "title": "Cluster autoscaling"
 },
-"points": 5,
+"points": 3,
 "additions": 515,
 "deletions": 95
 },
@@ -3326,7 +3326,7 @@
 "milestone": {
 "title": "Q3 Stability"
 },
-"points": 2,
+"points": 1,
 "additions": 579,
 "deletions": 113
 },
@@ -3344,7 +3344,7 @@
 "milestone": {
 "title": "One-click checkout"
 },
-"points": 5,
+"points": 3,
 "additions": 692,
 "deletions": 274
 },
@@ -3362,7 +3362,7 @@
 "milestone": {
 "title": "Cluster autoscaling"
 },
-"points": 2,
+"points": 3,
 "additions": 485,
 "deletions": 289
 },
@@ -3412,7 +3412,7 @@
 "milestone": {
 "title": "Mobile GA"
 },
-"points": 5
+"points": 3
 },
 {
 "number": 390,
@@ -3443,7 +3443,7 @@
 "milestone": {
 "title": "Relevance v3"
 },
-"points": 5
+"points": 3
 },
 {
 "number": 392,
@@ -3458,7 +3458,7 @@
 "milestone": {
 "title": "One-click checkout"
 },
-"points": 2
+"points": 3
 },
 {
 "number": 393,
@@ -3473,7 +3473,7 @@
 "milestone": {
 "title": "Cluster autoscaling"
 },
-"points": 1
+"points": 3
 },
 {
 "number": 394,
@@ -3520,7 +3520,7 @@
 "milestone": {
 "title": "Billing v2"
 },
-"points": 5
+"points": 3
 },
 {
 "number": 397,
@@ -3551,7 +3551,7 @@
 "milestone": {
 "title": "Mobile GA"
 },
-"points": 5
+"points": 3
 },
 {
 "number": 399,
@@ -3567,7 +3567,7 @@
 "milestone": {
 "title": "Warehouse migration"
 },
-"points": 8
+"points": 5
 },
 {
 "number": 400,
@@ -3598,7 +3598,7 @@
 "milestone": {
 "title": "One-click checkout"
 },
-"points": 5
+"points": 3
 },
 {
 "number": 402,
@@ -3629,7 +3629,7 @@
 "milestone": {
 "title": "Q3 Stability"
 },
-"points": 2
+"points": 3
 },
 {
 "number": 404,
@@ -3674,7 +3674,7 @@
 "milestone": {
 "title": "Cluster autoscaling"
 },
-"points": 21
+"points": 13
 },
 {
 "number": 407,
@@ -3704,7 +3704,7 @@
 "milestone": {
 "title": "Warehouse migration"
 },
-"points": 21
+"points": 13
 },
 {
 "number": 409,
@@ -3719,7 +3719,7 @@
 "milestone": {
 "title": "Q3 Stability"
 },
-"points": 8
+"points": 13
 },
 {
 "number": 410,
@@ -3794,7 +3794,7 @@
 "milestone": {
 "title": "Mobile GA"
 },
-"points": 5
+"points": 8
 },
 {
 "number": 415,
@@ -3867,7 +3867,7 @@
 "milestone": {
 "title": "Q3 Stability"
 },
-"points": 8
+"points": 13
 },
 {
 "number": 420,
@@ -3912,7 +3912,7 @@
 "milestone": {
 "title": "Relevance v3"
 },
-"points": 5
+"points": 8
 },
 {
 "number": 423,
@@ -3958,7 +3958,7 @@
 "milestone": {
 "title": "Mobile GA"
 },
-"points": 5
+"points": 8
 },
 {
 "number": 426,
@@ -3974,7 +3974,7 @@
 "milestone": {
 "title": "Cluster autoscaling"
 },
-"points": 13
+"points": 8
 },
 {
 "number": 427,
@@ -3989,7 +3989,7 @@
 "milestone": {
 "title": "Cluster autoscaling"
 },
-"points": 5
+"points": 8
 },
 {
 "number": 428,
@@ -4082,7 +4082,7 @@
 "milestone": {
 "title": "Q3 Stability"
 },
-"points": 5
+"points": 3
 },
 {
 "number": 434,
@@ -4127,7 +4127,7 @@
 "milestone": {
 "title": "Warehouse migration"
 },
-"points": 5
+"points": 3
 },
 {
 "number": 437,
@@ -4188,7 +4188,7 @@
 "milestone": {
 "title": "Relevance v3"
 },
-"points": 3
+"points": 2
 },
 {
 "number": 441,
@@ -4203,7 +4203,7 @@
 "milestone": {
 "title": "Payments hardening"
 },
-"points": 1
+"points": 2
 },
 {
 "number": 442,
@@ -4264,7 +4264,7 @@
 "milestone": {
 "title": "Q3 Stability"
 },
-"points": 1
+"points": 2
 }
 ]
 }

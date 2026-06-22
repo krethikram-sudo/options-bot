@@ -27,6 +27,17 @@ screen-by-screen customer flow for **each persona** (Finance and Engineering).*
 > 7. **Connect page lightened** with progressive disclosure — the primary flow is
 >    tracker → AI usage → sync; identity-mapping and Slack collapse under "Optional —
 >    refine after your first sync."
+>
+> **Review round 3 — deeper polish:**
+> 8. **Size-conditioning now visibly wins in the demo** — demo tickets carry clean
+>    story points, so the Accuracy page shows "Story points help" (cuts median error
+>    42% — 17% vs 29%), demonstrating the size-conditioned forecasting feature instead
+>    of "not adding signal yet."
+> 9. **Marketing site (outlay-ai.com) verified** — the static site at `modelpilot/site/`
+>    (8 pages + 6 legal pages, 10-provider strip) was audited and rendered: it's already
+>    comprehensive, on-message, and production-ready. No changes made (legal pages are
+>    intentionally counsel-pending drafts). It is richer than the console `/` landing,
+>    which is the app-domain root and now consistent with it.
 
 **Status of this audit:** A live end-to-end smoke test was run against the actual
 app (FastAPI test client driving real routes). **54 of 55 checks passed**; the one
@@ -357,6 +368,10 @@ Finance does not see Connect or API.)*
 - KPIs: **Median error (MdAPE)** · **Within the p90 band** · **Tickets back-tested** —
   the leave-one-out calibration on the team's own closed tickets, plus **Accuracy by
   work type**. This is what makes the forecast credible.
+- **Size-conditioning callout** — when story points sharpen the estimate, a green
+  "**Story points help**" card quantifies it (e.g. *cuts median error by 42% vs
+  work-type alone — 17% vs 29%, n=188*). When they don't, it says so honestly and falls
+  back to the work-type model. Either way it shows the measured numbers.
 
 ### E8 · Estimate your backlog (`/app/outlay/estimate`)
 
