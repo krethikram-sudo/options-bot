@@ -2832,6 +2832,7 @@ def test_program_budgets_rollup_status_and_alerts(env, client, monkeypatch):
                              {"scope_type": "project", "scope_id": "PLAT"}]}]
     st = outlay_app.program_statuses(report, programs)[0]
     assert st["spent_usd"] == 200.0 and st["status"] == "over"   # platform team + PLAT project = the one ticket, counted once
+    assert "pacing" in st and isinstance(st["pacing"], dict)      # pacing read attached to every program
 
     # HTTP: create a program, it shows with rolled-up status, and delete works
     _signup(client, email="prog@x.com")
@@ -2875,6 +2876,94 @@ def test_program_budgets_rollup_status_and_alerts(env, client, monkeypatch):
     # delete
     client.post("/app/outlay/programs/delete", data={"id": str(pid)}, follow_redirects=True)
     assert store.list_outlay_programs(acct["id"]) == []
+
+
+# --- Program budget pacing (real-time plan-vs-actual) --------------------- #
+
+def _prog(now, limit=1000.0, frac_elapsed=0.5, period=100):
+    """A program whose timeline is `frac_elapsed` of the way through `period` days at `now`."""
+    start = now - frac_elapsed * period * 86400
+    return {"id": 1, "name": "Platform", "limit_usd": limit, "period_days": period,
+            "members": [{"scope_type": "overall"}], "start_ts": start, "end_ts": start + period * 86400}
+
+
+def test_program_pacing_over_under_on_track_and_baseline():
+    from console import outlay_app
+    now = 1_700_000_000.0
+    DAY = 86400.0
+
+    # OVER pace: halfway through, spent 700 vs planned 500, and burning fast → projected breach
+    p = _prog(now)
+    hist = [{"ts": now - 14 * DAY, "spent_usd": 300.0}, {"ts": now, "spent_usd": 700.0}]
+    pc = outlay_app.program_pacing(p, hist, current_spent=700.0, now=now)
+    assert pc["ready"] and pc["status"] == "over"
+    assert pc["planned_to_date_usd"] == 500.0 and pc["actual_to_date_usd"] == 700.0
+    assert pc["variance_usd"] == 200.0 and pc["variance_pct"] > 0.39
+    assert pc["projected_end_usd"] > 1000.0 and pc["over_budget_by_usd"] > 0
+    assert pc["pace"] == "projected_breach" and pc["projected_breach_date"]   # a real date, before end
+    assert pc["burn_per_day_usd"] > 0
+
+    # ON TRACK: actual ≈ planned, modest burn → ok / on_track, no breach
+    pc2 = outlay_app.program_pacing(
+        p, [{"ts": now - 14 * DAY, "spent_usd": 430.0}, {"ts": now, "spent_usd": 500.0}],
+        current_spent=500.0, now=now)
+    assert pc2["status"] == "ok" and pc2["pace"] == "on_track"
+    assert pc2["projected_breach_date"] is None
+
+    # UNDER (ahead of plan): spent well below the planned pace
+    pc3 = outlay_app.program_pacing(p, [], current_spent=300.0, now=now)
+    assert pc3["ready"] and pc3["pace"] == "ahead" and pc3["status"] == "ok"
+
+    # BASELINE: barely started + no snapshots → not enough signal to flag
+    p_new = _prog(now, frac_elapsed=0.02)
+    pc4 = outlay_app.program_pacing(p_new, [], current_spent=5.0, now=now)
+    assert pc4["ready"] is False and pc4["pace"] == "baseline"
+
+
+def test_program_history_snapshot_roundtrip_and_status_integration(env):
+    _, store = env
+    from console import outlay_app
+    acct = store.create_account("pace@x.com", "k7-otter-ledger")
+    now = 1_700_000_000.0
+    pid = store.add_outlay_program(acct["id"], "All", [{"scope_type": "overall"}], 1000.0,
+                                   period_days=100, start_ts=now - 50 * 86400, end_ts=now + 50 * 86400)
+    # two refreshes record per-program snapshots from the report total
+    store.record_outlay_snapshot(acct["id"], {"spend": {"total_usd": 300.0}}, now=now - 14 * 86400)
+    store.record_outlay_snapshot(acct["id"], {"spend": {"total_usd": 720.0}}, now=now)
+    hist = store.program_histories(acct["id"])[pid]
+    assert [round(h["spent_usd"]) for h in hist] == [300, 720]      # ascending, per-program
+    # program_statuses now attaches a ready pacing read that drives the status
+    report = {"spend": {"total_usd": 720.0}, "tickets": [], "window_days": 90}
+    st = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"]),
+                                     store.program_histories(acct["id"]))[0]
+    assert st["pacing"]["ready"] and st["pacing"]["actual_to_date_usd"] == 720.0
+    assert st["status"] == st["pacing"]["status"]                   # pacing drives the headline when ready
+
+
+def test_program_history_erased_with_data_and_account(env):
+    _, store = env
+    acct = store.create_account("pace2@x.com", "k7-otter-ledger")
+    pid = store.add_outlay_program(acct["id"], "All", [{"scope_type": "overall"}], 500.0)
+    store.record_outlay_snapshot(acct["id"], {"spend": {"total_usd": 100.0}})
+    assert store.program_histories(acct["id"]).get(pid)
+    store.purge_outlay_data(acct["id"])                 # right-to-erasure of ingested data
+    assert store.program_histories(acct["id"]) == {}
+
+
+def test_program_pacing_renders_on_programs_page(env, client):
+    _, store = env
+    _signup(client, email="pacui@x.com")
+    acct = store.get_account_by_email("pacui@x.com")
+    now = time.time()
+    store.add_outlay_program(acct["id"], "All", [{"scope_type": "overall"}], 1000.0,
+                             period_days=100, start_ts=now - 50 * 86400, end_ts=now + 50 * 86400)
+    report = {"spend": {"total_usd": 700.0}, "tickets": [], "window_days": 90}
+    store.save_outlay_report(acct["id"], report)
+    store.record_outlay_snapshot(acct["id"], {"spend": {"total_usd": 300.0}}, now=now - 14 * 86400)
+    store.record_outlay_snapshot(acct["id"], {"spend": {"total_usd": 700.0}}, now=now)
+    page = client.get("/app/outlay/programs").text
+    assert "proj. end" in page                                  # the pacing strip rendered
+    assert ("exceeds budget" in page or "over plan" in page)    # over-pace surfaced in plain language
 
 
 def test_program_enforcement_decision_endpoint(env, client):
@@ -3125,6 +3214,93 @@ def test_admin_mfa_policy_gates_members(env):
     _enroll_member_totp(server, store, c, m["id"])
     # gate now clears for the member
     assert c.get("/app/outlay", follow_redirects=False).status_code == 200
+
+
+# --- WebAuthn / passkeys (phishing-resistant MFA) ------------------------- #
+
+def _wa_env(monkeypatch):
+    monkeypatch.setenv("CONSOLE_RP_ID", "localhost")
+    monkeypatch.setenv("CONSOLE_BASE_URL", "http://localhost")
+
+
+def _wa_bridge(att_or_assertion, fields):
+    """Re-encode a soft_webauthn device response (raw bytes) into the base64url JSON
+    shape py_webauthn expects from the browser."""
+    import json
+    from webauthn.helpers import bytes_to_base64url as b
+    resp = {f: b(att_or_assertion["response"][f]) for f in fields if att_or_assertion["response"].get(f) is not None}
+    return json.dumps({"id": b(att_or_assertion["rawId"]), "rawId": b(att_or_assertion["rawId"]),
+                       "type": att_or_assertion["type"], "response": resp, "clientExtensionResults": {}})
+
+
+def test_webauthn_enroll_authenticate_and_clone_detection(env, monkeypatch):
+    """The security-critical ceremony: register a passkey, authenticate with it, and
+    confirm a stale signature counter (cloned authenticator) is rejected. Driven by a
+    software authenticator through the real py_webauthn verification path."""
+    pytest.importorskip("webauthn")
+    SoftWebauthnDevice = pytest.importorskip("soft_webauthn").SoftWebauthnDevice
+    _, store = env
+    from console import webauthn_box as wb
+    _wa_env(monkeypatch)
+    acct = store.create_account("pk@x.com", "k7-otter-ledger")
+    dev = SoftWebauthnDevice()
+
+    # --- registration ---
+    opts_json, challenge = wb.registration_options(b"acct-pk", "pk@x.com")
+    import json as _j
+    pk = _j.loads(opts_json)
+    att = dev.create({"publicKey": {
+        "rp": {"id": "localhost", "name": "Outlay"},
+        "user": {"id": b"acct-pk", "name": "pk@x.com", "displayName": "pk@x.com"},
+        "challenge": wb.base64url_to_bytes(pk["challenge"]),
+        "pubKeyCredParams": [{"alg": -7, "type": "public-key"}, {"alg": -257, "type": "public-key"}],
+    }}, "http://localhost")
+    reg = wb.verify_registration(_wa_bridge(att, ["clientDataJSON", "attestationObject"]), challenge)
+    cid = store.add_webauthn_credential(acct["id"], 0, reg["credential_id"], reg["public_key"],
+                                        reg["sign_count"], label="My laptop")
+    assert store.principal_has_mfa(acct["id"]) is True
+    assert store.webauthn_credential_ids(acct["id"]) == [reg["credential_id"]]
+
+    # --- authentication ---
+    a_json, a_challenge = wb.authentication_options([wb.base64url_to_bytes(reg["credential_id"])])
+    apk = _j.loads(a_json)
+    assertion = dev.get({"publicKey": {"challenge": wb.base64url_to_bytes(apk["challenge"]),
+        "rpId": "localhost",
+        "allowCredentials": [{"id": dev.credential_id, "type": "public-key"}]}}, "http://localhost")
+    cred = store.get_webauthn_credential(wb.credential_id_of(
+        _wa_bridge(assertion, ["authenticatorData", "clientDataJSON", "signature", "userHandle"])))
+    assert cred and cred["account_id"] == acct["id"]
+    new_count = wb.verify_authentication(
+        _wa_bridge(assertion, ["authenticatorData", "clientDataJSON", "signature", "userHandle"]),
+        a_challenge, cred["public_key"], cred["sign_count"])
+    assert new_count >= 1
+    store.update_webauthn_sign_count(cred["id"], new_count)
+
+    # --- clone detection: replaying against a now-stale stored counter must raise ---
+    a_json2, a_challenge2 = wb.authentication_options([wb.base64url_to_bytes(reg["credential_id"])])
+    apk2 = _j.loads(a_json2)
+    assertion2 = dev.get({"publicKey": {"challenge": wb.base64url_to_bytes(apk2["challenge"]),
+        "rpId": "localhost",
+        "allowCredentials": [{"id": dev.credential_id, "type": "public-key"}]}}, "http://localhost")
+    with pytest.raises(Exception):
+        wb.verify_authentication(
+            _wa_bridge(assertion2, ["authenticatorData", "clientDataJSON", "signature", "userHandle"]),
+            a_challenge2, cred["public_key"], current_sign_count=999)
+
+
+def test_webauthn_credential_crud_and_erasure(env):
+    """Passkey list/delete + that full-account erasure removes passkeys."""
+    _, store = env
+    acct = store.create_account("pk2@x.com", "k7-otter-ledger")
+    store.add_webauthn_credential(acct["id"], 0, "credAAA", "pubAAA", 0, "Key A")
+    store.add_webauthn_credential(acct["id"], 0, "credBBB", "pubBBB", 0, "Key B")
+    creds = store.list_webauthn_credentials(acct["id"])
+    assert len(creds) == 2 and {c["label"] for c in creds} == {"Key A", "Key B"}
+    assert store.delete_webauthn_credential(creds[0]["id"], acct["id"], 0) is True
+    assert len(store.list_webauthn_credentials(acct["id"])) == 1
+    assert store.principal_has_mfa(acct["id"]) is True   # one passkey remains
+    store.delete_account(acct["id"])
+    assert store.get_webauthn_credential("credBBB") is None   # erasure removed it
 
 
 def test_logout_everywhere_revokes_other_sessions(env):

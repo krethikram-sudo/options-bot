@@ -1700,20 +1700,32 @@ def _finance_attention(report: dict | None, budget_statuses: list[dict] | None,
             continue
         nm = _e(s.get("name") or "program")
         tl = s.get("timeline") or {}
-        when = (f' — set to breach in <b>{_e(tl["breach_month"])}</b>' if tl.get("breach_month") else "")
+        pc = s.get("pacing") or {}
+        ready = pc.get("ready")
+        # Prefer pacing's date-precise, actual-vs-plan read when we have enough signal.
+        proj = pc.get("projected_end_usd", 0) if ready else s.get("projected_usd", 0)
+        if ready and pc.get("projected_breach_date") and pc["projected_breach_date"] != "now":
+            when = f' — projected to exceed budget on <b>{_e(pc["projected_breach_date"])}</b>'
+        elif tl.get("breach_month"):
+            when = f' — set to breach in <b>{_e(tl["breach_month"])}</b>'
+        else:
+            when = ""
+        over = (proj or 0) - (s.get("limit_usd", 0) or 0)
         if s.get("status") == "over":
             already = (s.get("spent_usd", 0) or 0) >= (s.get("limit_usd", 0) or 0)
             verb = "is already over budget" if already else "is projected to overspend"
             items.append((2, f'<span class=fa-dot style="background:var(--red)"></span>'
                           f'<span class=fa-txt>Program <b>{nm}</b> {verb} — projected '
-                          f'<b>{money(s.get("projected_usd",0))}</b> vs {money(s.get("limit_usd",0))} cap '
-                          f'({money(abs(over_amt(s)))} over){when}.</span>'
+                          f'<b>{money(proj)}</b> vs {money(s.get("limit_usd",0))} cap '
+                          f'({money(abs(over))} over){when}.</span>'
                           f'<a class="btn sec sm" href="/app/outlay/programs">Review →</a>'))
         elif s.get("status") == "warn":
+            pace_bit = (f' · pacing <b>{abs(pc.get("variance_pct",0))*100:.0f}% over plan</b>'
+                        if ready and pc.get("variance_pct", 0) > 0 else "")
             items.append((1, f'<span class=fa-dot style="background:var(--amber)"></span>'
                           f'<span class=fa-txt>Program <b>{nm}</b> is tracking hot — projected '
-                          f'<b>{money(s.get("projected_usd",0))}</b> of {money(s.get("limit_usd",0))} '
-                          f'({s.get("pct_used",0)*100:.0f}% used){when}.</span>'
+                          f'<b>{money(proj)}</b> of {money(s.get("limit_usd",0))} '
+                          f'({s.get("pct_used",0)*100:.0f}% used){pace_bit}{when}.</span>'
                           f'<a class="btn sec sm" href="/app/outlay/programs">Review →</a>'))
 
     for s in (budget_statuses or []):
@@ -1859,9 +1871,17 @@ def _eng_project_card(program_statuses: list[dict] | None) -> str:
         st = s.get("status", "ok")
         col = {"ok": "var(--grn-d)", "warn": "var(--amber)", "over": "var(--red)"}.get(st)
         tl = s.get("timeline") or {}
+        pc = s.get("pacing") or {}
         days = tl.get("days_left")
-        when = (f'breach {_e(tl["breach_month"])}' if tl.get("breach_month")
-                else (f'{days}d left' if days is not None else "on track"))
+        # prefer the date-precise pacing read; fall back to the month-bucket timeline
+        if pc.get("ready") and pc.get("projected_breach_date") and pc["projected_breach_date"] != "now":
+            when = f'exceeds budget {_e(pc["projected_breach_date"])}'
+        elif tl.get("breach_month"):
+            when = f'breach {_e(tl["breach_month"])}'
+        elif pc.get("ready") and pc.get("pace") == "over_pace":
+            when = f'{abs(pc.get("variance_pct",0))*100:.0f}% over plan'
+        else:
+            when = (f'{days}d left' if days is not None else "on track")
         rows += (f'<div class=erow><a class=nm href="/app/outlay/budgets">{_e(s.get("name"))} '
                  f'<small style="color:{col}">· {st} · {when}</small> <span class=drill>→</span></a>'
                  f'<span class=amt>{money(s.get("spent_usd",0))}<small class=muted> / {money(s.get("limit_usd",0))}</small></span></div>')
@@ -2843,6 +2863,48 @@ def _program_timeline_html(s: dict) -> str:
             f'{mrows}</div>')
 
 
+def _program_pacing_html(s: dict) -> str:
+    """Real-time pacing strip: actual cumulative spend vs the budget's expected pace to
+    date, the projected end spend, and — if trending over — the projected breach DATE.
+    Honest by construction: shows 'gathering baseline' until there's enough signal."""
+    pc = s.get("pacing") or {}
+    if not pc:
+        return ""
+    if not pc.get("ready"):
+        return ('<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px;'
+                'font-size:12px;color:var(--muted)">Gathering baseline — real-time pacing flags '
+                'appear once more of the program has elapsed.</div>')
+    labels = {"ahead": ("ahead of plan", "var(--grn-d)"), "on_track": ("on track", "var(--grn-d)"),
+              "over_pace": ("over plan pace", "var(--amber)"),
+              "projected_breach": ("projected to exceed budget", "var(--red)"),
+              "over_budget": ("over budget", "var(--red)")}
+    lbl, col = labels.get(pc.get("pace"), ("on track", "var(--grn-d)"))
+    pv, ac = pc.get("planned_to_date_usd", 0), pc.get("actual_to_date_usd", 0)
+    vpct = pc.get("variance_pct", 0)
+    arrow = "&#9650;" if vpct > 0 else ("&#9660;" if vpct < 0 else "&#8226;")
+    var_html = f'<span class=muted>{arrow} {abs(vpct) * 100:.0f}% vs plan</span>' if pv else ""
+    breach = pc.get("projected_breach_date")
+    breach_html = (f' · <span style="color:var(--red);font-weight:600">exceeds budget '
+                   f'{"now" if breach == "now" else "on " + _e(breach)}</span>') if breach else ""
+    mx = max(ac, pv, 1)
+    bar = ('display:inline-block;flex:1;height:7px;background:var(--paper2);border-radius:4px;'
+           'position:relative;overflow:hidden')
+
+    def row(name, val, pct, fill):
+        return (f'<div style="display:flex;align-items:center;gap:8px;margin-top:3px">'
+                f'<span class=muted style="width:48px;font-size:11.5px">{name}</span>'
+                f'<span style="{bar}"><span style="display:block;height:100%;width:{pct:.0f}%;'
+                f'background:{fill};border-radius:4px"></span></span>'
+                f'<span style="font-size:11.5px;width:64px;text-align:right">{money(val)}</span></div>')
+    return (f'<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">'
+            f'<div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px">'
+            f'<span><b style="color:{col}">{lbl}</b> {var_html}</span>'
+            f'<span class=muted>proj. end <b style="color:{col}">{money(pc.get("projected_end_usd", 0))}</b></span></div>'
+            f'{row("actual", ac, ac / mx * 100, col)}'
+            f'{row("planned", pv, pv / mx * 100, "var(--ink)")}'
+            f'<div class=muted style="font-size:11.5px;margin-top:5px">to date{breach_html}</div></div>')
+
+
 def _programs_section(account: dict, report: dict | None, statuses: list[dict]) -> str:
     """The programs management UI (status cards with timelines + define form), without
     the page chrome — composed by both the standalone Programs page and Governance."""
@@ -2889,6 +2951,7 @@ def _programs_section(account: dict, report: dict | None, statuses: list[dict]) 
                  f'<form method=post action="/app/outlay/programs/delete" style="margin:0">'
                  f'<input type=hidden name=id value="{s["id"]}">'
                  f'<button class="btn sec sm">Remove</button></form></div>'
+                 f'{_program_pacing_html(s)}'
                  f'{spark_row}'
                  f'{_program_timeline_html(s)}'
                  # Reallocate inline: change the cap, or flip alert <-> hard, in place.

@@ -666,7 +666,8 @@ def app_dashboard(request: Request):
     report = store.get_outlay_report(acct["id"])
     budgets = store.list_outlay_budgets(acct["id"])
     statuses = outlay_app.budget_statuses(report, budgets) if report else []
-    programs = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"])) if report else []
+    programs = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"]),
+                                           store.program_histories(acct["id"])) if report else []
     hist = store.outlay_history(acct["id"]) if report else []
     member_id = acct.get("member_id", 0) or 0
     persona = store.get_persona(acct["id"], member_id)
@@ -860,7 +861,7 @@ def _check_programs(account_id: int, report: dict) -> None:
     programs = store.list_outlay_programs(account_id)
     if not programs:
         return
-    for s in outlay_app.program_statuses(report, programs):
+    for s in outlay_app.program_statuses(report, programs, store.program_histories(account_id)):
         new, old = s["status"], s.get("last_status")
         if new in ("warn", "over") and new != old:
             store.deliver_event(account_id, f"program.{new}", {
@@ -1492,7 +1493,8 @@ def app_outlay_budgets(request: Request):
         return redir
     report = store.get_outlay_report(acct["id"])
     statuses = outlay_app.budget_statuses(report, store.list_outlay_budgets(acct["id"]))
-    programs = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"])) if report else []
+    programs = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"]),
+                                           store.program_histories(acct["id"])) if report else []
     return _html(web.budgets_page(acct, report, statuses, outlay_app.project_spend(report),
                                   program_statuses=programs))
 
@@ -1540,7 +1542,8 @@ def app_outlay_programs(request: Request):
     if redir:
         return redir
     report = store.get_outlay_report(acct["id"])
-    statuses = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"]))
+    statuses = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"]),
+                                           store.program_histories(acct["id"]))
     return _html(web.programs_page(acct, report, statuses))
 
 
@@ -1562,7 +1565,8 @@ def app_outlay_governance(request: Request):
         return redir
     report = store.get_outlay_report(acct["id"])
     budgets = outlay_app.budget_statuses(report, store.list_outlay_budgets(acct["id"])) if report else []
-    programs = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"])) if report else []
+    programs = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"]),
+                                           store.program_histories(acct["id"])) if report else []
     projects = outlay_app.project_spend(report) if report else []
     return _html(web.governance_page(acct, report, budgets, programs, projects))
 
