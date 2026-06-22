@@ -2043,9 +2043,10 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
           .catch(function(){{btn.classList.remove('loading');btn.disabled=false;alert('Network error.');}});}}
         </script>
       </div>
-      <div class=ocard style="margin-top:16px" id=teams>
-        <div class=dh>Map identities to teams <span class=sub>for cost-center allocation</span></div>
-        <p class=muted style="margin:-4px 0 10px;font-size:13.5px">Map an
+      <p class=cmut style="margin:18px 2px 6px;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em">Optional — refine after your first sync</p>
+      <details class=ocard id=teams>
+        <summary class=dh style="cursor:pointer;list-style:none">Map identities to teams <span class=sub>for cost-center allocation</span></summary>
+        <p class=muted style="margin:8px 0 10px;font-size:13.5px">Map an
           <b>identity</b> — a person's email, a whole <code>@domain</code>, or a <b>service-account /
           CI key id</b> — to a team, one per line. Handy for <b>bots/CI keys</b> (agent spend often runs
           under a service account; unmapped identities land in "Unassigned"). Examples —
@@ -2057,10 +2058,10 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
 ci-deploy-bot, Platform">{idmap}</textarea>
           <button class="btn sec" style="margin-top:12px">Save team map</button>
         </form>
-      </div>
-      <div class=ocard style="margin-top:16px" id=alerts>
-        <div class=dh>Slack alerts <span class=sub>where eng &amp; finance live</span></div>
-        <p class=muted style="margin:-4px 0 10px;font-size:13.5px">Get budget and runaway-ticket alerts in
+      </details>
+      <details class=ocard style="margin-top:12px" id=alerts>
+        <summary class=dh style="cursor:pointer;list-style:none">Slack alerts <span class=sub>where eng &amp; finance live</span></summary>
+        <p class=muted style="margin:8px 0 10px;font-size:13.5px">Get budget and runaway-ticket alerts in
           Slack (or Teams). Paste an <a href="https://api.slack.com/messaging/webhooks" target=_blank>incoming
           webhook URL</a> — we post a one-line alert when a budget trips or a ticket goes runaway.
           {slack_state}</p>
@@ -2069,7 +2070,9 @@ ci-deploy-bot, Platform">{idmap}</textarea>
             <input name=slack_webhook type=url placeholder="https://hooks.slack.com/services/…" value="{slack_url}"></label>
           <button class="btn sec">Save</button>
         </form>
-      </div>"""
+      </details>
+      <script>(function(){{var h=location.hash;if(h){{var el=document.querySelector(h);
+        if(el&&el.tagName==='DETAILS'){{el.open=true;el.scrollIntoView();}}}}}})();</script>"""
     return page("Connect", form + _CONNECT_TOUR_JS, account, active="/app/outlay/connect")
 
 
@@ -2545,20 +2548,109 @@ def status_page(components: list[dict]) -> str:
     return page("Status", body)
 
 
+_LANDING_CSS = """<style>
+  .lp{max-width:980px;margin:0 auto;padding:0 4px}
+  .lp .hero{max-width:760px;margin:48px auto 8px;text-align:center}
+  .lp .hero h1{font-size:46px;line-height:1.05;letter-spacing:-.02em;margin:10px 0 14px}
+  .lp .hero p.sub{font-size:18px;line-height:1.55;color:var(--body);max-width:62ch;margin:0 auto}
+  .lp .eyebrow{justify-content:center;text-align:center}
+  .lp .cta{justify-content:center;margin-top:22px}
+  .lp .trust{margin-top:18px;font-size:13px}
+  .lp .wo{margin:44px auto 8px;text-align:center}
+  .lp .wo .lab{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:12px}
+  .lp .pills{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:760px;margin:0 auto}
+  .lp .pill{border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13px;
+    font-weight:500;color:var(--body);background:var(--bg)}
+  .lp .sec{margin:52px auto}
+  .lp .sec h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--grn-d);
+    text-align:center;margin:0 0 20px;font-weight:600}
+  .lp .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .lp .step .n{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
+    border-radius:999px;background:var(--grn-l);color:var(--grn-d);font-weight:700;font-size:13px;margin-bottom:10px}
+  .lp .step h3,.lp .why h3{font-size:15.5px;margin:0 0 6px}
+  .lp .step p,.lp .why p{font-size:13.5px;line-height:1.55;color:var(--muted);margin:0}
+  .lp .band{background:var(--navy);color:#dfe7f2;border-radius:14px;padding:22px 26px;text-align:center}
+  .lp .band b{color:#fff}
+  .lp .band .pills .pill{border-color:rgba(255,255,255,.18);background:transparent;color:#cdd7e6}
+  .lp .close{text-align:center;margin:54px auto 30px;max-width:620px}
+  .lp .close h2{font-size:30px;letter-spacing:-.01em;text-transform:none;color:var(--ink);margin:0 0 16px}
+  @media(max-width:760px){.lp .g3{grid-template-columns:1fr}.lp .hero h1{font-size:34px}}
+</style>"""
+
+
 def landing() -> str:
-    body = f"""
-    <div class=hero>
-      <div class=eyebrow>The control plane for AI compute spend</div>
-      <h1>Put AI compute on a budget.</h1>
-      <p class=muted>Outlay attributes every dollar of LLM and coding-agent spend to the work you
-      already plan — tickets, epics, roadmap — forecasts cost by scope, and lets you
-      <b>enforce a budget per program</b>, reallocating compute to the work that matters most.
-      Read-only to start; your prompts and keys never leave your environment.</p>
-      <div class="row center" style="justify-content:center;margin-top:18px">
-        <a class=btn href="/pilot-request">Become a customer →</a>
-        <a class="btn sec" href="/login">Sign in</a>
+    pill = lambda t: f'<span class=pill>{t}</span>'
+    providers = ["Anthropic / Claude", "Claude Code", "Cursor", "OpenAI / Azure",
+                 "Amazon Bedrock", "Google Vertex", "GitHub", "Jira", "Linear"]
+    steps = [
+        ("1", "Connect, read-only", "Bring your own keys to your AI provider and your tracker (Jira / Linear / "
+         "GitHub). Outlay reads usage <b>metadata only</b> — token counts and dollar figures. Prompts, outputs, "
+         "and keys never leave your environment."),
+        ("2", "Attribute &amp; forecast", "Every dollar of LLM and coding-agent spend is mapped to the ticket, "
+         "team, and person that drove it — then Outlay forecasts the quarter and prices your open backlog, with "
+         "accuracy back-tested on your own closed work."),
+        ("3", "Govern", "Set budgets and hard program caps across teams, get route-down recommendations to "
+         "cheaper models where they're provably good enough, and enforce <b>before</b> you overspend — not at "
+         "month-end."),
+    ]
+    why = [
+        ("Cache-aware costing", "Outlay prices every token class separately — cache reads bill at ~1/10th. Naive "
+         "trackers that count raw tokens overstate cache-heavy agentic spend several times over."),
+        ("Accuracy you can check", "We don't ask you to trust a vendor benchmark. The forecast is back-tested "
+         "leave-one-out on <b>your own</b> closed tickets, and we always show the measured error."),
+        ("Reconciled to the invoice", "Every fidelity tier is shown so the total ties out to your provider's "
+         "billed figure. A number finance can take to the board."),
+    ]
+    steps_html = "".join(
+        f'<div class="card step"><span class=n>{n}</span><h3>{h}</h3><p>{p}</p></div>' for n, h, p in steps)
+    why_html = "".join(f'<div class="card why"><h3>{h}</h3><p>{p}</p></div>' for h, p in why)
+    body = f"""{_LANDING_CSS}
+    <div class=lp>
+      <div class=hero>
+        <div class=eyebrow>The control plane for AI compute spend</div>
+        <h1>Put AI compute on a budget.</h1>
+        <p class=sub>Outlay attributes every dollar of LLM and coding-agent spend to the work you already
+        plan — tickets, epics, roadmap — forecasts the quarter, and lets you <b>enforce a budget per
+        program</b>. Read-only to start; your prompts and keys never leave your environment.</p>
+        <div class="row cta">
+          <a class=btn href="/pilot-request">Become a customer →</a>
+          <a class="btn sec" href="/login">Sign in</a>
+        </div>
+        <p class="trust muted">Read-only · metadata-only · BYOK · no app rewrite</p>
       </div>
-      <p class="small muted" style="margin-top:24px">Read-only · no app rewrite · prompts never leave your environment.</p>
+
+      <div class=wo>
+        <div class=lab>Works with your stack</div>
+        <div class=pills>{"".join(pill(p) for p in providers)}</div>
+      </div>
+
+      <div class=sec>
+        <h2>How it works</h2>
+        <div class=g3>{steps_html}</div>
+      </div>
+
+      <div class=sec>
+        <h2>Why the number is trustworthy</h2>
+        <div class=g3>{why_html}</div>
+      </div>
+
+      <div class=sec>
+        <div class=band>
+          <p style="margin:0 0 12px;font-size:15px">Built metadata-only and read-only. <b>No prompts, outputs,
+          or API keys ever leave your environment.</b></p>
+          <div class=pills style="margin-top:2px">{"".join(pill(x) for x in
+            ["Read-only", "Metadata-only", "BYOK", "SSO / OIDC", "SCIM", "2FA", "Audit log + SIEM export",
+             "WCAG 2.1 AA"])}</div>
+        </div>
+      </div>
+
+      <div class=close>
+        <h2>See your AI spend mapped to your roadmap.</h2>
+        <div class="row cta" style="margin-top:0">
+          <a class=btn href="/pilot-request">Become a customer →</a>
+          <a class="btn sec" href="/login">Sign in</a>
+        </div>
+      </div>
     </div>"""
     return page("Put AI compute on a budget", body)
 

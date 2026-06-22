@@ -19,6 +19,14 @@ screen-by-screen customer flow for **each persona** (Finance and Engineering).*
 > 4. **Estimate prices the connected backlog by default** — no JSON paste; the paste
 >    box is now an optional "what-if." Demo tickets carry story points so estimates vary.
 > 5. **Finance gets a demo-gated sample preview** so a finance-led demo isn't a dead end.
+>
+> **Review round 2 — fixes applied:**
+> 6. **Landing page rebuilt** from a single hero into a real page: hero → "works with
+>    your stack" provider strip → 3-step "How it works" → 3-card "Why the number is
+>    trustworthy" → security band → closing CTA.
+> 7. **Connect page lightened** with progressive disclosure — the primary flow is
+>    tracker → AI usage → sync; identity-mapping and Slack collapse under "Optional —
+>    refine after your first sync."
 
 **Status of this audit:** A live end-to-end smoke test was run against the actual
 app (FastAPI test client driving real routes). **54 of 55 checks passed**; the one
@@ -154,8 +162,13 @@ mapping, and reconciling is engineering's job. Finance only consumes dashboards.
 ![Become a customer / pilot request](images/walkthrough/03_pilot.png)
 
 - **Landing (`/`)** — H1 **"Put AI compute on a budget."** Eyebrow "The control plane
-  for AI compute spend." Value prop + "Read-only to start; your prompts and keys never
-  leave your environment." CTAs: **Become a customer →** (`/pilot-request`) · **Sign in**.
+  for AI compute spend." Now a full page: hero + CTAs (**Become a customer →** /
+  **Sign in**) → a **"Works with your stack"** provider strip (Anthropic/Claude, Claude
+  Code, Cursor, OpenAI/Azure, Bedrock, Vertex, GitHub, Jira, Linear) → **"How it works"**
+  (Connect read-only · Attribute & forecast · Govern) → **"Why the number is
+  trustworthy"** (cache-aware costing · accuracy you can check · reconciled to the
+  invoice) → a dark **security band** (read-only · metadata-only · BYOK · SSO/SCIM/2FA ·
+  WCAG 2.1 AA) → closing CTA.
 - **Sign up (`/signup`)** — H1 **"Start your free trial."** "14 days free · full
   features · no card required to start." Fields: work email, company (optional),
   password, terms consent. → **Create account**.
@@ -305,13 +318,15 @@ Finance does not see Connect or API.)*
 ![Connect your sources](images/walkthrough/14_eng_connect.png)
 
 - H1 **"Connect your sources · read-only"** with a **"Show me how"** guided tour.
-- **Tracker** — GitHub Issues / Jira / Linear (owner+repo+token, or base+email+token,
-  or API key). **AI usage** — Anthropic admin key and/or Cursor key (BYOK, read-only).
-- **Map identities to teams** — paste or upload `id → team` (and names/titles); the
-  engine's IdentityGraph resolves key→user→team for cost-center allocation.
-- **Slack alerts** — optional webhook for budget/anomaly notifications.
-- **Auto-sync** interval; the first sync **backfills a 90-day rolling quarter** so the
-  dashboard is rich on day one.
+- **Primary flow (always visible):** ① **Choose your tracker** — GitHub Issues / Jira /
+  Linear (owner+repo+token, or base+email+token, or API key). ② **Connect your AI
+  usage** — Anthropic admin key and/or Cursor key (BYOK, read-only). ③ **Keep it fresh**
+  — auto-sync interval → **Save connection** → **Sync now & run the audit**.
+- **Collapsed under "Optional — refine after your first sync"** (progressive disclosure,
+  so the page isn't one long scroll): **Map identities to teams** (`id → team`, incl.
+  whole `@domain` and service-account/CI keys — the engine's IdentityGraph resolves
+  key→user→team for cost-center allocation) and **Slack alerts** (budget/anomaly webhook).
+- The first sync **backfills a 90-day rolling quarter** so the dashboard is rich on day one.
 
 ### E5 · Engineering overview — *with data* (`/app`)
 
