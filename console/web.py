@@ -565,7 +565,7 @@ def page(title: str, body: str, account: dict | None = None, active: str = "", b
             '<form method=post action="/logout" style="margin:0">'
             '<button class="btn sec sm" style="width:100%;color:var(--red)">Sign out</button></form></div>'
             f'</aside><main class=main><div class=inner>{_demo_banner(account)}'
-            f'{_account_trial_banner(account)}{body}</div></main></div>'
+            f'{body}</div></main></div>'
             f'{takeover}')
     elif bare:
         # Minimal public header (brand only) — for the pilot-request form etc.
@@ -1613,6 +1613,12 @@ def _finance_waiting(account: dict) -> str:
         'total spend, a quarter forecast against budget, and a breakdown by team and project. '
         '<b>That setup is engineering’s job</b>, not yours. Once your engineering counterpart connects '
         'the sources, your numbers fill in here automatically — nothing for you to install.</p></div>')
+    # Sample preview stays demo-account-only (the standing rule), so the founder can
+    # walk a finance prospect through the real dashboard instead of an empty room.
+    preview = ('<div class="row" style="margin:0 0 18px"><form method=post action="/app/outlay/sample" '
+               'style="margin:0"><button class="btn">See it with sample data →</button></form>'
+               '<span class=muted style="font-size:12.5px;align-self:center">Preview the finance dashboard '
+               'with a worked example.</span></div>') if account.get("_can_demo") else ""
     steps = (
         '<div class=ocard style="margin-top:4px"><div class=dh>What happens next</div>'
         '<ol style="margin:6px 0 0;padding-left:20px;font-size:14px;line-height:1.7">'
@@ -1631,7 +1637,7 @@ def _finance_waiting(account: dict) -> str:
         '<button class=btn>Send invite</button></form>'
         '<p class=muted style="font-size:12.5px;margin-top:6px">Manage everyone on the '
         '<a href="/app/team">Team</a> page.</p></div>')
-    return intro + steps + invite
+    return intro + preview + steps + invite
 
 
 def overview_page(account: dict, report: dict | None, statuses: list[dict] | None = None,
@@ -1642,11 +1648,14 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     attribution detail lives on the Spend page."""
     chooser = _persona_chooser() if persona not in ("finance", "eng") else ""
     checklist = _onboarding(conn, report, has_budget, persona, demo_mode=bool(account.get("demo_mode")))
+    # The trial banner lives on Overview only (the home screen) — the sidebar pill
+    # persists trial status on every other page, so it isn't repeated app-wide.
+    tb = _account_trial_banner(account)
     if not report:
         if persona == "finance":
             # Finance does no setup — show the 'data on its way' + invite-engineering
             # state instead of a connect CTA and form.
-            return page("Home", chooser + _finance_waiting(account), account, active="/app")
+            return page("Home", tb + chooser + _finance_waiting(account), account, active="/app")
         intro = (
             '<div class=ohead><h1>Your AI spend, on your roadmap.</h1>'
             '<p>Connect your tracker and AI usage — read-only — and Outlay maps every dollar to the work '
@@ -1659,7 +1668,7 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
                '<a class="btn" href="/app/outlay/connect?tour=connect">Connect your sources →</a>'
                + sample_btn +
                '<a class="btn sec" href="/app/outlay/connect?tour=connect">Show me how</a></div>')
-        return page("Home", chooser + intro + cta + checklist + _outlay_connect(),
+        return page("Home", tb + chooser + intro + cta + checklist + _outlay_connect(),
                     account, active="/app")
 
     if persona == "finance":
@@ -1685,7 +1694,7 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     unit = _unit_econ_card(report)
     unit = f'<div style="margin-top:16px">{unit}</div>' if unit else ""
 
-    body = (chooser + head + _persona_switch(persona) + _staleness_banner(report, conn)
+    body = (tb + chooser + head + _persona_switch(persona) + _staleness_banner(report, conn)
             + _sample_strip(report, account) + checklist
             + _budget_strip(statuses) + _anomaly_strip(report, *_anomaly_prefs(conn))
             + _kpis_row(report, history, persona)
@@ -2034,9 +2043,10 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
           .catch(function(){{btn.classList.remove('loading');btn.disabled=false;alert('Network error.');}});}}
         </script>
       </div>
-      <div class=ocard style="margin-top:16px" id=teams>
-        <div class=dh>Map identities to teams <span class=sub>for cost-center allocation</span></div>
-        <p class=muted style="margin:-4px 0 10px;font-size:13.5px">Map an
+      <p class=cmut style="margin:18px 2px 6px;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em">Optional — refine after your first sync</p>
+      <details class=ocard id=teams>
+        <summary class=dh style="cursor:pointer;list-style:none">Map identities to teams <span class=sub>for cost-center allocation</span></summary>
+        <p class=muted style="margin:8px 0 10px;font-size:13.5px">Map an
           <b>identity</b> — a person's email, a whole <code>@domain</code>, or a <b>service-account /
           CI key id</b> — to a team, one per line. Handy for <b>bots/CI keys</b> (agent spend often runs
           under a service account; unmapped identities land in "Unassigned"). Examples —
@@ -2048,10 +2058,10 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
 ci-deploy-bot, Platform">{idmap}</textarea>
           <button class="btn sec" style="margin-top:12px">Save team map</button>
         </form>
-      </div>
-      <div class=ocard style="margin-top:16px" id=alerts>
-        <div class=dh>Slack alerts <span class=sub>where eng &amp; finance live</span></div>
-        <p class=muted style="margin:-4px 0 10px;font-size:13.5px">Get budget and runaway-ticket alerts in
+      </details>
+      <details class=ocard style="margin-top:12px" id=alerts>
+        <summary class=dh style="cursor:pointer;list-style:none">Slack alerts <span class=sub>where eng &amp; finance live</span></summary>
+        <p class=muted style="margin:8px 0 10px;font-size:13.5px">Get budget and runaway-ticket alerts in
           Slack (or Teams). Paste an <a href="https://api.slack.com/messaging/webhooks" target=_blank>incoming
           webhook URL</a> — we post a one-line alert when a budget trips or a ticket goes runaway.
           {slack_state}</p>
@@ -2060,28 +2070,35 @@ ci-deploy-bot, Platform">{idmap}</textarea>
             <input name=slack_webhook type=url placeholder="https://hooks.slack.com/services/…" value="{slack_url}"></label>
           <button class="btn sec">Save</button>
         </form>
-      </div>"""
+      </details>
+      <script>(function(){{var h=location.hash;if(h){{var el=document.querySelector(h);
+        if(el&&el.tagName==='DETAILS'){{el.open=true;el.scrollIntoView();}}}}}})();</script>"""
     return page("Connect", form + _CONNECT_TOUR_JS, account, active="/app/outlay/connect")
 
 
-def _scenario_card(report: dict, overall_budget_usd: float = 0.0) -> str:
-    """'If we commit this backlog…' — the planner's question. Combines the open-work
-    forecast (what's already in flight) with the pasted backlog estimate, and shows
-    the combined projection against the quarter budget. Only renders once a backlog
-    has been estimated."""
+def _scenario_card(report: dict, overall_budget_usd: float = 0.0, additive: bool = True) -> str:
+    """'If we commit this backlog…' — the planner's question. When `additive` (a pasted
+    what-if), combines the open-work forecast with the pasted backlog estimate. When
+    not additive (we're already showing the *connected* open backlog), the estimate IS
+    the open work, so the projection is the backlog total alone — no double-count.
+    Only renders once a backlog has been estimated."""
     est = (report or {}).get("estimate") or {}
     if not est:
         return ""
     fc = (report or {}).get("forecast") or {}
-    f_exp, f_lo, f_hi = fc.get("expected_usd", 0.0), fc.get("low_usd", 0.0), fc.get("high_usd", 0.0)
+    f_exp = fc.get("expected_usd", 0.0)
     e_exp, e_lo, e_hi = est.get("expected_usd", 0.0), est.get("low_usd", 0.0), est.get("high_usd", 0.0)
-    total, lo, hi = f_exp + e_exp, f_lo + e_lo, f_hi + e_hi
-
-    lines = (f'<div class=dual style="margin-top:4px">'
-             f'<div class=r><span>Open work, forecast</span><b class=num>{money(f_exp)}</b></div>'
-             f'<div class=r><span>+ this backlog, if committed</span><b class=num>{money(e_exp)}</b></div>'
-             f'<div class=r style="border-top:1px solid var(--line);padding-top:7px;margin-top:3px">'
-             f'<span><b>= Projected total</b></span><b class=num>{money(total)}</b></div></div>')
+    if additive:
+        total, lo, hi = f_exp + e_exp, fc.get("low_usd", 0.0) + e_lo, fc.get("high_usd", 0.0) + e_hi
+        lines = (f'<div class=dual style="margin-top:4px">'
+                 f'<div class=r><span>Open work, forecast</span><b class=num>{money(f_exp)}</b></div>'
+                 f'<div class=r><span>+ this backlog, if committed</span><b class=num>{money(e_exp)}</b></div>'
+                 f'<div class=r style="border-top:1px solid var(--line);padding-top:7px;margin-top:3px">'
+                 f'<span><b>= Projected total</b></span><b class=num>{money(total)}</b></div></div>')
+    else:
+        total, lo, hi = e_exp, e_lo, e_hi
+        lines = (f'<div class=dual style="margin-top:4px">'
+                 f'<div class=r><span>Open backlog, forecast</span><b class=num>{money(e_exp)}</b></div></div>')
 
     if overall_budget_usd and overall_budget_usd > 0:
         delta = total - overall_budget_usd
@@ -2096,14 +2113,16 @@ def _scenario_card(report: dict, overall_budget_usd: float = 0.0) -> str:
                 f'<div class=track><span style="width:{overall_budget_usd/bmax*100:.0f}%;background:#9aa3b3"></span></div>'
                 f'<div class=r><span>Projected if you commit this</span><span class=num>{money(total)}</span></div>'
                 f'<div class=track><span style="width:{total/bmax*100:.0f}%;background:{col}"></span></div></div>')
-        foot = f'<p class=muted style="font-size:12.5px;margin:12px 0 0">Committing this backlog lands you {verdict} — likely {money(lo)}–{money(hi)} combined.</p>'
+        lead = "Committing this backlog lands you" if additive else "Your open backlog lands you"
+        foot = f'<p class=muted style="font-size:12.5px;margin:12px 0 0">{lead} {verdict} — likely {money(lo)}–{money(hi)}.</p>'
         tag = f'<span class="otag {tone}">{"over" if over else "on track"}</span>'
     else:
         bars = ""
-        foot = (f'<p class=muted style="font-size:12.5px;margin:12px 0 0">Likely {money(lo)}–{money(hi)} combined. '
+        foot = (f'<p class=muted style="font-size:12.5px;margin:12px 0 0">Likely {money(lo)}–{money(hi)}. '
                 f'<a href="/app/outlay/budgets">Set a quarter budget</a> to see this against your target.</p>')
         tag = '<span class="otag ex">scenario</span>'
-    return (f'<div class=ocard style="margin-top:16px"><div class=dh>If you commit this backlog{tag}</div>'
+    heading = "If you commit this backlog" if additive else "Open backlog vs quarter budget"
+    return (f'<div class=ocard style="margin-top:16px"><div class=dh>{heading}{tag}</div>'
             f'<div class=bignum><span class=v>{money(total)}</span>'
             f'<span class=of>projected quarter total</span></div>{lines}{bars}{foot}</div>')
 
@@ -2120,25 +2139,33 @@ def estimate_backlog_page(account: dict, report: dict | None, overall_budget_usd
                 'estimate a backlog here.</p><a class="btn" href="/app/outlay">Go to Spend →</a></div>')
         return page("Estimate", body, account, active="/app/outlay/estimate")
 
-    form = """<div class=ocard><div class=dh>Paste a planned backlog</div>
-      <p class=muted style="margin:-4px 0 10px;font-size:13.5px">A JSON list of items — each with a <b>title</b>, and ideally
-        <b>requirements</b>, <b>design_docs</b>, and/or story <b>points</b>.</p>
-      <textarea id=ol_plan rows=6 placeholder='{"items":[{"id":"PROJ-1","title":"Add SSO","requirements":"SAML + SCIM, multi-tenant, audit log","points":8}]}'></textarea>
-      <button class="btn" style="margin-top:12px" onclick="estRun(this)">Estimate →</button>
-      <script>function estRun(btn){btn.classList.add('loading');btn.disabled=true;
-        fetch('/app/outlay/estimate/run',{method:'POST',headers:{'content-type':'application/json'},
-          body:JSON.stringify({planned:document.getElementById('ol_plan').value})})
-        .then(function(r){return r.json();}).then(function(d){if(d.ok){location.reload();}else{
-          btn.classList.remove('loading');btn.disabled=false;alert(d.error||'Could not estimate.');}})
-        .catch(function(){btn.classList.remove('loading');btn.disabled=false;alert('Network error.');});}
-      </script></div>"""
-
     est = report.get("estimate")
+    from_backlog = bool((est or {}).get("from_backlog"))
+
+    # The paste box is the *secondary* path — a what-if on a hypothetical/planned
+    # backlog. The default view already prices the connected open backlog, so this
+    # is collapsed unless the user wants to model something they haven't filed yet.
+    paste_title = "Price a different backlog" if from_backlog else "Paste a planned backlog"
+    form = f"""<details class=ocard{"" if from_backlog else " open"} style="margin-top:16px"><summary class=dh style="cursor:pointer;list-style:none">{paste_title}<span class=muted style="font-weight:400;font-size:12px"> · optional what-if</span></summary>
+      <p class=muted style="margin:8px 0 10px;font-size:13.5px">Model work you haven't filed yet. A JSON list of items — each with a <b>title</b>, and ideally
+        <b>requirements</b>, <b>design_docs</b>, and/or story <b>points</b>.</p>
+      <textarea id=ol_plan rows=6 placeholder='{{"items":[{{"id":"PROJ-1","title":"Add SSO","requirements":"SAML + SCIM, multi-tenant, audit log","points":8}}]}}'></textarea>
+      <button class="btn" style="margin-top:12px" onclick="estRun(this)">Estimate →</button>
+      <script>function estRun(btn){{btn.classList.add('loading');btn.disabled=true;
+        fetch('/app/outlay/estimate/run',{{method:'POST',headers:{{'content-type':'application/json'}},
+          body:JSON.stringify({{planned:document.getElementById('ol_plan').value}})}})
+        .then(function(r){{return r.json();}}).then(function(d){{if(d.ok){{location.reload();}}else{{
+          btn.classList.remove('loading');btn.disabled=false;alert(d.error||'Could not estimate.');}}}})
+        .catch(function(){{btn.classList.remove('loading');btn.disabled=false;alert('Network error.');}});}}
+      </script></details>"""
+
     result = ""
     if est:
-        emax = max((e.get("expected_usd", 0) for e in est.get("items", [])), default=1) or 1
+        items = sorted(est.get("items", []), key=lambda e: e.get("expected_usd", 0) or 0, reverse=True)
+        emax = max((e.get("expected_usd", 0) for e in items), default=1) or 1
+        CAP = 15
         rows = ""
-        for e in est.get("items", []):
+        for e in items[:CAP]:
             if e.get("costable"):
                 typ = _e(e.get("task_class")) + (f' · {_e(e.get("complexity_tier"))}' if e.get("complexity_tier") else "")
                 sub = f'{typ} · {money(e.get("low_usd",0))}–{money(e.get("high_usd",0))} · {_e(e.get("confidence"))}'
@@ -2150,15 +2177,30 @@ def estimate_backlog_page(account: dict, report: dict | None, overall_budget_usd
                          f'<small>· {_e(e.get("task_class"))} · needs scope to cost</small></span>'
                          f'<span class=amt style="color:var(--muted)">—</span>'
                          f'<div class=ebar></div></div>')
+        more = (f'<p class=muted style="font-size:12px;margin-top:8px">+ {len(items)-CAP} more items '
+                f'in the backlog (totaled above).</p>') if len(items) > CAP else ""
         tighten = ('<p class=muted style="font-size:12.5px;margin-top:10px">To tighten the estimate, add: '
                    + _e("; ".join(est.get("tighten", []))) + '.</p>') if est.get("tighten") else ""
-        result = (f'<div class=ocard style="margin-top:16px"><div class=dh>Backlog estimate</div>'
+        if from_backlog:
+            title = "Your open backlog, priced"
+            blurb = (f'<p class=muted style="margin:-4px 0 10px;font-size:13px">The {est.get("items_costed",0)+est.get("items_unknown",0)} '
+                     f'open tickets from your connected tracker, each priced against your learned cost model — '
+                     f'biggest first. No paste required.</p>')
+        else:
+            title = "Backlog estimate"
+            blurb = ""
+        result = (f'<div class=ocard style="margin-top:16px"><div class=dh>{title}</div>{blurb}'
                   f'<div class=bignum><span class=v>{money(est.get("expected_usd", 0))}</span>'
                   f'<span class=of>likely {money(est.get("low_usd", 0))}–{money(est.get("high_usd", 0))}</span></div>'
                   f'<div class=muted style="font-size:12.5px;margin:2px 0 12px">{est.get("items_costed", 0)} '
-                  f'estimated, {est.get("items_unknown", 0)} declined.</div>{rows}{tighten}</div>')
-    scenario = _scenario_card(report, overall_budget_usd)
-    return page("Estimate", head + form + result + scenario, account, active="/app/outlay/estimate")
+                  f'estimated, {est.get("items_unknown", 0)} need scope.</div>{rows}{more}{tighten}</div>')
+    # The additive "open work + this backlog" scenario only makes sense for a *pasted*
+    # what-if. When we're already showing the connected open backlog, it IS the open
+    # work — adding the forecast on top would double-count — so show a budget check
+    # on the backlog total instead.
+    scenario = _scenario_card(report, overall_budget_usd, additive=not from_backlog)
+    # Lead with the priced backlog; the what-if paste box sits below it.
+    return page("Estimate", head + result + form + scenario, account, active="/app/outlay/estimate")
 
 
 def _pct(x, digits: int = 0) -> str:
@@ -2506,20 +2548,109 @@ def status_page(components: list[dict]) -> str:
     return page("Status", body)
 
 
+_LANDING_CSS = """<style>
+  .lp{max-width:980px;margin:0 auto;padding:0 4px}
+  .lp .hero{max-width:760px;margin:48px auto 8px;text-align:center}
+  .lp .hero h1{font-size:46px;line-height:1.05;letter-spacing:-.02em;margin:10px 0 14px}
+  .lp .hero p.sub{font-size:18px;line-height:1.55;color:var(--body);max-width:62ch;margin:0 auto}
+  .lp .eyebrow{justify-content:center;text-align:center}
+  .lp .cta{justify-content:center;margin-top:22px}
+  .lp .trust{margin-top:18px;font-size:13px}
+  .lp .wo{margin:44px auto 8px;text-align:center}
+  .lp .wo .lab{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:12px}
+  .lp .pills{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:760px;margin:0 auto}
+  .lp .pill{border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13px;
+    font-weight:500;color:var(--body);background:var(--bg)}
+  .lp .sec{margin:52px auto}
+  .lp .sec h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--grn-d);
+    text-align:center;margin:0 0 20px;font-weight:600}
+  .lp .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .lp .step .n{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
+    border-radius:999px;background:var(--grn-l);color:var(--grn-d);font-weight:700;font-size:13px;margin-bottom:10px}
+  .lp .step h3,.lp .why h3{font-size:15.5px;margin:0 0 6px}
+  .lp .step p,.lp .why p{font-size:13.5px;line-height:1.55;color:var(--muted);margin:0}
+  .lp .band{background:var(--navy);color:#dfe7f2;border-radius:14px;padding:22px 26px;text-align:center}
+  .lp .band b{color:#fff}
+  .lp .band .pills .pill{border-color:rgba(255,255,255,.18);background:transparent;color:#cdd7e6}
+  .lp .close{text-align:center;margin:54px auto 30px;max-width:620px}
+  .lp .close h2{font-size:30px;letter-spacing:-.01em;text-transform:none;color:var(--ink);margin:0 0 16px}
+  @media(max-width:760px){.lp .g3{grid-template-columns:1fr}.lp .hero h1{font-size:34px}}
+</style>"""
+
+
 def landing() -> str:
-    body = f"""
-    <div class=hero>
-      <div class=eyebrow>The control plane for AI compute spend</div>
-      <h1>Put AI compute on a budget.</h1>
-      <p class=muted>Outlay attributes every dollar of LLM and coding-agent spend to the work you
-      already plan — tickets, epics, roadmap — forecasts cost by scope, and lets you
-      <b>enforce a budget per program</b>, reallocating compute to the work that matters most.
-      Read-only to start; your prompts and keys never leave your environment.</p>
-      <div class="row center" style="justify-content:center;margin-top:18px">
-        <a class=btn href="/pilot-request">Become a customer →</a>
-        <a class="btn sec" href="/login">Sign in</a>
+    pill = lambda t: f'<span class=pill>{t}</span>'
+    providers = ["Anthropic / Claude", "Claude Code", "Cursor", "OpenAI / Azure",
+                 "Amazon Bedrock", "Google Vertex", "GitHub", "Jira", "Linear"]
+    steps = [
+        ("1", "Connect, read-only", "Bring your own keys to your AI provider and your tracker (Jira / Linear / "
+         "GitHub). Outlay reads usage <b>metadata only</b> — token counts and dollar figures. Prompts, outputs, "
+         "and keys never leave your environment."),
+        ("2", "Attribute &amp; forecast", "Every dollar of LLM and coding-agent spend is mapped to the ticket, "
+         "team, and person that drove it — then Outlay forecasts the quarter and prices your open backlog, with "
+         "accuracy back-tested on your own closed work."),
+        ("3", "Govern", "Set budgets and hard program caps across teams, get route-down recommendations to "
+         "cheaper models where they're provably good enough, and enforce <b>before</b> you overspend — not at "
+         "month-end."),
+    ]
+    why = [
+        ("Cache-aware costing", "Outlay prices every token class separately — cache reads bill at ~1/10th. Naive "
+         "trackers that count raw tokens overstate cache-heavy agentic spend several times over."),
+        ("Accuracy you can check", "We don't ask you to trust a vendor benchmark. The forecast is back-tested "
+         "leave-one-out on <b>your own</b> closed tickets, and we always show the measured error."),
+        ("Reconciled to the invoice", "Every fidelity tier is shown so the total ties out to your provider's "
+         "billed figure. A number finance can take to the board."),
+    ]
+    steps_html = "".join(
+        f'<div class="card step"><span class=n>{n}</span><h3>{h}</h3><p>{p}</p></div>' for n, h, p in steps)
+    why_html = "".join(f'<div class="card why"><h3>{h}</h3><p>{p}</p></div>' for h, p in why)
+    body = f"""{_LANDING_CSS}
+    <div class=lp>
+      <div class=hero>
+        <div class=eyebrow>The control plane for AI compute spend</div>
+        <h1>Put AI compute on a budget.</h1>
+        <p class=sub>Outlay attributes every dollar of LLM and coding-agent spend to the work you already
+        plan — tickets, epics, roadmap — forecasts the quarter, and lets you <b>enforce a budget per
+        program</b>. Read-only to start; your prompts and keys never leave your environment.</p>
+        <div class="row cta">
+          <a class=btn href="/pilot-request">Become a customer →</a>
+          <a class="btn sec" href="/login">Sign in</a>
+        </div>
+        <p class="trust muted">Read-only · metadata-only · BYOK · no app rewrite</p>
       </div>
-      <p class="small muted" style="margin-top:24px">Read-only · no app rewrite · prompts never leave your environment.</p>
+
+      <div class=wo>
+        <div class=lab>Works with your stack</div>
+        <div class=pills>{"".join(pill(p) for p in providers)}</div>
+      </div>
+
+      <div class=sec>
+        <h2>How it works</h2>
+        <div class=g3>{steps_html}</div>
+      </div>
+
+      <div class=sec>
+        <h2>Why the number is trustworthy</h2>
+        <div class=g3>{why_html}</div>
+      </div>
+
+      <div class=sec>
+        <div class=band>
+          <p style="margin:0 0 12px;font-size:15px">Built metadata-only and read-only. <b>No prompts, outputs,
+          or API keys ever leave your environment.</b></p>
+          <div class=pills style="margin-top:2px">{"".join(pill(x) for x in
+            ["Read-only", "Metadata-only", "BYOK", "SSO / OIDC", "SCIM", "2FA", "Audit log + SIEM export",
+             "WCAG 2.1 AA"])}</div>
+        </div>
+      </div>
+
+      <div class=close>
+        <h2>See your AI spend mapped to your roadmap.</h2>
+        <div class="row cta" style="margin-top:0">
+          <a class=btn href="/pilot-request">Become a customer →</a>
+          <a class="btn sec" href="/login">Sign in</a>
+        </div>
+      </div>
     </div>"""
     return page("Put AI compute on a budget", body)
 
@@ -3723,9 +3854,16 @@ def reset_form(token: str, error: str = "") -> str:
 def billing_page(account: dict, plan: dict, trial: dict, bill: dict,
                  stripe_on: bool, flash: str = "") -> str:
     is_paid = plan.get("plan") == "paid"
-    status_badge = ('<span class="badge paid">Active plan</span>' if is_paid else
-                    (f'<span class="badge trial">Trial · {trial["days_left"]}d left</span>'
-                     if trial["active"] else '<span class="badge suspended">Trial ended</span>'))
+    # Not-started trials are entitled but not counting down — don't show a full
+    # "Nd left" countdown (that contradicts the "starts at setup" copy below).
+    if is_paid:
+        status_badge = '<span class="badge paid">Active plan</span>'
+    elif trial.get("not_started"):
+        status_badge = '<span class="badge trial">Trial · starts at setup</span>'
+    elif trial["active"]:
+        status_badge = f'<span class="badge trial">Trial · {trial["days_left"]}d left</span>'
+    else:
+        status_badge = '<span class="badge suspended">Trial ended</span>'
     flash_html = ""
     if flash == "success":
         flash_html = '<div class="note" role=status>Your plan is active — thanks!</div>'

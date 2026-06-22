@@ -27,24 +27,39 @@ SEED = 7
 BASE = dt.datetime(2026, 6, 20, 18, 0, 0, tzinfo=dt.timezone.utc)  # "today-ish"
 
 TEAMS = {
-    "platform": ["alice@acme.dev", "raj@acme.dev", "mei@acme.dev"],
-    "growth":   ["bob@acme.dev", "sara@acme.dev"],
-    "payments": ["diego@acme.dev", "nina@acme.dev"],
-    "mobile":   ["liam@acme.dev", "yuki@acme.dev"],
+    "platform": ["alice@acme.dev", "raj@acme.dev", "mei@acme.dev", "tomas@acme.dev"],
+    "growth":   ["bob@acme.dev", "sara@acme.dev", "ivan@acme.dev"],
+    "payments": ["diego@acme.dev", "nina@acme.dev", "priya@acme.dev"],
+    "mobile":   ["liam@acme.dev", "yuki@acme.dev", "omar@acme.dev"],
+    "data":     ["wei@acme.dev", "hana@acme.dev", "luca@acme.dev"],
+    "infra":    ["karl@acme.dev", "fatima@acme.dev", "sven@acme.dev"],
+    "search":   ["jin@acme.dev", "noor@acme.dev"],
+    "checkout": ["paolo@acme.dev", "grace@acme.dev"],
 }
 EPIC = {"platform": "Q3 Stability", "growth": "Billing v2",
-        "payments": "Payments hardening", "mobile": "Mobile GA"}
+        "payments": "Payments hardening", "mobile": "Mobile GA",
+        "data": "Warehouse migration", "infra": "Cluster autoscaling",
+        "search": "Relevance v3", "checkout": "One-click checkout"}
+
+# Token volume multiplier on every agentic turn. Real coding-agent sessions on a
+# large monorepo carry very large cached context (millions of cache-read tokens per
+# turn); this knob scales the worked demo to a believable mid-size-org quarter
+# (~$80–110k) without changing the *shape* of the data. Tune and re-generate.
+TOKEN_SCALE = 7.7
 
 # class → (github label, branch prefix, mean agent turns, lognormal sigma)
 CLASSES = {
-    "bug":      ("bug",      "fix",      6,  0.4),
-    "feature":  ("feature",  "feature",  18, 0.35),
-    "refactor": ("refactor", "refactor", 12, 0.32),
-    "test":     ("test",     "test",     6,  0.4),
-    "chore":    ("chore",    "chore",    4,  0.45),
+    "bug":      ("bug",      "fix",      11,  0.4),
+    "feature":  ("feature",  "feature",  38, 0.35),
+    "refactor": ("refactor", "refactor", 22, 0.32),
+    "test":     ("test",     "test",     11,  0.4),
+    "chore":    ("chore",    "chore",    7,  0.45),
 }
-CLOSED = {"bug": 20, "feature": 14, "refactor": 10, "test": 8, "chore": 6}
-OPEN   = {"bug": 5,  "feature": 6,  "refactor": 2, "test": 2, "chore": 3}
+# Roughly a quarter of delivery for a ~25-engineer org: a few hundred closed
+# tickets across eight teams, enough to make every breakdown look populated and
+# the accuracy backtest land on a believable error.
+CLOSED = {"bug": 64, "feature": 46, "refactor": 32, "test": 26, "chore": 20}
+OPEN   = {"bug": 16, "feature": 18, "refactor": 8,  "test": 7,  "chore": 9}
 
 TITLES = {
     "bug": ["NullPointer in {} parser", "Flaky retry under load on {}", "Off-by-one in {} pagination",
@@ -64,6 +79,21 @@ NOUNS = ["order", "billing", "auth", "pricing", "invoice", "report", "webhook", 
 
 MODELS_W = (["claude-opus-4-8"] * 6) + ["claude-sonnet-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"]
 
+_FIB = [1, 2, 3, 5, 8, 13, 21]
+
+
+def _fib(x: float) -> int:
+    """Snap a positive number to the nearest Fibonacci story-point value."""
+    return min(_FIB, key=lambda f: abs(f - x))
+
+
+def _points(rng: random.Random, mean_turns: int) -> int:
+    """A story-point estimate that tracks effort closely (low noise), so the size
+    model learns a real points→cost slope and *beats* the work-type mean in the
+    accuracy back-test — the demo shows size-conditioning actually sharpening the
+    forecast, not just matching."""
+    return _fib(rng.lognormvariate(0, 0.12) * mean_turns / 3.0)
+
 
 def _ts(days_ago: float, hour: int) -> str:
     t = BASE - dt.timedelta(days=days_ago) + dt.timedelta(hours=hour - 18)
@@ -73,6 +103,7 @@ def _ts(days_ago: float, hour: int) -> str:
 def _turn(rng: random.Random, model: str) -> dict:
     """One cache-heavy agentic turn's token usage."""
     scale = {"claude-opus-4-8": 1.0, "claude-sonnet-4-6": 0.8, "claude-haiku-4-5": 0.5}[model]
+    scale *= TOKEN_SCALE
     return {
         "input_tokens": int(rng.randint(15_000, 35_000) * scale),
         "output_tokens": int(rng.randint(4_000, 12_000) * scale),
@@ -108,7 +139,7 @@ def main() -> None:
                 "number": num, "title": title, "state": "closed",
                 "created_at": _ts(created, 9), "merged_at": _ts(max(0.2, merged), 16),
                 "labels": [label], "head_ref": f"{brpfx}/{num}-{noun}", "team": team,
-                "milestone": {"title": EPIC[team]},
+                "milestone": {"title": EPIC[team]}, "points": _points(rng, n),
                 "additions": rng.randint(8, 700), "deletions": rng.randint(2, 300),
             })
             sess = f"s{num}"
@@ -133,7 +164,7 @@ def main() -> None:
     # ---- a little unattributed spend (TEAM + INVOICE) for honest coverage ----
     # Personal-branch / trunk-based sessions: real agent work with no ticket signal
     # → resolves to a team but no ticket (the honest coverage gap a prospect sees).
-    for i in range(8):
+    for i in range(120):
         team = rng.choice(teams)
         user = next(team_cycle[team])
         for k in range(rng.randint(2, 4)):
@@ -142,25 +173,32 @@ def main() -> None:
                 "id": f"e_team{i}_{k}", "model": model, "timestamp": _ts(rng.uniform(1, 20), 20 + k % 3),
                 "usage": _turn(rng, model), "metadata": {"user": user, "session_id": f"sx{i}"},
             })
-    for i in range(4):
+    for i in range(40):
         records.append({
             "id": f"e_inv{i}", "model": "claude-sonnet-4-6", "timestamp": _ts(rng.uniform(1, 20), 23),
-            "usage": {"input_tokens": 40_000, "output_tokens": 9_000,
-                      "cache_read_input_tokens": 600_000, "cache_creation_input_tokens": 60_000},
+            "usage": {"input_tokens": int(40_000 * TOKEN_SCALE), "output_tokens": int(9_000 * TOKEN_SCALE),
+                      "cache_read_input_tokens": int(600_000 * TOKEN_SCALE),
+                      "cache_creation_input_tokens": int(60_000 * TOKEN_SCALE)},
         })
 
-    # ---- open tickets (forecast targets) ----
+    # ---- open tickets (forecast / backlog-estimate targets) ----
     for cls, count in OPEN.items():
-        label, brpfx, _, _ = CLASSES[cls]
+        label, brpfx, mean_turns, _ = CLASSES[cls]
         for _ in range(count):
             team = rng.choice(teams)
             noun = rng.choice(NOUNS)
-            issues.append({
+            issue = {
                 "number": num, "title": rng.choice(TITLES[cls]).format(noun), "state": "open",
                 "created_at": _ts(rng.uniform(0.5, 6), 9),
                 "labels": [label] + (["in progress"] if rng.random() < 0.4 else []),
                 "head_ref": f"{brpfx}/{num}-{noun}", "team": team, "milestone": {"title": EPIC[team]},
-            })
+            }
+            # Most planned tickets carry a point estimate → the backlog prices at high
+            # confidence and varied amounts; ~1 in 4 has none (priced at the class mean,
+            # so the demo shows a realistic mix of confidence tiers).
+            if rng.random() > 0.25:
+                issue["points"] = _points(rng, mean_turns)
+            issues.append(issue)
             num += 1
 
     out = Path(__file__).resolve().parent
