@@ -2991,6 +2991,33 @@ def test_finance_home_customizable_layout(env, client):
     assert store.get_dashboard_layout(acct["id"], 0) == {}
 
 
+def test_eng_attention_and_project_burn(env, client):
+    """Engineering gets its own operational attention panel (runaway tickets, coverage,
+    spikes, stale sync) — NOT finance's budget-governance framing — plus project-burn
+    timelines on Home and the Budgets page."""
+    from console import store, web
+    _signup(client, email="enga@x.com")
+    acct = store.get_account_by_email("enga@x.com")
+    store.set_persona(acct["id"], "eng", acct.get("member_id", 0) or 0)
+    client.post("/app/outlay/sample", follow_redirects=True)
+    ov = client.get("/app").text
+    assert "Needs your attention" in ov
+    assert "Runaway ticket" in ov and "Investigate" in ov         # eng anomaly framing
+    assert "is projected to overspend" not in ov                  # not finance governance copy
+    assert "Project burn" in ov                                   # project-timeline card on Home
+    # a program with a timeline renders on the eng Budgets page (project burn)
+    client.post("/app/outlay/programs", data={
+        "name": "Proj X", "limit_usd": "50000", "members": "team search",
+        "start_date": "2026-04-01", "end_date": "2026-08-31"}, follow_redirects=True)
+    bg = client.get("/app/outlay/budgets").text
+    assert "project burn" in bg.lower() and "Proj X" in bg and "Month-by-month" in bg
+    assert "Scope budgets" in bg
+    # all-clear branch when the pipeline is healthy
+    clear = web._eng_attention({"spend": {"total_usd": 100, "ticket_coverage": 0.95}, "anomalies": []},
+                               {}, [], [])
+    assert "Healthy" in clear and "Needs your attention" not in clear
+
+
 def test_unit_economics_engine_and_card(env, client):
     from console import outlay_app
     # engine: per-ticket / per-closed / rework / by-class from attributed tickets
@@ -3408,14 +3435,14 @@ def test_monthly_close_pack_builds_attaches_focus_and_cadence(env, client, monke
 
 
 def test_anomalies_surfaced_on_spend_and_overview(env, client):
-    """Runaway tickets (>=3x class median) show in-product — strip on Overview,
-    card on Spend — not just buried in the report."""
-    _signup(client, email="anom@x.com")
-    client.post("/app/outlay/sample", follow_redirects=True)  # sample has a 11.5x outlier
+    """Runaway tickets (>=3x class median) show in-product — the engineering attention
+    panel on the Home (Overview), the card on Spend — not just buried in the report."""
+    _signup(client, email="anom@x.com")  # default persona = eng
+    client.post("/app/outlay/sample", follow_redirects=True)  # sample has outliers
     spend = client.get("/app/outlay").text
     assert "Runaway tickets" in spend
     home = client.get("/app").text
-    assert "runaway ticket" in home and "anomaly" in home
+    assert "Needs your attention" in home and "Runaway ticket" in home and "Investigate" in home
 
 
 def test_anomaly_alert_fires_once_then_dedupes(env, client, monkeypatch):

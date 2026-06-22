@@ -1765,6 +1765,110 @@ def _finance_attention(report: dict | None, budget_statuses: list[dict] | None,
             f'<div class=fa-list>{rows}</div></div>')
 
 
+def _eng_attention(report: dict | None, conn: dict | None, history: list[dict] | None,
+                   budget_statuses: list[dict] | None) -> str:
+    """Engineering's 'go fix this' panel — operational, not budget-governance. Auto-flags
+    the things an eng lead should act on without drilling: runaway tickets, attribution
+    leaks, a sudden spend jump, a stale/failed sync, and spend priced by a fallback tier.
+    Ranked worst-first, each one click to the fix. Calm all-clear when the pipeline's
+    healthy."""
+    report = report or {}
+    conn = conn or {}
+    sp = report.get("spend", {}) or {}
+    items = []  # (severity, html); 2 = fix now, 1 = keep an eye
+
+    if conn.get("last_sync_error"):
+        items.append((2, '<span class=fa-dot style="background:var(--red)"></span>'
+                      '<span class=fa-txt><b>Last sync failed</b> — your numbers may be stale until it '
+                      'succeeds.</span><a class="btn sec sm" href="/app/outlay/connect">Check connection →</a>'))
+
+    for a in report.get("anomalies", [])[:3]:
+        tid = _e(str(a.get("ticket_id")))
+        cls = a.get("task_class")
+        href = (f'/app/outlay/scope?type=class&id={quote(str(cls))}' if cls else "/app/outlay")
+        items.append((2, '<span class=fa-dot style="background:var(--red)"></span>'
+                      f'<span class=fa-txt>Runaway ticket <b>{tid}</b> burned '
+                      f'<b>{money(a.get("cost_usd",0))}</b> — <b>{a.get("ratio",0):.1f}×</b> its '
+                      f'{_e(str(cls or "work-type"))} median. Worth a look before it repeats.</span>'
+                      f'<a class="btn sec sm" href="{href}">Investigate →</a>'))
+
+    total = sp.get("total_usd", 0.0)
+    cov = sp.get("ticket_coverage", 0.0)
+    if total > 0 and 0 < cov < 0.7:
+        unmapped = max(0.0, total - sp.get("attributed_to_ticket_usd", 0.0))
+        items.append((1, '<span class=fa-dot style="background:var(--amber)"></span>'
+                      f'<span class=fa-txt><b>{money(unmapped)}</b> ({(1-cov)*100:.0f}%) of spend isn\'t '
+                      f'mapped to a ticket yet — connect PRs or map team identities to recover it.</span>'
+                      '<a class="btn sec sm" href="/app/outlay/connect#teams">Lift coverage →</a>'))
+
+    hist = history or []
+    if len(hist) >= 2:
+        cur, prev = hist[-1].get("total_usd", 0), hist[-2].get("total_usd", 0)
+        if prev > 0 and (cur - prev) / prev >= 0.25:
+            items.append((1, '<span class=fa-dot style="background:var(--amber)"></span>'
+                          f'<span class=fa-txt>AI spend <b>jumped {((cur-prev)/prev)*100:.0f}%</b> vs last '
+                          f'sync ({money(prev)} → {money(cur)}). See what moved.</span>'
+                          '<a class="btn sec sm" href="/app/outlay">See movers →</a>'))
+
+    pf = report.get("pricing_fidelity") or {}
+    if pf.get("fallback_usd", 0) and pf.get("fallback_share", 0) >= 0.005:
+        models = ", ".join(pf.get("models", [])[:3]) or "unrecognized model(s)"
+        items.append((1, '<span class=fa-dot style="background:var(--amber)"></span>'
+                      f'<span class=fa-txt><b>{money(pf["fallback_usd"])}</b> '
+                      f'({pf["fallback_share"]*100:.0f}%) was priced at the nearest tier — '
+                      f'<b>{_e(models)}</b> aren\'t in the price book yet.</span>'
+                      '<a class="btn sec sm" href="/app/outlay">Details →</a>'))
+
+    for s in (budget_statuses or []):
+        if s.get("limit_usd") and s.get("status") == "over":
+            scope = (_e(s.get("scope_type") or "") + (f' {_e(s.get("scope_id"))}' if s.get("scope_id") else "")).strip() or "overall"
+            items.append((2, '<span class=fa-dot style="background:var(--red)"></span>'
+                          f'<span class=fa-txt>Budget <b>{scope}</b> is over — projected '
+                          f'<b>{money(s.get("projected_usd",0))}</b> vs {money(s.get("limit_usd",0))}.</span>'
+                          '<a class="btn sec sm" href="/app/outlay/budgets">Review →</a>'))
+
+    items.sort(key=lambda x: x[0], reverse=True)
+    n_fix = sum(1 for sev, _ in items if sev == 2)
+    if not items:
+        return ('<div class=ocard style="margin-bottom:16px;border-color:var(--grn);background:var(--grn-l)">'
+                '<div style="display:flex;align-items:center;gap:8px">'
+                '<span class=fa-dot style="background:var(--grn-d)"></span>'
+                '<b style="color:var(--grn-d)">Healthy — nothing to fix right now.</b>'
+                '<span class=muted style="font-size:12.5px">No runaway tickets, coverage is solid, '
+                'and the last sync succeeded.</span></div></div>')
+    rows = "".join(f'<div class=fa-row>{html}</div>' for _, html in items)
+    headline = (f'{n_fix} to fix' if n_fix else f'{len(items)} to keep an eye on')
+    accent = "var(--red)" if n_fix else "var(--amber)"
+    return (f'<div class=ocard style="margin-bottom:16px;border-color:{accent}">'
+            f'<div class=dh style="display:flex;align-items:center;gap:8px">Needs your attention '
+            f'<span class="otag {"over" if n_fix else "warn"}">{headline}</span></div>'
+            f'<div class=fa-list>{rows}</div></div>')
+
+
+def _eng_project_card(program_statuses: list[dict] | None) -> str:
+    """Engineering 'project burn' card — each program/initiative's timeline status and
+    when it's set to breach, so eng can optimize *before* it does. Drills to the full
+    month-by-month projection on the Budgets page."""
+    progs = program_statuses or []
+    if not progs:
+        return ('<div class=ocard><div class=dh>Project burn<a class=sub href="/app/outlay/budgets">set up →</a></div>'
+                '<p class=muted style="margin:0;font-size:13px">Track a project\'s compute over its timeline — '
+                '<a href="/app/outlay/budgets">define a program</a> with start/end dates.</p></div>')
+    rows = ""
+    for s in progs[:5]:
+        st = s.get("status", "ok")
+        col = {"ok": "var(--grn-d)", "warn": "var(--amber)", "over": "var(--red)"}.get(st)
+        tl = s.get("timeline") or {}
+        days = tl.get("days_left")
+        when = (f'breach {_e(tl["breach_month"])}' if tl.get("breach_month")
+                else (f'{days}d left' if days is not None else "on track"))
+        rows += (f'<div class=erow><a class=nm href="/app/outlay/budgets">{_e(s.get("name"))} '
+                 f'<small style="color:{col}">· {st} · {when}</small> <span class=drill>→</span></a>'
+                 f'<span class=amt>{money(s.get("spent_usd",0))}<small class=muted> / {money(s.get("limit_usd",0))}</small></span></div>')
+    return (f'<div class=ocard><div class=dh>Project burn'
+            f'<a class=sub href="/app/outlay/budgets">timelines →</a></div>{rows}</div>')
+
+
 HOME_GROUPINGS = {
     "team": "Team / cost-center", "class": "Work type",
     "project": "Project / epic", "person": "Engineer",
@@ -1967,7 +2071,24 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
                 + lens_bar + modules + _sync_line(report, conn))
         return page("Home", body, account, active="/app")
 
-    # Engineering (and pre-persona) keep the operate-focused layout.
+    # Engineering: operate-focused. Lead with the 'go fix this' attention panel
+    # (runaway tickets, coverage leaks, spend spikes, stale sync, pricing gaps) and a
+    # 'project burn' card with each program's timeline. The attention panel folds in the
+    # staleness / pricing / anomaly signals, so they aren't repeated as separate strips.
+    if persona == "eng":
+        eng_attn = _eng_attention(report, conn, history, statuses)
+        grid = ('<div class=ogrid style="margin-top:16px">' + _forecast_card(report)
+                + _eng_project_card(program_statuses) + '</div>'
+                + '<div style="margin-top:16px">' + _explore_card(persona) + '</div>')
+        body = (tb + head + _persona_switch(persona)
+                + _sample_strip(report, account) + checklist
+                + eng_attn
+                + _kpis_row(report, history, persona)
+                + _recon_strip(report) + fidelity + unit + tm_row
+                + grid + _sync_line(report, conn))
+        return page("Home", body, account, active="/app")
+
+    # Pre-persona (no role chosen yet) keeps the legacy strips + chooser.
     attention = _budget_strip(statuses) + _anomaly_strip(report, *_anomaly_prefs(conn))
     body = (tb + chooser + head + _persona_switch(persona) + _staleness_banner(report, conn)
             + _sample_strip(report, account) + checklist
@@ -2669,13 +2790,21 @@ def _budgets_section(account: dict, report: dict | None, statuses: list[dict],
 
 
 def budgets_page(account: dict, report: dict | None, statuses: list[dict],
-                 projects: list[dict] | None = None) -> str:
-    """Set budgets by scope and see spend-vs-budget with pace projection."""
-    head = ('<div class=ohead><h1>Budgets &amp; guardrails</h1>'
-            '<p>Set a budget by scope; Outlay projects your spend to the period and flags it '
-            '<b>before</b> you go over — not at month-end. Need to budget a body of work across several '
-            'teams or projects? Use <a href="/app/outlay/programs">program budgets</a>.</p></div>')
-    return page("Budgets", head + _budgets_section(account, report, statuses, projects),
+                 projects: list[dict] | None = None,
+                 program_statuses: list[dict] | None = None) -> str:
+    """The engineering budgets + project-burn page: budget a scope, and watch each
+    project/program burn down its compute over its timeline (start/end + month-by-month
+    projection) so you can optimize before it breaches."""
+    head = ('<div class=ohead><h1>Budgets &amp; project burn</h1>'
+            '<p>Budget a scope and watch it project against your pace. <b>Projects</b> cap a body of '
+            'work across teams with a start/end timeline and a month-by-month burn — so you can route '
+            'down or tune <b>before</b> a project blows its compute budget.</p></div>')
+    burn = ""
+    if program_statuses:
+        burn = (f'<h2 style="font-size:16px;margin:18px 0 6px">Project burn</h2>'
+                f'{_programs_section(account, report, program_statuses)}'
+                f'<h2 style="font-size:16px;margin:24px 0 6px">Scope budgets</h2>')
+    return page("Budgets", head + burn + _budgets_section(account, report, statuses, projects),
                 account, active="/app/outlay/budgets")
 
 

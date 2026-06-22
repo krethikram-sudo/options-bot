@@ -66,6 +66,14 @@ screen-by-screen customer flow for **each persona** (Finance and Engineering).*
 > 17. **Phase 3 — customizable layout.** A per-person Customize mode to reorder /
 >     hide / show / reset the Home card deck, persisted in `dashboard_prefs`. Completes
 >     the consolidate → change-view → personalize arc.
+>
+> **Review round 6 — engineering attention + project burn:**
+> 18. **Engineering "Needs your attention" panel** — operational, not budget-governance:
+>     runaway tickets, attribution leaks, spend spikes, stale/failed sync, fallback-tier
+>     pricing — ranked, one click to the fix. Distinct framing from finance's panel.
+> 19. **Project burn** — program/initiative timelines (start/end + month-by-month
+>     projection) on the engineering Home (summary card) and the Budgets page (full
+>     timelines), framed around delivery/optimization rather than chargeback.
 
 **Status of this audit:** A live end-to-end smoke test was run against the actual
 app (FastAPI test client driving real routes). **54 of 55 checks passed**; the one
@@ -405,11 +413,20 @@ Finance does not see Connect or API.)*
 ![Engineering overview with data](images/walkthrough/15_eng_overview_data.png)
 
 - H1 **"AI spend at a glance."**
+- **"Needs your attention" panel — engineering-focused (act-first).** Auto-flags the
+  *operational* things to go fix (not finance's budget-governance): **runaway tickets**
+  ("burned $X — N× its median, worth a look before it repeats → Investigate"), an
+  **attribution leak** ("$Y isn't mapped to a ticket — connect PRs / map teams → Lift
+  coverage"), a **spend spike** ("jumped X% vs last sync → See movers"), a **stale/failed
+  sync**, and spend **priced by a fallback tier**. Calm "Healthy — nothing to fix" when
+  the pipeline's clean.
 - **Four KPIs (eng-specific):** *AI spend · window* · **Mapped to a ticket** (coverage
   %, the trust metric) · **Runaway tickets** (count, top offender) · *Forecast · open
   work*.
-- Same trust callout, unit economics, trend/movers, forecast, and Explore as finance,
-  but ordered for shipping (Spend, Estimate, Accuracy, Budgets).
+- **Project burn card** — each program/initiative's timeline status and *when it's set
+  to breach*, so eng can optimize before it does (drills to the Budgets timelines).
+- Trust callout, unit economics, trend/movers, forecast, and Explore, ordered for
+  shipping.
 
 ### E6 · Spend (`/app/outlay`)
 
@@ -450,8 +467,17 @@ Finance does not see Connect or API.)*
   set budget (variance-pooled band). The connected-backlog view shows the backlog total
   alone (it *is* the open work — no double-count); the what-if view shows forecast + plan.
 
-### E9 · Budgets (`/app/outlay/budgets`)
-Same as F6 — engineering sets/uses budgets too.
+### E9 · Budgets & project burn (`/app/outlay/budgets`)
+
+![Engineering budgets & project burn](images/walkthrough/19_eng_budgets.png)
+
+- H1 **"Budgets & project burn."** Engineering-framed: route down / tune *before* a
+  project blows its compute budget.
+- **Project burn** — each program/initiative with its **start/end timeline** and a
+  **month-by-month** projected-vs-pro-rated-cap burn (breaching months flagged), plus
+  the "Define a program" form (start/end dates). Same timeline engine as finance's
+  Governance, but framed around delivery/optimization rather than chargeback.
+- **Scope budgets** — single-scope budgets with pace projection + the project pick-list.
 
 ### E10 · Drill-down / scope
 
