@@ -550,9 +550,12 @@ def reset_get(request: Request):
 async def reset_post(request: Request):
     f = await _form(request)
     token = f.get("token", "")
-    if not store.consume_reset(token, f.get("password", "")):
-        return _html(web.reset_form(token, "That reset link is invalid or expired, or the "
-                                           "password is too short."), 400)
+    try:
+        ok = store.consume_reset(token, f.get("password", ""))
+    except store.StoreError as e:
+        return _html(web.reset_form(token, str(e)), 400)
+    if not ok:
+        return _html(web.reset_form(token, "That reset link is invalid or expired."), 400)
     return _redirect("/login")
 
 
@@ -593,7 +596,7 @@ def _require(request: Request):
     # Admin-enforced MFA (IA-2): when the org requires MFA, the owner can't use the app
     # until 2FA is enrolled. The Security page (where you enroll), the 2FA endpoints, and
     # logout stay reachable so there's no lock-out loop.
-    if (request.method == "GET" and not acct.get("member_id")
+    if (request.method == "GET" and not acct.get("member_id") and not _needs_welcome(acct)
             and request.url.path.startswith("/app")
             and request.url.path not in ("/app/security", "/app/settings")):
         try:
@@ -1848,12 +1851,73 @@ def settings_get(request: Request):
                                    purge_error=request.query_params.get("purge_error") == "1"))
 
 
+_SEC_FLASH = {"mfa": "mfa-required", "policy": "policy-saved", "totp": "totp-on",
+              "totpbad": "totp-bad", "loggedout": "logged-out-all"}
+
+
+def _security_html(acct, enroll_secret="", flash_key=""):
+    flash = _SEC_FLASH.get(flash_key, "")
+    return _html(web.security_page(acct, policy=store.get_security_policy(acct["id"]),
+                                   twofa=store.get_2fa(acct["id"]),
+                                   enroll_secret=enroll_secret, flash=flash))
+
+
 @app.get("/app/security", response_class=HTMLResponse)
 def security_get(request: Request):
     acct, redir = _require(request)
     if redir:
         return redir
-    return _html(web.security_page(acct))
+    fk = "mfa" if request.query_params.get("mfa") == "required" else request.query_params.get("ok", "")
+    return _security_html(acct, flash_key=fk)
+
+
+@app.post("/app/security/policy")
+async def security_policy(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    if acct.get("team_role") not in ("owner", "admin"):
+        return _redirect("/app/security")
+    f = await _form(request)
+    store.update_security_policy(
+        acct["id"], require_mfa=bool(f.get("require_mfa")),
+        session_idle_min=f.get("session_idle_min") or 0,
+        session_max_hours=f.get("session_max_hours") or 0,
+        security_webhook=f.get("security_webhook", ""), data_region=f.get("data_region", ""))
+    _audit(acct["id"], "security.policy", actor=acct.get("display_email") or acct["email"],
+           detail=f"require_mfa={bool(f.get('require_mfa'))}")
+    return _redirect("/app/security?ok=policy")
+
+
+@app.post("/app/security/logout-all")
+async def security_logout_all(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    store.bump_session_epoch(acct["id"], acct.get("member_id", 0) or 0)
+    _audit(acct["id"], "session.logout_all", actor=acct.get("display_email") or acct["email"])
+    # Re-issue this device's session with the new epoch so the current user stays in.
+    resp = _redirect("/app/security?ok=loggedout")
+    fresh = store.get_account(acct["id"])
+    _set_session(resp, fresh, acct.get("team_role", "owner"), acct.get("member_id", 0) or 0,
+                 platform_role="customer" if acct.get("member_id") else None)
+    return resp
+
+
+@app.get("/app/security/vpat", response_class=HTMLResponse)
+def security_vpat(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    return _html(web.vpat_page(acct))
+
+
+@app.get("/app/security/ai-card", response_class=HTMLResponse)
+def security_ai_card(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    return _html(web.ai_card_page(acct))
 
 
 # --- two-factor authentication -------------------------------------------- #
@@ -1879,8 +1943,34 @@ async def twofa_confirm(request: Request):
     f = await _form(request)
     if store.verify_otp(acct["id"], f.get("code", "")):
         store.set_2fa(acct["id"], "email", acct["email"])
+        _audit(acct["id"], "2fa.enable", actor=acct["email"], detail="email codes")
         return _redirect("/app/settings?twofa=on")
     return _redirect("/app/settings?twofa=bad")
+
+
+@app.post("/app/2fa/totp/start")
+async def twofa_totp_start(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    # Generate a fresh secret and show the enrollment panel (secret carried in the form).
+    return _security_html(acct, enroll_secret=store.new_totp_secret())
+
+
+@app.post("/app/2fa/totp/confirm")
+async def twofa_totp_confirm(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    secret = (f.get("secret") or "").strip()
+    code = (f.get("code") or "").strip().replace(" ", "")
+    ok = bool(secret) and any(store.totp_code(secret, time.time() + d * 30) == code for d in (-1, 0, 1))
+    if ok:
+        store.set_totp(acct["id"], secret)
+        _audit(acct["id"], "2fa.enable", actor=acct["email"], detail="authenticator app (totp)")
+        return _redirect("/app/security?ok=totp")
+    return _security_html(acct, enroll_secret=secret, flash_key="totpbad")
 
 
 @app.post("/app/2fa/disable")
@@ -1889,7 +1979,8 @@ async def twofa_disable(request: Request):
     if redir:
         return redir
     store.disable_2fa(acct["id"])
-    return _redirect("/app/settings?twofa=off")
+    _audit(acct["id"], "2fa.disable", actor=acct.get("display_email") or acct["email"])
+    return _redirect("/app/security")
 
 
 @app.post("/app/account/delete")

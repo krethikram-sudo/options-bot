@@ -2697,10 +2697,23 @@ def consume_reset(token: str, new_password: str, path: str | None = None,
         conn.commit()
     finally:
         conn.close()
-    if row.get("member_id"):
-        set_member_password(row["member_id"], new_password, path)
-    else:
-        set_password(row["account_id"], new_password, path)
+    try:
+        if row.get("member_id"):
+            set_member_password(row["member_id"], new_password, path)
+        else:
+            set_password(row["account_id"], new_password, path)
+    except StoreError:
+        # Password failed the policy (too short / breached). Re-open the token so the
+        # user can try again, and report failure for the route to surface.
+        c2 = connect(path)
+        try:
+            c2.execute("UPDATE resets SET used=0 WHERE token=?", (token,))
+            c2.commit()
+        finally:
+            c2.close()
+        raise
+    record_audit(row["account_id"], "password.reset",
+                 detail="member" if row.get("member_id") else "owner", path=path)
     return True
 
 

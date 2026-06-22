@@ -2967,6 +2967,88 @@ def test_finance_home_lens_and_saved_views(env, client):
     assert "By team / cost-center" in client.get("/app").text
 
 
+# --- Gov-readiness security hardening ------------------------------------- #
+
+def test_password_breach_screening(env):
+    _, store = env
+    import pytest as _pt
+    for weak in ("password123", "qwerty", "short"):
+        with _pt.raises(store.StoreError):
+            store.create_account(f"{weak}@x.com", weak)
+    a = store.create_account("ok@x.com", "swift-otter-ledger-9")   # strong → fine
+    assert a and store.password_problem("swift-otter-ledger-9") is None
+
+
+def test_login_lockout_after_failures(env, client):
+    _signup(client, email="lock@x.com")
+    for _ in range(5):
+        assert client.post("/login", data={"email": "lock@x.com", "password": "wrong"}).status_code == 401
+    # 6th attempt is locked out even with the right password
+    r = client.post("/login", data={"email": "lock@x.com", "password": "k7-otter-ledger"})
+    assert r.status_code == 429 and "Too many failed attempts" in r.text
+
+
+def test_totp_enroll_and_login(env, client):
+    server, store = env
+    _signup(client, email="totp@x.com")
+    acct = store.get_account_by_email("totp@x.com")
+    import re
+    secret = re.search(r'name=secret value="([A-Z2-7]+)"', client.post("/app/2fa/totp/start").text).group(1)
+    client.post("/app/2fa/totp/confirm", data={"secret": secret, "code": store.totp_code(secret)},
+                follow_redirects=True)
+    assert store.get_2fa(acct["id"])["channel"] == "totp"
+    # a fresh login is now challenged and verified with an authenticator code (no email sent)
+    fresh = TestClient(server.app, follow_redirects=False)
+    r = fresh.post("/login", data={"email": "totp@x.com", "password": "k7-otter-ledger"})
+    assert r.headers["location"] == "/login/verify"
+    r = fresh.post("/login/verify", data={"code": store.totp_code(secret)}, follow_redirects=False)
+    assert r.status_code in (302, 303, 307) and "/login" not in r.headers["location"]
+
+
+def test_admin_enforced_mfa_gate(env, client):
+    _, store = env
+    _signup(client, email="mfa@x.com")
+    acct = store.get_account_by_email("mfa@x.com")
+    store.set_persona(acct["id"], "business", 0)
+    client.post("/app/security/policy", data={"require_mfa": "1"}, follow_redirects=True)
+    # no 2FA enrolled → the owner is bounced to enroll
+    r = client.get("/app", follow_redirects=False)
+    assert "mfa=required" in r.headers.get("location", "")
+    # the Security page itself stays reachable so they can enroll
+    assert client.get("/app/security").status_code == 200
+
+
+def test_logout_everywhere_revokes_other_sessions(env):
+    server, store = env
+    store.init_db()
+    a = store.create_account("epoch@x.com", "k7-otter-ledger")
+    store.set_persona(a["id"], "business", 0)   # onboarded → past the first-run gate
+    other = TestClient(server.app, follow_redirects=False)
+    other.post("/login", data={"email": "epoch@x.com", "password": "k7-otter-ledger"})
+    assert other.get("/app/security").status_code == 200      # other device is in
+    me = TestClient(server.app, follow_redirects=False)
+    me.post("/login", data={"email": "epoch@x.com", "password": "k7-otter-ledger"})
+    me.post("/app/security/logout-all", follow_redirects=True)
+    # the other device's session is now invalid (epoch bumped) → redirected to login
+    assert other.get("/app/security", follow_redirects=False).status_code in (302, 303, 307)
+    assert me.get("/app/security").status_code == 200          # the acting device stays in
+
+
+def test_trust_center_and_artifacts(env, client):
+    _signup(client, email="trust@x.com")
+    sp = client.get("/app/security").text
+    assert "Your sign-in security" in sp and "Organization security policy" in sp
+    assert "Compliance" in sp and "Log out everywhere" in sp
+    assert client.get("/app/security/vpat").status_code == 200
+    assert "Acceptable Use Policy" in client.get("/app/security/ai-card").text
+    # security events are audited
+    from console import store as st
+    acct = st.get_account_by_email("trust@x.com")
+    client.post("/app/security/policy", data={"require_mfa": "1", "data_region": "US"}, follow_redirects=True)
+    actions = [r["action"] for r in st.list_audit(acct["id"])]
+    assert "security.policy" in actions
+
+
 def test_finance_home_customizable_layout(env, client):
     """Phase 3: per-person customizable Home — reorder, hide/show, reset the card deck."""
     from console import store

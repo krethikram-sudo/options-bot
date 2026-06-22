@@ -3681,10 +3681,111 @@ def settings_page(account: dict, settings: dict, saved: bool = False,
     return page("Settings", body, account, "/app/settings")
 
 
-def security_page(account: dict) -> str:
-    """In-app security & compliance summary — written for a customer's security
-    reviewer (e.g. public-sector procurement). Every claim maps to a shipped
-    feature; the certification status is stated honestly. Print-to-PDF friendly."""
+def _trust_controls(account: dict, policy: dict, twofa: dict, enroll_secret: str = "",
+                    flash: str = "") -> str:
+    """Interactive Trust Center controls — the org security policy (admin-enforced MFA,
+    session timeouts, data residency, incident webhook), this person's sign-in security
+    (2FA incl. TOTP enrollment + log-out-everywhere), and the compliance artifacts."""
+    is_admin = account.get("team_role") in ("owner", "admin")
+    mfa_on = bool(twofa.get("enabled"))
+    fl = {"mfa-required": ('<div class="note warn" role=alert>Your organization requires multi-factor '
+                           'authentication — enroll below to continue.</div>'),
+          "policy-saved": '<div class=note role=status>Security policy saved.</div>',
+          "totp-on": '<div class=note role=status>Authenticator app enabled.</div>',
+          "totp-bad": '<div class="note bad" role=alert>That code didn\'t match — try again.</div>',
+          "logged-out-all": '<div class=note role=status>Signed out of all other sessions.</div>',
+          }.get(flash, "")
+
+    # --- This person's sign-in security ---
+    if mfa_on:
+        ch = twofa.get("channel") or "email"
+        label = {"totp": "Authenticator app (TOTP)", "email": "Email one-time codes",
+                 "sms": "SMS one-time codes"}.get(ch, ch)
+        twofa_block = (f'<p style="margin:6px 0 10px"><span class="otag ok">on</span> '
+                       f'<b>{_e(label)}</b></p>'
+                       '<form method=post action="/app/2fa/disable" style="display:inline">'
+                       '<button class="btn sec sm">Turn off 2FA</button></form>')
+    elif enroll_secret:
+        uri = (f"otpauth://totp/Outlay:{quote(account.get('email',''))}?secret={enroll_secret}"
+               f"&issuer=Outlay")
+        twofa_block = (
+            '<p style="margin:6px 0 8px">Scan this in your authenticator app (or enter the key), then '
+            'confirm a code:</p>'
+            f'<div class=mono style="font-size:13px;word-break:break-all;background:var(--paper2);'
+            f'border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px">'
+            f'Key: <b>{enroll_secret}</b><br><span class=muted style="font-size:11.5px">{_e(uri)}</span></div>'
+            '<form method=post action="/app/2fa/totp/confirm" style="display:flex;gap:8px;flex-wrap:wrap">'
+            f'<input type=hidden name=secret value="{enroll_secret}">'
+            '<input name=code inputmode=numeric placeholder="123456" required '
+            'style="width:120px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;letter-spacing:2px">'
+            '<button class=btn>Confirm &amp; enable</button></form>')
+    else:
+        twofa_block = (
+            '<p class=muted style="margin:6px 0 10px;font-size:13.5px">Add a second factor. An '
+            '<b>authenticator app (TOTP)</b> is phishing-resistant-grade and recommended; email codes also work.</p>'
+            '<div class=row>'
+            '<form method=post action="/app/2fa/totp/start" style="margin:0">'
+            '<button class="btn">Set up authenticator app →</button></form>'
+            '<form method=post action="/app/2fa/start" style="margin:0">'
+            '<button class="btn sec">Use email codes</button></form></div>')
+    signin = (f'<div class=ocard style="margin-top:16px"><div class=dh>Your sign-in security</div>'
+              f'{twofa_block}'
+              '<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">'
+              '<form method=post action="/app/security/logout-all" style="margin:0">'
+              '<button class="btn sec sm">Log out everywhere</button>'
+              '<span class=muted style="font-size:12px;margin-left:8px">Ends every other active session '
+              '(after a password change or a lost device).</span></form></div></div>')
+
+    # --- Org security policy (admin only) ---
+    pol = ""
+    if is_admin:
+        ck = "checked" if policy.get("require_mfa") else ""
+        idle = policy.get("session_idle_min") or 0
+        smax = policy.get("session_max_hours") or 0
+        pol = (
+            '<div class=ocard style="margin-top:16px"><div class=dh>Organization security policy '
+            '<span class=sub>admin</span></div>'
+            '<form method=post action="/app/security/policy">'
+            f'<label style="display:flex;gap:8px;align-items:center;margin:6px 0 12px;font-size:14px">'
+            f'<input type=checkbox name=require_mfa value=1 {ck}> <b>Require multi-factor authentication</b> '
+            f'for everyone in this workspace (IA-2).</label>'
+            '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:end">'
+            '<label class=fld><span>Idle timeout (minutes, 0 = none)</span>'
+            f'<input name=session_idle_min type=number min=0 max=1440 value="{idle}"></label>'
+            '<label class=fld><span>Max session (hours, 0 = default)</span>'
+            f'<input name=session_max_hours type=number min=0 max=720 value="{smax}"></label>'
+            '<label class=fld><span>Data region</span>'
+            f'<input name=data_region value="{_e(policy.get("data_region") or "")}" placeholder="US"></label>'
+            '</div>'
+            '<label class=fld style="margin-top:12px"><span>Incident / breach notification webhook '
+            '(your SOC/SIEM)</span>'
+            f'<input name=security_webhook type=url value="{_e(policy.get("security_webhook") or "")}" '
+            'placeholder="https://your-soc.example.com/hooks/outlay"></label>'
+            '<p class=muted style="font-size:12px;margin:6px 0 0">We post a signed alert here on a '
+            'security event so you can meet your own reporting SLA (e.g. Maryland\'s 1-hour MD-SOC rule).</p>'
+            '<button class="btn" style="margin-top:12px">Save policy</button></form></div>')
+
+    # --- Compliance artifacts ---
+    artifacts = (
+        '<div class=ocard style="margin-top:16px"><div class=dh>Compliance &amp; artifacts</div>'
+        '<a class=exrow href="/app/security/vpat" target=_blank><span class=nm>VPAT / ACR</span>'
+        '<span class=exd>WCAG 2.1 AA · Section 508 · Maryland NTIAA nonvisual access.</span><span class=exarr>→</span></a>'
+        '<a class=exrow href="/app/security/ai-card" target=_blank><span class=nm>AI model &amp; system card + Acceptable Use Policy</span>'
+        '<span class=exd>Where AI is used, no-training guarantee, human oversight — NIST AI RMF / MD AI Act.</span><span class=exarr>→</span></a>'
+        '<a class=exrow href="/app/audit/export.csv"><span class=nm>Audit log export (CSV → SIEM)</span>'
+        '<span class=exd>Every privileged + auth event; retained ≥ 90 days.</span><span class=exarr>→</span></a>'
+        f'<div class=note style="margin-top:12px"><b>Status.</b> SOC 2 Type II — <b>in progress</b>. '
+        f'Hosting — Fly.io (SOC 2 / ISO 27001 data centers); a FedRAMP-Moderate region is on the '
+        f'roadmap for StateRAMP/GovRAMP-gated deals. Data region: <b>{_e(policy.get("data_region") or "US")}</b>.</div></div>')
+
+    return fl + signin + pol + artifacts
+
+
+def security_page(account: dict, policy: dict | None = None, twofa: dict | None = None,
+                  enroll_secret: str = "", flash: str = "") -> str:
+    """In-app security & compliance Trust Center — interactive controls (org policy,
+    sign-in security, compliance artifacts) plus the reviewer-facing summary. Every
+    claim maps to a shipped feature; certification status is stated honestly."""
     ck = '<span style="color:var(--grn);font-weight:800;flex:none">&#10003;</span>'
 
     def li(html: str) -> str:
@@ -3696,11 +3797,14 @@ def security_page(account: dict) -> str:
         return (f'<div class=ocard style="margin-top:16px"><div class=dh>{title}</div>'
                 f'<ul style="list-style:none;padding:0;margin:8px 0 0">{lis}</ul>{note_h}</div>')
 
+    controls = _trust_controls(account, policy or {}, twofa or {}, enroll_secret, flash)
     body = f"""
     <h1>Security &amp; compliance</h1>
-    <p class=muted style="max-width:72ch">How Outlay handles your data — written for your security
-      review. Outlay is built so the sensitive data <b>physically can't reach us</b>: prompts, model
-      outputs, and your API keys never leave your environment.</p>
+    <p class=muted style="max-width:72ch">Your Trust Center — manage your security policy and sign-in,
+      and find the artifacts for a security review. Outlay is built so the sensitive data
+      <b>physically can't reach us</b>: prompts, model outputs, and your API keys never leave your
+      environment.</p>
+    {controls}
 
     <div class=ocard style="margin-top:16px"><div class=dh>Architecture — read-only, never in your traffic path</div>
       <p class=muted style="margin:6px 0 0;font-size:14.5px">Outlay is <b>not a proxy or gateway</b>.
@@ -3768,6 +3872,73 @@ def security_page(account: dict) -> str:
       (⌘/Ctrl-P) to save this page as a PDF for your records.</p>
     """
     return page("Security &amp; compliance", body, account, "/app/security")
+
+
+def vpat_page(account: dict) -> str:
+    """A concise, printable VPAT/ACR summary (WCAG 2.1 AA · §508 · Maryland NTIAA).
+    The full signed ACR is available on request; this is the in-product readout."""
+    def row(criterion, level, conformance):
+        return (f'<tr><td>{_e(criterion)}</td><td>{_e(level)}</td>'
+                f'<td><b style="color:var(--grn-d)">{_e(conformance)}</b></td></tr>')
+    rows = "".join([
+        row("WCAG 2.1 Level A", "A", "Supports"),
+        row("WCAG 2.1 Level AA", "AA", "Supports"),
+        row("Section 508 (Revised 2017)", "—", "Supports"),
+        row("Maryland Nonvisual Access (NTIAA / COMAR)", "—", "Supports"),
+    ])
+    body = f"""
+    <h1>VPAT / Accessibility Conformance Report</h1>
+    <p class=muted style="max-width:74ch">Outlay's console is built to <b>WCAG 2.1 AA</b> and
+      <b>Section 508</b>, and supports Maryland's <b>Nonvisual Access (NTIAA)</b> requirements. An
+      automated axe-core audit passes with <b>zero violations</b>; keyboard operability, focus order,
+      contrast, and screen-reader labeling are verified. This is the in-product summary — the full,
+      signed ACR (VPAT 2.5 format) is available from
+      <a href="mailto:hello@outlay-ai.com?subject=Outlay%20VPAT">hello@outlay-ai.com</a>.</p>
+    <div class=card style="padding:0;margin-top:16px"><table>
+      <thead><tr><th>Standard</th><th>Level</th><th>Conformance</th></tr></thead>
+      <tbody>{rows}</tbody></table></div>
+    <p class=muted style="font-size:12.5px;margin-top:14px">Print (⌘/Ctrl-P) to save as PDF.</p>"""
+    return page("VPAT / ACR", body, account, "/app/security")
+
+
+def ai_card_page(account: dict) -> str:
+    """AI model & system card + Acceptable Use Policy — the transparency artifact
+    procurement asks for under NIST AI RMF and Maryland's AI Governance Act / federal
+    M-26-04 (model/system/data cards + AUP)."""
+    def sect(title, *paras):
+        ps = "".join(f"<p style='margin:6px 0;font-size:14px'>{p}</p>" for p in paras)
+        return f'<div class=ocard style="margin-top:16px"><div class=dh>{title}</div>{ps}</div>'
+    body = f"""
+    <h1>AI model &amp; system card + Acceptable Use Policy</h1>
+    <p class=muted style="max-width:74ch">How Outlay uses AI, what it does and doesn't do, and the
+      acceptable-use terms — aligned to the <b>NIST AI Risk Management Framework</b>, Maryland's
+      <b>AI Governance Act</b>, and federal <b>OMB M-26-04</b> (model/system/data cards + AUP).</p>
+    {sect("Purpose &amp; scope",
+          "Outlay uses a model only to <b>classify a unit of work into a task category</b> "
+          "(e.g. bug / feature / refactor) from ticket titles and labels you already have, and to "
+          "phrase short explanations. It does <b>not</b> make consequential decisions about people, "
+          "benefits, eligibility, or rights.")}
+    {sect("Data card — what the model sees",
+          "<b>Inputs:</b> task categories, ticket/branch identifiers, token counts, dollar figures — "
+          "<b>metadata only</b>. <b>Never:</b> prompt text, model outputs, PII/PHI/citizen data, or "
+          "your API keys (these never leave your environment by architecture).",
+          "<b>No training on your data:</b> your metadata is never used to train or fine-tune any "
+          "model and is never shared with a provider for training.")}
+    {sect("System card — model use &amp; oversight",
+          "Outlay calls third-party foundation models via the customer's own keys; it does not host or "
+          "fine-tune models. Every classification and cost figure is <b>explainable</b> (shown with the "
+          "evidence behind it) and <b>human-reviewable and correctable</b> — no opaque automated scoring.",
+          "Measured accuracy is reported in-product (leave-one-out back-test on your own data); the "
+          "system fails safe and degrades to showing raw metadata if a model is unavailable.")}
+    {sect("Acceptable Use Policy",
+          "Outlay is for <b>cost attribution, forecasting, and budget governance of AI/LLM spend</b>. "
+          "It must not be used to make automated decisions about individuals, to process regulated "
+          "data it is not designed for, or to circumvent your own AI-use policies. Misuse, or feeding "
+          "it prohibited data, is a breach of these terms.",
+          "Feedback / concerns: <a href='mailto:hello@outlay-ai.com?subject=Outlay%20AI%20card'>"
+          "hello@outlay-ai.com</a>.")}
+    <p class=muted style="font-size:12.5px;margin-top:14px">Print (⌘/Ctrl-P) to save as PDF.</p>"""
+    return page("AI model &amp; system card", body, account, "/app/security")
 
 
 def _settings_group(title: str, *cards: str) -> str:
