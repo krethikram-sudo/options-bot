@@ -2137,8 +2137,8 @@ def test_outlay_focus_export_and_spend_api(env, client):
     assert data["period"]["start"] and data["period"]["end"]
     assert data["rows"][0]["ServiceCategory"] == "AI and Machine Learning"
 
-    # finance persona surfaces the FOCUS export link on Spend
-    store.set_persona(acct["id"], "finance", 0)
+    # business persona surfaces the FOCUS export link on Spend
+    store.set_persona(acct["id"], "business", 0)
     assert "export.focus.csv" in client.get("/app/outlay").text
 
 
@@ -2588,7 +2588,7 @@ def test_outlay_sync_reconciles_to_cost_report(env, client):
     # the dashboard renders the reconciliation strip
     from console import web
     html = web.outlay_page({"email": "u@x.com", "role": "customer", "team_role": "owner",
-                            "display_email": "u@x.com"}, report, persona="finance")
+                            "display_email": "u@x.com"}, report, persona="business")
     assert "reconciled" in html and "Anthropic Cost Report" in html
 
 
@@ -2621,7 +2621,7 @@ def test_parse_cost_export_autodetects_provider():
 
 
 def test_close_report_renders_printable_readout(env, client):
-    """Finance can download a printable close report (the VP audit readout); absent a
+    """Business can download a printable close report (the VP audit readout); absent a
     report it redirects rather than 500s."""
     _signup(client, email="close@x.com", company="Acme Corp")
     assert client.get("/app/outlay/close-report.html",
@@ -2630,7 +2630,7 @@ def test_close_report_renders_printable_readout(env, client):
     r = client.get("/app/outlay/close-report.html")
     assert r.status_code == 200 and r.text.startswith("<!doctype html>")
     assert "Acme Corp" in r.text and "AI spend audit" in r.text
-    client.post("/app/persona", data={"persona": "finance"}, follow_redirects=True)
+    client.post("/app/persona", data={"persona": "business"}, follow_redirects=True)
     assert "close-report.html" in client.get("/app/outlay").text
 
 
@@ -2677,7 +2677,7 @@ def test_sample_report_is_a_realistic_demo(env):
     from console import outlay_app
     rep = outlay_app.sample_report()
     sp = rep["spend"]
-    assert sp["total_usd"] > 500                  # a finance-visible bill
+    assert sp["total_usd"] > 500                  # a business-visible bill
     assert sp["ticket_coverage"] > 0.85           # most spend reaches a ticket
     assert len(rep["tickets"]) >= 30              # dozens of tickets
     assert len(rep["team_spend"]) >= 3            # multiple teams for showback
@@ -2912,17 +2912,17 @@ def test_program_timeline_dates_and_month_by_month(env, client):
 
 
 def test_finance_attention_panel_and_summary_view(env, client):
-    """Finance lands on an auto-flagged 'needs your attention' panel and has a
+    """Business lands on an auto-flagged 'needs your attention' panel and has a
     quarterly Summary view; both surface over-budget programs without drilling."""
     from console import store
     _signup(client, email="cfo@x.com")
     acct = store.get_account_by_email("cfo@x.com")
-    store.set_persona(acct["id"], "finance", acct.get("member_id", 0) or 0)
+    store.set_persona(acct["id"], "business", acct.get("member_id", 0) or 0)
     client.post("/app/outlay/sample", follow_redirects=True)
     client.post("/app/outlay/programs", data={
         "name": "Overspender", "limit_usd": "1000", "members": "overall"}, follow_redirects=True)
     ov = client.get("/app").text
-    # Consolidated finance Home: nav is Home · Spend · Governance (Summary folded in)
+    # Consolidated business Home: nav is Home · Spend · Governance (Summary folded in)
     assert ">Home<" in ov and ">Governance<" in ov and ">Summary<" not in ov
     assert "Needs your attention" in ov           # auto-flag panel present
     assert "Overspender" in ov and "over budget" in ov
@@ -2942,12 +2942,12 @@ def test_finance_attention_panel_and_summary_view(env, client):
 
 
 def test_finance_home_lens_and_saved_views(env, client):
-    """Phase 2: the finance Home has a group-by lens (team/work-type/project/engineer)
+    """Phase 2: the business Home has a group-by lens (team/work-type/project/engineer)
     and per-person saved views with a default-landing picker."""
     from console import store
     _signup(client, email="lens@x.com")
     acct = store.get_account_by_email("lens@x.com")
-    store.set_persona(acct["id"], "finance", acct.get("member_id", 0) or 0)
+    store.set_persona(acct["id"], "business", acct.get("member_id", 0) or 0)
     client.post("/app/outlay/sample", follow_redirects=True)
     home = client.get("/app").text
     assert "class=lensbar" in home and "By team / cost-center" in home   # opinionated default
@@ -2972,7 +2972,7 @@ def test_finance_home_customizable_layout(env, client):
     from console import store
     _signup(client, email="cust@x.com")
     acct = store.get_account_by_email("cust@x.com")
-    store.set_persona(acct["id"], "finance", acct.get("member_id", 0) or 0)
+    store.set_persona(acct["id"], "business", acct.get("member_id", 0) or 0)
     client.post("/app/outlay/sample", follow_redirects=True)
     assert "Customize" in client.get("/app").text
     cm = client.get("/app?customize=1").text
@@ -2993,7 +2993,7 @@ def test_finance_home_customizable_layout(env, client):
 
 def test_eng_attention_and_project_burn(env, client):
     """Engineering gets its own operational attention panel (runaway tickets, coverage,
-    spikes, stale sync) — NOT finance's budget-governance framing — plus project-burn
+    spikes, stale sync) — NOT business's budget-governance framing — plus project-burn
     timelines on Home and the Budgets page."""
     from console import store, web
     _signup(client, email="enga@x.com")
@@ -3003,7 +3003,7 @@ def test_eng_attention_and_project_burn(env, client):
     ov = client.get("/app").text
     assert "Needs your attention" in ov
     assert "Runaway ticket" in ov and "Investigate" in ov         # eng anomaly framing
-    assert "is projected to overspend" not in ov                  # not finance governance copy
+    assert "is projected to overspend" not in ov                  # not business governance copy
     assert "Project burn" in ov                                   # project-timeline card on Home
     # a program with a timeline renders on the eng Budgets page (project burn)
     client.post("/app/outlay/programs", data={
@@ -3054,7 +3054,7 @@ def test_showback_redirects_to_spend(env, client):
     _, store = env
     _signup(client, email="show@x.com")
     acct = store.get_account_by_email("show@x.com")
-    store.set_persona(acct["id"], "finance", 0)
+    store.set_persona(acct["id"], "business", 0)
 
     r = client.get("/app/outlay/showback", follow_redirects=False)
     assert r.status_code == 303
@@ -3064,7 +3064,7 @@ def test_showback_redirects_to_spend(env, client):
     spend = client.get("/app/outlay").text
     # team allocation + by-team chargeback export live on Spend, not a separate page
     assert "/app/outlay/export.csv?view=teams" in spend
-    # the finance Spend view no longer links out to a Showback page
+    # the business Spend view no longer links out to a Showback page
     assert "/app/outlay/showback" not in spend
 
 
@@ -3085,12 +3085,12 @@ def test_demo_mode_enter_seeds_full_account_then_exit_clears(env, client):
     assert len(store.list_outlay_programs(acct["id"])) >= 1
     conn = store.get_outlay_connection(acct["id"])
     assert conn and conn.get("synced_at")
-    assert store.get_persona(acct["id"], 0) == "finance"
+    assert store.get_persona(acct["id"], 0) == "business"
     # the global banner shows demo controls + the guide; guide renders both flows
     page = client.get("/app/outlay").text
     assert "Demo mode" in page and "/app/demo/guide" in page and "Exit demo" in page
     guide = client.get("/app/demo/guide").text
-    assert "Finance flow" in guide and "Engineering flow" in guide
+    assert "Business flow" in guide and "Engineering flow" in guide
 
     client.post("/app/demo/exit", follow_redirects=False)
     acct = store.get_account_by_email("demo@x.com")
@@ -3131,17 +3131,17 @@ def test_onboarding_owner_hits_role_gate_then_advances(env, client):
     assert r.status_code == 303 and r.headers["location"] == "/app/welcome"
     assert client.get("/app/outlay", follow_redirects=False).headers["location"] == "/app/welcome"
     w = client.get("/app/welcome").text
-    assert "I’m a finance leader setting this up for my business" in w
-    assert "I’m an engineering leader using this for my business" in w
+    assert "I’m a business leader running this for my company" in w
+    assert "I’m an engineering leader using this for my company" in w
     # picking a role from the gate sets the persona and advances to onboarding step 2
-    r = client.post("/app/persona", data={"persona": "finance", "next": "welcome"},
+    r = client.post("/app/persona", data={"persona": "business", "next": "welcome"},
                     follow_redirects=False)
     assert r.headers["location"] == "/app/welcome"
     acct = store.get_account_by_email("owner@acme.com")
-    assert store.get_persona(acct["id"], 0) == "finance"
+    assert store.get_persona(acct["id"], 0) == "business"
     w2 = client.get("/app/welcome").text
-    assert "You’re set up as Finance" in w2
-    # finance: invite the counterpart, but NO org/direct-reports upload
+    assert "You’re set up as Business" in w2
+    # business: invite the counterpart, but NO org/direct-reports upload
     assert "Invite your counterpart" in w2
     assert "Upload your" not in w2 and "direct reports" not in w2
     # the gate is cleared — the dashboard is reachable now
@@ -3154,22 +3154,22 @@ def test_onboarding_engineering_step2_has_direct_reports_and_finance_share(env, 
     client.post("/app/persona", data={"persona": "eng", "next": "welcome"}, follow_redirects=False)
     w = client.get("/app/welcome").text
     assert "You’re set up as Engineering" in w
-    # engineering: upload direct reports (job title), share with finance — not "counterpart",
+    # engineering: upload direct reports (job title), share with business — not "counterpart",
     # and no option to invite an engineering partner
     assert "Upload your direct reports" in w and "job title" in w
-    assert "Share with your finance partner" in w
+    assert "Share with your business partner" in w
     assert "Invite your counterpart" not in w
     assert "Engineering leader" not in w        # the same-role invite option is gone
 
 
 def test_finance_persona_has_no_setup_surfaces(env, client):
-    """Finance manages spend after the fact — it does no setup. So the finance
+    """Business manages spend after the fact — it does no setup. So the business
     experience must NOT expose Connect/API (Sources), the setup checklist, or a
     connect form. Instead its empty state invites the engineering counterpart who
     does the wiring."""
     server, store = env
     _raw_signup(client, "cfo@acme.com")
-    client.post("/app/persona", data={"persona": "finance"})
+    client.post("/app/persona", data={"persona": "business"})
     home = client.get("/app").text
     # nav: no Sources group, no Connect/API setup links
     assert ">Sources<" not in home
@@ -3179,7 +3179,7 @@ def test_finance_persona_has_no_setup_surfaces(env, client):
     assert "Your AI spend dashboard is on its way." in home
     assert "Invite your engineering counterpart" in home
     assert "Connect your sources" not in home
-    # the setup checklist is hidden for finance
+    # the setup checklist is hidden for business
     assert "Run your first audit" not in home
 
     # engineering, by contrast, keeps every setup surface
@@ -3193,7 +3193,7 @@ def test_finance_persona_has_no_setup_surfaces(env, client):
 def test_onboarding_csv_upload_merges_org_structure(env, client):
     _, store = env
     _raw_signup(client, "o2@acme.com")
-    client.post("/app/persona", data={"persona": "finance"})
+    client.post("/app/persona", data={"persona": "business"})
     acct = store.get_account_by_email("o2@acme.com")
     boundary = "B0undary"
     csv = "email,team\nalice@acme.com,Platform\nbob@acme.com,Growth\n"
@@ -3211,7 +3211,7 @@ def test_onboarding_csv_upload_merges_org_structure(env, client):
 def test_onboarding_invite_presets_persona_so_counterpart_skips_gate(env, client):
     server, store = env
     _raw_signup(client, "lead@acme.com")
-    client.post("/app/persona", data={"persona": "finance"})
+    client.post("/app/persona", data={"persona": "business"})
     acct = store.get_account_by_email("lead@acme.com")
     # invite the engineering counterpart with their experience pre-set
     client.post("/app/team/invite", data={"email": "eng@acme.com", "role": "admin", "persona": "eng"})
@@ -3401,7 +3401,7 @@ def test_monthly_close_pack_builds_attaches_focus_and_cadence(env, client, monke
     assert store.get_account(acct["id"])["close_pack_monthly"] == 0
     client.post("/app/digest", data={"weekly": "1", "close_pack": "1"}, follow_redirects=True)
     assert store.get_account(acct["id"])["close_pack_monthly"] == 1
-    assert "Monthly finance close pack" in client.get("/app/settings").text
+    assert "Monthly business close pack" in client.get("/app/settings").text
 
     # nothing to send until there's a report
     assert close_pack.build_close_pack(acct["id"]) is None
@@ -3481,7 +3481,7 @@ def test_identity_map_parses_users_domains_keys():
 
 def test_identity_map_drives_team_allocation_end_to_end(env, client):
     """A saved identity map makes team / cost-center allocation work on real data —
-    the finance lead view and the low-coverage fallback."""
+    the business lead view and the low-coverage fallback."""
     _, store = env
     _signup(client, email="fin@x.com")
     # save the map (email + domain), then import usage with users but NO tickets

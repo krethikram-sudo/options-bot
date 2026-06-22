@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE TABLE IF NOT EXISTS personas (
     account_id INTEGER NOT NULL,
     member_id INTEGER NOT NULL DEFAULT 0,         -- 0 = the account owner; else members.id
-    persona TEXT NOT NULL DEFAULT '',             -- 'finance' | 'eng' : which experience this person sees
+    persona TEXT NOT NULL DEFAULT '',             -- 'business' | 'eng' : which experience this person sees
     PRIMARY KEY (account_id, member_id)
 );
 CREATE TABLE IF NOT EXISTS dashboard_views (
@@ -437,6 +437,12 @@ def init_db(path: str | None = None) -> None:
                 conn.execute(stmt)
             except sqlite3.OperationalError:
                 pass  # column already exists
+        # Reframe: the 'finance leader' persona is now 'business leader'. Migrate any
+        # existing rows so a returning user keeps their experience. Idempotent.
+        try:
+            conn.execute("UPDATE personas SET persona='business' WHERE persona='finance'")
+        except sqlite3.OperationalError:
+            pass
         conn.commit()
     finally:
         conn.close()
@@ -1520,7 +1526,7 @@ def set_outlay_program_status(program_id: int, status: str, path: str | None = N
 
 def record_program_enforcement(account_id: int, counts: dict, now: float | None = None,
                                path: str | None = None) -> int:
-    """Add the gateway's enforcement tallies to each program (so finance sees the cap
+    """Add the gateway's enforcement tallies to each program (so business sees the cap
     actually biting). `counts` is {program_id: n}. Returns the number of programs hit."""
     now = now or time.time()
     day = datetime.fromtimestamp(now, timezone.utc).strftime("%Y-%m-%d")
@@ -1814,11 +1820,11 @@ def audit_events(account_id: int, since_id: int = 0, limit: int = 1000,
     return [dict(r) for r in rows]
 
 
-PERSONAS = ("finance", "eng")
+PERSONAS = ("business", "eng")
 
 
 def get_persona(account_id: int, member_id: int = 0, path: str | None = None) -> str:
-    """The chosen experience ('finance'|'eng'|'') for this person (member_id 0 = owner)."""
+    """The chosen experience ('business'|'eng'|'') for this person (member_id 0 = owner)."""
     conn = connect(path)
     try:
         row = conn.execute("SELECT persona FROM personas WHERE account_id=? AND member_id=?",
@@ -1829,7 +1835,9 @@ def get_persona(account_id: int, member_id: int = 0, path: str | None = None) ->
 
 
 def set_persona(account_id: int, persona: str, member_id: int = 0, path: str | None = None) -> None:
-    """Set this person's experience (per member — finance and eng are separate logins)."""
+    """Set this person's experience (per member — business and eng are separate logins)."""
+    if persona == "finance":           # legacy alias for the reframed 'business' persona
+        persona = "business"
     if persona not in PERSONAS:
         raise StoreError(f"persona must be one of {PERSONAS}")
     conn = connect(path)

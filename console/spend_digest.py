@@ -100,7 +100,7 @@ def build_account_digest(account_id: int, path: Optional[str] = None) -> Optiona
 def send_account_digest(account_id: int, path: Optional[str] = None,
                         now: Optional[float] = None) -> bool:
     """Build the digest, email the owner, and also post it to Slack/Teams when an
-    incoming webhook is configured (eng + finance live there). Stamps the send time.
+    incoming webhook is configured (eng + business live there). Stamps the send time.
     Returns True iff at least one channel actually dispatched."""
     d = build_account_digest(account_id, path)
     if not d:

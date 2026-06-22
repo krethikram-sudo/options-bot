@@ -124,7 +124,7 @@ def _pricing_fidelity(events) -> Optional[dict]:
 
 def reconcile(report: dict, invoice_usd, source: str, window_days: int = 30) -> dict:
     """Attach a reconciliation block: our token-normalized total vs the provider's
-    own *billed* figure. The same shape for every provider, so finance sees one
+    own *billed* figure. The same shape for every provider, so business sees one
     'computed vs billed · within N%' line regardless of where the spend ran. A
     non-positive/absent invoice is a no-op (we never show a bogus 0% reconciliation)."""
     try:
@@ -149,7 +149,7 @@ _DQ_RANK = {"good": 0, "fair": 1, "poor": 2, "na": -1}
 
 
 def data_quality(report: dict, conn: dict | None = None, now: float | None = None) -> dict:
-    """A single 'can finance trust these numbers?' verdict, rolled up from the signals
+    """A single 'can business trust these numbers?' verdict, rolled up from the signals
     that are otherwise scattered across the UI (coverage, reconciliation, pricing
     fidelity, sync freshness). Returns {score, checks:[{key,label,status,detail}]}.
     `status` is good|fair|poor, or 'na' when a check doesn't apply (it never drags
@@ -300,7 +300,7 @@ def identity_graph(text):
     per line) into an `IdentityGraph`. An identifier with a leading `@` or a bare
     `acme.com` maps a whole email **domain**; anything else is an exact user/email
     or API-key id. Powers team / cost-center allocation when tickets don't carry a
-    team — the finance lead view and the low-coverage fallback."""
+    team — the business lead view and the low-coverage fallback."""
     from outlay.join import IdentityGraph
     u2t: dict[str, str] = {}
     d2t: dict[str, str] = {}
@@ -408,7 +408,7 @@ def _people_spend(result) -> list[dict]:
 def _team_spend(result) -> list[dict]:
     """Spend per team / cost-center (user→team from the identity graph), biggest
     first. Honest about coverage: events with no resolved team roll up under
-    '(unassigned)'. This is the finance/FinOps allocation view."""
+    '(unassigned)'. This is the business/FinOps allocation view."""
     total = result.total_cost or 0.0
     agg: dict[str, dict] = {}
     for r in result.rows:
@@ -432,7 +432,7 @@ def _report(work, result, stats, size_models, planned_items=None, window_days: i
     data = to_dict(result, stats, fc, find_anomalies(result, stats), recs,
                    calibration=cal, window_days=window_days)
     data["people"] = _people_spend(result)  # per-engineer spend rollup
-    data["team_spend"] = _team_spend(result)  # per-team / cost-center rollup (finance view)
+    data["team_spend"] = _team_spend(result)  # per-team / cost-center rollup (business view)
     data["class_spend"] = class_spend(data)  # spend by work type (FinOps view)
     data["_model"] = _serialize_model(stats, size_models)  # for the backlog estimator
     # Cache-aware vs naive costing gap on the customer's own usage — the proof that
@@ -608,7 +608,7 @@ def _program_timeline(program: dict, spent: float, projected: float, limit: floa
     """Calendar timeline + month-by-month projection for a program. Straight-lines the
     current run-rate (spend so far → projected end-of-period) across the program's
     months, and compares each month's cumulative projection to a pro-rated slice of
-    the cap so finance can see *when* a program is set to breach, not just whether."""
+    the cap so business can see *when* a program is set to breach, not just whether."""
     import calendar
     from datetime import datetime, timezone
 
@@ -727,7 +727,7 @@ def budget_statuses(report: dict, budgets: list[dict]) -> list[dict]:
 
 # FOCUS (FinOps Open Cost & Usage Specification) — the neutral, community standard
 # for normalized cost+usage data. We emit FOCUS-aligned rows (standard column names)
-# at the ticket grain with team/work-type Tags, so finance can load Outlay's spend
+# at the ticket grain with team/work-type Tags, so business can load Outlay's spend
 # into any FOCUS-aware FinOps/BI tool. (Aligned, not formally certified-conformant.)
 FOCUS_COLUMNS = [
     "BilledCost", "EffectiveCost", "BillingCurrency",
@@ -774,7 +774,7 @@ def report_focus_csv(report: dict, window_days: int = 30) -> str:
 
 
 def report_csv(report: dict, view: str = "tickets") -> str:
-    """Serialize a slice of the report to CSV for finance/sheets export.
+    """Serialize a slice of the report to CSV for business/sheets export.
     view: tickets (spend per ticket) | people (spend per engineer) | savings."""
     import csv
     import io
@@ -792,7 +792,7 @@ def report_csv(report: dict, view: str = "tickets") -> str:
             w.writerow([c.get("task_class"), c.get("tickets"), c.get("spent_usd"),
                         round(c.get("share", 0) * 100, 1)])
     elif view == "teams":
-        # Per-team / cost-center allocation for finance showback / chargeback.
+        # Per-team / cost-center allocation for business showback / chargeback.
         w.writerow(["team", "spend_usd", "share_pct", "events"])
         for t in report.get("team_spend", []):
             w.writerow([t.get("team"), t.get("spent_usd"), round(t.get("share", 0) * 100, 1),
