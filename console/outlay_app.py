@@ -444,6 +444,15 @@ def _report(work, result, stats, size_models, planned_items=None, window_days: i
             data["pricing_fidelity"] = pf  # unrecognized models priced by nearest tier
     if planned_items:
         data["estimate"] = _serialize_plan(estimate_plan(planned_items, stats, size_models))
+    else:
+        # Default: price the open backlog from the tracker you already connected, so
+        # the Estimate page works out of the box — no JSON paste required. Flagged so
+        # the UI can label it "your open backlog" vs a hand-pasted what-if plan.
+        open_items = [w for w in work if w.is_open]
+        if open_items:
+            est = _serialize_plan(estimate_plan(open_items, stats, size_models))
+            est["from_backlog"] = True
+            data["estimate"] = est
     return data
 
 
@@ -477,13 +486,6 @@ def build_report(issues, usage, planned: Optional[object] = None, window_days: i
     return _report(work, result, stats, size_models, planned_items, window_days, events=events)
 
 
-_SAMPLE_PLAN = ('{"items":[{"id":"PROJ-201","title":"Add SSO (SAML + SCIM)",'
-                '"requirements":"Multi-tenant SAML, SCIM provisioning, audit log","points":8},'
-                '{"id":"PROJ-202","title":"Fix flaky checkout test","points":2},'
-                '{"id":"PROJ-203","title":"Migrate billing to new pricing engine",'
-                '"requirements":"Backfill historical invoices, dual-write window","points":13}]}')
-
-
 def sample_report() -> dict:
     """Build a fully-populated report from the bundled fixtures so a prospect can
     see the product live before connecting any keys. Flagged `_sample` so the UI
@@ -493,9 +495,10 @@ def sample_report() -> dict:
     # Rich demo dataset (dozens of tickets across teams) so the dashboard a
     # prospect sees is realistic — believable coverage + a measured accuracy
     # number, not a 6-ticket toy. Regenerate with `python -m outlay.fixtures.gen_demo`.
+    # No `planned=`: the Estimate page prices the connected *open* backlog by default
+    # (what a real customer sees), so the demo matches reality.
     report = build_report((fix / "demo_github_issues.json").read_text(),
-                          (fix / "demo_anthropic_usage.json").read_text(),
-                          planned=_SAMPLE_PLAN)
+                          (fix / "demo_anthropic_usage.json").read_text())
     report["_sample"] = True
     return report
 

@@ -8,6 +8,18 @@ screen-by-screen customer flow for **each persona** (Finance and Engineering).*
 > app with sample data), embedded inline under its heading. 27 screens in
 > `docs/images/walkthrough/`.
 
+> **Review round 1 — fixes applied (screenshots reflect these):**
+> 1. **Billing trial badge** no longer contradicts itself — shows "Trial · starts at
+>    setup" when not started, instead of a false "14d left" countdown.
+> 2. **Banner fatigue** removed — the trial banner shows on Overview only (the sidebar
+>    pill persists status elsewhere); pages no longer stack 2–3 banners.
+> 3. **Sample dataset scaled to enterprise** — the worked demo is now a believable
+>    ~$79k/quarter across 8 teams (was ~$1.5k), with a $79k-real-vs-$406k-naive "why
+>    this number is right" callout. Regenerate via `python -m outlay.fixtures.gen_demo`.
+> 4. **Estimate prices the connected backlog by default** — no JSON paste; the paste
+>    box is now an optional "what-if." Demo tickets carry story points so estimates vary.
+> 5. **Finance gets a demo-gated sample preview** so a finance-led demo isn't a dead end.
+
 **Status of this audit:** A live end-to-end smoke test was run against the actual
 app (FastAPI test client driving real routes). **54 of 55 checks passed**; the one
 miss was a test-script omission (a Program requires at least one scope line — when
@@ -182,10 +194,14 @@ This is what finance sees until engineering has connected the sources:
   audit reconciles → your numbers appear here automatically).
 - Card **"Invite your engineering counterpart"** — one-click invite (role + persona
   pre-set so they skip the gate).
+- **"See it with sample data →"** — a demo-gated preview (founder/demo accounts only)
+  so a finance prospect can be walked through the real dashboard instead of an empty
+  room. Regular finance users don't see it (sample data is demo-only by design).
 - **Nav has no Sources group** — only **Analyze** (Spend · Budgets · Programs) and
   **Workspace**.
 - Trial pill reads "Trial · starts at setup" and points at *Invite engineering*, not a
-  connect form.
+  connect form. (The full trial banner shows on Overview only — the sidebar pill
+  persists status elsewhere, so it's no longer repeated on every page.)
 
 ### F4 · Finance overview — *with data* (`/app`)
 
@@ -332,10 +348,16 @@ Finance does not see Connect or API.)*
 ![Estimate your backlog](images/walkthrough/18_eng_estimate.png)
 
 - H1 **"Estimate your backlog."**
-- **"Paste a planned backlog"** → **"Backlog estimate"** (per-item cost with confidence
-  tiers: high = has points + fitted size model; medium = class history; low = thin) →
-  **"If you commit this backlog"** (quarterly budget with a variance-pooled band).
-  Prices planned work *before* it's built, from the learned cost model.
+- **Leads with "Your open backlog, priced"** — the open tickets from the *connected*
+  tracker, each priced against the learned cost model, biggest first (no JSON paste
+  required). Per-item confidence tiers: high = has points + fitted size model; medium =
+  class history; low = thin. The list caps to the top 15 with a "+N more" note.
+- **"Price a different backlog"** — a collapsed, optional what-if box: paste a JSON
+  plan to model work you haven't filed yet. When used, the scenario card adds it *on
+  top of* the open-work forecast.
+- **"Open backlog vs quarter budget" / "If you commit this backlog"** — projection vs a
+  set budget (variance-pooled band). The connected-backlog view shows the backlog total
+  alone (it *is* the open work — no double-count); the what-if view shows forecast + plan.
 
 ### E9 · Budgets (`/app/outlay/budgets`)
 Same as F6 — engineering sets/uses budgets too.

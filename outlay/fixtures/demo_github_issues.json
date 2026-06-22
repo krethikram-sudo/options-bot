@@ -10,304 +10,142 @@
 "bug"
 ],
 "head_ref": "fix/200-auth",
-"team": "payments",
+"team": "infra",
 "milestone": {
-"title": "Payments hardening"
+"title": "Cluster autoscaling"
 },
-"additions": 527,
-"deletions": 111
+"points": 5,
+"additions": 452,
+"deletions": 216
 },
 {
 "number": 201,
-"title": "Crash on empty ledger payload",
+"title": "Flaky retry under load on order",
 "state": "closed",
-"created_at": "2026-06-05T07:28:17Z",
-"merged_at": "2026-06-07T03:39:06Z",
+"created_at": "2026-06-08T02:24:04Z",
+"merged_at": "2026-06-11T07:48:21Z",
 "labels": [
 "bug"
 ],
-"head_ref": "fix/201-ledger",
+"head_ref": "fix/201-order",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 8,
+"additions": 475,
+"deletions": 37
+},
+{
+"number": 202,
+"title": "Memory leak in billing worker",
+"state": "closed",
+"created_at": "2026-06-07T12:32:05Z",
+"merged_at": "2026-06-09T05:46:27Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/202-billing",
 "team": "growth",
 "milestone": {
 "title": "Billing v2"
 },
-"additions": 192,
-"deletions": 126
-},
-{
-"number": 202,
-"title": "order webhook signature mismatch",
-"state": "closed",
-"created_at": "2026-06-01T00:02:48Z",
-"merged_at": "2026-06-01T20:56:31Z",
-"labels": [
-"bug"
-],
-"head_ref": "fix/202-order",
-"team": "platform",
-"milestone": {
-"title": "Q3 Stability"
-},
-"additions": 480,
-"deletions": 183
-},
-{
-"number": 203,
-"title": "Crash on empty ledger payload",
-"state": "closed",
-"created_at": "2026-06-01T16:32:27Z",
-"merged_at": "2026-06-02T16:46:11Z",
-"labels": [
-"bug"
-],
-"head_ref": "fix/203-ledger",
-"team": "platform",
-"milestone": {
-"title": "Q3 Stability"
-},
-"additions": 76,
-"deletions": 108
-},
-{
-"number": 204,
-"title": "Off-by-one in billing pagination",
-"state": "closed",
-"created_at": "2026-05-28T19:08:57Z",
-"merged_at": "2026-05-30T03:42:36Z",
-"labels": [
-"bug"
-],
-"head_ref": "fix/204-billing",
-"team": "payments",
-"milestone": {
-"title": "Payments hardening"
-},
+"points": 5,
 "additions": 31,
 "deletions": 107
 },
 {
-"number": 205,
-"title": "Race condition in payout cache",
+"number": 203,
+"title": "Race condition in webhook cache",
 "state": "closed",
-"created_at": "2026-06-07T06:19:47Z",
-"merged_at": "2026-06-08T03:45:51Z",
+"created_at": "2026-06-07T17:23:30Z",
+"merged_at": "2026-06-11T07:39:39Z",
 "labels": [
 "bug"
 ],
-"head_ref": "fix/205-payout",
+"head_ref": "fix/203-webhook",
 "team": "growth",
 "milestone": {
 "title": "Billing v2"
 },
-"additions": 36,
-"deletions": 145
+"points": 5,
+"additions": 419,
+"deletions": 45
+},
+{
+"number": 204,
+"title": "Flaky retry under load on search",
+"state": "closed",
+"created_at": "2026-06-13T02:34:58Z",
+"merged_at": "2026-06-15T00:56:04Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/204-search",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 8,
+"additions": 528,
+"deletions": 275
+},
+{
+"number": 205,
+"title": "Timeout on large invoice export",
+"state": "closed",
+"created_at": "2026-06-08T04:25:01Z",
+"merged_at": "2026-06-10T05:22:12Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/205-invoice",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 2,
+"additions": 494,
+"deletions": 144
 },
 {
 "number": 206,
-"title": "Off-by-one in sync pagination",
+"title": "Crash on empty notification payload",
 "state": "closed",
-"created_at": "2026-05-27T06:40:15Z",
-"merged_at": "2026-05-30T21:25:01Z",
+"created_at": "2026-05-30T18:55:09Z",
+"merged_at": "2026-06-01T07:09:26Z",
 "labels": [
 "bug"
 ],
-"head_ref": "fix/206-sync",
-"team": "platform",
+"head_ref": "fix/206-notification",
+"team": "growth",
 "milestone": {
-"title": "Q3 Stability"
+"title": "Billing v2"
 },
-"additions": 157,
-"deletions": 244
+"points": 3,
+"additions": 498,
+"deletions": 149
 },
 {
 "number": 207,
-"title": "Crash on empty ledger payload",
+"title": "Timeout on large sync export",
 "state": "closed",
-"created_at": "2026-06-03T17:43:26Z",
-"merged_at": "2026-06-06T08:41:54Z",
+"created_at": "2026-06-05T08:38:06Z",
+"merged_at": "2026-06-07T04:59:56Z",
 "labels": [
 "bug"
 ],
-"head_ref": "fix/207-ledger",
-"team": "payments",
+"head_ref": "fix/207-sync",
+"team": "growth",
 "milestone": {
-"title": "Payments hardening"
+"title": "Billing v2"
 },
-"additions": 27,
-"deletions": 227
+"points": 8,
+"additions": 331,
+"deletions": 63
 },
 {
 "number": 208,
-"title": "Race condition in pricing cache",
-"state": "closed",
-"created_at": "2026-06-03T03:22:11Z",
-"merged_at": "2026-06-06T14:12:33Z",
-"labels": [
-"bug"
-],
-"head_ref": "fix/208-pricing",
-"team": "platform",
-"milestone": {
-"title": "Q3 Stability"
-},
-"additions": 72,
-"deletions": 228
-},
-{
-"number": 209,
-"title": "Memory leak in upload worker",
-"state": "closed",
-"created_at": "2026-06-12T22:10:40Z",
-"merged_at": "2026-06-14T13:23:29Z",
-"labels": [
-"bug"
-],
-"head_ref": "fix/209-upload",
-"team": "growth",
-"milestone": {
-"title": "Billing v2"
-},
-"additions": 82,
-"deletions": 110
-},
-{
-"number": 210,
-"title": "Timeout on large billing export",
-"state": "closed",
-"created_at": "2026-06-01T21:30:54Z",
-"merged_at": "2026-06-04T11:32:42Z",
-"labels": [
-"bug"
-],
-"head_ref": "fix/210-billing",
-"team": "payments",
-"milestone": {
-"title": "Payments hardening"
-},
-"additions": 73,
-"deletions": 59
-},
-{
-"number": 211,
-"title": "NullPointer in ledger parser",
-"state": "closed",
-"created_at": "2026-06-09T00:25:38Z",
-"merged_at": "2026-06-10T06:16:55Z",
-"labels": [
-"bug"
-],
-"head_ref": "fix/211-ledger",
-"team": "platform",
-"milestone": {
-"title": "Q3 Stability"
-},
-"additions": 547,
-"deletions": 124
-},
-{
-"number": 212,
-"title": "Incorrect notification rounding",
-"state": "closed",
-"created_at": "2026-05-25T23:15:00Z",
-"merged_at": "2026-05-27T20:06:13Z",
-"labels": [
-"bug"
-],
-"head_ref": "fix/212-notification",
-"team": "platform",
-"milestone": {
-"title": "Q3 Stability"
-},
-"additions": 228,
-"deletions": 119
-},
-{
-"number": 213,
-"title": "NullPointer in checkout parser",
-"state": "closed",
-"created_at": "2026-06-08T09:10:11Z",
-"merged_at": "2026-06-11T09:03:43Z",
-"labels": [
-"bug"
-],
-"head_ref": "fix/213-checkout",
-"team": "growth",
-"milestone": {
-"title": "Billing v2"
-},
-"additions": 94,
-"deletions": 272
-},
-{
-"number": 214,
-"title": "Race condition in upload cache",
-"state": "closed",
-"created_at": "2026-06-13T23:57:23Z",
-"merged_at": "2026-06-16T15:35:51Z",
-"labels": [
-"bug"
-],
-"head_ref": "fix/214-upload",
-"team": "platform",
-"milestone": {
-"title": "Q3 Stability"
-},
-"additions": 258,
-"deletions": 252
-},
-{
-"number": 215,
-"title": "Off-by-one in billing pagination",
-"state": "closed",
-"created_at": "2026-06-01T22:50:51Z",
-"merged_at": "2026-06-03T05:03:24Z",
-"labels": [
-"bug"
-],
-"head_ref": "fix/215-billing",
-"team": "growth",
-"milestone": {
-"title": "Billing v2"
-},
-"additions": 501,
-"deletions": 33
-},
-{
-"number": 216,
-"title": "Crash on empty billing payload",
-"state": "closed",
-"created_at": "2026-06-10T04:16:41Z",
-"merged_at": "2026-06-14T06:42:26Z",
-"labels": [
-"bug"
-],
-"head_ref": "fix/216-billing",
-"team": "mobile",
-"milestone": {
-"title": "Mobile GA"
-},
-"additions": 223,
-"deletions": 40
-},
-{
-"number": 217,
-"title": "Timeout on large search export",
-"state": "closed",
-"created_at": "2026-06-06T08:58:48Z",
-"merged_at": "2026-06-10T05:32:27Z",
-"labels": [
-"bug"
-],
-"head_ref": "fix/217-search",
-"team": "growth",
-"milestone": {
-"title": "Billing v2"
-},
-"additions": 575,
-"deletions": 283
-},
-{
-"number": 218,
 "title": "NullPointer in webhook parser",
 "state": "closed",
 "created_at": "2026-05-31T03:13:23Z",
@@ -315,935 +153,4118 @@
 "labels": [
 "bug"
 ],
-"head_ref": "fix/218-webhook",
-"team": "growth",
+"head_ref": "fix/208-webhook",
+"team": "payments",
 "milestone": {
-"title": "Billing v2"
+"title": "Payments hardening"
 },
-"additions": 123,
-"deletions": 42
+"points": 3,
+"additions": 676,
+"deletions": 270
 },
 {
-"number": 219,
-"title": "Incorrect order rounding",
+"number": 209,
+"title": "Off-by-one in ledger pagination",
 "state": "closed",
-"created_at": "2026-06-06T20:43:39Z",
-"merged_at": "2026-06-09T06:42:27Z",
+"created_at": "2026-06-09T15:39:05Z",
+"merged_at": "2026-06-13T10:59:45Z",
 "labels": [
 "bug"
 ],
-"head_ref": "fix/219-order",
-"team": "mobile",
-"milestone": {
-"title": "Mobile GA"
-},
-"additions": 71,
-"deletions": 133
-},
-{
-"number": 220,
-"title": "search audit-log streaming",
-"state": "closed",
-"created_at": "2026-06-14T04:49:17Z",
-"merged_at": "2026-06-18T06:01:48Z",
-"labels": [
-"feature"
-],
-"head_ref": "feature/220-search",
-"team": "mobile",
-"milestone": {
-"title": "Mobile GA"
-},
-"additions": 318,
-"deletions": 79
-},
-{
-"number": 221,
-"title": "Real-time webhook dashboard",
-"state": "closed",
-"created_at": "2026-05-30T11:14:16Z",
-"merged_at": "2026-06-03T08:28:06Z",
-"labels": [
-"feature"
-],
-"head_ref": "feature/221-webhook",
+"head_ref": "fix/209-ledger",
 "team": "payments",
 "milestone": {
 "title": "Payments hardening"
 },
-"additions": 432,
-"deletions": 215
+"points": 2,
+"additions": 618,
+"deletions": 42
 },
 {
-"number": 222,
-"title": "order usage export to CSV",
+"number": 210,
+"title": "Memory leak in pricing worker",
 "state": "closed",
-"created_at": "2026-06-04T12:54:08Z",
-"merged_at": "2026-06-08T16:15:36Z",
+"created_at": "2026-05-27T16:35:58Z",
+"merged_at": "2026-05-30T12:10:30Z",
 "labels": [
-"feature"
+"bug"
 ],
-"head_ref": "feature/222-order",
+"head_ref": "fix/210-pricing",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 2,
+"additions": 259,
+"deletions": 261
+},
+{
+"number": 211,
+"title": "NullPointer in pricing parser",
+"state": "closed",
+"created_at": "2026-06-12T08:20:01Z",
+"merged_at": "2026-06-14T12:32:19Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/211-pricing",
 "team": "growth",
 "milestone": {
 "title": "Billing v2"
 },
-"additions": 177,
-"deletions": 115
+"points": 5,
+"additions": 101,
+"deletions": 85
 },
 {
-"number": 223,
-"title": "checkout audit-log streaming",
+"number": 212,
+"title": "Crash on empty ledger payload",
 "state": "closed",
-"created_at": "2026-06-08T08:52:20Z",
-"merged_at": "2026-06-09T07:56:43Z",
+"created_at": "2026-06-04T14:02:21Z",
+"merged_at": "2026-06-06T04:48:01Z",
 "labels": [
-"feature"
+"bug"
 ],
-"head_ref": "feature/223-checkout",
-"team": "growth",
+"head_ref": "fix/212-ledger",
+"team": "infra",
 "milestone": {
-"title": "Billing v2"
+"title": "Cluster autoscaling"
 },
-"additions": 497,
-"deletions": 277
+"points": 8,
+"additions": 477,
+"deletions": 93
 },
 {
-"number": 224,
-"title": "Self-serve checkout budgets",
+"number": 213,
+"title": "Crash on empty billing payload",
 "state": "closed",
-"created_at": "2026-06-07T10:03:15Z",
-"merged_at": "2026-06-08T13:05:31Z",
+"created_at": "2026-05-31T14:24:36Z",
+"merged_at": "2026-06-04T12:40:57Z",
 "labels": [
-"feature"
+"bug"
 ],
-"head_ref": "feature/224-checkout",
-"team": "platform",
+"head_ref": "fix/213-billing",
+"team": "data",
 "milestone": {
-"title": "Q3 Stability"
+"title": "Warehouse migration"
 },
-"additions": 196,
-"deletions": 255
+"points": 5,
+"additions": 411,
+"deletions": 192
 },
 {
-"number": 225,
-"title": "SSO/SCIM provisioning for sync",
+"number": 214,
+"title": "NullPointer in sync parser",
 "state": "closed",
-"created_at": "2026-05-26T06:13:09Z",
-"merged_at": "2026-05-27T22:56:56Z",
+"created_at": "2026-05-29T14:32:38Z",
+"merged_at": "2026-06-01T05:29:47Z",
 "labels": [
-"feature"
+"bug"
 ],
-"head_ref": "feature/225-sync",
-"team": "growth",
+"head_ref": "fix/214-sync",
+"team": "data",
 "milestone": {
-"title": "Billing v2"
+"title": "Warehouse migration"
 },
-"additions": 112,
-"deletions": 86
-},
-{
-"number": 226,
-"title": "auth usage export to CSV",
-"state": "closed",
-"created_at": "2026-06-03T03:12:50Z",
-"merged_at": "2026-06-04T17:11:49Z",
-"labels": [
-"feature"
-],
-"head_ref": "feature/226-auth",
-"team": "growth",
-"milestone": {
-"title": "Billing v2"
-},
-"additions": 157,
-"deletions": 182
+"points": 2,
+"additions": 230,
+"deletions": 45
 },
 {
-"number": 227,
-"title": "Configurable pricing retention",
+"number": 215,
+"title": "NullPointer in sync parser",
 "state": "closed",
-"created_at": "2026-05-27T04:17:07Z",
-"merged_at": "2026-05-30T02:40:17Z",
+"created_at": "2026-06-02T13:34:23Z",
+"merged_at": "2026-06-04T15:05:57Z",
 "labels": [
-"feature"
+"bug"
 ],
-"head_ref": "feature/227-pricing",
-"team": "platform",
-"milestone": {
-"title": "Q3 Stability"
-},
-"additions": 639,
-"deletions": 77
-},
-{
-"number": 228,
-"title": "webhook audit-log streaming",
-"state": "closed",
-"created_at": "2026-05-29T05:24:32Z",
-"merged_at": "2026-05-31T00:12:24Z",
-"labels": [
-"feature"
-],
-"head_ref": "feature/228-webhook",
-"team": "growth",
-"milestone": {
-"title": "Billing v2"
-},
-"additions": 9,
-"deletions": 166
-},
-{
-"number": 229,
-"title": "order usage export to CSV",
-"state": "closed",
-"created_at": "2026-06-12T06:23:54Z",
-"merged_at": "2026-06-14T04:36:27Z",
-"labels": [
-"feature"
-],
-"head_ref": "feature/229-order",
-"team": "mobile",
-"milestone": {
-"title": "Mobile GA"
-},
-"additions": 271,
-"deletions": 201
-},
-{
-"number": 230,
-"title": "Real-time webhook dashboard",
-"state": "closed",
-"created_at": "2026-05-25T19:18:15Z",
-"merged_at": "2026-05-27T02:25:47Z",
-"labels": [
-"feature"
-],
-"head_ref": "feature/230-webhook",
-"team": "platform",
-"milestone": {
-"title": "Q3 Stability"
-},
-"additions": 663,
-"deletions": 10
-},
-{
-"number": 231,
-"title": "Self-serve checkout budgets",
-"state": "closed",
-"created_at": "2026-05-31T00:47:34Z",
-"merged_at": "2026-05-31T23:35:14Z",
-"labels": [
-"feature"
-],
-"head_ref": "feature/231-checkout",
-"team": "mobile",
-"milestone": {
-"title": "Mobile GA"
-},
-"additions": 134,
-"deletions": 240
-},
-{
-"number": 232,
-"title": "Configurable payout retention",
-"state": "closed",
-"created_at": "2026-06-09T22:38:28Z",
-"merged_at": "2026-06-12T12:41:13Z",
-"labels": [
-"feature"
-],
-"head_ref": "feature/232-payout",
+"head_ref": "fix/215-sync",
 "team": "payments",
 "milestone": {
 "title": "Payments hardening"
 },
-"additions": 400,
-"deletions": 204
-},
-{
-"number": 233,
-"title": "Configurable webhook retention",
-"state": "closed",
-"created_at": "2026-05-26T10:00:28Z",
-"merged_at": "2026-05-29T13:49:55Z",
-"labels": [
-"feature"
-],
-"head_ref": "feature/233-webhook",
-"team": "mobile",
-"milestone": {
-"title": "Mobile GA"
-},
-"additions": 545,
-"deletions": 119
-},
-{
-"number": 234,
-"title": "Consolidate payout clients",
-"state": "closed",
-"created_at": "2026-06-10T23:40:51Z",
-"merged_at": "2026-06-12T17:04:34Z",
-"labels": [
-"refactor"
-],
-"head_ref": "refactor/234-payout",
-"team": "mobile",
-"milestone": {
-"title": "Mobile GA"
-},
-"additions": 109,
-"deletions": 300
-},
-{
-"number": 235,
-"title": "Consolidate report clients",
-"state": "closed",
-"created_at": "2026-06-06T15:03:55Z",
-"merged_at": "2026-06-09T01:17:40Z",
-"labels": [
-"refactor"
-],
-"head_ref": "refactor/235-report",
-"team": "mobile",
-"milestone": {
-"title": "Mobile GA"
-},
-"additions": 360,
-"deletions": 123
-},
-{
-"number": 236,
-"title": "Type the webhook boundary",
-"state": "closed",
-"created_at": "2026-05-31T19:37:46Z",
-"merged_at": "2026-06-01T22:18:47Z",
-"labels": [
-"refactor"
-],
-"head_ref": "refactor/236-webhook",
-"team": "growth",
-"milestone": {
-"title": "Billing v2"
-},
-"additions": 284,
-"deletions": 199
-},
-{
-"number": 237,
-"title": "Split the payout monolith module",
-"state": "closed",
-"created_at": "2026-06-05T16:13:56Z",
-"merged_at": "2026-06-08T20:42:57Z",
-"labels": [
-"refactor"
-],
-"head_ref": "refactor/237-payout",
-"team": "growth",
-"milestone": {
-"title": "Billing v2"
-},
-"additions": 365,
-"deletions": 2
-},
-{
-"number": 238,
-"title": "Consolidate checkout clients",
-"state": "closed",
-"created_at": "2026-06-02T09:37:55Z",
-"merged_at": "2026-06-04T19:22:15Z",
-"labels": [
-"refactor"
-],
-"head_ref": "refactor/238-checkout",
-"team": "platform",
-"milestone": {
-"title": "Q3 Stability"
-},
-"additions": 423,
-"deletions": 107
-},
-{
-"number": 239,
-"title": "Split the order monolith module",
-"state": "closed",
-"created_at": "2026-06-08T09:12:19Z",
-"merged_at": "2026-06-11T05:01:08Z",
-"labels": [
-"refactor"
-],
-"head_ref": "refactor/239-order",
-"team": "mobile",
-"milestone": {
-"title": "Mobile GA"
-},
-"additions": 90,
-"deletions": 74
-},
-{
-"number": 240,
-"title": "Type the notification boundary",
-"state": "closed",
-"created_at": "2026-06-03T18:36:37Z",
-"merged_at": "2026-06-06T13:03:17Z",
-"labels": [
-"refactor"
-],
-"head_ref": "refactor/240-notification",
-"team": "growth",
-"milestone": {
-"title": "Billing v2"
-},
-"additions": 413,
-"deletions": 135
-},
-{
-"number": 241,
-"title": "Migrate ledger to async",
-"state": "closed",
-"created_at": "2026-06-12T14:54:05Z",
-"merged_at": "2026-06-16T20:56:43Z",
-"labels": [
-"refactor"
-],
-"head_ref": "refactor/241-ledger",
-"team": "growth",
-"milestone": {
-"title": "Billing v2"
-},
-"additions": 214,
-"deletions": 290
-},
-{
-"number": 242,
-"title": "Migrate order to async",
-"state": "closed",
-"created_at": "2026-06-12T21:11:24Z",
-"merged_at": "2026-06-15T20:18:19Z",
-"labels": [
-"refactor"
-],
-"head_ref": "refactor/242-order",
-"team": "platform",
-"milestone": {
-"title": "Q3 Stability"
-},
-"additions": 668,
-"deletions": 202
-},
-{
-"number": 243,
-"title": "Type the report boundary",
-"state": "closed",
-"created_at": "2026-05-31T22:33:30Z",
-"merged_at": "2026-06-04T19:47:10Z",
-"labels": [
-"refactor"
-],
-"head_ref": "refactor/243-report",
-"team": "growth",
-"milestone": {
-"title": "Billing v2"
-},
-"additions": 501,
-"deletions": 259
-},
-{
-"number": 244,
-"title": "Snapshot tests for notification",
-"state": "closed",
-"created_at": "2026-06-13T05:25:29Z",
-"merged_at": "2026-06-15T11:13:25Z",
-"labels": [
-"test"
-],
-"head_ref": "test/244-notification",
-"team": "platform",
-"milestone": {
-"title": "Q3 Stability"
-},
-"additions": 54,
+"points": 5,
+"additions": 43,
 "deletions": 46
 },
 {
-"number": 245,
-"title": "Load test notification",
+"number": 216,
+"title": "Race condition in payout cache",
 "state": "closed",
-"created_at": "2026-05-29T02:32:31Z",
-"merged_at": "2026-05-31T13:39:25Z",
+"created_at": "2026-06-09T14:47:18Z",
+"merged_at": "2026-06-11T01:52:50Z",
 "labels": [
-"test"
+"bug"
 ],
-"head_ref": "test/245-notification",
+"head_ref": "fix/216-payout",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 1,
+"additions": 640,
+"deletions": 81
+},
+{
+"number": 217,
+"title": "Incorrect invoice rounding",
+"state": "closed",
+"created_at": "2026-06-01T10:20:36Z",
+"merged_at": "2026-06-05T04:24:24Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/217-invoice",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 13,
+"additions": 665,
+"deletions": 300
+},
+{
+"number": 218,
+"title": "Off-by-one in report pagination",
+"state": "closed",
+"created_at": "2026-06-02T04:26:00Z",
+"merged_at": "2026-06-05T09:13:39Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/218-report",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 5,
+"additions": 659,
+"deletions": 154
+},
+{
+"number": 219,
+"title": "Timeout on large notification export",
+"state": "closed",
+"created_at": "2026-05-30T05:33:27Z",
+"merged_at": "2026-05-31T12:41:40Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/219-notification",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 3,
+"additions": 137,
+"deletions": 175
+},
+{
+"number": 220,
+"title": "Incorrect order rounding",
+"state": "closed",
+"created_at": "2026-06-04T10:04:21Z",
+"merged_at": "2026-06-07T00:56:01Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/220-order",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 3,
+"additions": 422,
+"deletions": 230
+},
+{
+"number": 221,
+"title": "Off-by-one in report pagination",
+"state": "closed",
+"created_at": "2026-05-29T15:36:13Z",
+"merged_at": "2026-06-02T17:58:37Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/221-report",
 "team": "growth",
 "milestone": {
 "title": "Billing v2"
 },
-"additions": 40,
-"deletions": 160
+"points": 8,
+"additions": 307,
+"deletions": 145
 },
 {
-"number": 246,
-"title": "Integration tests for upload",
+"number": 222,
+"title": "Timeout on large report export",
 "state": "closed",
-"created_at": "2026-06-05T13:03:09Z",
-"merged_at": "2026-06-09T08:16:43Z",
+"created_at": "2026-06-13T11:35:40Z",
+"merged_at": "2026-06-17T18:21:16Z",
 "labels": [
-"test"
+"bug"
 ],
-"head_ref": "test/246-upload",
-"team": "growth",
+"head_ref": "fix/222-report",
+"team": "data",
 "milestone": {
-"title": "Billing v2"
+"title": "Warehouse migration"
 },
-"additions": 226,
-"deletions": 178
+"points": 3,
+"additions": 655,
+"deletions": 239
 },
 {
-"number": 247,
-"title": "Fuzz the ledger parser",
+"number": 223,
+"title": "NullPointer in report parser",
 "state": "closed",
-"created_at": "2026-06-09T09:07:41Z",
-"merged_at": "2026-06-11T06:59:19Z",
+"created_at": "2026-05-25T15:59:43Z",
+"merged_at": "2026-05-26T15:40:48Z",
 "labels": [
-"test"
+"bug"
 ],
-"head_ref": "test/247-ledger",
-"team": "growth",
+"head_ref": "fix/223-report",
+"team": "data",
 "milestone": {
-"title": "Billing v2"
+"title": "Warehouse migration"
 },
-"additions": 632,
-"deletions": 233
+"points": 5,
+"additions": 676,
+"deletions": 55
 },
 {
-"number": 248,
-"title": "Integration tests for pricing",
+"number": 224,
+"title": "Flaky retry under load on order",
 "state": "closed",
-"created_at": "2026-06-13T16:50:48Z",
-"merged_at": "2026-06-17T00:01:30Z",
+"created_at": "2026-05-27T01:12:03Z",
+"merged_at": "2026-05-29T15:45:05Z",
 "labels": [
-"test"
+"bug"
 ],
-"head_ref": "test/248-pricing",
+"head_ref": "fix/224-order",
 "team": "mobile",
 "milestone": {
 "title": "Mobile GA"
 },
-"additions": 423,
-"deletions": 287
+"points": 5,
+"additions": 662,
+"deletions": 254
 },
 {
-"number": 249,
-"title": "Load test billing",
+"number": 225,
+"title": "Incorrect sync rounding",
+"state": "closed",
+"created_at": "2026-05-28T13:55:59Z",
+"merged_at": "2026-05-31T05:05:05Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/225-sync",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 2,
+"additions": 379,
+"deletions": 175
+},
+{
+"number": 226,
+"title": "Timeout on large order export",
+"state": "closed",
+"created_at": "2026-05-27T19:22:52Z",
+"merged_at": "2026-05-29T08:32:13Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/226-order",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 3,
+"additions": 364,
+"deletions": 227
+},
+{
+"number": 227,
+"title": "Timeout on large notification export",
+"state": "closed",
+"created_at": "2026-06-03T15:18:01Z",
+"merged_at": "2026-06-07T05:44:54Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/227-notification",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 5,
+"additions": 245,
+"deletions": 47
+},
+{
+"number": 228,
+"title": "Off-by-one in billing pagination",
+"state": "closed",
+"created_at": "2026-06-05T18:18:06Z",
+"merged_at": "2026-06-09T08:31:36Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/228-billing",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 8,
+"additions": 600,
+"deletions": 167
+},
+{
+"number": 229,
+"title": "Crash on empty notification payload",
+"state": "closed",
+"created_at": "2026-06-11T11:21:59Z",
+"merged_at": "2026-06-12T07:37:35Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/229-notification",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 21,
+"additions": 245,
+"deletions": 166
+},
+{
+"number": 230,
+"title": "Timeout on large checkout export",
+"state": "closed",
+"created_at": "2026-05-29T22:16:23Z",
+"merged_at": "2026-06-02T23:20:57Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/230-checkout",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 5,
+"additions": 323,
+"deletions": 131
+},
+{
+"number": 231,
+"title": "Timeout on large payout export",
+"state": "closed",
+"created_at": "2026-06-11T06:01:41Z",
+"merged_at": "2026-06-12T13:00:40Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/231-payout",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 5,
+"additions": 378,
+"deletions": 218
+},
+{
+"number": 232,
+"title": "Race condition in pricing cache",
+"state": "closed",
+"created_at": "2026-06-08T19:13:57Z",
+"merged_at": "2026-06-12T16:06:14Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/232-pricing",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 3,
+"additions": 168,
+"deletions": 246
+},
+{
+"number": 233,
+"title": "Race condition in payout cache",
+"state": "closed",
+"created_at": "2026-06-02T11:18:49Z",
+"merged_at": "2026-06-05T06:36:04Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/233-payout",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 8,
+"additions": 57,
+"deletions": 164
+},
+{
+"number": 234,
+"title": "Memory leak in checkout worker",
 "state": "closed",
 "created_at": "2026-06-07T01:25:11Z",
 "merged_at": "2026-06-10T05:00:33Z",
 "labels": [
-"test"
+"bug"
 ],
-"head_ref": "test/249-billing",
-"team": "growth",
+"head_ref": "fix/234-checkout",
+"team": "infra",
 "milestone": {
-"title": "Billing v2"
+"title": "Cluster autoscaling"
 },
-"additions": 164,
-"deletions": 237
+"points": 2,
+"additions": 189,
+"deletions": 24
 },
 {
-"number": 250,
-"title": "Integration tests for order",
+"number": 235,
+"title": "Incorrect auth rounding",
 "state": "closed",
-"created_at": "2026-06-06T23:01:42Z",
-"merged_at": "2026-06-08T22:35:47Z",
+"created_at": "2026-05-26T23:09:01Z",
+"merged_at": "2026-05-30T06:24:44Z",
 "labels": [
-"test"
+"bug"
 ],
-"head_ref": "test/250-order",
-"team": "growth",
+"head_ref": "fix/235-auth",
+"team": "mobile",
 "milestone": {
-"title": "Billing v2"
+"title": "Mobile GA"
 },
-"additions": 398,
-"deletions": 131
+"points": 5,
+"additions": 310,
+"deletions": 210
 },
 {
-"number": 251,
-"title": "Fuzz the sync parser",
+"number": 236,
+"title": "Race condition in order cache",
 "state": "closed",
-"created_at": "2026-06-09T05:44:24Z",
-"merged_at": "2026-06-10T20:47:04Z",
+"created_at": "2026-06-04T14:17:10Z",
+"merged_at": "2026-06-07T10:19:24Z",
 "labels": [
-"test"
+"bug"
 ],
-"head_ref": "test/251-sync",
-"team": "platform",
-"milestone": {
-"title": "Q3 Stability"
-},
-"additions": 600,
-"deletions": 68
-},
-{
-"number": 252,
-"title": "Update upload API docs",
-"state": "closed",
-"created_at": "2026-06-10T15:38:59Z",
-"merged_at": "2026-06-13T07:54:58Z",
-"labels": [
-"chore"
-],
-"head_ref": "chore/252-upload",
-"team": "platform",
-"milestone": {
-"title": "Q3 Stability"
-},
-"additions": 540,
-"deletions": 136
-},
-{
-"number": 253,
-"title": "Update invoice API docs",
-"state": "closed",
-"created_at": "2026-05-26T17:25:25Z",
-"merged_at": "2026-05-29T19:33:16Z",
-"labels": [
-"chore"
-],
-"head_ref": "chore/253-invoice",
+"head_ref": "fix/236-order",
 "team": "payments",
 "milestone": {
 "title": "Payments hardening"
 },
-"additions": 605,
-"deletions": 74
+"points": 2,
+"additions": 213,
+"deletions": 235
 },
 {
-"number": 254,
-"title": "Format the search package",
+"number": 237,
+"title": "Incorrect notification rounding",
 "state": "closed",
-"created_at": "2026-06-10T07:27:27Z",
-"merged_at": "2026-06-11T17:35:19Z",
+"created_at": "2026-06-08T12:03:18Z",
+"merged_at": "2026-06-10T02:35:57Z",
 "labels": [
-"chore"
+"bug"
 ],
-"head_ref": "chore/254-search",
-"team": "growth",
+"head_ref": "fix/237-notification",
+"team": "checkout",
 "milestone": {
-"title": "Billing v2"
+"title": "One-click checkout"
 },
-"additions": 662,
-"deletions": 65
+"points": 5,
+"additions": 582,
+"deletions": 80
 },
 {
-"number": 255,
-"title": "Update auth API docs",
+"number": 238,
+"title": "Crash on empty billing payload",
 "state": "closed",
-"created_at": "2026-06-12T13:03:52Z",
-"merged_at": "2026-06-13T12:17:26Z",
+"created_at": "2026-06-13T15:46:07Z",
+"merged_at": "2026-06-14T14:05:45Z",
 "labels": [
-"chore"
+"bug"
 ],
-"head_ref": "chore/255-auth",
-"team": "growth",
+"head_ref": "fix/238-billing",
+"team": "checkout",
 "milestone": {
-"title": "Billing v2"
+"title": "One-click checkout"
 },
-"additions": 237,
-"deletions": 133
-},
-{
-"number": 256,
-"title": "Update auth API docs",
-"state": "closed",
-"created_at": "2026-06-01T13:25:26Z",
-"merged_at": "2026-06-03T03:11:12Z",
-"labels": [
-"chore"
-],
-"head_ref": "chore/256-auth",
-"team": "growth",
-"milestone": {
-"title": "Billing v2"
-},
-"additions": 566,
-"deletions": 49
+"points": 3,
+"additions": 143,
+"deletions": 214
 },
 {
-"number": 257,
-"title": "Format the pricing package",
+"number": 239,
+"title": "Race condition in ledger cache",
 "state": "closed",
-"created_at": "2026-05-30T06:00:08Z",
-"merged_at": "2026-05-31T17:54:48Z",
+"created_at": "2026-06-11T07:14:40Z",
+"merged_at": "2026-06-13T00:26:06Z",
 "labels": [
-"chore"
+"bug"
 ],
-"head_ref": "chore/257-pricing",
+"head_ref": "fix/239-ledger",
 "team": "platform",
 "milestone": {
 "title": "Q3 Stability"
 },
-"additions": 489,
+"points": 3,
+"additions": 538,
+"deletions": 58
+},
+{
+"number": 240,
+"title": "Off-by-one in upload pagination",
+"state": "closed",
+"created_at": "2026-05-27T23:00:15Z",
+"merged_at": "2026-05-29T19:07:04Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/240-upload",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 5,
+"additions": 655,
+"deletions": 61
+},
+{
+"number": 241,
+"title": "Memory leak in sync worker",
+"state": "closed",
+"created_at": "2026-06-10T01:09:55Z",
+"merged_at": "2026-06-13T00:50:44Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/241-sync",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 1,
+"additions": 407,
 "deletions": 140
 },
 {
-"number": 258,
-"title": "Memory leak in order worker",
-"state": "open",
-"created_at": "2026-06-15T07:06:56Z",
+"number": 242,
+"title": "Memory leak in sync worker",
+"state": "closed",
+"created_at": "2026-05-26T07:34:18Z",
+"merged_at": "2026-05-30T05:27:02Z",
 "labels": [
 "bug"
 ],
-"head_ref": "fix/258-order",
+"head_ref": "fix/242-sync",
 "team": "payments",
 "milestone": {
 "title": "Payments hardening"
-}
+},
+"points": 1,
+"additions": 598,
+"deletions": 262
+},
+{
+"number": 243,
+"title": "order webhook signature mismatch",
+"state": "closed",
+"created_at": "2026-05-27T13:12:13Z",
+"merged_at": "2026-05-30T00:04:53Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/243-order",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 8,
+"additions": 420,
+"deletions": 57
+},
+{
+"number": 244,
+"title": "Incorrect search rounding",
+"state": "closed",
+"created_at": "2026-06-11T01:21:28Z",
+"merged_at": "2026-06-12T11:10:37Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/244-search",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 13,
+"additions": 128,
+"deletions": 208
+},
+{
+"number": 245,
+"title": "search webhook signature mismatch",
+"state": "closed",
+"created_at": "2026-06-08T10:48:34Z",
+"merged_at": "2026-06-11T23:50:44Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/245-search",
+"team": "mobile",
+"milestone": {
+"title": "Mobile GA"
+},
+"points": 2,
+"additions": 370,
+"deletions": 107
+},
+{
+"number": 246,
+"title": "Flaky retry under load on ledger",
+"state": "closed",
+"created_at": "2026-06-12T04:44:39Z",
+"merged_at": "2026-06-14T23:04:16Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/246-ledger",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 3,
+"additions": 265,
+"deletions": 12
+},
+{
+"number": 247,
+"title": "Memory leak in sync worker",
+"state": "closed",
+"created_at": "2026-06-06T17:47:12Z",
+"merged_at": "2026-06-09T23:33:52Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/247-sync",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 5,
+"additions": 671,
+"deletions": 21
+},
+{
+"number": 248,
+"title": "Flaky retry under load on notification",
+"state": "closed",
+"created_at": "2026-05-25T16:50:34Z",
+"merged_at": "2026-05-26T19:23:04Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/248-notification",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 2,
+"additions": 310,
+"deletions": 77
+},
+{
+"number": 249,
+"title": "Timeout on large search export",
+"state": "closed",
+"created_at": "2026-06-13T22:57:20Z",
+"merged_at": "2026-06-15T13:20:28Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/249-search",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 2,
+"additions": 252,
+"deletions": 177
+},
+{
+"number": 250,
+"title": "Flaky retry under load on payout",
+"state": "closed",
+"created_at": "2026-06-13T00:52:56Z",
+"merged_at": "2026-06-13T21:06:12Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/250-payout",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 3,
+"additions": 123,
+"deletions": 254
+},
+{
+"number": 251,
+"title": "Race condition in pricing cache",
+"state": "closed",
+"created_at": "2026-06-09T02:47:52Z",
+"merged_at": "2026-06-09T22:25:52Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/251-pricing",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 3,
+"additions": 386,
+"deletions": 122
+},
+{
+"number": 252,
+"title": "Race condition in ledger cache",
+"state": "closed",
+"created_at": "2026-05-28T14:09:09Z",
+"merged_at": "2026-05-30T10:43:33Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/252-ledger",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 5,
+"additions": 75,
+"deletions": 207
+},
+{
+"number": 253,
+"title": "Crash on empty checkout payload",
+"state": "closed",
+"created_at": "2026-05-31T12:47:31Z",
+"merged_at": "2026-06-02T05:16:02Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/253-checkout",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 5,
+"additions": 544,
+"deletions": 133
+},
+{
+"number": 254,
+"title": "Crash on empty report payload",
+"state": "closed",
+"created_at": "2026-06-03T04:01:13Z",
+"merged_at": "2026-06-04T03:19:31Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/254-report",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 2,
+"additions": 402,
+"deletions": 153
+},
+{
+"number": 255,
+"title": "billing webhook signature mismatch",
+"state": "closed",
+"created_at": "2026-05-26T17:48:01Z",
+"merged_at": "2026-05-30T14:29:31Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/255-billing",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 2,
+"additions": 130,
+"deletions": 261
+},
+{
+"number": 256,
+"title": "Memory leak in billing worker",
+"state": "closed",
+"created_at": "2026-05-28T07:50:14Z",
+"merged_at": "2026-05-31T10:19:18Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/256-billing",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 3,
+"additions": 156,
+"deletions": 203
+},
+{
+"number": 257,
+"title": "Race condition in billing cache",
+"state": "closed",
+"created_at": "2026-05-27T03:19:48Z",
+"merged_at": "2026-05-30T18:57:17Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/257-billing",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 8,
+"additions": 183,
+"deletions": 79
+},
+{
+"number": 258,
+"title": "Off-by-one in webhook pagination",
+"state": "closed",
+"created_at": "2026-06-05T23:16:11Z",
+"merged_at": "2026-06-08T13:22:50Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/258-webhook",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 3,
+"additions": 13,
+"deletions": 176
 },
 {
 "number": 259,
-"title": "Incorrect webhook rounding",
-"state": "open",
-"created_at": "2026-06-15T08:04:37Z",
+"title": "Crash on empty payout payload",
+"state": "closed",
+"created_at": "2026-05-31T08:21:23Z",
+"merged_at": "2026-06-04T12:35:02Z",
 "labels": [
 "bug"
 ],
-"head_ref": "fix/259-webhook",
-"team": "growth",
+"head_ref": "fix/259-payout",
+"team": "checkout",
 "milestone": {
-"title": "Billing v2"
-}
+"title": "One-click checkout"
+},
+"points": 2,
+"additions": 443,
+"deletions": 173
 },
 {
 "number": 260,
-"title": "Crash on empty sync payload",
-"state": "open",
-"created_at": "2026-06-16T06:30:48Z",
+"title": "NullPointer in checkout parser",
+"state": "closed",
+"created_at": "2026-06-01T14:11:55Z",
+"merged_at": "2026-06-04T01:15:34Z",
 "labels": [
 "bug"
 ],
-"head_ref": "fix/260-sync",
-"team": "payments",
+"head_ref": "fix/260-checkout",
+"team": "infra",
 "milestone": {
-"title": "Payments hardening"
-}
+"title": "Cluster autoscaling"
+},
+"points": 2,
+"additions": 631,
+"deletions": 291
 },
 {
 "number": 261,
-"title": "search webhook signature mismatch",
-"state": "open",
-"created_at": "2026-06-15T17:54:20Z",
+"title": "Off-by-one in report pagination",
+"state": "closed",
+"created_at": "2026-06-02T04:33:21Z",
+"merged_at": "2026-06-05T08:02:41Z",
 "labels": [
 "bug"
 ],
-"head_ref": "fix/261-search",
+"head_ref": "fix/261-report",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 5,
+"additions": 452,
+"deletions": 168
+},
+{
+"number": 262,
+"title": "Memory leak in report worker",
+"state": "closed",
+"created_at": "2026-06-08T23:54:17Z",
+"merged_at": "2026-06-12T22:49:21Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/262-report",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 8,
+"additions": 12,
+"deletions": 298
+},
+{
+"number": 263,
+"title": "Off-by-one in sync pagination",
+"state": "closed",
+"created_at": "2026-05-28T01:49:01Z",
+"merged_at": "2026-05-31T10:43:14Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/263-sync",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 8,
+"additions": 393,
+"deletions": 129
+},
+{
+"number": 264,
+"title": "SSO/SCIM provisioning for payout",
+"state": "closed",
+"created_at": "2026-06-11T21:28:59Z",
+"merged_at": "2026-06-13T16:21:32Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/264-payout",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 13,
+"additions": 379,
+"deletions": 248
+},
+{
+"number": 265,
+"title": "webhook audit-log streaming",
+"state": "closed",
+"created_at": "2026-05-31T18:23:06Z",
+"merged_at": "2026-06-02T10:38:10Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/265-webhook",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 8,
+"additions": 72,
+"deletions": 244
+},
+{
+"number": 266,
+"title": "Add OAuth login to report",
+"state": "closed",
+"created_at": "2026-06-06T21:10:09Z",
+"merged_at": "2026-06-08T02:11:37Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/266-report",
+"team": "mobile",
+"milestone": {
+"title": "Mobile GA"
+},
+"points": 21,
+"additions": 415,
+"deletions": 132
+},
+{
+"number": 267,
+"title": "ledger usage export to CSV",
+"state": "closed",
+"created_at": "2026-05-28T03:02:00Z",
+"merged_at": "2026-05-29T15:05:18Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/267-ledger",
+"team": "mobile",
+"milestone": {
+"title": "Mobile GA"
+},
+"points": 21,
+"additions": 34,
+"deletions": 69
+},
+{
+"number": 268,
+"title": "Add OAuth login to search",
+"state": "closed",
+"created_at": "2026-06-10T11:53:20Z",
+"merged_at": "2026-06-12T21:44:36Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/268-search",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 13,
+"additions": 684,
+"deletions": 55
+},
+{
+"number": 269,
+"title": "Self-serve webhook budgets",
+"state": "closed",
+"created_at": "2026-06-04T13:05:18Z",
+"merged_at": "2026-06-06T17:16:30Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/269-webhook",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 13,
+"additions": 338,
+"deletions": 21
+},
+{
+"number": 270,
+"title": "Configurable billing retention",
+"state": "closed",
+"created_at": "2026-06-12T07:30:12Z",
+"merged_at": "2026-06-14T20:40:11Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/270-billing",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 21,
+"additions": 450,
+"deletions": 99
+},
+{
+"number": 271,
+"title": "Configurable report retention",
+"state": "closed",
+"created_at": "2026-06-09T18:18:02Z",
+"merged_at": "2026-06-12T08:47:13Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/271-report",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 13,
+"additions": 359,
+"deletions": 23
+},
+{
+"number": 272,
+"title": "auth audit-log streaming",
+"state": "closed",
+"created_at": "2026-06-05T13:30:45Z",
+"merged_at": "2026-06-07T11:40:29Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/272-auth",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 5,
+"additions": 187,
+"deletions": 63
+},
+{
+"number": 273,
+"title": "Real-time invoice dashboard",
+"state": "closed",
+"created_at": "2026-06-13T12:10:17Z",
+"merged_at": "2026-06-16T10:36:45Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/273-invoice",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 8,
+"additions": 454,
+"deletions": 175
+},
+{
+"number": 274,
+"title": "Configurable notification retention",
+"state": "closed",
+"created_at": "2026-06-09T03:40:07Z",
+"merged_at": "2026-06-11T12:16:06Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/274-notification",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 13,
+"additions": 463,
+"deletions": 298
+},
+{
+"number": 275,
+"title": "Real-time billing dashboard",
+"state": "closed",
+"created_at": "2026-05-25T10:05:04Z",
+"merged_at": "2026-05-29T00:15:27Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/275-billing",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 8,
+"additions": 190,
+"deletions": 274
+},
+{
+"number": 276,
+"title": "Add OAuth login to invoice",
+"state": "closed",
+"created_at": "2026-06-01T19:07:09Z",
+"merged_at": "2026-06-05T22:25:35Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/276-invoice",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 8,
+"additions": 340,
+"deletions": 2
+},
+{
+"number": 277,
+"title": "Configurable checkout retention",
+"state": "closed",
+"created_at": "2026-06-02T00:14:39Z",
+"merged_at": "2026-06-05T03:49:12Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/277-checkout",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 13,
+"additions": 395,
+"deletions": 273
+},
+{
+"number": 278,
+"title": "Configurable auth retention",
+"state": "closed",
+"created_at": "2026-05-26T18:17:41Z",
+"merged_at": "2026-05-27T17:37:33Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/278-auth",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 13,
+"additions": 243,
+"deletions": 200
+},
+{
+"number": 279,
+"title": "Bulk ledger import",
+"state": "closed",
+"created_at": "2026-06-03T02:22:58Z",
+"merged_at": "2026-06-07T02:33:02Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/279-ledger",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 8,
+"additions": 172,
+"deletions": 82
+},
+{
+"number": 280,
+"title": "Self-serve auth budgets",
+"state": "closed",
+"created_at": "2026-06-05T17:35:47Z",
+"merged_at": "2026-06-06T17:33:32Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/280-auth",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 8,
+"additions": 274,
+"deletions": 259
+},
+{
+"number": 281,
+"title": "order usage export to CSV",
+"state": "closed",
+"created_at": "2026-05-25T18:18:39Z",
+"merged_at": "2026-05-29T00:25:02Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/281-order",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 13,
+"additions": 601,
+"deletions": 179
+},
+{
+"number": 282,
+"title": "SSO/SCIM provisioning for webhook",
+"state": "closed",
+"created_at": "2026-05-25T19:11:19Z",
+"merged_at": "2026-05-29T06:24:05Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/282-webhook",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 8,
+"additions": 29,
+"deletions": 272
+},
+{
+"number": 283,
+"title": "Configurable invoice retention",
+"state": "closed",
+"created_at": "2026-06-02T21:53:29Z",
+"merged_at": "2026-06-06T00:52:20Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/283-invoice",
+"team": "mobile",
+"milestone": {
+"title": "Mobile GA"
+},
+"points": 8,
+"additions": 455,
+"deletions": 107
+},
+{
+"number": 284,
+"title": "Bulk ledger import",
+"state": "closed",
+"created_at": "2026-05-26T20:38:17Z",
+"merged_at": "2026-05-29T22:12:23Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/284-ledger",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 13,
+"additions": 509,
+"deletions": 18
+},
+{
+"number": 285,
+"title": "Bulk auth import",
+"state": "closed",
+"created_at": "2026-05-26T03:49:05Z",
+"merged_at": "2026-05-29T07:19:55Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/285-auth",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 21,
+"additions": 486,
+"deletions": 65
+},
+{
+"number": 286,
+"title": "Real-time auth dashboard",
+"state": "closed",
+"created_at": "2026-06-11T13:20:24Z",
+"merged_at": "2026-06-13T07:34:45Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/286-auth",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 21,
+"additions": 503,
+"deletions": 277
+},
+{
+"number": 287,
+"title": "sync usage export to CSV",
+"state": "closed",
+"created_at": "2026-06-12T14:53:29Z",
+"merged_at": "2026-06-14T15:26:58Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/287-sync",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 13,
+"additions": 606,
+"deletions": 163
+},
+{
+"number": 288,
+"title": "upload audit-log streaming",
+"state": "closed",
+"created_at": "2026-06-13T08:45:58Z",
+"merged_at": "2026-06-14T12:07:24Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/288-upload",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 5,
+"additions": 181,
+"deletions": 160
+},
+{
+"number": 289,
+"title": "sync usage export to CSV",
+"state": "closed",
+"created_at": "2026-06-12T20:02:45Z",
+"merged_at": "2026-06-15T22:12:05Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/289-sync",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 21,
+"additions": 565,
+"deletions": 52
+},
+{
+"number": 290,
+"title": "Add OAuth login to ledger",
+"state": "closed",
+"created_at": "2026-06-13T01:33:11Z",
+"merged_at": "2026-06-17T00:40:49Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/290-ledger",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 5,
+"additions": 566,
+"deletions": 101
+},
+{
+"number": 291,
+"title": "Add OAuth login to invoice",
+"state": "closed",
+"created_at": "2026-05-31T07:33:04Z",
+"merged_at": "2026-06-01T07:31:06Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/291-invoice",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 13,
+"additions": 313,
+"deletions": 123
+},
+{
+"number": 292,
+"title": "Self-serve upload budgets",
+"state": "closed",
+"created_at": "2026-05-29T23:42:04Z",
+"merged_at": "2026-06-01T09:29:29Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/292-upload",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 13,
+"additions": 558,
+"deletions": 254
+},
+{
+"number": 293,
+"title": "pricing audit-log streaming",
+"state": "closed",
+"created_at": "2026-06-09T23:03:27Z",
+"merged_at": "2026-06-12T09:07:57Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/293-pricing",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 21,
+"additions": 627,
+"deletions": 50
+},
+{
+"number": 294,
+"title": "Bulk webhook import",
+"state": "closed",
+"created_at": "2026-06-07T14:44:07Z",
+"merged_at": "2026-06-10T14:20:44Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/294-webhook",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 13,
+"additions": 549,
+"deletions": 38
+},
+{
+"number": 295,
+"title": "Configurable checkout retention",
+"state": "closed",
+"created_at": "2026-05-26T00:05:31Z",
+"merged_at": "2026-05-27T14:05:53Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/295-checkout",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 13,
+"additions": 484,
+"deletions": 177
+},
+{
+"number": 296,
+"title": "payout audit-log streaming",
+"state": "closed",
+"created_at": "2026-06-11T02:59:58Z",
+"merged_at": "2026-06-13T22:09:10Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/296-payout",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 21,
+"additions": 61,
+"deletions": 78
+},
+{
+"number": 297,
+"title": "ledger audit-log streaming",
+"state": "closed",
+"created_at": "2026-06-11T20:50:11Z",
+"merged_at": "2026-06-14T16:41:51Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/297-ledger",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 5,
+"additions": 76,
+"deletions": 120
+},
+{
+"number": 298,
+"title": "Add OAuth login to order",
+"state": "closed",
+"created_at": "2026-06-12T13:37:17Z",
+"merged_at": "2026-06-13T11:53:48Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/298-order",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 8,
+"additions": 344,
+"deletions": 138
+},
+{
+"number": 299,
+"title": "Add OAuth login to search",
+"state": "closed",
+"created_at": "2026-06-06T11:27:06Z",
+"merged_at": "2026-06-08T12:47:02Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/299-search",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 21,
+"additions": 554,
+"deletions": 110
+},
+{
+"number": 300,
+"title": "pricing usage export to CSV",
+"state": "closed",
+"created_at": "2026-06-07T15:01:30Z",
+"merged_at": "2026-06-11T17:07:30Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/300-pricing",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 13,
+"additions": 178,
+"deletions": 175
+},
+{
+"number": 301,
+"title": "search audit-log streaming",
+"state": "closed",
+"created_at": "2026-06-01T14:53:30Z",
+"merged_at": "2026-06-03T11:07:50Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/301-search",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 8,
+"additions": 478,
+"deletions": 185
+},
+{
+"number": 302,
+"title": "auth audit-log streaming",
+"state": "closed",
+"created_at": "2026-06-03T03:04:19Z",
+"merged_at": "2026-06-06T14:26:02Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/302-auth",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 21,
+"additions": 623,
+"deletions": 114
+},
+{
+"number": 303,
+"title": "Self-serve pricing budgets",
+"state": "closed",
+"created_at": "2026-06-11T03:32:45Z",
+"merged_at": "2026-06-15T10:01:53Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/303-pricing",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 21,
+"additions": 519,
+"deletions": 33
+},
+{
+"number": 304,
+"title": "Self-serve billing budgets",
+"state": "closed",
+"created_at": "2026-06-07T02:58:00Z",
+"merged_at": "2026-06-09T11:18:41Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/304-billing",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 8,
+"additions": 648,
+"deletions": 252
+},
+{
+"number": 305,
+"title": "Add OAuth login to report",
+"state": "closed",
+"created_at": "2026-06-05T12:51:16Z",
+"merged_at": "2026-06-09T13:36:55Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/305-report",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 5,
+"additions": 80,
+"deletions": 190
+},
+{
+"number": 306,
+"title": "Add OAuth login to order",
+"state": "closed",
+"created_at": "2026-06-04T11:51:47Z",
+"merged_at": "2026-06-08T06:04:59Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/306-order",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 8,
+"additions": 185,
+"deletions": 252
+},
+{
+"number": 307,
+"title": "Configurable order retention",
+"state": "closed",
+"created_at": "2026-06-13T18:18:36Z",
+"merged_at": "2026-06-17T00:32:45Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/307-order",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 21,
+"additions": 42,
+"deletions": 240
+},
+{
+"number": 308,
+"title": "invoice audit-log streaming",
+"state": "closed",
+"created_at": "2026-06-08T05:28:55Z",
+"merged_at": "2026-06-11T05:41:33Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/308-invoice",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 5,
+"additions": 13,
+"deletions": 81
+},
+{
+"number": 309,
+"title": "sync audit-log streaming",
+"state": "closed",
+"created_at": "2026-06-09T18:49:48Z",
+"merged_at": "2026-06-10T17:36:49Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/309-sync",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 21,
+"additions": 385,
+"deletions": 104
+},
+{
+"number": 310,
+"title": "Consolidate checkout clients",
+"state": "closed",
+"created_at": "2026-05-27T19:01:49Z",
+"merged_at": "2026-05-29T03:00:08Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/310-checkout",
+"team": "mobile",
+"milestone": {
+"title": "Mobile GA"
+},
+"points": 13,
+"additions": 93,
+"deletions": 206
+},
+{
+"number": 311,
+"title": "Migrate report to async",
+"state": "closed",
+"created_at": "2026-06-09T15:14:39Z",
+"merged_at": "2026-06-13T17:27:27Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/311-report",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 13,
+"additions": 360,
+"deletions": 157
+},
+{
+"number": 312,
+"title": "Extract pricing into a service",
+"state": "closed",
+"created_at": "2026-06-10T10:32:16Z",
+"merged_at": "2026-06-13T22:59:22Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/312-pricing",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 8,
+"additions": 623,
+"deletions": 13
+},
+{
+"number": 313,
+"title": "Consolidate payout clients",
+"state": "closed",
+"created_at": "2026-06-13T21:21:00Z",
+"merged_at": "2026-06-15T21:51:22Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/313-payout",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 13,
+"additions": 197,
+"deletions": 249
+},
+{
+"number": 314,
+"title": "Migrate billing to async",
+"state": "closed",
+"created_at": "2026-05-28T12:23:26Z",
+"merged_at": "2026-05-30T04:10:38Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/314-billing",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 13,
+"additions": 579,
+"deletions": 259
+},
+{
+"number": 315,
+"title": "Migrate report to async",
+"state": "closed",
+"created_at": "2026-05-30T19:16:33Z",
+"merged_at": "2026-06-01T07:30:21Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/315-report",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 5,
+"additions": 216,
+"deletions": 93
+},
+{
+"number": 316,
+"title": "Migrate sync to async",
+"state": "closed",
+"created_at": "2026-05-25T20:48:37Z",
+"merged_at": "2026-05-28T10:20:43Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/316-sync",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 21,
+"additions": 502,
+"deletions": 121
+},
+{
+"number": 317,
+"title": "Extract pricing into a service",
+"state": "closed",
+"created_at": "2026-06-06T21:41:49Z",
+"merged_at": "2026-06-08T10:30:25Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/317-pricing",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 3,
+"additions": 501,
+"deletions": 56
+},
+{
+"number": 318,
+"title": "Type the invoice boundary",
+"state": "closed",
+"created_at": "2026-06-11T16:29:59Z",
+"merged_at": "2026-06-14T18:23:51Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/318-invoice",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 5,
+"additions": 615,
+"deletions": 161
+},
+{
+"number": 319,
+"title": "Migrate sync to async",
+"state": "closed",
+"created_at": "2026-05-29T21:38:07Z",
+"merged_at": "2026-06-02T10:37:44Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/319-sync",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 5,
+"additions": 675,
+"deletions": 95
+},
+{
+"number": 320,
+"title": "Type the order boundary",
+"state": "closed",
+"created_at": "2026-05-26T22:04:02Z",
+"merged_at": "2026-05-29T12:37:42Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/320-order",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 8,
+"additions": 533,
+"deletions": 197
+},
+{
+"number": 321,
+"title": "Consolidate invoice clients",
+"state": "closed",
+"created_at": "2026-06-03T05:33:55Z",
+"merged_at": "2026-06-05T10:51:32Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/321-invoice",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 5,
+"additions": 437,
+"deletions": 118
+},
+{
+"number": 322,
+"title": "Extract notification into a service",
+"state": "closed",
+"created_at": "2026-06-11T03:16:20Z",
+"merged_at": "2026-06-13T17:31:37Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/322-notification",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 5,
+"additions": 177,
+"deletions": 122
+},
+{
+"number": 323,
+"title": "Type the search boundary",
+"state": "closed",
+"created_at": "2026-05-27T03:32:02Z",
+"merged_at": "2026-05-28T11:38:38Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/323-search",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 8,
+"additions": 135,
+"deletions": 165
+},
+{
+"number": 324,
+"title": "Extract pricing into a service",
+"state": "closed",
+"created_at": "2026-06-11T00:41:53Z",
+"merged_at": "2026-06-12T18:47:23Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/324-pricing",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 5,
+"additions": 114,
+"deletions": 17
+},
+{
+"number": 325,
+"title": "Consolidate invoice clients",
+"state": "closed",
+"created_at": "2026-06-04T08:12:33Z",
+"merged_at": "2026-06-05T11:06:06Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/325-invoice",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 8,
+"additions": 103,
+"deletions": 283
+},
+{
+"number": 326,
+"title": "Type the report boundary",
+"state": "closed",
+"created_at": "2026-06-11T23:31:50Z",
+"merged_at": "2026-06-13T16:58:17Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/326-report",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 3,
+"additions": 587,
+"deletions": 246
+},
+{
+"number": 327,
+"title": "Consolidate ledger clients",
+"state": "closed",
+"created_at": "2026-06-05T06:10:27Z",
+"merged_at": "2026-06-07T16:19:16Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/327-ledger",
+"team": "mobile",
+"milestone": {
+"title": "Mobile GA"
+},
+"points": 13,
+"additions": 275,
+"deletions": 147
+},
+{
+"number": 328,
+"title": "Type the billing boundary",
+"state": "closed",
+"created_at": "2026-06-12T23:48:03Z",
+"merged_at": "2026-06-16T08:56:38Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/328-billing",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 5,
+"additions": 610,
+"deletions": 164
+},
+{
+"number": 329,
+"title": "Split the upload monolith module",
+"state": "closed",
+"created_at": "2026-06-08T07:43:00Z",
+"merged_at": "2026-06-12T02:01:38Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/329-upload",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 8,
+"additions": 42,
+"deletions": 201
+},
+{
+"number": 330,
+"title": "Split the webhook monolith module",
+"state": "closed",
+"created_at": "2026-06-12T00:11:30Z",
+"merged_at": "2026-06-13T21:31:49Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/330-webhook",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 5,
+"additions": 525,
+"deletions": 52
+},
+{
+"number": 331,
+"title": "Consolidate invoice clients",
+"state": "closed",
+"created_at": "2026-06-11T06:26:53Z",
+"merged_at": "2026-06-12T18:16:28Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/331-invoice",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 13,
+"additions": 434,
+"deletions": 107
+},
+{
+"number": 332,
+"title": "Migrate notification to async",
+"state": "closed",
+"created_at": "2026-06-02T04:07:14Z",
+"merged_at": "2026-06-02T23:30:41Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/332-notification",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 13,
+"additions": 95,
+"deletions": 248
+},
+{
+"number": 333,
+"title": "Extract notification into a service",
+"state": "closed",
+"created_at": "2026-06-01T07:06:38Z",
+"merged_at": "2026-06-03T03:46:58Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/333-notification",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 3,
+"additions": 393,
+"deletions": 118
+},
+{
+"number": 334,
+"title": "Split the invoice monolith module",
+"state": "closed",
+"created_at": "2026-05-29T11:32:09Z",
+"merged_at": "2026-05-30T22:41:50Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/334-invoice",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 8,
+"additions": 411,
+"deletions": 103
+},
+{
+"number": 335,
+"title": "Consolidate order clients",
+"state": "closed",
+"created_at": "2026-05-25T19:09:52Z",
+"merged_at": "2026-05-27T16:12:20Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/335-order",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 8,
+"additions": 313,
+"deletions": 66
+},
+{
+"number": 336,
+"title": "Extract upload into a service",
+"state": "closed",
+"created_at": "2026-06-09T13:06:12Z",
+"merged_at": "2026-06-11T16:54:03Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/336-upload",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 13,
+"additions": 339,
+"deletions": 258
+},
+{
+"number": 337,
+"title": "Type the checkout boundary",
+"state": "closed",
+"created_at": "2026-06-05T11:29:28Z",
+"merged_at": "2026-06-09T11:56:52Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/337-checkout",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 8,
+"additions": 660,
+"deletions": 122
+},
+{
+"number": 338,
+"title": "Type the invoice boundary",
+"state": "closed",
+"created_at": "2026-06-02T06:46:20Z",
+"merged_at": "2026-06-06T00:06:26Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/338-invoice",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 3,
+"additions": 614,
+"deletions": 39
+},
+{
+"number": 339,
+"title": "Type the order boundary",
+"state": "closed",
+"created_at": "2026-05-27T00:29:50Z",
+"merged_at": "2026-05-29T20:51:05Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/339-order",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 13,
+"additions": 518,
+"deletions": 38
+},
+{
+"number": 340,
+"title": "Consolidate sync clients",
+"state": "closed",
+"created_at": "2026-06-01T14:11:45Z",
+"merged_at": "2026-06-04T21:03:27Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/340-sync",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 8,
+"additions": 283,
+"deletions": 178
+},
+{
+"number": 341,
+"title": "Migrate invoice to async",
+"state": "closed",
+"created_at": "2026-06-06T19:23:15Z",
+"merged_at": "2026-06-09T12:31:55Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/341-invoice",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 8,
+"additions": 697,
+"deletions": 267
+},
+{
+"number": 342,
+"title": "Load test report",
+"state": "closed",
+"created_at": "2026-06-08T13:31:16Z",
+"merged_at": "2026-06-11T10:22:02Z",
+"labels": [
+"test"
+],
+"head_ref": "test/342-report",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 3,
+"additions": 400,
+"deletions": 174
+},
+{
+"number": 343,
+"title": "Load test upload",
+"state": "closed",
+"created_at": "2026-06-03T08:54:27Z",
+"merged_at": "2026-06-04T14:05:09Z",
+"labels": [
+"test"
+],
+"head_ref": "test/343-upload",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 1,
+"additions": 83,
+"deletions": 236
+},
+{
+"number": 344,
+"title": "Load test ledger",
+"state": "closed",
+"created_at": "2026-06-08T17:42:02Z",
+"merged_at": "2026-06-11T05:17:22Z",
+"labels": [
+"test"
+],
+"head_ref": "test/344-ledger",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 8,
+"additions": 441,
+"deletions": 26
+},
+{
+"number": 345,
+"title": "Load test report",
+"state": "closed",
+"created_at": "2026-05-30T07:52:04Z",
+"merged_at": "2026-06-01T18:34:12Z",
+"labels": [
+"test"
+],
+"head_ref": "test/345-report",
+"team": "mobile",
+"milestone": {
+"title": "Mobile GA"
+},
+"points": 5,
+"additions": 167,
+"deletions": 267
+},
+{
+"number": 346,
+"title": "Load test upload",
+"state": "closed",
+"created_at": "2026-06-03T16:04:53Z",
+"merged_at": "2026-06-07T07:45:55Z",
+"labels": [
+"test"
+],
+"head_ref": "test/346-upload",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 5,
+"additions": 572,
+"deletions": 29
+},
+{
+"number": 347,
+"title": "Load test payout",
+"state": "closed",
+"created_at": "2026-06-08T17:39:29Z",
+"merged_at": "2026-06-12T09:25:30Z",
+"labels": [
+"test"
+],
+"head_ref": "test/347-payout",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 5,
+"additions": 631,
+"deletions": 97
+},
+{
+"number": 348,
+"title": "Snapshot tests for pricing",
+"state": "closed",
+"created_at": "2026-05-29T11:50:03Z",
+"merged_at": "2026-05-31T05:45:22Z",
+"labels": [
+"test"
+],
+"head_ref": "test/348-pricing",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 2,
+"additions": 651,
+"deletions": 17
+},
+{
+"number": 349,
+"title": "Coverage for sync retry path",
+"state": "closed",
+"created_at": "2026-06-06T09:32:10Z",
+"merged_at": "2026-06-08T05:03:10Z",
+"labels": [
+"test"
+],
+"head_ref": "test/349-sync",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 5,
+"additions": 126,
+"deletions": 211
+},
+{
+"number": 350,
+"title": "Fuzz the notification parser",
+"state": "closed",
+"created_at": "2026-06-12T17:54:30Z",
+"merged_at": "2026-06-13T22:44:09Z",
+"labels": [
+"test"
+],
+"head_ref": "test/350-notification",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 2,
+"additions": 182,
+"deletions": 197
+},
+{
+"number": 351,
+"title": "Load test ledger",
+"state": "closed",
+"created_at": "2026-05-30T17:52:11Z",
+"merged_at": "2026-06-02T17:25:16Z",
+"labels": [
+"test"
+],
+"head_ref": "test/351-ledger",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 5,
+"additions": 31,
+"deletions": 107
+},
+{
+"number": 352,
+"title": "Fuzz the upload parser",
+"state": "closed",
+"created_at": "2026-05-27T06:08:17Z",
+"merged_at": "2026-05-28T23:50:09Z",
+"labels": [
+"test"
+],
+"head_ref": "test/352-upload",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 8,
+"additions": 509,
+"deletions": 13
+},
+{
+"number": 353,
+"title": "Load test report",
+"state": "closed",
+"created_at": "2026-06-12T01:41:04Z",
+"merged_at": "2026-06-16T04:09:27Z",
+"labels": [
+"test"
+],
+"head_ref": "test/353-report",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 1,
+"additions": 336,
+"deletions": 289
+},
+{
+"number": 354,
+"title": "Load test auth",
+"state": "closed",
+"created_at": "2026-05-30T23:34:25Z",
+"merged_at": "2026-06-01T21:39:06Z",
+"labels": [
+"test"
+],
+"head_ref": "test/354-auth",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 1,
+"additions": 269,
+"deletions": 153
+},
+{
+"number": 355,
+"title": "Coverage for webhook retry path",
+"state": "closed",
+"created_at": "2026-05-27T00:31:09Z",
+"merged_at": "2026-05-29T13:16:57Z",
+"labels": [
+"test"
+],
+"head_ref": "test/355-webhook",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 3,
+"additions": 86,
+"deletions": 114
+},
+{
+"number": 356,
+"title": "Fuzz the pricing parser",
+"state": "closed",
+"created_at": "2026-06-05T20:03:31Z",
+"merged_at": "2026-06-08T16:29:28Z",
+"labels": [
+"test"
+],
+"head_ref": "test/356-pricing",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 3,
+"additions": 146,
+"deletions": 216
+},
+{
+"number": 357,
+"title": "Coverage for report retry path",
+"state": "closed",
+"created_at": "2026-06-02T15:11:45Z",
+"merged_at": "2026-06-04T06:09:50Z",
+"labels": [
+"test"
+],
+"head_ref": "test/357-report",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 2,
+"additions": 563,
+"deletions": 264
+},
+{
+"number": 358,
+"title": "Fuzz the sync parser",
+"state": "closed",
+"created_at": "2026-05-29T06:11:56Z",
+"merged_at": "2026-06-01T19:11:05Z",
+"labels": [
+"test"
+],
+"head_ref": "test/358-sync",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 13,
+"additions": 390,
+"deletions": 257
+},
+{
+"number": 359,
+"title": "Coverage for upload retry path",
+"state": "closed",
+"created_at": "2026-05-26T03:27:09Z",
+"merged_at": "2026-05-29T17:11:39Z",
+"labels": [
+"test"
+],
+"head_ref": "test/359-upload",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 1,
+"additions": 611,
+"deletions": 218
+},
+{
+"number": 360,
+"title": "Integration tests for checkout",
+"state": "closed",
+"created_at": "2026-06-06T14:58:50Z",
+"merged_at": "2026-06-10T05:01:46Z",
+"labels": [
+"test"
+],
+"head_ref": "test/360-checkout",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 3,
+"additions": 194,
+"deletions": 23
+},
+{
+"number": 361,
+"title": "Snapshot tests for webhook",
+"state": "closed",
+"created_at": "2026-06-10T06:22:52Z",
+"merged_at": "2026-06-11T09:54:48Z",
+"labels": [
+"test"
+],
+"head_ref": "test/361-webhook",
+"team": "mobile",
+"milestone": {
+"title": "Mobile GA"
+},
+"points": 1,
+"additions": 80,
+"deletions": 136
+},
+{
+"number": 362,
+"title": "Fuzz the pricing parser",
+"state": "closed",
+"created_at": "2026-06-05T10:00:33Z",
+"merged_at": "2026-06-06T18:40:38Z",
+"labels": [
+"test"
+],
+"head_ref": "test/362-pricing",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 3,
+"additions": 241,
+"deletions": 252
+},
+{
+"number": 363,
+"title": "Coverage for ledger retry path",
+"state": "closed",
+"created_at": "2026-05-31T10:41:51Z",
+"merged_at": "2026-06-01T15:26:03Z",
+"labels": [
+"test"
+],
+"head_ref": "test/363-ledger",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 3,
+"additions": 63,
+"deletions": 228
+},
+{
+"number": 364,
+"title": "Load test payout",
+"state": "closed",
+"created_at": "2026-06-07T16:20:24Z",
+"merged_at": "2026-06-10T21:17:34Z",
+"labels": [
+"test"
+],
+"head_ref": "test/364-payout",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 3,
+"additions": 559,
+"deletions": 52
+},
+{
+"number": 365,
+"title": "Fuzz the ledger parser",
+"state": "closed",
+"created_at": "2026-06-03T08:04:33Z",
+"merged_at": "2026-06-05T15:08:40Z",
+"labels": [
+"test"
+],
+"head_ref": "test/365-ledger",
+"team": "mobile",
+"milestone": {
+"title": "Mobile GA"
+},
+"points": 5,
+"additions": 36,
+"deletions": 245
+},
+{
+"number": 366,
+"title": "Integration tests for order",
+"state": "closed",
+"created_at": "2026-06-11T03:39:07Z",
+"merged_at": "2026-06-12T08:50:35Z",
+"labels": [
+"test"
+],
+"head_ref": "test/366-order",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 3,
+"additions": 155,
+"deletions": 278
+},
+{
+"number": 367,
+"title": "Snapshot tests for search",
+"state": "closed",
+"created_at": "2026-06-10T07:24:56Z",
+"merged_at": "2026-06-12T01:29:58Z",
+"labels": [
+"test"
+],
+"head_ref": "test/367-search",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 3,
+"additions": 434,
+"deletions": 235
+},
+{
+"number": 368,
+"title": "Update ledger API docs",
+"state": "closed",
+"created_at": "2026-06-12T09:43:57Z",
+"merged_at": "2026-06-14T03:33:32Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/368-ledger",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 3,
+"additions": 617,
+"deletions": 55
+},
+{
+"number": 369,
+"title": "Tidy sync config",
+"state": "closed",
+"created_at": "2026-06-13T00:19:43Z",
+"merged_at": "2026-06-14T04:47:14Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/369-sync",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 3,
+"additions": 194,
+"deletions": 245
+},
+{
+"number": 370,
+"title": "Format the report package",
+"state": "closed",
+"created_at": "2026-05-29T11:44:35Z",
+"merged_at": "2026-06-02T11:28:15Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/370-report",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 3,
+"additions": 343,
+"deletions": 182
+},
+{
+"number": 371,
+"title": "Update webhook API docs",
+"state": "closed",
+"created_at": "2026-06-13T18:15:07Z",
+"merged_at": "2026-06-16T00:40:56Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/371-webhook",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 3,
+"additions": 14,
+"deletions": 105
+},
+{
+"number": 372,
+"title": "Bump sync deps",
+"state": "closed",
+"created_at": "2026-05-25T13:19:25Z",
+"merged_at": "2026-05-29T13:35:07Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/372-sync",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 1,
+"additions": 540,
+"deletions": 81
+},
+{
+"number": 373,
+"title": "Bump payout deps",
+"state": "closed",
+"created_at": "2026-05-26T00:33:24Z",
+"merged_at": "2026-05-27T12:57:31Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/373-payout",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 5,
+"additions": 482,
+"deletions": 205
+},
+{
+"number": 374,
+"title": "Format the auth package",
+"state": "closed",
+"created_at": "2026-06-11T11:05:50Z",
+"merged_at": "2026-06-14T17:02:17Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/374-auth",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 1,
+"additions": 322,
+"deletions": 47
+},
+{
+"number": 375,
+"title": "Update notification API docs",
+"state": "closed",
+"created_at": "2026-06-03T13:54:04Z",
+"merged_at": "2026-06-05T04:02:42Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/375-notification",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 3,
+"additions": 226,
+"deletions": 73
+},
+{
+"number": 376,
+"title": "Update ledger API docs",
+"state": "closed",
+"created_at": "2026-05-30T11:03:49Z",
+"merged_at": "2026-05-31T15:53:13Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/376-ledger",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 2,
+"additions": 244,
+"deletions": 197
+},
+{
+"number": 377,
+"title": "Update report API docs",
+"state": "closed",
+"created_at": "2026-05-29T08:26:19Z",
+"merged_at": "2026-06-01T10:38:14Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/377-report",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 3,
+"additions": 34,
+"deletions": 140
+},
+{
+"number": 378,
+"title": "Format the search package",
+"state": "closed",
+"created_at": "2026-06-04T21:10:19Z",
+"merged_at": "2026-06-07T14:58:30Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/378-search",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 5,
+"additions": 27,
+"deletions": 96
+},
+{
+"number": 379,
+"title": "Format the billing package",
+"state": "closed",
+"created_at": "2026-06-06T15:35:40Z",
+"merged_at": "2026-06-10T18:32:43Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/379-billing",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 3,
+"additions": 411,
+"deletions": 240
+},
+{
+"number": 380,
+"title": "Update order API docs",
+"state": "closed",
+"created_at": "2026-05-27T11:25:40Z",
+"merged_at": "2026-05-28T17:05:16Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/380-order",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 3,
+"additions": 446,
+"deletions": 290
+},
+{
+"number": 381,
+"title": "Bump notification deps",
+"state": "closed",
+"created_at": "2026-06-11T01:36:57Z",
+"merged_at": "2026-06-14T09:08:41Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/381-notification",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 3,
+"additions": 481,
+"deletions": 300
+},
+{
+"number": 382,
+"title": "Format the ledger package",
+"state": "closed",
+"created_at": "2026-05-26T03:47:13Z",
+"merged_at": "2026-05-29T00:04:57Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/382-ledger",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 2,
+"additions": 558,
+"deletions": 287
+},
+{
+"number": 383,
+"title": "Format the sync package",
+"state": "closed",
+"created_at": "2026-06-10T10:39:21Z",
+"merged_at": "2026-06-14T12:41:00Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/383-sync",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 5,
+"additions": 515,
+"deletions": 95
+},
+{
+"number": 384,
+"title": "Format the payout package",
+"state": "closed",
+"created_at": "2026-06-03T09:44:36Z",
+"merged_at": "2026-06-06T21:36:22Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/384-payout",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 2,
+"additions": 579,
+"deletions": 113
+},
+{
+"number": 385,
+"title": "Bump order deps",
+"state": "closed",
+"created_at": "2026-05-26T00:58:10Z",
+"merged_at": "2026-05-28T10:32:53Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/385-order",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 5,
+"additions": 692,
+"deletions": 274
+},
+{
+"number": 386,
+"title": "Update sync API docs",
+"state": "closed",
+"created_at": "2026-06-05T23:21:57Z",
+"merged_at": "2026-06-09T17:36:04Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/386-sync",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 2,
+"additions": 485,
+"deletions": 289
+},
+{
+"number": 387,
+"title": "Update pricing API docs",
+"state": "closed",
+"created_at": "2026-06-01T10:33:42Z",
+"merged_at": "2026-06-02T14:14:33Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/387-pricing",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 3,
+"additions": 644,
+"deletions": 224
+},
+{
+"number": 388,
+"title": "NullPointer in billing parser",
+"state": "open",
+"created_at": "2026-06-15T03:09:07Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/388-billing",
 "team": "platform",
 "milestone": {
 "title": "Q3 Stability"
 }
 },
 {
-"number": 262,
-"title": "Memory leak in pricing worker",
+"number": 389,
+"title": "Memory leak in payout worker",
 "state": "open",
-"created_at": "2026-06-16T18:52:04Z",
+"created_at": "2026-06-19T14:27:42Z",
+"labels": [
+"bug",
+"in progress"
+],
+"head_ref": "fix/389-payout",
+"team": "mobile",
+"milestone": {
+"title": "Mobile GA"
+},
+"points": 5
+},
+{
+"number": 390,
+"title": "Timeout on large payout export",
+"state": "open",
+"created_at": "2026-06-19T20:02:45Z",
 "labels": [
 "bug"
 ],
-"head_ref": "fix/262-pricing",
+"head_ref": "fix/390-payout",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 3
+},
+{
+"number": 391,
+"title": "Timeout on large billing export",
+"state": "open",
+"created_at": "2026-06-18T13:09:42Z",
+"labels": [
+"bug",
+"in progress"
+],
+"head_ref": "fix/391-billing",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 5
+},
+{
+"number": 392,
+"title": "Timeout on large checkout export",
+"state": "open",
+"created_at": "2026-06-16T06:44:23Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/392-checkout",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 2
+},
+{
+"number": 393,
+"title": "Crash on empty search payload",
+"state": "open",
+"created_at": "2026-06-14T13:01:50Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/393-search",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 1
+},
+{
+"number": 394,
+"title": "report webhook signature mismatch",
+"state": "open",
+"created_at": "2026-06-16T18:31:09Z",
+"labels": [
+"bug",
+"in progress"
+],
+"head_ref": "fix/394-report",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 5
+},
+{
+"number": 395,
+"title": "Flaky retry under load on report",
+"state": "open",
+"created_at": "2026-06-19T00:01:48Z",
+"labels": [
+"bug",
+"in progress"
+],
+"head_ref": "fix/395-report",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 5
+},
+{
+"number": 396,
+"title": "Memory leak in checkout worker",
+"state": "open",
+"created_at": "2026-06-19T10:04:08Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/396-checkout",
+"team": "growth",
+"milestone": {
+"title": "Billing v2"
+},
+"points": 5
+},
+{
+"number": 397,
+"title": "Crash on empty sync payload",
+"state": "open",
+"created_at": "2026-06-18T01:44:46Z",
+"labels": [
+"bug",
+"in progress"
+],
+"head_ref": "fix/397-sync",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 3
+},
+{
+"number": 398,
+"title": "Race condition in notification cache",
+"state": "open",
+"created_at": "2026-06-18T04:13:53Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/398-notification",
+"team": "mobile",
+"milestone": {
+"title": "Mobile GA"
+},
+"points": 5
+},
+{
+"number": 399,
+"title": "Memory leak in auth worker",
+"state": "open",
+"created_at": "2026-06-19T18:36:20Z",
+"labels": [
+"bug",
+"in progress"
+],
+"head_ref": "fix/399-auth",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 8
+},
+{
+"number": 400,
+"title": "checkout webhook signature mismatch",
+"state": "open",
+"created_at": "2026-06-19T15:30:32Z",
+"labels": [
+"bug",
+"in progress"
+],
+"head_ref": "fix/400-checkout",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+}
+},
+{
+"number": 401,
+"title": "Flaky retry under load on checkout",
+"state": "open",
+"created_at": "2026-06-17T02:05:23Z",
+"labels": [
+"bug",
+"in progress"
+],
+"head_ref": "fix/401-checkout",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 5
+},
+{
+"number": 402,
+"title": "search webhook signature mismatch",
+"state": "open",
+"created_at": "2026-06-17T13:35:32Z",
+"labels": [
+"bug"
+],
+"head_ref": "fix/402-search",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 3
+},
+{
+"number": 403,
+"title": "Off-by-one in notification pagination",
+"state": "open",
+"created_at": "2026-06-15T01:58:23Z",
+"labels": [
+"bug",
+"in progress"
+],
+"head_ref": "fix/403-notification",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 2
+},
+{
+"number": 404,
+"title": "Real-time ledger dashboard",
+"state": "open",
+"created_at": "2026-06-15T17:10:34Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/404-ledger",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 13
+},
+{
+"number": 405,
+"title": "Self-serve checkout budgets",
+"state": "open",
+"created_at": "2026-06-16T05:05:35Z",
+"labels": [
+"feature",
+"in progress"
+],
+"head_ref": "feature/405-checkout",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+}
+},
+{
+"number": 406,
+"title": "SSO/SCIM provisioning for billing",
+"state": "open",
+"created_at": "2026-06-14T10:12:03Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/406-billing",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 21
+},
+{
+"number": 407,
+"title": "Self-serve report budgets",
+"state": "open",
+"created_at": "2026-06-17T02:45:52Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/407-report",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 13
+},
+{
+"number": 408,
+"title": "Add OAuth login to payout",
+"state": "open",
+"created_at": "2026-06-17T15:16:45Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/408-payout",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 21
+},
+{
+"number": 409,
+"title": "Real-time pricing dashboard",
+"state": "open",
+"created_at": "2026-06-14T11:24:07Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/409-pricing",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 8
+},
+{
+"number": 410,
+"title": "Self-serve report budgets",
+"state": "open",
+"created_at": "2026-06-15T05:38:11Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/410-report",
+"team": "mobile",
+"milestone": {
+"title": "Mobile GA"
+}
+},
+{
+"number": 411,
+"title": "Self-serve pricing budgets",
+"state": "open",
+"created_at": "2026-06-17T18:36:44Z",
+"labels": [
+"feature",
+"in progress"
+],
+"head_ref": "feature/411-pricing",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 13
+},
+{
+"number": 412,
+"title": "Bulk webhook import",
+"state": "open",
+"created_at": "2026-06-19T17:49:31Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/412-webhook",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 13
+},
+{
+"number": 413,
+"title": "Add OAuth login to pricing",
+"state": "open",
+"created_at": "2026-06-18T14:48:27Z",
+"labels": [
+"feature",
+"in progress"
+],
+"head_ref": "feature/413-pricing",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+}
+},
+{
+"number": 414,
+"title": "auth audit-log streaming",
+"state": "open",
+"created_at": "2026-06-18T23:19:30Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/414-auth",
+"team": "mobile",
+"milestone": {
+"title": "Mobile GA"
+},
+"points": 5
+},
+{
+"number": 415,
+"title": "Configurable billing retention",
+"state": "open",
+"created_at": "2026-06-18T15:47:49Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/415-billing",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+}
+},
+{
+"number": 416,
+"title": "upload usage export to CSV",
+"state": "open",
+"created_at": "2026-06-16T03:14:54Z",
+"labels": [
+"feature"
+],
+"head_ref": "feature/416-upload",
 "team": "growth",
 "milestone": {
 "title": "Billing v2"
 }
 },
 {
-"number": 263,
-"title": "webhook audit-log streaming",
+"number": 417,
+"title": "Bulk sync import",
 "state": "open",
-"created_at": "2026-06-15T12:14:19Z",
+"created_at": "2026-06-16T22:33:39Z",
+"labels": [
+"feature",
+"in progress"
+],
+"head_ref": "feature/417-sync",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+}
+},
+{
+"number": 418,
+"title": "SSO/SCIM provisioning for webhook",
+"state": "open",
+"created_at": "2026-06-18T14:31:05Z",
+"labels": [
+"feature",
+"in progress"
+],
+"head_ref": "feature/418-webhook",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+}
+},
+{
+"number": 419,
+"title": "Real-time search dashboard",
+"state": "open",
+"created_at": "2026-06-14T13:55:19Z",
 "labels": [
 "feature"
 ],
-"head_ref": "feature/263-webhook",
+"head_ref": "feature/419-search",
 "team": "platform",
 "milestone": {
 "title": "Q3 Stability"
-}
+},
+"points": 8
 },
 {
-"number": 264,
-"title": "upload audit-log streaming",
+"number": 420,
+"title": "Bulk notification import",
 "state": "open",
-"created_at": "2026-06-17T15:22:34Z",
-"labels": [
-"feature",
-"in progress"
-],
-"head_ref": "feature/264-upload",
-"team": "payments",
-"milestone": {
-"title": "Payments hardening"
-}
-},
-{
-"number": 265,
-"title": "notification audit-log streaming",
-"state": "open",
-"created_at": "2026-06-15T12:19:50Z",
-"labels": [
-"feature",
-"in progress"
-],
-"head_ref": "feature/265-notification",
-"team": "payments",
-"milestone": {
-"title": "Payments hardening"
-}
-},
-{
-"number": 266,
-"title": "Add OAuth login to payout",
-"state": "open",
-"created_at": "2026-06-14T15:28:08Z",
+"created_at": "2026-06-19T20:51:49Z",
 "labels": [
 "feature"
 ],
-"head_ref": "feature/266-payout",
-"team": "mobile",
+"head_ref": "feature/420-notification",
+"team": "infra",
 "milestone": {
-"title": "Mobile GA"
+"title": "Cluster autoscaling"
 }
 },
 {
-"number": 267,
-"title": "webhook audit-log streaming",
+"number": 421,
+"title": "Add OAuth login to auth",
 "state": "open",
-"created_at": "2026-06-16T13:10:19Z",
+"created_at": "2026-06-16T03:37:41Z",
 "labels": [
 "feature"
 ],
-"head_ref": "feature/267-webhook",
-"team": "mobile",
+"head_ref": "feature/421-auth",
+"team": "platform",
 "milestone": {
-"title": "Mobile GA"
-}
+"title": "Q3 Stability"
+},
+"points": 13
 },
 {
-"number": 268,
-"title": "Self-serve checkout budgets",
+"number": 422,
+"title": "Migrate search to async",
 "state": "open",
-"created_at": "2026-06-19T10:01:51Z",
-"labels": [
-"feature",
-"in progress"
-],
-"head_ref": "feature/268-checkout",
-"team": "payments",
-"milestone": {
-"title": "Payments hardening"
-}
-},
-{
-"number": 269,
-"title": "Extract payout into a service",
-"state": "open",
-"created_at": "2026-06-18T06:26:19Z",
+"created_at": "2026-06-16T07:33:19Z",
 "labels": [
 "refactor",
 "in progress"
 ],
-"head_ref": "refactor/269-payout",
+"head_ref": "refactor/422-search",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 5
+},
+{
+"number": 423,
+"title": "Extract sync into a service",
+"state": "open",
+"created_at": "2026-06-15T16:10:01Z",
+"labels": [
+"refactor",
+"in progress"
+],
+"head_ref": "refactor/423-sync",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+}
+},
+{
+"number": 424,
+"title": "Split the upload monolith module",
+"state": "open",
+"created_at": "2026-06-16T01:41:18Z",
+"labels": [
+"refactor",
+"in progress"
+],
+"head_ref": "refactor/424-upload",
+"team": "mobile",
+"milestone": {
+"title": "Mobile GA"
+},
+"points": 8
+},
+{
+"number": 425,
+"title": "Consolidate report clients",
+"state": "open",
+"created_at": "2026-06-19T13:05:19Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/425-report",
+"team": "mobile",
+"milestone": {
+"title": "Mobile GA"
+},
+"points": 5
+},
+{
+"number": 426,
+"title": "Type the upload boundary",
+"state": "open",
+"created_at": "2026-06-18T16:53:22Z",
+"labels": [
+"refactor",
+"in progress"
+],
+"head_ref": "refactor/426-upload",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 13
+},
+{
+"number": 427,
+"title": "Split the auth monolith module",
+"state": "open",
+"created_at": "2026-06-19T17:33:31Z",
+"labels": [
+"refactor"
+],
+"head_ref": "refactor/427-auth",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 5
+},
+{
+"number": 428,
+"title": "Migrate payout to async",
+"state": "open",
+"created_at": "2026-06-16T20:02:08Z",
+"labels": [
+"refactor",
+"in progress"
+],
+"head_ref": "refactor/428-payout",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 8
+},
+{
+"number": 429,
+"title": "Extract ledger into a service",
+"state": "open",
+"created_at": "2026-06-19T16:58:33Z",
+"labels": [
+"refactor",
+"in progress"
+],
+"head_ref": "refactor/429-ledger",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 8
+},
+{
+"number": 430,
+"title": "Load test billing",
+"state": "open",
+"created_at": "2026-06-17T21:22:00Z",
+"labels": [
+"test",
+"in progress"
+],
+"head_ref": "test/430-billing",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+}
+},
+{
+"number": 431,
+"title": "Snapshot tests for checkout",
+"state": "open",
+"created_at": "2026-06-16T08:23:09Z",
+"labels": [
+"test",
+"in progress"
+],
+"head_ref": "test/431-checkout",
 "team": "mobile",
 "milestone": {
 "title": "Mobile GA"
 }
 },
 {
-"number": 270,
-"title": "Consolidate auth clients",
+"number": 432,
+"title": "Snapshot tests for webhook",
 "state": "open",
-"created_at": "2026-06-17T15:13:02Z",
+"created_at": "2026-06-16T09:20:32Z",
 "labels": [
-"refactor"
+"test"
 ],
-"head_ref": "refactor/270-auth",
+"head_ref": "test/432-webhook",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 5
+},
+{
+"number": 433,
+"title": "Integration tests for upload",
+"state": "open",
+"created_at": "2026-06-14T19:26:07Z",
+"labels": [
+"test",
+"in progress"
+],
+"head_ref": "test/433-upload",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 5
+},
+{
+"number": 434,
+"title": "Fuzz the ledger parser",
+"state": "open",
+"created_at": "2026-06-16T17:48:05Z",
+"labels": [
+"test"
+],
+"head_ref": "test/434-ledger",
 "team": "payments",
 "milestone": {
 "title": "Payments hardening"
 }
 },
 {
-"number": 271,
-"title": "Integration tests for billing",
+"number": 435,
+"title": "Snapshot tests for checkout",
 "state": "open",
-"created_at": "2026-06-16T02:51:01Z",
+"created_at": "2026-06-17T11:04:27Z",
+"labels": [
+"test"
+],
+"head_ref": "test/435-checkout",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 3
+},
+{
+"number": 436,
+"title": "Integration tests for notification",
+"state": "open",
+"created_at": "2026-06-18T19:43:08Z",
 "labels": [
 "test",
 "in progress"
 ],
-"head_ref": "test/271-billing",
-"team": "growth",
+"head_ref": "test/436-notification",
+"team": "data",
 "milestone": {
-"title": "Billing v2"
-}
+"title": "Warehouse migration"
+},
+"points": 5
 },
 {
-"number": 272,
-"title": "Fuzz the webhook parser",
+"number": 437,
+"title": "Update webhook API docs",
 "state": "open",
-"created_at": "2026-06-18T01:05:19Z",
-"labels": [
-"test",
-"in progress"
-],
-"head_ref": "test/272-webhook",
-"team": "growth",
-"milestone": {
-"title": "Billing v2"
-}
-},
-{
-"number": 273,
-"title": "Tidy pricing config",
-"state": "open",
-"created_at": "2026-06-14T23:32:20Z",
-"labels": [
-"chore"
-],
-"head_ref": "chore/273-pricing",
-"team": "growth",
-"milestone": {
-"title": "Billing v2"
-}
-},
-{
-"number": 274,
-"title": "Format the invoice package",
-"state": "open",
-"created_at": "2026-06-18T02:57:31Z",
-"labels": [
-"chore"
-],
-"head_ref": "chore/274-invoice",
-"team": "mobile",
-"milestone": {
-"title": "Mobile GA"
-}
-},
-{
-"number": 275,
-"title": "Update upload API docs",
-"state": "open",
-"created_at": "2026-06-17T17:23:47Z",
+"created_at": "2026-06-19T03:25:04Z",
 "labels": [
 "chore",
 "in progress"
 ],
-"head_ref": "chore/275-upload",
+"head_ref": "chore/437-webhook",
+"team": "mobile",
+"milestone": {
+"title": "Mobile GA"
+},
+"points": 2
+},
+{
+"number": 438,
+"title": "Bump auth deps",
+"state": "open",
+"created_at": "2026-06-16T20:57:57Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/438-auth",
 "team": "growth",
 "milestone": {
 "title": "Billing v2"
 }
+},
+{
+"number": 439,
+"title": "Bump webhook deps",
+"state": "open",
+"created_at": "2026-06-18T03:21:32Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/439-webhook",
+"team": "infra",
+"milestone": {
+"title": "Cluster autoscaling"
+},
+"points": 2
+},
+{
+"number": 440,
+"title": "Format the payout package",
+"state": "open",
+"created_at": "2026-06-16T12:00:04Z",
+"labels": [
+"chore",
+"in progress"
+],
+"head_ref": "chore/440-payout",
+"team": "search",
+"milestone": {
+"title": "Relevance v3"
+},
+"points": 3
+},
+{
+"number": 441,
+"title": "Bump payout deps",
+"state": "open",
+"created_at": "2026-06-16T00:47:38Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/441-payout",
+"team": "payments",
+"milestone": {
+"title": "Payments hardening"
+},
+"points": 1
+},
+{
+"number": 442,
+"title": "Format the pricing package",
+"state": "open",
+"created_at": "2026-06-18T13:09:10Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/442-pricing",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 2
+},
+{
+"number": 443,
+"title": "Bump auth deps",
+"state": "open",
+"created_at": "2026-06-15T03:21:30Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/443-auth",
+"team": "data",
+"milestone": {
+"title": "Warehouse migration"
+},
+"points": 3
+},
+{
+"number": 444,
+"title": "Format the invoice package",
+"state": "open",
+"created_at": "2026-06-17T22:02:45Z",
+"labels": [
+"chore"
+],
+"head_ref": "chore/444-invoice",
+"team": "checkout",
+"milestone": {
+"title": "One-click checkout"
+},
+"points": 2
+},
+{
+"number": 445,
+"title": "Update billing API docs",
+"state": "open",
+"created_at": "2026-06-15T09:21:18Z",
+"labels": [
+"chore",
+"in progress"
+],
+"head_ref": "chore/445-billing",
+"team": "platform",
+"milestone": {
+"title": "Q3 Stability"
+},
+"points": 1
 }
 ]
 }
