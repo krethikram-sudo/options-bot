@@ -552,11 +552,13 @@ def app_dashboard(request: Request):
     report = store.get_outlay_report(acct["id"])
     budgets = store.list_outlay_budgets(acct["id"])
     statuses = outlay_app.budget_statuses(report, budgets) if report else []
+    programs = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"])) if report else []
     hist = store.outlay_history(acct["id"]) if report else []
     persona = store.get_persona(acct["id"], acct.get("member_id", 0) or 0)
     return _html(web.overview_page(acct, report, statuses, hist,
                                    store.get_outlay_connection(acct["id"]),
-                                   has_budget=bool(budgets), persona=persona))
+                                   has_budget=bool(budgets), persona=persona,
+                                   program_statuses=programs))
 
 
 @app.get("/app/estimate", response_class=HTMLResponse)
@@ -725,6 +727,18 @@ def _auto_sync_hours(raw) -> int:
     except (TypeError, ValueError):
         return 0
     return v if v in _AUTO_SYNC_CHOICES else 0
+
+
+def _parse_date_ts(raw) -> float | None:
+    """'YYYY-MM-DD' (from an <input type=date>) → UTC unix ts, or None."""
+    raw = (raw or "").strip()
+    if not raw:
+        return None
+    try:
+        from datetime import datetime, timezone
+        return datetime.strptime(raw, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp()
+    except ValueError:
+        return None
 
 
 def _run_due_syncs(now: float | None = None, transport=None) -> dict:
@@ -1288,6 +1302,20 @@ def app_outlay_programs(request: Request):
     return _html(web.programs_page(acct, report, statuses))
 
 
+@app.get("/app/outlay/summary", response_class=HTMLResponse)
+def app_outlay_summary(request: Request):
+    """Finance's quarterly summary — headline numbers, the auto-flagged attention
+    panel, by-team allocation, and program timelines, with the printable readout."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    report = store.get_outlay_report(acct["id"])
+    budgets = outlay_app.budget_statuses(report, store.list_outlay_budgets(acct["id"])) if report else []
+    programs = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"])) if report else []
+    persona = store.get_persona(acct["id"], acct.get("member_id", 0) or 0)
+    return _html(web.summary_page(acct, report, budgets, programs, persona=persona))
+
+
 @app.post("/app/outlay/programs")
 async def app_outlay_programs_add(request: Request):
     acct, redir = _require(request)
@@ -1317,9 +1345,12 @@ async def app_outlay_programs_add(request: Request):
         period = int(f.get("period_days") or 90)
     except ValueError:
         period = 90
+    start_ts = _parse_date_ts(f.get("start_date"))
+    end_ts = _parse_date_ts(f.get("end_date"))
     if name and limit > 0 and members:
         store.add_outlay_program(acct["id"], name, members, limit, period,
-                                 enforce_mode=enforce, action=action, floor_model=floor)
+                                 enforce_mode=enforce, action=action, floor_model=floor,
+                                 start_ts=start_ts, end_ts=end_ts)
         _audit(acct["id"], "program.create",
                actor=acct.get("display_email") or acct.get("email", ""),
                detail=f"{name} · {enforce} · ${limit:,.0f}/{period}d")

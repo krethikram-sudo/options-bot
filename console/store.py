@@ -354,6 +354,8 @@ _MIGRATIONS = [
     "ALTER TABLE accounts ADD COLUMN demo_mode INTEGER NOT NULL DEFAULT 0",  # 1 = this (gated) account is showing seeded demo data
     "ALTER TABLE outlay_connections ADD COLUMN identity_names TEXT",  # JSON {identifier: display name} for usage-by-person
     "ALTER TABLE outlay_connections ADD COLUMN identity_titles TEXT",  # JSON {identifier: job title} (eng direct reports)
+    "ALTER TABLE outlay_programs ADD COLUMN start_ts REAL",  # program timeline start (unix); NULL → treat as created/now
+    "ALTER TABLE outlay_programs ADD COLUMN end_ts REAL",  # program timeline end (unix); NULL → start + period_days
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -1403,20 +1405,31 @@ PROGRAM_ACTIONS = ("block", "downgrade")
 def add_outlay_program(account_id: int, name: str, members: list, limit_usd: float,
                        period_days: int = 90, enforce_mode: str = "alert",
                        action: str = "block", floor_model: str | None = None,
+                       start_ts: float | None = None, end_ts: float | None = None,
                        path: str | None = None) -> int:
     """Create a program budget (a named budget spanning several teams/projects/work
-    types). `members` is a list of {scope_type, scope_id}. Returns the new id."""
+    types). `members` is a list of {scope_type, scope_id}. A program has a timeline:
+    `start_ts` defaults to now and `end_ts` to start + period_days; when both dates
+    are given, period_days is derived from them so the pace projection stays in sync.
+    Returns the new id."""
     enforce_mode = enforce_mode if enforce_mode in PROGRAM_ENFORCE_MODES else "alert"
     action = action if action in PROGRAM_ACTIONS else "block"
     clean = [{"scope_type": m.get("scope_type"), "scope_id": (m.get("scope_id") or "").strip() or None}
              for m in (members or []) if m.get("scope_type")]
+    start_ts = float(start_ts) if start_ts else time.time()
+    if end_ts:
+        end_ts = float(end_ts)
+        period_days = max(1, round((end_ts - start_ts) / 86400))
+    else:
+        end_ts = start_ts + int(period_days) * 86400
     conn = connect(path)
     try:
         cur = conn.execute(
             "INSERT INTO outlay_programs(account_id, name, members, limit_usd, period_days,"
-            " enforce_mode, action, floor_model) VALUES(?,?,?,?,?,?,?,?)",
+            " enforce_mode, action, floor_model, start_ts, end_ts) VALUES(?,?,?,?,?,?,?,?,?,?)",
             (account_id, (name or "Program").strip()[:80], json.dumps(clean), float(limit_usd),
-             int(period_days), enforce_mode, action, (floor_model or "").strip() or None))
+             int(period_days), enforce_mode, action, (floor_model or "").strip() or None,
+             start_ts, end_ts))
         conn.commit()
         return cur.lastrowid
     finally:
