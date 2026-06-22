@@ -30,7 +30,7 @@ def client(env):
     return TestClient(server.app, follow_redirects=False)
 
 
-def _signup(client, email="a@b.com", pw="password123", company="Acme"):
+def _signup(client, email="a@b.com", pw="k7-otter-ledger", company="Acme"):
     r = client.post("/signup", data={"email": email, "password": pw, "company": company,
                                      "accept": "1"})
     # Move past the first-run role gate by default (eng ≈ the legacy no-persona view)
@@ -45,11 +45,11 @@ def _signup(client, email="a@b.com", pw="password123", company="Acme"):
 
 def test_signup_requires_terms_consent(env, client):
     _, store = env
-    r = client.post("/signup", data={"email": "noconsent@b.com", "password": "password123"})
+    r = client.post("/signup", data={"email": "noconsent@b.com", "password": "k7-otter-ledger"})
     assert r.status_code == 400 and "Terms" in r.text
     assert store.get_account_by_email("noconsent@b.com") is None
     # with consent -> created and consent timestamped
-    ok = client.post("/signup", data={"email": "yes@b.com", "password": "password123", "accept": "1"})
+    ok = client.post("/signup", data={"email": "yes@b.com", "password": "k7-otter-ledger", "accept": "1"})
     assert ok.status_code == 303
     assert store.get_account_by_email("yes@b.com")["tos_accepted_at"] is not None
 
@@ -73,7 +73,7 @@ def test_session_signing_rejects_tampering(env):
 
 def test_create_account_sets_trial_and_deployment(env):
     _, store = env
-    a = store.create_account("x@y.com", "password123", company="Y")
+    a = store.create_account("x@y.com", "k7-otter-ledger", company="Y")
     assert a["role"] == "customer" and a["status"] == "active"
     deps = store.deployments_for(a["id"])
     assert len(deps) == 1 and deps[0]["deployment_id"].startswith("dep_")
@@ -82,7 +82,7 @@ def test_create_account_sets_trial_and_deployment(env):
 
 def test_trial_clock_starts_at_setup_not_signup(env):
     _, store = env
-    a = store.create_account("setup@y.com", "password123")
+    a = store.create_account("setup@y.com", "k7-otter-ledger")
     # at signup: entitled, but the countdown hasn't started
     ts = store.trial_status(a["id"])
     assert ts["active"] and ts.get("not_started")
@@ -103,14 +103,14 @@ def test_trial_clock_starts_at_setup_not_signup(env):
 
 def test_duplicate_email_rejected(env):
     _, store = env
-    store.create_account("dup@y.com", "password123")
+    store.create_account("dup@y.com", "k7-otter-ledger")
     with pytest.raises(store.StoreError):
-        store.create_account("dup@y.com", "password123")
+        store.create_account("dup@y.com", "k7-otter-ledger")
 
 
 def test_entitlement_trial_paid_suspended(env):
     _, store = env
-    a = store.create_account("e@y.com", "password123")
+    a = store.create_account("e@y.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     # trial + default guidance mode -> entitled, not applied
     ent = store.entitlement(dep)
@@ -132,7 +132,7 @@ def test_entitlement_trial_paid_suspended(env):
 
 def test_guidance_is_trial_only_and_never_bills(env):
     _, store = env
-    a = store.create_account("g@y.com", "password123")
+    a = store.create_account("g@y.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     # Trial default is guidance, which never applies switches (so never realizes savings/bills).
     assert store.get_settings(a["id"])["mode"] == "guidance"
@@ -153,7 +153,7 @@ def test_guidance_is_trial_only_and_never_bills(env):
 
 def test_autopilot_ramp_in_entitlement(env):
     _, store = env
-    a = store.create_account("ramp@y.com", "password123")
+    a = store.create_account("ramp@y.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     # guidance -> not applied, ramp reported as 0 (nothing auto-routes)
     ent = store.entitlement(dep)
@@ -181,7 +181,7 @@ def test_autopilot_ramp_via_http(env, client):
 
 def test_metering_and_billing(env):
     _, store = env
-    a = store.create_account("m@y.com", "password123")
+    a = store.create_account("m@y.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     store.record_meter(dep, requests=100, routed=60, baseline_cost=10.0, actual_cost=6.0,
                        category="classification")
@@ -196,7 +196,7 @@ def test_metering_and_billing(env):
 def test_opportunity_savings_metered_and_summed(env, client):
     from console import web
     server, store = env
-    a = store.create_account("opp@y.com", "password123")
+    a = store.create_account("opp@y.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     # via HTTP meter (the path the gateway uses) + a direct record
     r = client.post("/api/meter", json={"deployment_id": dep, "requests": 10, "routed": 5,
@@ -221,7 +221,7 @@ def test_opportunity_savings_metered_and_summed(env, client):
 def test_caching_savings_shown_but_not_billed(env, client):
     from console import web
     server, store = env
-    a = store.create_account("cache@y.com", "password123")
+    a = store.create_account("cache@y.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     # gateway reports realized model-switch savings + measured caching savings
     r = client.post("/api/meter", json={"deployment_id": dep, "requests": 10,
@@ -267,7 +267,7 @@ def test_report_usage_bills_the_tier_rate_not_a_flat_20pct(env, monkeypatch):
     _, store = env
     from console import stripe_billing
     events = _fake_stripe(monkeypatch)
-    a = store.create_account("rate@y.com", "password123")
+    a = store.create_account("rate@y.com", "k7-otter-ledger")
     store.convert_to_paid(a["id"], stripe_customer_id="cus_1")
     # Self-optimize = 15% -> $100 savings bills $15 = 1500 cents (NOT 2000)
     store.set_tier(a["id"], "self_optimize")
@@ -283,7 +283,7 @@ def test_api_meter_marks_row_so_sync_never_double_bills(env, client, monkeypatch
     _, store = env
     from console import stripe_billing
     events = _fake_stripe(monkeypatch)
-    a = store.create_account("nodbl@y.com", "password123")
+    a = store.create_account("nodbl@y.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     store.convert_to_paid(a["id"], stripe_customer_id="cus_2", now=1000.0)
     store.set_tier(a["id"], "self_optimize")
@@ -302,7 +302,7 @@ def test_sync_excludes_trial_period_savings(env, monkeypatch):
     _, store = env
     from console import stripe_billing
     events = _fake_stripe(monkeypatch)
-    a = store.create_account("trial@y.com", "password123")
+    a = store.create_account("trial@y.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     store.record_meter(dep, baseline_cost=50.0, actual_cost=20.0, ts=1000.0)   # during trial
     store.convert_to_paid(a["id"], stripe_customer_id="cus_3", now=2000.0)
@@ -325,7 +325,7 @@ def test_estimate_page_redirects_to_outlay(env, client):
 
 def test_delete_account_cascade(env):
     _, store = env
-    a = store.create_account("del@y.com", "password123")
+    a = store.create_account("del@y.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     store.record_meter(dep, baseline_cost=10.0, actual_cost=6.0)
     store.convert_to_paid(a["id"])
@@ -351,7 +351,7 @@ def test_delete_account_cascade(env):
 def test_outlay_retention_window_purges_old_snapshots(env):
     import time
     _, store = env
-    a = store.create_account("ret@y.com", "password123")
+    a = store.create_account("ret@y.com", "k7-otter-ledger")
     now = time.time()
     # three snapshots: 200d, 100d, 1d old
     for age in (200, 100, 1):
@@ -370,7 +370,7 @@ def test_outlay_retention_window_purges_old_snapshots(env):
     vals = {h["total_usd"] for h in store.outlay_history(a["id"], limit=50)}
     assert 9 not in vals and 5 in vals  # the 150d row was purged on the new write
     # the daily sweep enforces it across accounts too
-    a2 = store.create_account("ret2@y.com", "password123")
+    a2 = store.create_account("ret2@y.com", "k7-otter-ledger")
     store.record_outlay_snapshot(a2["id"], {"spend": {"total_usd": 7}}, now=now - 120 * 86400)
     store.set_retention_days(a2["id"], 90)
     out = store.purge_due_outlay_history(now=now)
@@ -419,7 +419,7 @@ def test_delete_account_requires_email_confirmation(env, client):
 
 def test_revenue_overview(env):
     _, store = env
-    a = store.create_account("r1@y.com", "password123")
+    a = store.create_account("r1@y.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     store.record_meter(dep, baseline_cost=100.0, actual_cost=60.0)
     store.convert_to_paid(a["id"])
@@ -433,7 +433,7 @@ def test_revenue_overview_keeps_subcent_precision(env):
     # Aggregate must not round sub-cent savings to $0.00 — the tokens-saved view
     # and parity with the per-account rows depend on the real value.
     _, store = env
-    a = store.create_account("sub@y.com", "password123")
+    a = store.create_account("sub@y.com", "k7-otter-ledger")
     store.convert_to_paid(a["id"])
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     store.record_meter(dep, baseline_cost=0.0103, actual_cost=0.0064)  # $0.0039 saved
@@ -511,7 +511,7 @@ def test_2fa_enable_then_login_challenge(env, client):
     assert store.get_2fa(acct["id"])["enabled"]
     # now logging in challenges for a code instead of granting a session
     client.cookies.clear()
-    r = client.post("/login", data={"email": "tf@b.com", "password": "password123"})
+    r = client.post("/login", data={"email": "tf@b.com", "password": "k7-otter-ledger"})
     assert r.status_code == 303 and r.headers["location"] == "/login/verify"
     assert client.cookies.get("mp_2fa") and not client.cookies.get("mp_session")
     # wrong code is rejected; correct code completes login
@@ -602,8 +602,8 @@ def test_cron_health_tracking_and_surfaces(env, client):
     assert "cron" in hj and "cron_ok" in hj and "sync-due" in hj["cron"]
 
     # admin page renders the jobs + a stale warning when overdue
-    store.create_account("ops@b.com", "password123", role="admin")
-    client.post("/login", data={"email": "ops@b.com", "password": "password123"})
+    store.create_account("ops@b.com", "k7-otter-ledger", role="admin")
+    client.post("/login", data={"email": "ops@b.com", "password": "k7-otter-ledger"})
     page = client.get("/admin/health").text
     assert "Scheduler health" in page and "sync-due" in page and "digest-due" in page
 
@@ -611,9 +611,9 @@ def test_cron_health_tracking_and_surfaces(env, client):
 def test_admin_can_view_and_manage(env, client):
     server, store = env
     # make an admin directly, then log in via the client
-    store.create_account("boss@b.com", "password123", role="admin")
-    cust = store.create_account("c@b.com", "password123")
-    client.post("/login", data={"email": "boss@b.com", "password": "password123"})
+    store.create_account("boss@b.com", "k7-otter-ledger", role="admin")
+    cust = store.create_account("c@b.com", "k7-otter-ledger")
+    client.post("/login", data={"email": "boss@b.com", "password": "k7-otter-ledger"})
     assert client.get("/admin").status_code == 200
     assert client.get(f"/admin/accounts/{cust['id']}").status_code == 200
     # suspend the customer
@@ -628,7 +628,7 @@ def test_admin_can_view_and_manage(env, client):
 
 def test_api_entitlement_and_meter(env, client):
     server, store = env
-    a = store.create_account("api@b.com", "password123")
+    a = store.create_account("api@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     ent = client.get("/api/entitlement", params={"deployment_id": dep}).json()
     assert ent["entitled"] is True
@@ -639,7 +639,7 @@ def test_api_entitlement_and_meter(env, client):
 
 def test_api_meter_rejects_sensitive_keys(env, client):
     server, store = env
-    a = store.create_account("api2@b.com", "password123")
+    a = store.create_account("api2@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     r = client.post("/api/meter", json={"deployment_id": dep, "messages": [{"role": "user"}]})
     assert r.status_code == 422
@@ -654,7 +654,7 @@ def test_api_meter_unknown_deployment(client):
 
 def test_multiple_deployments_roll_up_to_one_account(env):
     _, store = env
-    a = store.create_account("multi@b.com", "password123")
+    a = store.create_account("multi@b.com", "k7-otter-ledger")
     d1 = store.deployments_for(a["id"])[0]["deployment_id"]
     d2 = store.create_deployment(a["id"], label="staging")["deployment_id"]
     assert len(store.deployments_for(a["id"])) == 2
@@ -727,7 +727,7 @@ def test_forgot_and_reset_http(env, client):
 
 def test_proof_summary_and_meter(env, client):
     _, store = env
-    a = store.create_account("proof@b.com", "password123")
+    a = store.create_account("proof@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     client.post("/api/meter", json={"deployment_id": dep, "baseline_cost": 1.0,
                                     "actual_cost": 0.7, "comparisons": 10, "non_inferior": 9})
@@ -739,7 +739,7 @@ def test_proof_summary_and_meter(env, client):
 
 def test_proposal_submit_supersede_and_approve(env):
     _, store = env
-    a = store.create_account("prop@b.com", "password123")
+    a = store.create_account("prop@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     store.submit_proposal(dep, "floor", "summarization_long",
                           {"current_tier": 1, "proposed_tier": 0},
@@ -758,7 +758,7 @@ def test_proposal_submit_supersede_and_approve(env):
 
 def test_approved_rules_and_policy_for_deployment(env):
     _, store = env
-    a = store.create_account("prop2@b.com", "password123")
+    a = store.create_account("prop2@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     store.submit_proposal(dep, "rule", "extraction",
                           {"name": "invoices", "any": ["invoice"], "category": "extraction"},
@@ -771,7 +771,7 @@ def test_approved_rules_and_policy_for_deployment(env):
 
 def test_api_proposals_and_policy_http(env, client):
     _, store = env
-    a = store.create_account("prop3@b.com", "password123")
+    a = store.create_account("prop3@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     r = client.post("/api/proposals", json={
         "deployment_id": dep, "kind": "floor", "category": "classification",
@@ -789,7 +789,7 @@ def test_api_proposals_and_policy_http(env, client):
 
 def test_payg_does_not_receive_learned_floors(env):
     _, store = env
-    a = store.create_account("gate@b.com", "password123")
+    a = store.create_account("gate@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     store.submit_proposal(dep, "floor", "extraction", {"current_tier": 1, "proposed_tier": 0},
                           {"samples": 30})
@@ -806,7 +806,7 @@ def test_payg_does_not_receive_learned_floors(env):
 
 def test_api_proposals_rejects_sensitive_keys(env, client):
     _, store = env
-    a = store.create_account("prop4@b.com", "password123")
+    a = store.create_account("prop4@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     r = client.post("/api/proposals", json={"deployment_id": dep, "kind": "rule",
                                             "category": "x", "messages": ["secret"]})
@@ -815,13 +815,13 @@ def test_api_proposals_rejects_sensitive_keys(env, client):
 
 def test_admin_reviews_and_approves_proposal_via_http(env, client):
     _, store = env
-    store.create_account("boss2@b.com", "password123", role="admin")
-    cust = store.create_account("cust2@b.com", "password123")
+    store.create_account("boss2@b.com", "k7-otter-ledger", role="admin")
+    cust = store.create_account("cust2@b.com", "k7-otter-ledger")
     dep = store.deployments_for(cust["id"])[0]["deployment_id"]
     store.submit_proposal(dep, "floor", "extraction",
                           {"current_tier": 1, "proposed_tier": 0}, {"samples": 15})
     pid = store.list_proposals(cust["id"])[0]["id"]
-    client.post("/login", data={"email": "boss2@b.com", "password": "password123"})
+    client.post("/login", data={"email": "boss2@b.com", "password": "k7-otter-ledger"})
     # the proposal is visible on the customer detail page
     detail = client.get(f"/admin/accounts/{cust['id']}")
     assert "Proposed tuning" in detail.text and "extraction" in detail.text
@@ -833,16 +833,16 @@ def test_admin_reviews_and_approves_proposal_via_http(env, client):
 
 def test_admin_bulk_approve_across_customers(env, client):
     _, store = env
-    store.create_account("boss4@b.com", "password123", role="admin")
-    c1 = store.create_account("c1@b.com", "password123")
-    c2 = store.create_account("c2@b.com", "password123")
+    store.create_account("boss4@b.com", "k7-otter-ledger", role="admin")
+    c1 = store.create_account("c1@b.com", "k7-otter-ledger")
+    c2 = store.create_account("c2@b.com", "k7-otter-ledger")
     d1 = store.deployments_for(c1["id"])[0]["deployment_id"]
     d2 = store.deployments_for(c2["id"])[0]["deployment_id"]
     store.submit_proposal(d1, "floor", "extraction", {"current_tier": 1, "proposed_tier": 0}, {"samples": 10})
     store.submit_proposal(d2, "floor", "classification", {"current_tier": 1, "proposed_tier": 0}, {"samples": 12})
     ids = [str(p["id"]) for p in store.list_proposals(status="pending")]
     assert len(ids) == 2
-    client.post("/login", data={"email": "boss4@b.com", "password": "password123"})
+    client.post("/login", data={"email": "boss4@b.com", "password": "k7-otter-ledger"})
     # the queue page lists both customers' pending proposals
     q = client.get("/admin/proposals").text
     assert "Review queue" in q and "c1@b.com" in q and "c2@b.com" in q
@@ -859,15 +859,15 @@ def test_admin_bulk_approve_across_customers(env, client):
 
 def test_admin_bulk_reject_only_selected(env, client):
     _, store = env
-    store.create_account("boss5@b.com", "password123", role="admin")
-    c1 = store.create_account("c3@b.com", "password123")
+    store.create_account("boss5@b.com", "k7-otter-ledger", role="admin")
+    c1 = store.create_account("c3@b.com", "k7-otter-ledger")
     d1 = store.deployments_for(c1["id"])[0]["deployment_id"]
     store.submit_proposal(d1, "floor", "extraction", {"current_tier": 1, "proposed_tier": 0}, {"samples": 10})
     store.submit_proposal(d1, "rule", "translation", {"name": "t", "any": ["traducir"], "category": "translation"}, {"samples": 9})
     pend = store.list_proposals(c1["id"], status="pending")
     keep = [p for p in pend if p["kind"] == "rule"][0]["id"]
     drop = [p for p in pend if p["kind"] == "floor"][0]["id"]
-    client.post("/login", data={"email": "boss5@b.com", "password": "password123"})
+    client.post("/login", data={"email": "boss5@b.com", "password": "k7-otter-ledger"})
     client.post("/admin/proposals/bulk", data={"ids": [str(drop)], "decision": "rejected"})
     # only the floor was rejected; the rule is still pending
     remaining = [p["id"] for p in store.list_proposals(c1["id"], status="pending")]
@@ -876,7 +876,7 @@ def test_admin_bulk_reject_only_selected(env, client):
 
 def test_autoapprove_floor_meeting_threshold(env):
     _, store = env
-    a = store.create_account("auto@b.com", "password123")
+    a = store.create_account("auto@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     cfg = {"min_samples": 30, "min_ni": 0.95}
     # meets threshold -> auto-approved on arrival
@@ -892,7 +892,7 @@ def test_autoapprove_floor_meeting_threshold(env):
 
 def test_autoapprove_skips_low_evidence_and_rules(env):
     _, store = env
-    a = store.create_account("auto2@b.com", "password123")
+    a = store.create_account("auto2@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     cfg = {"min_samples": 30, "min_ni": 0.95}
     # too few samples -> stays pending
@@ -911,7 +911,7 @@ def test_autoapprove_skips_low_evidence_and_rules(env):
 
 def test_autoapprove_disabled_by_default_via_api(env, client, monkeypatch):
     _, store = env
-    a = store.create_account("auto3@b.com", "password123")
+    a = store.create_account("auto3@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     # no CONSOLE_AUTOAPPROVE env -> everything waits for a human
     client.post("/api/proposals", json={"deployment_id": dep, "kind": "floor",
@@ -922,8 +922,8 @@ def test_autoapprove_disabled_by_default_via_api(env, client, monkeypatch):
 
 def test_digest_summarizes_pending(env):
     _, store = env
-    a1 = store.create_account("d1@b.com", "password123")
-    a2 = store.create_account("d2@b.com", "password123")
+    a1 = store.create_account("d1@b.com", "k7-otter-ledger")
+    a2 = store.create_account("d2@b.com", "k7-otter-ledger")
     store.submit_proposal(store.deployments_for(a1["id"])[0]["deployment_id"],
                           "floor", "extraction", {"current_tier": 1, "proposed_tier": 0},
                           {"samples": 12, "non_inferior_rate": 0.9})
@@ -944,7 +944,7 @@ def test_digest_send_skips_when_empty(env):
 
 def test_api_key_create_resolve_revoke(env):
     _, store = env
-    a = store.create_account("k@b.com", "password123")
+    a = store.create_account("k@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     out = store.create_api_key(a["id"], dep, "prod")
     full = out["full_key"]
@@ -965,7 +965,7 @@ def test_api_key_create_resolve_revoke(env):
 def test_api_key_expiry(env, client):
     import time
     _, store = env
-    a = store.create_account("exp@b.com", "password123")
+    a = store.create_account("exp@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     out = store.create_api_key(a["id"], dep, "rotating", expires_in_days=30)
     full = out["full_key"]
@@ -997,7 +997,7 @@ def test_api_key_expiry(env, client):
 
 def test_meter_authenticates_by_key_and_rejects_bad(env, client):
     _, store = env
-    a = store.create_account("k2@b.com", "password123")
+    a = store.create_account("k2@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     full = store.create_api_key(a["id"], dep, "g")["full_key"]
     # key overrides body deployment_id; bad body id is ignored when key is valid
@@ -1029,7 +1029,7 @@ def test_api_keys_managed_via_http_with_one_time_reveal(env, client):
 
 def test_api_logs_store_and_recent(env, client):
     _, store = env
-    a = store.create_account("lg@b.com", "password123")
+    a = store.create_account("lg@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     batch = {"deployment_id": dep, "logs": [
         {"ts": 1.0, "category": "classification", "original_model": "claude-opus-4-8",
@@ -1047,7 +1047,7 @@ def test_api_logs_store_and_recent(env, client):
 
 def test_api_logs_rejects_prompt_text(env, client):
     _, store = env
-    a = store.create_account("lg2@b.com", "password123")
+    a = store.create_account("lg2@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     r = client.post("/api/logs", json={"deployment_id": dep,
                     "logs": [{"ts": 1.0, "prompt": "leaked!", "category": "x"}]})
@@ -1075,7 +1075,7 @@ def test_logs_page_and_csv(env, client):
 
 def test_member_invite_set_password_login(env):
     _, store = env
-    owner = store.create_account("owner@b.com", "password123")
+    owner = store.create_account("owner@b.com", "k7-otter-ledger")
     m = store.create_member(owner["id"], "mate@b.com", "member")
     assert m["status"] == "invited"
     # invited member can't log in until they set a password via the invite/reset token
@@ -1090,14 +1090,14 @@ def test_owner_login_unchanged(env, client):
     # the owner auth path (accounts table) is untouched by teams
     _signup(client, email="o2@b.com")
     client.cookies.clear()
-    r = client.post("/login", data={"email": "o2@b.com", "password": "password123"})
+    r = client.post("/login", data={"email": "o2@b.com", "password": "k7-otter-ledger"})
     # customers land on the Overview product home; the owner auth path is untouched
     assert r.status_code == 303 and r.headers["location"] == "/app"
 
 
 def test_member_login_and_team_nav(env, client):
     _, store = env
-    owner = store.create_account("o3@b.com", "password123")
+    owner = store.create_account("o3@b.com", "k7-otter-ledger")
     store.create_member(owner["id"], "mem@b.com", "member")
     out = store.create_reset("mem@b.com")
     store.consume_reset(out[1], "mempassword1")
@@ -1145,7 +1145,7 @@ def test_team_page_is_first_class(env, client):
 
 def test_member_cannot_convert_billing(env, client):
     _, store = env
-    owner = store.create_account("o4@b.com", "password123")
+    owner = store.create_account("o4@b.com", "k7-otter-ledger")
     store.create_member(owner["id"], "billless@b.com", "member")
     out = store.create_reset("billless@b.com"); store.consume_reset(out[1], "mempassword1")
     client.post("/login", data={"email": "billless@b.com", "password": "mempassword1"})
@@ -1156,7 +1156,7 @@ def test_member_cannot_convert_billing(env, client):
 
 def test_sso_config_and_domain_routing(env):
     _, store = env
-    a = store.create_account("ssoacct@corp.com", "password123")
+    a = store.create_account("ssoacct@corp.com", "k7-otter-ledger")
     store.set_sso(a["id"], enabled=True, domain="corp.com", client_id="cid",
                   client_secret="sec", auth_url="https://idp/auth", token_url="https://idp/tok",
                   userinfo_url="https://idp/ui", default_role="member")
@@ -1168,7 +1168,7 @@ def test_sso_config_and_domain_routing(env):
 
 def test_sso_callback_jit_provisions_and_logs_in(env, client, monkeypatch):
     server, store = env
-    a = store.create_account("o@corp2.com", "password123")
+    a = store.create_account("o@corp2.com", "k7-otter-ledger")
     store.set_sso(a["id"], enabled=True, domain="corp2.com", client_id="c", client_secret="s",
                   auth_url="https://idp/auth", token_url="https://idp/tok", userinfo_url="https://idp/ui")
     # /sso/start routes by domain -> redirect to the IdP with a signed state
@@ -1193,7 +1193,7 @@ def test_sso_callback_rejects_bad_state(env, client):
 
 def test_scim_provisioning(env, client):
     _, store = env
-    a = store.create_account("scim@corp3.com", "password123")
+    a = store.create_account("scim@corp3.com", "k7-otter-ledger")
     token = store.rotate_scim_token(a["id"])
     hdr = {"Authorization": f"Bearer {token}"}
     # no/invalid token -> 401
@@ -1226,7 +1226,7 @@ def test_sso_config_http_owner_only(env, client):
 
 def test_webhook_create_match_sign_deliver(env):
     _, store = env
-    a = store.create_account("wh@b.com", "password123")
+    a = store.create_account("wh@b.com", "k7-otter-ledger")
     store.create_webhook(a["id"], "https://x.test/hook", "budget.over,proposal.pending")
     store.create_webhook(a["id"], "https://y.test/all", "all")
     sent = []
@@ -1244,7 +1244,7 @@ def test_webhook_create_match_sign_deliver(env):
 
 def test_webhook_delivery_retries_and_logs(env):
     _, store = env
-    a = store.create_account("whr@b.com", "password123")
+    a = store.create_account("whr@b.com", "k7-otter-ledger")
     store.create_webhook(a["id"], "https://x.test/hook", "all")
 
     # a flaky endpoint: fails twice (500), then succeeds — retried, recorded delivered
@@ -1280,7 +1280,7 @@ def test_webhook_delivery_log_visible_on_connect(env, client):
 def test_webhook_durable_redelivery(env):
     import time
     _, store = env
-    a = store.create_account("whd2@b.com", "password123")
+    a = store.create_account("whd2@b.com", "k7-otter-ledger")
     store.create_webhook(a["id"], "https://x.test/hook", "all")
 
     # initial dispatch fails (endpoint down) → recorded 'failed' with a payload + next_attempt_at
@@ -1306,7 +1306,7 @@ def test_webhook_durable_redelivery(env):
 def test_webhook_redelivery_gives_up_after_max_attempts(env):
     import time
     _, store = env
-    a = store.create_account("whd3@b.com", "password123")
+    a = store.create_account("whd3@b.com", "k7-otter-ledger")
     store.create_webhook(a["id"], "https://x.test/hook", "all")
     store.deliver_event(a["id"], "budget.over", {}, post_fn=lambda *a: 500, sleep_fn=lambda s: None)
     did = store.recent_webhook_deliveries(a["id"])[0]["id"]
@@ -1328,7 +1328,7 @@ def test_webhook_redelivery_gives_up_after_max_attempts(env):
 def test_webhook_redelivery_dead_when_webhook_deleted(env):
     import time
     _, store = env
-    a = store.create_account("whd4@b.com", "password123")
+    a = store.create_account("whd4@b.com", "k7-otter-ledger")
     wid = store.create_webhook(a["id"], "https://x.test/hook", "all")["id"]
     store.deliver_event(a["id"], "budget.over", {}, post_fn=lambda *a: 500, sleep_fn=lambda s: None)
     store.delete_webhook(wid, a["id"])
@@ -1339,7 +1339,7 @@ def test_webhook_redelivery_dead_when_webhook_deleted(env):
 
 def test_webhook_event_filtering(env):
     _, store = env
-    a = store.create_account("wh2@b.com", "password123")
+    a = store.create_account("wh2@b.com", "k7-otter-ledger")
     store.create_webhook(a["id"], "https://only.test/h", "proposal.pending")
     sent = []
     # not subscribed -> no delivery
@@ -1361,7 +1361,7 @@ def test_webhook_http_crud(env, client):
 
 def test_proposal_submit_fires_webhook(env, client):
     _, store = env
-    a = store.create_account("whp@b.com", "password123")
+    a = store.create_account("whp@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     store.create_webhook(a["id"], "https://p.test/h", "proposal.pending")
     # submit via the API; the pending proposal should match the webhook
@@ -1375,7 +1375,7 @@ def test_proposal_submit_fires_webhook(env, client):
 
 def test_budget_status_and_alert_levels(env):
     _, store = env
-    a = store.create_account("bud@b.com", "password123")
+    a = store.create_account("bud@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     store.update_settings(a["id"], monthly_budget=10.0, budget_alert_pct=0.8)
     # spend $8.50 -> 85% -> warn (not over)
@@ -1395,7 +1395,7 @@ def test_budget_status_and_alert_levels(env):
 
 def test_no_budget_means_no_alerts(env):
     _, store = env
-    a = store.create_account("nob@b.com", "password123")
+    a = store.create_account("nob@b.com", "k7-otter-ledger")
     dep = store.deployments_for(a["id"])[0]["deployment_id"]
     store.record_meter(dep, baseline_cost=100.0, actual_cost=80.0)
     assert store.budget_status(a["id"])["enabled"] is False
@@ -1414,13 +1414,13 @@ def test_settings_budget_update_via_http(env, client):
 
 def test_proposal_audit_trail(env, client):
     _, store = env
-    admin = store.create_account("boss3@b.com", "password123", role="admin")
-    cust = store.create_account("cust3@b.com", "password123")
+    admin = store.create_account("boss3@b.com", "k7-otter-ledger", role="admin")
+    cust = store.create_account("cust3@b.com", "k7-otter-ledger")
     dep = store.deployments_for(cust["id"])[0]["deployment_id"]
     store.submit_proposal(dep, "floor", "extraction", {"current_tier": 1, "proposed_tier": 0},
                           {"samples": 15})
     pid = store.list_proposals(cust["id"])[0]["id"]
-    client.post("/login", data={"email": "boss3@b.com", "password": "password123"})
+    client.post("/login", data={"email": "boss3@b.com", "password": "k7-otter-ledger"})
     client.post(f"/admin/accounts/{cust['id']}/proposal",
                 data={"proposal_id": str(pid), "decision": "approved", "note": "looks safe"})
     hist = store.proposal_history(cust["id"])
@@ -1836,7 +1836,7 @@ def test_run_due_syncs_records_per_account_error(env, client):
 
 def test_sync_fail_count_increments_and_clears(env):
     _, store = env
-    a = store.create_account("fc@x.com", "password123")
+    a = store.create_account("fc@x.com", "k7-otter-ledger")
     store.save_outlay_connection(a["id"], github_owner="acme", github_repo="web",
                                  github_token="ghp_x", auto_sync_hours=24)
     assert store.mark_outlay_sync_error(a["id"], "boom") == 1
@@ -1853,7 +1853,7 @@ def test_sync_fail_count_increments_and_clears(env):
 def test_repeated_sync_failure_alerts_owner_once(env, monkeypatch):
     from console import server
     _, store = env
-    a = store.create_account("alertme@x.com", "password123")
+    a = store.create_account("alertme@x.com", "k7-otter-ledger")
     store.save_outlay_connection(a["id"], github_owner="acme", github_repo="web",
                                  github_token="ghp_x", auto_sync_hours=24)
     sent = []
@@ -2534,7 +2534,7 @@ def test_pilot_request_rejects_bad_email_and_honeypot(env, client):
 
 def test_admin_leads_inbox(env, client):
     server, store = env
-    store.create_account("boss@b.com", "password123", role="admin")
+    store.create_account("boss@b.com", "k7-otter-ledger", role="admin")
     # a lead comes in via the public form
     client.post("/pilot-request", data={"email": "lead@acme.dev", "name": "Lee",
                 "company": "Acme", "title": "VP Eng", "message": "interested"})
@@ -2543,7 +2543,7 @@ def test_admin_leads_inbox(env, client):
     assert client.get("/admin/leads").status_code == 403
     client.post("/logout")
     # admin sees the lead
-    client.post("/login", data={"email": "boss@b.com", "password": "password123"})
+    client.post("/login", data={"email": "boss@b.com", "password": "k7-otter-ledger"})
     r = client.get("/admin/leads")
     assert r.status_code == 200 and "Acme" in r.text and "lead@acme.dev" in r.text
     assert "Pilot requests" in r.text and "VP Eng" in r.text
@@ -2967,6 +2967,88 @@ def test_finance_home_lens_and_saved_views(env, client):
     assert "By team / cost-center" in client.get("/app").text
 
 
+# --- Gov-readiness security hardening ------------------------------------- #
+
+def test_password_breach_screening(env):
+    _, store = env
+    import pytest as _pt
+    for weak in ("password123", "qwerty", "short"):
+        with _pt.raises(store.StoreError):
+            store.create_account(f"{weak}@x.com", weak)
+    a = store.create_account("ok@x.com", "swift-otter-ledger-9")   # strong → fine
+    assert a and store.password_problem("swift-otter-ledger-9") is None
+
+
+def test_login_lockout_after_failures(env, client):
+    _signup(client, email="lock@x.com")
+    for _ in range(5):
+        assert client.post("/login", data={"email": "lock@x.com", "password": "wrong"}).status_code == 401
+    # 6th attempt is locked out even with the right password
+    r = client.post("/login", data={"email": "lock@x.com", "password": "k7-otter-ledger"})
+    assert r.status_code == 429 and "Too many failed attempts" in r.text
+
+
+def test_totp_enroll_and_login(env, client):
+    server, store = env
+    _signup(client, email="totp@x.com")
+    acct = store.get_account_by_email("totp@x.com")
+    import re
+    secret = re.search(r'name=secret value="([A-Z2-7]+)"', client.post("/app/2fa/totp/start").text).group(1)
+    client.post("/app/2fa/totp/confirm", data={"secret": secret, "code": store.totp_code(secret)},
+                follow_redirects=True)
+    assert store.get_2fa(acct["id"])["channel"] == "totp"
+    # a fresh login is now challenged and verified with an authenticator code (no email sent)
+    fresh = TestClient(server.app, follow_redirects=False)
+    r = fresh.post("/login", data={"email": "totp@x.com", "password": "k7-otter-ledger"})
+    assert r.headers["location"] == "/login/verify"
+    r = fresh.post("/login/verify", data={"code": store.totp_code(secret)}, follow_redirects=False)
+    assert r.status_code in (302, 303, 307) and "/login" not in r.headers["location"]
+
+
+def test_admin_enforced_mfa_gate(env, client):
+    _, store = env
+    _signup(client, email="mfa@x.com")
+    acct = store.get_account_by_email("mfa@x.com")
+    store.set_persona(acct["id"], "business", 0)
+    client.post("/app/security/policy", data={"require_mfa": "1"}, follow_redirects=True)
+    # no 2FA enrolled → the owner is bounced to enroll
+    r = client.get("/app", follow_redirects=False)
+    assert "mfa=required" in r.headers.get("location", "")
+    # the Security page itself stays reachable so they can enroll
+    assert client.get("/app/security").status_code == 200
+
+
+def test_logout_everywhere_revokes_other_sessions(env):
+    server, store = env
+    store.init_db()
+    a = store.create_account("epoch@x.com", "k7-otter-ledger")
+    store.set_persona(a["id"], "business", 0)   # onboarded → past the first-run gate
+    other = TestClient(server.app, follow_redirects=False)
+    other.post("/login", data={"email": "epoch@x.com", "password": "k7-otter-ledger"})
+    assert other.get("/app/security").status_code == 200      # other device is in
+    me = TestClient(server.app, follow_redirects=False)
+    me.post("/login", data={"email": "epoch@x.com", "password": "k7-otter-ledger"})
+    me.post("/app/security/logout-all", follow_redirects=True)
+    # the other device's session is now invalid (epoch bumped) → redirected to login
+    assert other.get("/app/security", follow_redirects=False).status_code in (302, 303, 307)
+    assert me.get("/app/security").status_code == 200          # the acting device stays in
+
+
+def test_trust_center_and_artifacts(env, client):
+    _signup(client, email="trust@x.com")
+    sp = client.get("/app/security").text
+    assert "Your sign-in security" in sp and "Organization security policy" in sp
+    assert "Compliance" in sp and "Log out everywhere" in sp
+    assert client.get("/app/security/vpat").status_code == 200
+    assert "Acceptable Use Policy" in client.get("/app/security/ai-card").text
+    # security events are audited
+    from console import store as st
+    acct = st.get_account_by_email("trust@x.com")
+    client.post("/app/security/policy", data={"require_mfa": "1", "data_region": "US"}, follow_redirects=True)
+    actions = [r["action"] for r in st.list_audit(acct["id"])]
+    assert "security.policy" in actions
+
+
 def test_finance_home_customizable_layout(env, client):
     """Phase 3: per-person customizable Home — reorder, hide/show, reset the card deck."""
     from console import store
@@ -3118,7 +3200,7 @@ def test_demo_mode_is_gated_to_demo_accounts(env, client, monkeypatch):
     assert client.get("/app/demo/guide", follow_redirects=False).status_code == 303
 
 
-def _raw_signup(client, email, pw="password123"):
+def _raw_signup(client, email, pw="k7-otter-ledger"):
     """Sign up WITHOUT the default-persona shortcut, to exercise the first-run gate."""
     return client.post("/signup", data={"email": email, "password": pw, "accept": "1"})
 
@@ -3309,7 +3391,7 @@ def test_create_test_customer_script(env, client):
 def test_webhook_and_slack_urls_are_ssrf_guarded(env, client):
     from console import notify
     _, store = env
-    a = store.create_account("ssrf@x.com", "password123")
+    a = store.create_account("ssrf@x.com", "k7-otter-ledger")
     # public hostnames pass (or are allowed when unresolvable); internal ones are blocked
     assert notify.is_safe_url("https://hooks.slack.com/services/x") is True
     assert notify.is_safe_url("https://nonexistent.invalid/h") is True   # NXDOMAIN → not a target
@@ -3576,7 +3658,7 @@ def test_audit_log_records_and_renders(env, client):
     # a fresh login should record an audit entry
     _signup(client, email="boss@co.com")
     client.post("/logout")
-    client.post("/login", data={"email": "boss@co.com", "password": "password123"})
+    client.post("/login", data={"email": "boss@co.com", "password": "k7-otter-ledger"})
     acct = store.get_account_by_email("boss@co.com")
     actions = {e["action"] for e in store.list_audit(acct["id"])}
     assert "login" in actions and "logout" in actions
@@ -3609,7 +3691,7 @@ def test_login_page_has_sso_entry_and_messages(env, client):
 
 def test_sso_login_is_audited(env, client, monkeypatch):
     server, store = env
-    a = store.create_account("o@corp4.com", "password123")
+    a = store.create_account("o@corp4.com", "k7-otter-ledger")
     store.set_sso(a["id"], enabled=True, domain="corp4.com", client_id="c", client_secret="s",
                   auth_url="https://idp/auth", token_url="https://idp/tok", userinfo_url="https://idp/ui")
     r = client.get("/sso/start", params={"email": "bob@corp4.com"}, follow_redirects=False)

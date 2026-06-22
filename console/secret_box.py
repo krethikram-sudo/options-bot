@@ -8,6 +8,14 @@ stay readable (migrated on next save).
 Degrades gracefully: if `cryptography` isn't installed (dev), values are stored
 as-is — set CONSOLE_SECRET and install cryptography in any real deployment.
 console/requirements.txt pins it, so production and CI always encrypt.
+
+Key management (gov-readiness, NIST 800-53 SC-12): the data-encryption key is
+normally derived from CONSOLE_SECRET. To meet a KMS / FIPS-validated requirement
+on a FedRAMP-authorized cloud, set `CONSOLE_SECRETBOX_KEY` to a 32-byte
+urlsafe-base64 Fernet key supplied by your secrets manager / KMS (e.g. AWS KMS,
+Azure Key Vault) — no code change; the app reads the managed key instead of
+deriving one. Rotate by re-issuing the managed key (old `enc:` values re-encrypt
+on next save).
 """
 
 from __future__ import annotations
@@ -30,6 +38,11 @@ def available() -> bool:
 
 
 def _key() -> bytes:
+    # Prefer a KMS/secrets-manager-supplied key (FIPS/SC-12 path on a managed cloud);
+    # otherwise derive one from CONSOLE_SECRET.
+    managed = os.environ.get("CONSOLE_SECRETBOX_KEY")
+    if managed:
+        return managed.encode()
     sec = os.environ.get("CONSOLE_SECRET") or "dev-insecure-console-secret"
     return base64.urlsafe_b64encode(hashlib.sha256(sec.encode()).digest())
 
