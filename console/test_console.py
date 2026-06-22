@@ -2885,6 +2885,58 @@ def test_program_enforcement_decision_endpoint(env, client):
     assert all(x["count"] == 0 for x in store.program_enforcement_history(acct["id"], pid))
 
 
+def test_program_timeline_dates_and_month_by_month(env, client):
+    """Programs carry a start/end timeline; period_days is derived from explicit dates
+    and program_statuses exposes a month-by-month projection that flags the breach."""
+    from console import store, outlay_app
+    _signup(client, email="tl@x.com")
+    acct = store.get_account_by_email("tl@x.com")
+    client.post("/app/outlay/sample", follow_redirects=True)  # demo account → real spend
+    client.post("/app/outlay/programs", data={
+        "name": "Q2 Platform", "limit_usd": "1000", "members": "overall",
+        "start_date": "2026-04-01", "end_date": "2026-06-30"}, follow_redirects=True)
+    p = store.list_outlay_programs(acct["id"])[0]
+    assert p["start_ts"] and p["end_ts"]
+    assert 89 <= p["period_days"] <= 91          # ~90-day window derived from the two dates
+    rep = store.get_outlay_report(acct["id"])
+    st = outlay_app.program_statuses(rep, [p])[0]
+    tl = st["timeline"]
+    assert tl["start"] and tl["end"] and tl["months"]
+    assert st["status"] == "over" and tl["breach_month"]   # tiny cap → breaches
+    # the cumulative projection is monotonically non-decreasing across months
+    cums = [m["cum_projected_usd"] for m in tl["months"]]
+    assert cums == sorted(cums)
+    # rendered on the page
+    pg = client.get("/app/outlay/programs").text
+    assert "Month-by-month" in pg and "set to breach" in pg and "Start date" in pg
+
+
+def test_finance_attention_panel_and_summary_view(env, client):
+    """Finance lands on an auto-flagged 'needs your attention' panel and has a
+    quarterly Summary view; both surface over-budget programs without drilling."""
+    from console import store
+    _signup(client, email="cfo@x.com")
+    acct = store.get_account_by_email("cfo@x.com")
+    store.set_persona(acct["id"], "finance", acct.get("member_id", 0) or 0)
+    client.post("/app/outlay/sample", follow_redirects=True)
+    client.post("/app/outlay/programs", data={
+        "name": "Overspender", "limit_usd": "1000", "members": "overall"}, follow_redirects=True)
+    ov = client.get("/app").text
+    assert ">Summary<" in ov                      # finance nav has the Summary item
+    assert "Needs your attention" in ov           # auto-flag panel present
+    assert "Overspender" in ov and "over budget" in ov
+    # quarterly summary view
+    sm = client.get("/app/outlay/summary").text
+    assert "summary" in sm.lower() and "Where it landed" in sm
+    assert "Needs your attention" in sm and "Programs" in sm
+    assert "close-report.html" in sm              # printable board readout linked
+
+    # with nothing off track, the panel shows the calm all-clear
+    from console import web
+    clear = web._finance_attention({"anomalies": []}, [], [])
+    assert "on track" in clear and "Needs your attention" not in clear
+
+
 def test_unit_economics_engine_and_card(env, client):
     from console import outlay_app
     # engine: per-ticket / per-closed / rework / by-class from attributed tickets

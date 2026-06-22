@@ -38,6 +38,20 @@ screen-by-screen customer flow for **each persona** (Finance and Engineering).*
 >    comprehensive, on-message, and production-ready. No changes made (legal pages are
 >    intentionally counsel-pending drafts). It is richer than the console `/` landing,
 >    which is the app-domain root and now consistent with it.
+>
+> **Review round 4 — finance governance depth (this round):**
+> 10. **Auto-flagged "Needs your attention" panel** on the finance Overview + Summary —
+>     surfaces over / projected-over programs & budgets and runaway tickets, ranked,
+>     plain-language, one-click to address. No drilling required.
+> 11. **Program timelines** — programs now have start/end dates, a timeline bar, and a
+>     **month-by-month projected-vs-pro-rated-cap** view that flags *when* a program
+>     breaches.
+> 12. **Quarterly Summary view** (new finance nav item) — an in-app quarter readout:
+>     headline KPIs, the attention panel, by-team allocation, program timelines, and the
+>     printable board readout.
+> 13. **Pace-projection bug fixed** — the sample report built with a stale 30-day window
+>     while live sync uses 90, inflating program/budget projections ~3×. Sample now uses
+>     the 90-day window, so projections are realistic.
 
 **Status of this audit:** A live end-to-end smoke test was run against the actual
 app (FastAPI test client driving real routes). **54 of 55 checks passed**; the one
@@ -153,7 +167,7 @@ already known from the invite, so they **skip the gate**.
 | | **Finance** (consumes spend after the fact) | **Engineering** (does all the setup) |
 |---|---|---|
 | Mental model | Govern & allocate the bill | Operate & ship efficiently |
-| Nav: Analyze | Spend · Budgets · Programs | Spend · Accuracy · Estimate · Budgets |
+| Nav: Analyze | **Summary** · Spend · Budgets · Programs | Spend · Accuracy · Estimate · Budgets |
 | Nav: Sources | **none** (no setup) | Connect · API |
 | Onboarding | Invite engineering counterpart only | Upload direct reports + connect sources |
 | Headline KPIs | Spend · Forecast · **Allocated to teams** · Open work | Spend · **Mapped to a ticket** · **Runaway tickets** · Forecast |
@@ -233,6 +247,11 @@ This is what finance sees until engineering has connected the sources:
 
 Once engineering connects and the first sync lands (a 90-day backfill):
 - H1 **"Your AI spend at a glance."**
+- **"Needs your attention" panel (top of page)** — auto-flags what's off track so
+  finance never has to drill to find it: programs/budgets **already over** or
+  **projected to overspend** (with the dollar amount over and *which month* it breaches)
+  and runaway tickets — ranked worst-first, each with a one-click **Review →**. When
+  nothing's off track it shows a calm green "all on track."
 - **Four KPIs (clickable drill-downs):** *AI spend · window* · *Forecast · open work*
   · **Allocated to teams** (top cost-center) · *Open work items*.
 - **"Why this number is the right one"** — the cost-fidelity callout (cache-aware vs
@@ -242,6 +261,21 @@ Once engineering connects and the first sync lands (a 90-day backfill):
 - **Spend trend** + **Top movers** (once there are ≥2 syncs to compare).
 - **Forecast · open work** — expected spend from open scope with a p10–p90 band.
 - **Explore** — role-ordered jump-offs (Spend, Budgets, Programs, Accuracy).
+
+### F4b · Quarterly Summary (`/app/outlay/summary`) — finance nav "Summary"
+
+![Quarterly summary](images/walkthrough/07b_fin_summary.png)
+
+The finance-leading nav item: an in-app **quarter review** finance can act on without
+drilling, and take to a board.
+- H1 **"Q2 2026 summary"** (the current quarter).
+- **Headline KPIs:** *Spend · this window* · *Projected · incl. open work* · *Programs
+  over budget* · *Budgeted* (total program caps).
+- The same **"Needs your attention"** auto-flag panel.
+- **"Where it landed"** — spend by team / cost-center, top 8, with drill-downs.
+- **Programs** — each program's status + **timeline** + month-by-month projection.
+- Actions: **Open board readout (print to PDF) →** (the printable Close report),
+  full spend breakdown, and CSV export by team.
 
 ### F5 · Spend (`/app/outlay`)
 
@@ -270,10 +304,15 @@ Once engineering connects and the first sync lands (a 90-day backfill):
 ![Program budgets](images/walkthrough/10_fin_programs.png)
 
 - H1 **"Program budgets."**
-- **"Define a program"** — budget a program across multiple scopes (teams/classes),
-  set a hard cap and period, choose an **enforcement mode** (alert vs enforce), an
-  action (block), and an optional **floor model** (route-down ladder). This is the
-  governance teeth: a program cap enforced across teams, surfaced to the machine API
+- **Per-program timeline** — each program shows its **start → today → end** dates with
+  a progress bar ("N days left · set to breach <month>" / "on track to stay in budget")
+  and a **month-by-month** projection: cumulative projected spend vs a pro-rated slice
+  of the cap, with breaching months flagged red.
+- **"Define a program"** — name, budget, **start/end dates** (blank = rolling 90-day),
+  members across multiple scopes (teams/classes), an **enforcement mode** (alert vs
+  enforce), an action (block), and an optional **floor model** (route-down ladder).
+  This is the governance teeth: a program cap enforced across teams, surfaced to the
+  machine API
   (`/api/v1/enforcement`) the gateway consults.
 
 ### F8 · Drill-down / scope (`/app/outlay/scope`)

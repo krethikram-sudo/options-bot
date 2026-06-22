@@ -237,6 +237,20 @@ a.kpi:hover .kdrill{opacity:1;color:var(--grn-d)}
   padding:3px 10px;margin:0 6px 6px 0;font-size:12.5px;color:var(--body)}
 .chip .mono{font-family:var(--mono);color:var(--ink)}
 .bcard{background:#fff;border:1px solid var(--line);border-radius:13px;padding:15px 17px;margin-top:12px}
+.fa-list{margin-top:4px}
+.fa-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--line2);font-size:13.5px;line-height:1.45}
+.fa-row:first-child{border-top:none}
+.fa-txt{flex:1;color:var(--body)}
+.fa-dot{width:9px;height:9px;border-radius:999px;flex:none;display:inline-block}
+.fa-row .btn{flex:none}
+.ptl-track{position:relative;height:8px;border-radius:999px;background:var(--paper2);overflow:hidden;margin:6px 0}
+.ptl-fill{position:absolute;left:0;top:0;bottom:0;background:var(--grn)}
+.ptl-now{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink)}
+.mbar{display:flex;align-items:center;gap:8px;font-size:12px;margin-top:5px}
+.mbar .ml{width:62px;color:var(--muted);flex:none}
+.mbar .mt{flex:1;height:7px;border-radius:999px;background:var(--paper2);overflow:hidden;position:relative}
+.mbar .mt span{position:absolute;left:0;top:0;bottom:0;border-radius:999px}
+.mbar .mv{width:74px;text-align:right;flex:none;font-variant-numeric:tabular-nums}
 .exrow{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;padding:11px 2px;border-top:1px solid var(--line);text-decoration:none}
 .exrow:first-of-type{border-top:none}
 .exrow:hover{text-decoration:none}
@@ -414,9 +428,11 @@ def _sidenav(account: dict, active: str) -> str:
     budgets = ("/app/outlay/budgets", "Budgets")
     estimate = ("/app/outlay/estimate", "Estimate")
     programs = ("/app/outlay/programs", "Programs")
+    summary = ("/app/outlay/summary", "Summary")
     if persona == "finance":
-        # Allocate, budget, govern: per-team chargeback (Spend) + program enforcement.
-        analyze = [spend, budgets, programs]
+        # Allocate, budget, govern: the quarterly review (Summary) leads, then
+        # per-team chargeback (Spend) + program enforcement.
+        analyze = [summary, spend, budgets, programs]
     elif persona == "eng":
         # Ship efficiently: measure forecast accuracy + price the backlog.
         analyze = [spend, accuracy, estimate, budgets]
@@ -1640,9 +1656,92 @@ def _finance_waiting(account: dict) -> str:
     return intro + preview + steps + invite
 
 
+def _finance_attention(report: dict | None, budget_statuses: list[dict] | None,
+                       program_statuses: list[dict] | None) -> str:
+    """Finance's 'review these' panel — auto-flags what's off track so finance can act
+    without drilling into the data: programs/budgets already over or projected to
+    overspend, and runaway tickets. Ranked worst-first; each item is plain language
+    with the dollar figure and a one-click link to address it. When everything is on
+    track it says so (a calm all-clear), so the panel is always a trustworthy glance."""
+    items = []  # (severity, html) — severity 2 = over, 1 = warn/anomaly
+
+    def over_amt(s):
+        return (s.get("projected_usd", 0) or 0) - (s.get("limit_usd", 0) or 0)
+
+    for s in (program_statuses or []):
+        if not s.get("limit_usd"):
+            continue
+        nm = _e(s.get("name") or "program")
+        tl = s.get("timeline") or {}
+        when = (f' — set to breach in <b>{_e(tl["breach_month"])}</b>' if tl.get("breach_month") else "")
+        if s.get("status") == "over":
+            already = (s.get("spent_usd", 0) or 0) >= (s.get("limit_usd", 0) or 0)
+            verb = "is already over budget" if already else "is projected to overspend"
+            items.append((2, f'<span class=fa-dot style="background:var(--red)"></span>'
+                          f'<span class=fa-txt>Program <b>{nm}</b> {verb} — projected '
+                          f'<b>{money(s.get("projected_usd",0))}</b> vs {money(s.get("limit_usd",0))} cap '
+                          f'({money(abs(over_amt(s)))} over){when}.</span>'
+                          f'<a class="btn sec sm" href="/app/outlay/programs">Review →</a>'))
+        elif s.get("status") == "warn":
+            items.append((1, f'<span class=fa-dot style="background:var(--amber)"></span>'
+                          f'<span class=fa-txt>Program <b>{nm}</b> is tracking hot — projected '
+                          f'<b>{money(s.get("projected_usd",0))}</b> of {money(s.get("limit_usd",0))} '
+                          f'({s.get("pct_used",0)*100:.0f}% used){when}.</span>'
+                          f'<a class="btn sec sm" href="/app/outlay/programs">Review →</a>'))
+
+    for s in (budget_statuses or []):
+        if not s.get("limit_usd"):
+            continue
+        scope = _e(s.get("scope_type") or "") + (f' {_e(s.get("scope_id"))}' if s.get("scope_id") else "")
+        scope = scope.strip() or "overall"
+        if s.get("status") == "over":
+            already = (s.get("spent_usd", 0) or 0) >= (s.get("limit_usd", 0) or 0)
+            verb = "is already over budget" if already else "is projected to overspend"
+            items.append((2, f'<span class=fa-dot style="background:var(--red)"></span>'
+                          f'<span class=fa-txt>Budget <b>{scope}</b> {verb} — projected '
+                          f'<b>{money(s.get("projected_usd",0))}</b> vs {money(s.get("limit_usd",0))} '
+                          f'({money(abs(over_amt(s)))} over).</span>'
+                          f'<a class="btn sec sm" href="/app/outlay/budgets">Review →</a>'))
+        elif s.get("status") == "warn":
+            items.append((1, f'<span class=fa-dot style="background:var(--amber)"></span>'
+                          f'<span class=fa-txt>Budget <b>{scope}</b> is tracking hot — projected '
+                          f'<b>{money(s.get("projected_usd",0))}</b> of {money(s.get("limit_usd",0))} '
+                          f'({s.get("pct_used",0)*100:.0f}% used).</span>'
+                          f'<a class="btn sec sm" href="/app/outlay/budgets">Review →</a>'))
+
+    for a in (report or {}).get("anomalies", [])[:3]:
+        tid = _e(str(a.get("ticket_id")))
+        cls = a.get("task_class")
+        href = (f'/app/outlay/scope?type=class&id={quote(str(cls))}' if cls else "/app/outlay")
+        items.append((1, f'<span class=fa-dot style="background:var(--amber)"></span>'
+                      f'<span class=fa-txt>Runaway ticket <b>{tid}</b> cost '
+                      f'<b>{money(a.get("cost_usd",0))}</b> — {a.get("ratio",0):.1f}× its '
+                      f'{_e(str(cls or "work-type"))} median.</span>'
+                      f'<a class="btn sec sm" href="{href}">Review →</a>'))
+
+    items.sort(key=lambda x: x[0], reverse=True)
+    n_over = sum(1 for sev, _ in items if sev == 2)
+    if not items:
+        return ('<div class=ocard style="margin-bottom:16px;border-color:var(--grn);background:var(--grn-l)">'
+                '<div style="display:flex;align-items:center;gap:8px">'
+                '<span class=fa-dot style="background:var(--grn-d)"></span>'
+                '<b style="color:var(--grn-d)">All programs and budgets are on track.</b>'
+                '<span class=muted style="font-size:12.5px">No overspend projected and no runaway '
+                'tickets — nothing to action right now.</span></div></div>')
+    rows = "".join(f'<div class=fa-row>{html}</div>' for _, html in items)
+    headline = (f'{n_over} need{"s" if n_over == 1 else ""} action' if n_over
+                else f'{len(items)} to keep an eye on')
+    accent = "var(--red)" if n_over else "var(--amber)"
+    return (f'<div class=ocard style="margin-bottom:16px;border-color:{accent}">'
+            f'<div class=dh style="display:flex;align-items:center;gap:8px">Needs your attention '
+            f'<span class="otag {"over" if n_over else "warn"}">{headline}</span></div>'
+            f'<div class=fa-list>{rows}</div></div>')
+
+
 def overview_page(account: dict, report: dict | None, statuses: list[dict] | None = None,
                   history: list[dict] | None = None, conn: dict | None = None,
-                  has_budget: bool = False, persona: str = "") -> str:
+                  has_budget: bool = False, persona: str = "",
+                  program_statuses: list[dict] | None = None) -> str:
     """The role-aware home — the first screen after sign-in. A concise glance
     (KPIs, budget status, forecast) with jump-offs into the deeper areas; the
     attribution detail lives on the Spend page."""
@@ -1694,9 +1793,15 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     unit = _unit_econ_card(report)
     unit = f'<div style="margin-top:16px">{unit}</div>' if unit else ""
 
+    # Finance leads with the auto-flagged "needs your attention" review panel (so they
+    # never have to drill to find overspend); engineering keeps the lighter strips.
+    if persona == "finance":
+        attention = _finance_attention(report, statuses, program_statuses)
+    else:
+        attention = _budget_strip(statuses) + _anomaly_strip(report, *_anomaly_prefs(conn))
     body = (tb + chooser + head + _persona_switch(persona) + _staleness_banner(report, conn)
             + _sample_strip(report, account) + checklist
-            + _budget_strip(statuses) + _anomaly_strip(report, *_anomaly_prefs(conn))
+            + attention
             + _kpis_row(report, history, persona)
             + _recon_strip(report) + _pricing_warn(report)
             + fidelity + unit + tm_row
@@ -2326,6 +2431,41 @@ def budgets_page(account: dict, report: dict | None, statuses: list[dict],
     return page("Budgets", head + note + rows + pref + add, account, active="/app/outlay/budgets")
 
 
+def _program_timeline_html(s: dict) -> str:
+    """Per-program calendar timeline + month-by-month projection — so finance sees
+    *when* a program is set to breach, with start/end dates and a pro-rated cap line."""
+    tl = s.get("timeline") or {}
+    if not tl:
+        return ""
+    limit = s.get("limit_usd", 0) or 0
+    frac = min(max(tl.get("frac_elapsed", 0), 0), 1) * 100
+    breach = tl.get("breach_month")
+    breach_html = (f'<span style="color:var(--red);font-weight:600">set to breach {_e(breach)}</span>'
+                   if breach else '<span style="color:var(--grn-d)">on track to stay in budget</span>')
+    months = tl.get("months") or []
+    mmax = max([m.get("cum_projected_usd", 0) for m in months] + [limit, 1]) or 1
+    mrows = ""
+    for m in months:
+        cum = m.get("cum_projected_usd", 0)
+        cap = m.get("cap_to_date_usd", 0)
+        col = "var(--red)" if m.get("over") else ("var(--grn)" if m.get("past") else "var(--amber)")
+        cappct = min(cap / mmax * 100, 100)
+        mrows += (f'<div class=mbar><span class=ml>{_e(m.get("label"))}</span>'
+                  f'<span class=mt><span style="width:{min(cum/mmax*100,100):.0f}%;background:{col}"></span>'
+                  f'<span style="left:{cappct:.0f}%;width:2px;background:var(--ink);opacity:.5"></span></span>'
+                  f'<span class=mv>{money(cum)}</span></div>')
+    return (f'<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">'
+            f'<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">'
+            f'<span>{_e(tl.get("start",""))}</span>'
+            f'<span>{tl.get("days_left",0)} days left · {breach_html}</span>'
+            f'<span>{_e(tl.get("end",""))}</span></div>'
+            f'<div class=ptl-track><span class=ptl-fill style="width:{frac:.0f}%"></span>'
+            f'<span class=ptl-now style="left:{frac:.0f}%"></span></div>'
+            f'<div class=muted style="font-size:11.5px;margin:6px 0 2px;text-transform:uppercase;'
+            f'letter-spacing:.05em">Month-by-month · projected cumulative vs pro-rated cap</div>'
+            f'{mrows}</div>')
+
+
 def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> str:
     """Program budgets — a named budget across several teams/projects/work types, with
     optional hard-cap enforcement handed to the opt-in gateway."""
@@ -2373,6 +2513,7 @@ def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> s
                  f'<input type=hidden name=id value="{s["id"]}">'
                  f'<button class="btn sec sm">Remove</button></form></div>'
                  f'{spark_row}'
+                 f'{_program_timeline_html(s)}'
                  # Reallocate inline: change the cap, or flip alert <-> hard, in place.
                  f'<form method=post action="/app/outlay/programs/update" '
                  f'style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;'
@@ -2390,11 +2531,15 @@ def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> s
             else '<div class=ocard><p class=muted style="margin:0">No programs yet — define one below.</p></div>')
     add = """<div class=ocard style="margin-top:16px"><div class=dh>Define a program</div>
       <form method=post action="/app/outlay/programs">
-        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;align-items:end">
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;align-items:end">
           <label class=fld><span>Program name</span><input name=name placeholder="Platform" required></label>
           <label class=fld><span>Budget (USD)</span><input name=limit_usd type=number step=any placeholder="50000" required></label>
-          <label class=fld><span>Period (days)</span><input name=period_days type=number value=90></label>
         </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end;margin-top:12px">
+          <label class=fld><span>Start date</span><input name=start_date type=date></label>
+          <label class=fld><span>End date</span><input name=end_date type=date></label>
+        </div>
+        <p class=muted style="font-size:12px;margin:6px 0 0">Leave dates blank for a rolling 90-day window. Dates set the program timeline and month-by-month projection.</p>
         <label class=fld style="margin-top:12px"><span>Members — one per line: <code>team platform</code>, <code>project PLAT</code>, <code>class feature</code>, or <code>overall</code></span>
           <textarea name=members rows=3 placeholder="team platform&#10;team infra&#10;project PLAT" required></textarea></label>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:end;margin-top:12px">
@@ -2427,6 +2572,87 @@ def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> s
             '<p>Budget a <b>program</b> — a body of work spanning several teams, projects, or work types — '
             'as one number. Alert on it, or hand a <b>hard cap</b> to the gateway to enforce.</p></div>')
     return page("Programs", head + note + rows + add, account, active="/app/outlay/programs")
+
+
+def _quarter_label(ts: float | None = None) -> str:
+    from datetime import datetime, timezone
+    d = datetime.fromtimestamp(ts, timezone.utc) if ts else datetime.now(timezone.utc)
+    return f"Q{(d.month - 1) // 3 + 1} {d.year}"
+
+
+def summary_page(account: dict, report: dict | None, statuses: list[dict],
+                 program_statuses: list[dict], persona: str = "") -> str:
+    """Finance's quarterly review-at-a-glance: the headline numbers, the auto-flagged
+    attention panel, where the spend landed by team, and every program's status +
+    timeline — an in-app close-read finance can act on, with the printable Close
+    report one click away."""
+    head = (f'<div class=ohead><h1>{_quarter_label()} summary</h1>'
+            '<p>Your quarter at a glance — spend, what\'s tracking off budget, where it '
+            'landed, and every program\'s timeline. The printable board readout is one click away.</p></div>')
+    if not report:
+        body = (head + '<div class=ocard><p class=muted style="margin:0 0 12px">No spend yet — your '
+                'engineering counterpart connects the sources and your quarter summary fills in here.</p>'
+                '<a class="btn sec" href="/app">Back to overview →</a></div>')
+        return page("Summary", body, account, active="/app/outlay/summary")
+
+    sp = report.get("spend", {}) or {}
+    fc = report.get("forecast", {}) or {}
+    total = sp.get("total_usd", 0.0)
+    open_fc = fc.get("expected_usd", 0.0)
+    n_over = sum(1 for s in program_statuses if s.get("status") == "over") + \
+        sum(1 for s in statuses if s.get("status") == "over")
+    total_cap = sum((s.get("limit_usd", 0) or 0) for s in program_statuses)
+    cap_line = (f"{money(total_cap)} across {len(program_statuses)} programs" if total_cap
+                else "no program caps set")
+    kpis = ('<div class=kpis>'
+            + _kpicard("Spend · this window", money(total), _quarter_label() + " to date")
+            + _kpicard("Projected · incl. open work", money(total + open_fc),
+                       f"+{money(open_fc)} open forecast", href="/app/outlay/estimate")
+            + _kpicard("Programs over budget", str(n_over),
+                       ("needs action" if n_over else "all on track"), grn=not n_over,
+                       href="/app/outlay/programs")
+            + _kpicard("Budgeted", cap_line if total_cap else "0",
+                       "program caps", href="/app/outlay/programs")
+            + '</div>')
+
+    attention = _finance_attention(report, statuses, program_statuses)
+
+    # Where it landed — by team / cost-center.
+    teams = [t for t in (report.get("team_spend") or []) if t.get("team")]
+    tmax = max([t.get("spent_usd", 0) for t in teams] + [1]) or 1
+    trows = "".join(
+        f'<div class=erow><a class=nm href="/app/outlay/scope?type=team&id={quote(str(t["team"]))}">'
+        f'{_e(str(t["team"]))} <small>· {t.get("share",0)*100:.0f}%</small> <span class=drill>→</span></a>'
+        f'<span class=amt>{money(t.get("spent_usd",0))}</span>'
+        f'<div class=ebar><span style="width:{t.get("spent_usd",0)/tmax*100:.0f}%;background:var(--grn)"></span></div></div>'
+        for t in teams[:8])
+    team_card = (f'<div class=ocard style="margin-top:16px"><div class=dh>Where it landed '
+                 f'<span class=sub>by team / cost-center</span></div>{trows}</div>') if trows else ""
+
+    # Programs with status + timeline (compact).
+    tones = {"ok": "var(--grn-d)", "warn": "var(--amber)", "over": "var(--red)"}
+    prows = ""
+    for s in program_statuses:
+        st = s.get("status", "ok")
+        prows += (f'<div class=bcard><div style="display:flex;justify-content:space-between;align-items:center">'
+                  f'<b style="font-size:14px">{_e(s.get("name"))}</b>'
+                  f'<span class="otag {st}">{_e(st)}</span></div>'
+                  f'<div class=muted style="font-size:12.5px;margin-top:4px">{money(s.get("spent_usd",0))} of '
+                  f'{money(s.get("limit_usd",0))} · projected <b style="color:{tones.get(st)}">'
+                  f'{money(s.get("projected_usd",0))}</b></div>{_program_timeline_html(s)}</div>')
+    prog_card = (f'<div class=ocard style="margin-top:16px"><div class=dh>Programs '
+                 f'<a class=sub href="/app/outlay/programs">manage →</a></div>{prows}</div>') if prows else \
+        ('<div class=ocard style="margin-top:16px"><div class=dh>Programs</div>'
+         '<p class=muted style="margin:0;font-size:13px">No programs yet — '
+         '<a href="/app/outlay/programs">define one</a> to budget a body of work across teams with a timeline.</p></div>')
+
+    actions = ('<div class="row" style="margin-top:18px">'
+               '<a class="btn" href="/app/outlay/close-report.html" target=_blank>Open board readout (print to PDF) →</a>'
+               '<a class="btn sec" href="/app/outlay">Full spend breakdown →</a>'
+               '<a class="btn sec" href="/app/outlay/export.csv?view=teams">Export by team (CSV)</a></div>')
+
+    return page("Summary", head + kpis + attention + team_card + prog_card + actions,
+                account, active="/app/outlay/summary")
 
 
 def pilot_request_page(error: str = "", values: dict | None = None) -> str:

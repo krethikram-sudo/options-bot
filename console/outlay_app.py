@@ -496,9 +496,12 @@ def sample_report() -> dict:
     # prospect sees is realistic — believable coverage + a measured accuracy
     # number, not a 6-ticket toy. Regenerate with `python -m outlay.fixtures.gen_demo`.
     # No `planned=`: the Estimate page prices the connected *open* backlog by default
-    # (what a real customer sees), so the demo matches reality.
+    # (what a real customer sees), so the demo matches reality. window_days matches the
+    # live sync (SYNC_WINDOW_DAYS) so pace projections over program/budget periods are
+    # realistic, not 3x inflated by a stale 30-day window.
     report = build_report((fix / "demo_github_issues.json").read_text(),
-                          (fix / "demo_anthropic_usage.json").read_text())
+                          (fix / "demo_anthropic_usage.json").read_text(),
+                          window_days=SYNC_WINDOW_DAYS)
     report["_sample"] = True
     return report
 
@@ -591,10 +594,71 @@ def program_statuses(report: dict, programs: list[dict]) -> list[dict]:
             spent = sum(t.get("cost_usd", 0) for t in tickets
                         if any(_scope_match(t, m.get("scope_type"), m.get("scope_id")) for m in members))
         limit = p.get("limit_usd", 0) or 0
-        projected, status = _pace_status(spent, limit, window, p.get("period_days") or 90)
-        out.append({**p, "spent_usd": round(spent, 2), "projected_usd": projected,
-                    "pct_used": round(spent / limit, 3) if limit else 0.0, "status": status})
+        period = p.get("period_days") or 90
+        projected, status = _pace_status(spent, limit, window, period)
+        row = {**p, "spent_usd": round(spent, 2), "projected_usd": projected,
+               "pct_used": round(spent / limit, 3) if limit else 0.0, "status": status}
+        row["timeline"] = _program_timeline(p, spent, projected, limit, period)
+        out.append(row)
     return out
+
+
+def _program_timeline(program: dict, spent: float, projected: float, limit: float,
+                      period_days: int) -> dict:
+    """Calendar timeline + month-by-month projection for a program. Straight-lines the
+    current run-rate (spend so far → projected end-of-period) across the program's
+    months, and compares each month's cumulative projection to a pro-rated slice of
+    the cap so finance can see *when* a program is set to breach, not just whether."""
+    import calendar
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc)
+    start_ts = program.get("start_ts")
+    end_ts = program.get("end_ts")
+    start = (datetime.fromtimestamp(start_ts, timezone.utc) if start_ts
+             else now - timedelta(days=period_days))
+    end = (datetime.fromtimestamp(end_ts, timezone.utc) if end_ts
+           else start + timedelta(days=period_days))
+    total_days = max(1.0, (end - start).total_seconds() / 86400)
+    elapsed_days = min(total_days, max(0.0, (now - start).total_seconds() / 86400))
+    frac_elapsed = elapsed_days / total_days
+    # End-of-program projection: what we've spent plus the run-rate over the remaining
+    # time. `projected` from _pace_status is the period-normalized run-rate total.
+    run_rate_total = max(projected, spent)
+    per_day = run_rate_total / total_days
+
+    # Walk month buckets from start to end; cumulative projected vs pro-rated cap.
+    months = []
+    cur = datetime(start.year, start.month, 1, tzinfo=timezone.utc)
+    while cur <= end:
+        last_day = calendar.monthrange(cur.year, cur.month)[1]
+        m_end = datetime(cur.year, cur.month, last_day, 23, 59, 59, tzinfo=timezone.utc)
+        seg_start = max(start, cur)
+        seg_end = min(end, m_end)
+        cum_days = max(0.0, (seg_end - start).total_seconds() / 86400)
+        cum_proj = round(min(run_rate_total, per_day * cum_days), 2)
+        cap_slice = round(limit * (cum_days / total_days), 2) if limit else 0.0
+        is_past = m_end < now
+        months.append({
+            "label": cur.strftime("%b %Y"),
+            "cum_projected_usd": cum_proj,
+            "cap_to_date_usd": cap_slice,
+            "over": bool(limit and cum_proj > limit),
+            "past": is_past,
+        })
+        # advance one month
+        cur = datetime(cur.year + (cur.month // 12), (cur.month % 12) + 1, 1, tzinfo=timezone.utc)
+
+    breach = next((m["label"] for m in months if m["over"]), None)
+    return {
+        "start": start.strftime("%b %-d, %Y"),
+        "end": end.strftime("%b %-d, %Y"),
+        "frac_elapsed": round(frac_elapsed, 4),
+        "days_left": max(0, round(total_days - elapsed_days)),
+        "projected_end_usd": round(run_rate_total, 2),
+        "months": months,
+        "breach_month": breach,
+    }
 
 
 def enforced_programs(report: dict, programs: list[dict]) -> list[dict]:
