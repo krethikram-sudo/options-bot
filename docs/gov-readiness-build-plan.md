@@ -10,10 +10,10 @@ from **infra/process** (hosting, audits, paperwork — not features).*
 > webhook not firing, name-only ingest filtering, an unsubstantiated axe-core claim) plus secondary
 > secrets in cleartext. All fixed in code or honestly re-scoped; **+18 tests added**. The member-MFA
 > gap (#1) is now fully built — `require_mfa` compels every principal incl. invited members via
-> per-member TOTP; WebAuthn/passkeys (FIDO2) is the remaining phishing-resistant step.
+> per-member TOTP **and WebAuthn/passkeys (FIDO2)** — the phishing-resistant MFA upgrade is now shipped.
 
-Shipped: #1 admin-enforced MFA **for all principals (owners/admins + invited members via TOTP)** ·
-#2 TOTP authenticator (WebAuthn/passkeys is the remaining phishing-resistant upgrade) · #3 session idle timeout + epoch + log-out-everywhere · #4 account
+Shipped: #1 admin-enforced MFA **for all principals (owners/admins + invited members)** ·
+#2 phishing-resistant MFA — **TOTP authenticator + WebAuthn/passkeys (FIDO2)**, both owners and members · #3 session idle timeout + epoch + log-out-everywhere · #4 account
 lockout + login throttle · #5 password breach screening (+ optional HIBP) · #6 auth-event audit
 completeness · #7 audit retention floor ≥90d + incident webhook · #8 Trust Center (policy +
 sign-in security + VPAT/AI-card artifacts) · #9 pluggable KMS key hook in `secret_box` (FIPS

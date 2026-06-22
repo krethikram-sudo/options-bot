@@ -3272,23 +3272,38 @@ def landing() -> str:
     return page("Put AI compute on a budget", body)
 
 
-def twofa_verify_form(error: str = "", note: str = "") -> str:
+def twofa_verify_form(error: str = "", note: str = "", has_code: bool = True,
+                      has_passkey: bool = False) -> str:
     err = f'<div class="note bad">{_e(error)}</div>' if error else ""
     nt = f'<div class="note">{_e(note)}</div>' if note else ""
+    # Passkey button first (strongest, one tap). Falls through to the code form below.
+    passkey = ""
+    if has_passkey:
+        passkey = ('<button type=button class="btn" style="width:100%" onclick="loginPasskey()">'
+                   '&#128273; Sign in with a passkey</button>'
+                   + ('<div style="text-align:center;color:var(--muted);font-size:12px;margin:12px 0">'
+                      'or use a code</div>' if has_code else ''))
+    code_form = ""
+    if has_code:
+        code_form = (
+            '<form method=post action="/login/verify">'
+            '<div class=field><label>Verification code</label>'
+            '<input name=code inputmode=numeric autocomplete=one-time-code pattern="[0-9]*" maxlength=6 '
+            'required placeholder="123456" style="letter-spacing:4px;font-size:18px"></div>'
+            '<button class="btn" style="width:100%">Verify &amp; sign in</button></form>'
+            '<form method=post action="/login/verify/resend" style="margin-top:10px">'
+            '<button class="btn sec sm" style="width:100%">Resend code</button></form>')
+    sub = ("Use your authenticator app, a passkey, or the code we sent." if (has_passkey and has_code)
+           else "Use your passkey to finish signing in." if has_passkey
+           else "Enter the 6-digit code. It expires in 10 minutes.")
     body = f"""
     <div class=auth><div class=card>
       <h1>Verify it's you</h1>
-      <p class=muted small>Enter the 6-digit code we just sent you. It expires in 10 minutes.</p>
+      <p class=muted small>{sub}</p>
       {err}{nt}
-      <form method=post action="/login/verify">
-        <div class=field><label>Verification code</label>
-          <input name=code inputmode=numeric autocomplete=one-time-code pattern="[0-9]*" maxlength=6
-            required placeholder="123456" style="letter-spacing:4px;font-size:18px"></div>
-        <button class="btn" style="width:100%">Verify &amp; sign in</button>
-      </form>
-      <form method=post action="/login/verify/resend" style="margin-top:10px">
-        <button class="btn sec sm" style="width:100%">Resend code</button></form>
-    </div></div>"""
+      {passkey}
+      {code_form}
+    </div></div>{_WEBAUTHN_JS if has_passkey else ''}"""
     return page("Verify", body)
 
 
@@ -3744,11 +3759,69 @@ def settings_page(account: dict, settings: dict, saved: bool = False,
     return page("Settings", body, account, "/app/settings")
 
 
+# Minimal WebAuthn browser glue (base64url + create/get + fetch). Embedded once on the
+# Security page and the 2FA-verify page. Kept dependency-free and small on purpose.
+_WEBAUTHN_JS = """
+<script>
+const b64uTo=b=>Uint8Array.from(atob(b.replace(/-/g,'+').replace(/_/g,'/').padEnd(b.length+(4-b.length%4)%4,'=')),c=>c.charCodeAt(0));
+const toB64u=a=>btoa(String.fromCharCode(...new Uint8Array(a))).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
+function pkCreate(o){o.challenge=b64uTo(o.challenge);o.user.id=b64uTo(o.user.id);(o.excludeCredentials||[]).forEach(c=>c.id=b64uTo(c.id));return navigator.credentials.create({publicKey:o});}
+function pkGet(o){o.challenge=b64uTo(o.challenge);(o.allowCredentials||[]).forEach(c=>c.id=b64uTo(c.id));return navigator.credentials.get({publicKey:o});}
+function regCred(c){return {id:c.id,rawId:toB64u(c.rawId),type:c.type,clientExtensionResults:{},response:{clientDataJSON:toB64u(c.response.clientDataJSON),attestationObject:toB64u(c.response.attestationObject)}};}
+function authCred(c){const r=c.response;return {id:c.id,rawId:toB64u(c.rawId),type:c.type,clientExtensionResults:{},response:{clientDataJSON:toB64u(r.clientDataJSON),authenticatorData:toB64u(r.authenticatorData),signature:toB64u(r.signature),userHandle:r.userHandle?toB64u(r.userHandle):null}};}
+async function enrollPasskey(){
+  try{
+    const o=await (await fetch('/app/2fa/webauthn/options',{method:'POST'})).json();
+    if(o.error){alert(o.error);return;}
+    const cred=await pkCreate(o);
+    const label=(navigator.userAgentData&&navigator.userAgentData.platform)||navigator.platform||'Passkey';
+    const r=await (await fetch('/app/2fa/webauthn/verify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential:regCred(cred),label})})).json();
+    if(r.ok){location.href='/app/security?ok=passkey';}else{alert(r.error||'Could not add passkey.');}
+  }catch(e){alert('Passkey setup was cancelled or failed.');}
+}
+async function loginPasskey(){
+  try{
+    const o=await (await fetch('/login/webauthn/options',{method:'POST'})).json();
+    if(o.error){alert(o.error);return;}
+    const cred=await pkGet(o);
+    const r=await (await fetch('/login/webauthn/verify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential:authCred(cred)})})).json();
+    if(r.ok){location.href=r.redirect||'/app';}else{alert(r.error||'Could not verify passkey.');}
+  }catch(e){alert('Passkey sign-in was cancelled or failed.');}
+}
+</script>"""
+
+
+def _passkey_block(passkeys: list | None, webauthn_on: bool) -> str:
+    """Passkey enrollment + management inside 'Your sign-in security'."""
+    if not webauthn_on:
+        return ""
+    rows = ""
+    for k in (passkeys or []):
+        when = _fmt_date(k.get("created_at")) if k.get("created_at") else ""
+        rows += (f'<div style="display:flex;justify-content:space-between;align-items:center;'
+                 f'gap:10px;margin-top:6px;font-size:13px">'
+                 f'<span>&#128273; <b>{_e(k.get("label") or "Passkey")}</b>'
+                 f'<span class=muted style="font-size:11.5px"> · added {when}</span></span>'
+                 f'<form method=post action="/app/2fa/webauthn/delete" style="margin:0">'
+                 f'<input type=hidden name=id value="{k["id"]}">'
+                 f'<button class="btn sec sm">Remove</button></form></div>')
+    listing = rows or '<p class=muted style="font-size:12.5px;margin:6px 0 0">No passkeys yet.</p>'
+    return (
+        '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">'
+        '<div style="font-weight:600;font-size:13.5px">Passkeys '
+        '<span class=muted style="font-weight:400">· phishing-resistant (FIDO2 / WebAuthn)</span></div>'
+        '<p class=muted style="font-size:12.5px;margin:4px 0 8px">A passkey (Touch ID, Windows Hello, '
+        'a security key) is the strongest second factor — it can\'t be phished or replayed.</p>'
+        f'{listing}'
+        '<button type=button class="btn sec sm" style="margin-top:10px" onclick="enrollPasskey()">'
+        'Add a passkey →</button></div>')
+
+
 def _trust_controls(account: dict, policy: dict, twofa: dict, enroll_secret: str = "",
-                    flash: str = "") -> str:
+                    flash: str = "", passkeys: list | None = None, webauthn_on: bool = False) -> str:
     """Interactive Trust Center controls — the org security policy (admin-enforced MFA,
     session timeouts, data residency, incident webhook), this person's sign-in security
-    (2FA incl. TOTP enrollment + log-out-everywhere), and the compliance artifacts."""
+    (2FA incl. TOTP + passkeys + log-out-everywhere), and the compliance artifacts."""
     is_admin = account.get("team_role") in ("owner", "admin")
     mfa_on = bool(twofa.get("enabled"))
     fl = {"mfa-required": ('<div class="note warn" role=alert>Your organization requires multi-factor '
@@ -3757,6 +3830,7 @@ def _trust_controls(account: dict, policy: dict, twofa: dict, enroll_secret: str
           "totp-on": '<div class=note role=status>Authenticator app enabled.</div>',
           "totp-bad": '<div class="note bad" role=alert>That code didn\'t match — try again.</div>',
           "logged-out-all": '<div class=note role=status>Signed out of all other sessions.</div>',
+          "passkey-on": '<div class=note role=status>Passkey added.</div>',
           }.get(flash, "")
 
     # --- This person's sign-in security ---
@@ -3799,6 +3873,7 @@ def _trust_controls(account: dict, policy: dict, twofa: dict, enroll_secret: str
             f'{email_opt}</div>')
     signin = (f'<div class=ocard style="margin-top:16px"><div class=dh>Your sign-in security</div>'
               f'{twofa_block}'
+              f'{_passkey_block(passkeys, webauthn_on)}'
               '<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">'
               '<form method=post action="/app/security/logout-all" style="margin:0">'
               '<button class="btn sec sm">Log out everywhere</button>'
@@ -3848,11 +3923,12 @@ def _trust_controls(account: dict, policy: dict, twofa: dict, enroll_secret: str
         f'Hosting — Fly.io (SOC 2 / ISO 27001 data centers); a FedRAMP-Moderate region is on the '
         f'roadmap for StateRAMP/GovRAMP-gated deals. Data region: <b>{_e(policy.get("data_region") or "US")}</b>.</div></div>')
 
-    return fl + signin + pol + artifacts
+    return fl + signin + pol + artifacts + (_WEBAUTHN_JS if webauthn_on else "")
 
 
 def security_page(account: dict, policy: dict | None = None, twofa: dict | None = None,
-                  enroll_secret: str = "", flash: str = "") -> str:
+                  enroll_secret: str = "", flash: str = "", passkeys: list | None = None,
+                  webauthn_on: bool = False) -> str:
     """In-app security & compliance Trust Center — interactive controls (org policy,
     sign-in security, compliance artifacts) plus the reviewer-facing summary. Every
     claim maps to a shipped feature; certification status is stated honestly."""
@@ -3867,7 +3943,8 @@ def security_page(account: dict, policy: dict | None = None, twofa: dict | None 
         return (f'<div class=ocard style="margin-top:16px"><div class=dh>{title}</div>'
                 f'<ul style="list-style:none;padding:0;margin:8px 0 0">{lis}</ul>{note_h}</div>')
 
-    controls = _trust_controls(account, policy or {}, twofa or {}, enroll_secret, flash)
+    controls = _trust_controls(account, policy or {}, twofa or {}, enroll_secret, flash,
+                               passkeys=passkeys, webauthn_on=webauthn_on)
     body = f"""
     <h1>Security &amp; compliance</h1>
     <p class=muted style="max-width:72ch">Your Trust Center — manage your security policy and sign-in,

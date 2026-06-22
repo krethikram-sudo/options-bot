@@ -46,7 +46,7 @@ citizen data is ever transmitted to or stored by Outlay.
 | Control | Our answer | Evidence |
 |---|---|---|
 | **IA-2 MFA (all users)** | MFA available to **every principal** — owners/admins (TOTP or email OTP) and **invited members (TOTP / authenticator app, AAL2)**. An **admin `require_mfa` policy gates every user** — owner, admin, and member — to enroll before app access (and challenges them for the second factor at each sign-in). SSO-provisioned members are additionally covered by the IdP's own MFA. | Trust Center → *Organization security policy* |
-| **IA-2 phishing-resistant / AAL2** | **TOTP authenticator (RFC 6238)** — AAL2, not a shared/phishable channel; email one-time codes also available. *(WebAuthn/passkeys is on the roadmap as the FIDO2 phishing-resistant upgrade.)* | Trust Center → *Set up authenticator app* |
+| **IA-2 phishing-resistant / AAL2** | **WebAuthn / passkeys (FIDO2)** — phishing-resistant, hardware-bound second factor (Touch ID / Windows Hello / security keys), with verified attestation/assertion and cloned-authenticator (sign-count) detection. **TOTP authenticator (RFC 6238)** also available (AAL2); email one-time codes as a fallback. Available to owners and invited members. | Trust Center → *Passkeys* / *Set up authenticator app* |
 | **IA-2(12) SSO** | **SSO via OIDC**, email-domain routed. | `/sso/start`, `/sso/callback` |
 | **IA-5 Authenticator management (passwords)** | NIST 800-63B: **length over complexity**, no forced rotation, **screened against common/breached passwords** (bundled denylist + optional HIBP k-anonymity). Hashed with **PBKDF2-HMAC-SHA256 (200k iterations) + per-user salt**. | signup/reset validation |
 

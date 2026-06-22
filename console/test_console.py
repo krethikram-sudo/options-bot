@@ -3303,6 +3303,86 @@ def test_webauthn_credential_crud_and_erasure(env):
     assert store.get_webauthn_credential("credBBB") is None   # erasure removed it
 
 
+def _wa_soft_register(dev, opts_json, origin):
+    """Drive a software authenticator from server-issued registration options JSON."""
+    import json as _j
+    from webauthn.helpers import base64url_to_bytes as u
+    o = _j.loads(opts_json)
+    o["challenge"] = u(o["challenge"])
+    o["user"]["id"] = u(o["user"]["id"])
+    for c in o.get("excludeCredentials", []):
+        c["id"] = u(c["id"])
+    att = dev.create({"publicKey": o}, origin)
+    return _wa_bridge(att, ["clientDataJSON", "attestationObject"])
+
+
+def _wa_soft_auth(dev, opts_json, origin):
+    import json as _j
+    from webauthn.helpers import base64url_to_bytes as u
+    o = _j.loads(opts_json)
+    o["challenge"] = u(o["challenge"])
+    for c in o.get("allowCredentials", []):
+        c["id"] = u(c["id"])
+    assertion = dev.get({"publicKey": o}, origin)
+    return _wa_bridge(assertion, ["authenticatorData", "clientDataJSON", "signature", "userHandle"])
+
+
+def test_webauthn_routes_enroll_and_passkey_login(env, client, monkeypatch):
+    """End-to-end through the HTTP routes (simulating the browser JS with a software
+    authenticator): enroll a passkey, then sign in with it as the second factor."""
+    pytest.importorskip("webauthn")
+    SoftWebauthnDevice = pytest.importorskip("soft_webauthn").SoftWebauthnDevice
+    server, store = env
+    monkeypatch.setenv("CONSOLE_RP_ID", "testserver")
+    monkeypatch.setenv("CONSOLE_BASE_URL", "http://testserver")
+    origin = "http://testserver"
+    _signup(client, email="pkr@x.com")
+    acct = store.get_account_by_email("pkr@x.com")
+    dev = SoftWebauthnDevice()
+
+    # enroll: options -> (soft create) -> verify
+    opts = client.post("/app/2fa/webauthn/options")
+    assert opts.status_code == 200
+    cred = _wa_soft_register(dev, opts.text, origin)
+    import json as _j
+    r = client.post("/app/2fa/webauthn/verify",
+                    json={"credential": _j.loads(cred), "label": "Test key"})
+    assert r.status_code == 200 and r.json()["ok"] is True
+    assert len(store.list_webauthn_credentials(acct["id"])) == 1
+    assert store.principal_has_mfa(acct["id"]) is True
+    assert "Test key" in client.get("/app/security").text     # listed on the Trust Center
+
+    # sign in with the passkey on a fresh client
+    fresh = TestClient(server.app, follow_redirects=False)
+    lr = fresh.post("/login", data={"email": "pkr@x.com", "password": "k7-otter-ledger"})
+    assert lr.headers["location"] == "/login/verify"
+    assert "Sign in with a passkey" in fresh.get("/login/verify").text
+    aopts = fresh.post("/login/webauthn/options")
+    assert aopts.status_code == 200
+    auth = _wa_soft_auth(dev, aopts.text, origin)
+    vr = fresh.post("/login/webauthn/verify", json={"credential": _j.loads(auth)})
+    assert vr.status_code == 200 and vr.json()["ok"] is True
+    assert fresh.get("/app/security").status_code == 200      # the passkey login established a session
+
+    # a cross-account passkey can't be used: another account's login can't assert this cred
+    store.create_account("other@x.com", "k7-otter-ledger")
+    other = TestClient(server.app, follow_redirects=False)
+    other.post("/login", data={"email": "other@x.com", "password": "k7-otter-ledger"})
+    # 'other' has no passkeys → login.webauthn.options is refused
+    assert other.post("/login/webauthn/options").status_code == 400
+
+
+def test_webauthn_routes_degrade_without_library(env, client, monkeypatch):
+    """When the library isn't installed the passkey endpoints report unavailable and
+    the Security page simply omits the passkey UI (graceful degradation)."""
+    _, store = env
+    from console import webauthn_box
+    monkeypatch.setattr(webauthn_box, "available", lambda: False)
+    _signup(client, email="nopk@x.com")
+    assert client.post("/app/2fa/webauthn/options").status_code == 501
+    assert "Add a passkey" not in client.get("/app/security").text
+
+
 def test_logout_everywhere_revokes_other_sessions(env):
     server, store = env
     store.init_db()

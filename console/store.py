@@ -1097,6 +1097,28 @@ def read_pending_2fa(token: str, path: str | None = None, max_age: int = 600) ->
     return int(aid), int(mid)
 
 
+def make_challenge_token(challenge_b64: str, path: str | None = None) -> str:
+    """Sign a WebAuthn challenge for round-tripping via a short-lived cookie (the
+    challenge is base64url, so it has no ':' to collide with the delimiter)."""
+    payload = f"wac:{challenge_b64}:{int(time.time())}"
+    sig = hmac.new(_secret(path), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}:{sig}"
+
+
+def read_challenge_token(token: str, path: str | None = None, max_age: int = 300) -> str | None:
+    try:
+        marker, ch, issued, sig = token.split(":")
+    except (ValueError, AttributeError):
+        return None
+    if marker != "wac":
+        return None
+    payload = f"{marker}:{ch}:{issued}"
+    good = hmac.new(_secret(path), payload.encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(good, sig) or time.time() - int(issued) > max_age:
+        return None
+    return ch
+
+
 def list_accounts(path: str | None = None) -> list[dict]:
     conn = connect(path)
     try:

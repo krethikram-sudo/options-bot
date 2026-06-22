@@ -13,6 +13,7 @@ Env: CONSOLE_DB, CONSOLE_SECRET, CONSOLE_BASE_URL, MODELPILOT_BRAIN_URL,
 """
 
 import asyncio
+import json
 import os
 import secrets
 import time
@@ -22,10 +23,12 @@ from fastapi import FastAPI, Request
 from fastapi.responses import (HTMLResponse, JSONResponse, PlainTextResponse,
                                RedirectResponse, Response)
 
-from . import demo, notify, outlay_app, store, stripe_billing, web
+from . import demo, notify, outlay_app, store, stripe_billing, web, webauthn_box
 
 COOKIE = "mp_session"
 PENDING_2FA_COOKIE = "mp_2fa"  # short-lived marker between password and OTP steps
+WA_REG_COOKIE = "mp_wareg"     # short-lived WebAuthn registration challenge
+WA_AUTH_COOKIE = "mp_waauth"   # short-lived WebAuthn login-assertion challenge
 # Where to send users after they sign out — the public marketing landing page.
 LANDING_URL = os.environ.get("LANDING_URL", "https://outlay-ai.com/")
 app = FastAPI(title="Outlay console")
@@ -227,6 +230,12 @@ def _current(request: Request) -> dict | None:
         acct["team_role"] = "owner"
         acct["member_id"] = 0
         acct["display_email"] = acct["email"]
+    # A passkey counts as enrolled MFA too — reflect the principal's full second-factor
+    # state so the admin require_mfa gate treats a passkey-only user as enrolled.
+    try:
+        acct["twofa_enabled"] = store.principal_has_mfa(acct["id"], acct.get("member_id", 0) or 0)
+    except Exception:  # noqa: BLE001
+        pass
     # Session revocation (logout-everywhere / password change) + idle/absolute timeout.
     if sess.get("epoch", 0) != cur_epoch:
         return None
@@ -450,8 +459,8 @@ async def login(request: Request):
     if acct:  # account owner
         store.clear_login_throttle(email)
         tf = store.get_2fa(acct["id"])
-        if tf["enabled"]:  # password OK -> second factor, no session yet
-            if tf["channel"] != "totp":   # TOTP reads from the app; email/SMS gets a sent code
+        if store.principal_has_mfa(acct["id"], 0):  # password OK -> second factor, no session yet
+            if tf["enabled"] and tf["channel"] != "totp":  # email/SMS gets a sent code; TOTP/passkey don't
                 _issue_and_send_otp(acct, tf)
             resp = _redirect("/login/verify")
             secure = os.environ.get("CONSOLE_SECURE_COOKIES") == "1"
@@ -466,8 +475,7 @@ async def login(request: Request):
     if member:  # invited teammate
         store.clear_login_throttle(email)
         org = store.get_account(member["account_id"])
-        tf = store.get_2fa(org["id"], member_id=member["id"])
-        if tf["enabled"]:  # members are TOTP-only — code comes from their authenticator, nothing to send
+        if store.principal_has_mfa(org["id"], member["id"]):  # TOTP or passkey — nothing to send
             resp = _redirect("/login/verify")
             secure = os.environ.get("CONSOLE_SECURE_COOKIES") == "1"
             resp.set_cookie(PENDING_2FA_COOKIE,
@@ -497,9 +505,13 @@ def _issue_and_send_otp(acct: dict, tf: dict) -> None:
 
 @app.get("/login/verify", response_class=HTMLResponse)
 def verify_2fa_form(request: Request):
-    if not store.read_pending_2fa(request.cookies.get(PENDING_2FA_COOKIE, "")):
+    pend = store.read_pending_2fa(request.cookies.get(PENDING_2FA_COOKIE, ""))
+    if not pend:
         return _redirect("/login")
-    return _html(web.twofa_verify_form())
+    aid, mid = pend
+    has_code = store.get_2fa(aid, member_id=mid)["enabled"]                 # TOTP / email code
+    has_passkey = bool(store.webauthn_credential_ids(aid, mid)) and webauthn_box.available()
+    return _html(web.twofa_verify_form(has_code=has_code, has_passkey=has_passkey))
 
 
 @app.post("/login/verify")
@@ -1900,14 +1912,17 @@ def settings_get(request: Request):
 
 
 _SEC_FLASH = {"mfa": "mfa-required", "policy": "policy-saved", "totp": "totp-on",
-              "totpbad": "totp-bad", "loggedout": "logged-out-all"}
+              "totpbad": "totp-bad", "loggedout": "logged-out-all", "passkey": "passkey-on"}
 
 
 def _security_html(acct, enroll_secret="", flash_key=""):
     flash = _SEC_FLASH.get(flash_key, "")
+    mid = acct.get("member_id", 0) or 0
     return _html(web.security_page(acct, policy=store.get_security_policy(acct["id"]),
-                                   twofa=store.get_2fa(acct["id"], member_id=acct.get("member_id", 0) or 0),
-                                   enroll_secret=enroll_secret, flash=flash))
+                                   twofa=store.get_2fa(acct["id"], member_id=mid),
+                                   enroll_secret=enroll_secret, flash=flash,
+                                   passkeys=store.list_webauthn_credentials(acct["id"], mid),
+                                   webauthn_on=webauthn_box.available()))
 
 
 @app.get("/app/security", response_class=HTMLResponse)
@@ -2034,6 +2049,133 @@ async def twofa_disable(request: Request):
     store.disable_2fa(acct["id"], member_id=acct.get("member_id", 0) or 0)
     _audit(acct["id"], "2fa.disable", actor=acct.get("display_email") or acct["email"])
     return _redirect("/app/security")
+
+
+# --- WebAuthn / passkeys (phishing-resistant MFA) ------------------------- #
+
+def _wa_cookie(resp, name: str, challenge_b64: str) -> None:
+    secure = os.environ.get("CONSOLE_SECURE_COOKIES") == "1"
+    resp.set_cookie(name, store.make_challenge_token(challenge_b64),
+                    httponly=True, samesite="lax", secure=secure, max_age=300)
+
+
+@app.post("/app/2fa/webauthn/options")
+async def webauthn_register_options(request: Request):
+    """Begin passkey enrollment for the signed-in principal: returns creation options
+    (JSON for navigator.credentials.create) and stashes the signed challenge in a cookie."""
+    acct, redir = _require(request)
+    if redir:
+        return JSONResponse({"error": "sign in again"}, status_code=401)
+    if not webauthn_box.available():
+        return JSONResponse({"error": "passkeys unavailable on this server"}, status_code=501)
+    mid = acct.get("member_id", 0) or 0
+    handle = f"{acct['id']}-{mid}".encode()
+    existing = [webauthn_box.base64url_to_bytes(c) for c in store.webauthn_credential_ids(acct["id"], mid)]
+    opts_json, challenge = webauthn_box.registration_options(
+        handle, acct.get("display_email") or acct["email"], existing)
+    resp = Response(opts_json, media_type="application/json")
+    _wa_cookie(resp, WA_REG_COOKIE, challenge)
+    return resp
+
+
+@app.post("/app/2fa/webauthn/verify")
+async def webauthn_register_verify(request: Request):
+    """Finish enrollment: verify the attestation against the stashed challenge, store
+    the credential, and mark the principal MFA-enrolled."""
+    acct, redir = _require(request)
+    if redir:
+        return JSONResponse({"error": "sign in again"}, status_code=401)
+    if not webauthn_box.available():
+        return JSONResponse({"error": "passkeys unavailable"}, status_code=501)
+    challenge = store.read_challenge_token(request.cookies.get(WA_REG_COOKIE, ""))
+    if not challenge:
+        return JSONResponse({"error": "enrollment expired — try again"}, status_code=400)
+    body = await request.json()
+    label = (str(body.get("label") or "Passkey"))[:80]
+    try:
+        reg = webauthn_box.verify_registration(json.dumps(body.get("credential") or {}), challenge)
+    except Exception:  # noqa: BLE001 — a bad/forged attestation must not 500
+        return JSONResponse({"error": "could not verify that passkey"}, status_code=400)
+    mid = acct.get("member_id", 0) or 0
+    try:
+        store.add_webauthn_credential(acct["id"], mid, reg["credential_id"], reg["public_key"],
+                                      reg["sign_count"], label)
+    except store.StoreError:
+        return JSONResponse({"error": "that passkey is already registered"}, status_code=409)
+    _audit(acct["id"], "2fa.enable", actor=acct.get("display_email") or acct["email"],
+           detail=f"passkey ({label})")
+    resp = JSONResponse({"ok": True})
+    resp.delete_cookie(WA_REG_COOKIE)
+    return resp
+
+
+@app.post("/app/2fa/webauthn/delete")
+async def webauthn_delete(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    mid = acct.get("member_id", 0) or 0
+    if store.delete_webauthn_credential(int(f.get("id") or 0), acct["id"], mid):
+        _audit(acct["id"], "2fa.disable", actor=acct.get("display_email") or acct["email"],
+               detail="passkey removed")
+    return _redirect("/app/security")
+
+
+@app.post("/login/webauthn/options")
+async def login_webauthn_options(request: Request):
+    """Begin a passkey login for the pending (post-password) principal."""
+    pend = store.read_pending_2fa(request.cookies.get(PENDING_2FA_COOKIE, ""))
+    if not pend:
+        return JSONResponse({"error": "no pending sign-in"}, status_code=400)
+    if not webauthn_box.available():
+        return JSONResponse({"error": "passkeys unavailable"}, status_code=501)
+    aid, mid = pend
+    cred_ids = [webauthn_box.base64url_to_bytes(c) for c in store.webauthn_credential_ids(aid, mid)]
+    if not cred_ids:
+        return JSONResponse({"error": "no passkeys for this account"}, status_code=400)
+    opts_json, challenge = webauthn_box.authentication_options(cred_ids)
+    resp = Response(opts_json, media_type="application/json")
+    _wa_cookie(resp, WA_AUTH_COOKIE, challenge)
+    return resp
+
+
+@app.post("/login/webauthn/verify")
+async def login_webauthn_verify(request: Request):
+    """Finish a passkey login: verify the assertion, advance the sign counter, issue
+    the session. Returns JSON {ok, redirect} (the browser then navigates)."""
+    pend = store.read_pending_2fa(request.cookies.get(PENDING_2FA_COOKIE, ""))
+    if not pend:
+        return JSONResponse({"error": "no pending sign-in"}, status_code=400)
+    challenge = store.read_challenge_token(request.cookies.get(WA_AUTH_COOKIE, ""))
+    if not challenge:
+        return JSONResponse({"error": "sign-in expired — try again"}, status_code=400)
+    aid, mid = pend
+    body = await request.json()
+    cred_json = json.dumps(body.get("credential") or {})
+    cred = store.get_webauthn_credential(webauthn_box.credential_id_of(cred_json))
+    # The asserted credential MUST belong to the pending principal (no cross-account).
+    if not cred or cred["account_id"] != aid or (cred["member_id"] or 0) != (mid or 0):
+        return JSONResponse({"error": "unknown passkey"}, status_code=400)
+    try:
+        new_count = webauthn_box.verify_authentication(cred_json, challenge, cred["public_key"],
+                                                       cred["sign_count"])
+    except Exception:  # noqa: BLE001 — bad/replayed/cloned assertion
+        return JSONResponse({"error": "could not verify that passkey"}, status_code=400)
+    store.update_webauthn_sign_count(cred["id"], new_count)
+    org = store.get_account(aid)
+    if mid:
+        member = store.get_member(mid)
+        resp = JSONResponse({"ok": True, "redirect": "/app"})
+        _set_session(resp, org, member["role"], member["id"], platform_role="customer")
+        _audit(aid, "login", actor=member["email"], detail="member · password + passkey")
+    else:
+        resp = JSONResponse({"ok": True, "redirect": _post_auth_dest(org)})
+        _set_session(resp, org, "owner", 0)
+        _audit(aid, "login", actor=org["email"], detail="owner · password + passkey")
+    resp.delete_cookie(WA_AUTH_COOKIE)
+    resp.delete_cookie(PENDING_2FA_COOKIE)
+    return resp
 
 
 @app.post("/app/account/delete")
