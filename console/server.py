@@ -15,6 +15,7 @@ Env: CONSOLE_DB, CONSOLE_SECRET, CONSOLE_BASE_URL, MODELPILOT_BRAIN_URL,
 import asyncio
 import os
 import secrets
+import time
 from urllib.parse import parse_qs, quote
 
 from fastapi import FastAPI, Request
@@ -28,6 +29,33 @@ PENDING_2FA_COOKIE = "mp_2fa"  # short-lived marker between password and OTP ste
 # Where to send users after they sign out — the public marketing landing page.
 LANDING_URL = os.environ.get("LANDING_URL", "https://outlay-ai.com/")
 app = FastAPI(title="Outlay console")
+
+
+@app.middleware("http")
+async def _slide_session(request: Request, call_next):
+    """Sliding session refresh + idle enforcement. On each request with a valid session
+    cookie, bump its `seen` timestamp (so activity keeps the session alive); if an idle
+    timeout is configured and exceeded, drop the cookie instead of refreshing."""
+    resp = await call_next(request)
+    tok = request.cookies.get(COOKIE)
+    if not tok:
+        return resp
+    sess = store.read_session(tok)
+    if not sess:
+        return resp
+    secure = os.environ.get("CONSOLE_SECURE_COOKIES") == "1"
+    try:
+        idle_min = store.get_security_policy(sess["account_id"])["session_idle_min"]
+    except Exception:  # noqa: BLE001
+        idle_min = 0
+    if idle_min and (time.time() - sess.get("seen", sess["issued"])) > idle_min * 60:
+        resp.delete_cookie(COOKIE)
+        return resp
+    fresh = store.reseal_session(tok)
+    if fresh and fresh != tok:
+        resp.set_cookie(COOKIE, fresh, httponly=True, samesite="lax", secure=secure,
+                        max_age=store.SESSION_TTL)
+    return resp
 
 
 @app.on_event("startup")
@@ -184,10 +212,12 @@ def _current(request: Request) -> dict | None:
     if not acct or acct["status"] != "active":
         return None
     acct = dict(acct)
+    cur_epoch = acct.get("session_epoch", 0) or 0
     if sess.get("member_id"):
         m = store.get_member(sess["member_id"])
         if not m or m["status"] == "removed" or m["account_id"] != acct["id"]:
             return None
+        cur_epoch = m.get("session_epoch", 0) or 0
         acct["role"] = "customer"          # team members never inherit vendor-admin
         acct["team_role"] = sess["team_role"]
         acct["member_id"] = m["id"]
@@ -196,6 +226,15 @@ def _current(request: Request) -> dict | None:
         acct["team_role"] = "owner"
         acct["member_id"] = 0
         acct["display_email"] = acct["email"]
+    # Session revocation (logout-everywhere / password change) + idle/absolute timeout.
+    if sess.get("epoch", 0) != cur_epoch:
+        return None
+    pol = store.get_security_policy(acct["id"])
+    now = time.time()
+    if pol["session_idle_min"] and (now - sess.get("seen", sess["issued"])) > pol["session_idle_min"] * 60:
+        return None
+    if pol["session_max_hours"] and (now - sess["issued"]) > pol["session_max_hours"] * 3600:
+        return None
     # Persona (business/eng) drives the role-aware lens *and* nav ordering, so make
     # it available to every page() render — not just the Spend page.
     try:
@@ -212,8 +251,15 @@ def _set_session(resp, account: dict, team_role: str = "owner", member_id: int =
                  platform_role: str | None = None) -> None:
     secure = os.environ.get("CONSOLE_SECURE_COOKIES") == "1"
     role = platform_role or account["role"]
-    resp.set_cookie(COOKIE, store.make_session(account["id"], role, team_role, member_id),
-                    httponly=True, samesite="lax", secure=secure, max_age=store.SESSION_TTL)
+    if member_id:
+        m = store.get_member(member_id)
+        epoch = (m or {}).get("session_epoch", 0) or 0
+    else:
+        epoch = account.get("session_epoch", 0) or 0
+    pol = store.get_security_policy(account["id"])
+    max_age = pol["session_max_hours"] * 3600 if pol["session_max_hours"] else store.SESSION_TTL
+    resp.set_cookie(COOKIE, store.make_session(account["id"], role, team_role, member_id, epoch=epoch),
+                    httponly=True, samesite="lax", secure=secure, max_age=max_age)
 
 
 def _require_team_admin(request: Request):
@@ -381,11 +427,19 @@ def login_form(request: Request):
 @app.post("/login")
 async def login(request: Request):
     f = await _form(request)
-    acct = store.authenticate(f.get("email", ""), f.get("password", ""))
+    email = f.get("email", "")
+    locked = store.login_locked(email)
+    if locked:
+        mins = max(1, locked // 60)
+        return _html(web.auth_form("login", f"Too many failed attempts — try again in {mins} minute"
+                                   f"{'s' if mins != 1 else ''}.", email), 429)
+    acct = store.authenticate(email, f.get("password", ""))
     if acct:  # account owner
+        store.clear_login_throttle(email)
         tf = store.get_2fa(acct["id"])
-        if tf["enabled"]:  # password OK -> challenge for a one-time code, no session yet
-            _issue_and_send_otp(acct, tf)
+        if tf["enabled"]:  # password OK -> second factor, no session yet
+            if tf["channel"] != "totp":   # TOTP reads from the app; email/SMS gets a sent code
+                _issue_and_send_otp(acct, tf)
             resp = _redirect("/login/verify")
             secure = os.environ.get("CONSOLE_SECURE_COOKIES") == "1"
             resp.set_cookie(PENDING_2FA_COOKIE, store.make_pending_2fa(acct["id"]),
@@ -395,15 +449,21 @@ async def login(request: Request):
         _set_session(resp, acct, "owner", 0)
         _audit(acct["id"], "login", actor=acct["email"], detail="owner · password")
         return resp
-    member = store.authenticate_member(f.get("email", ""), f.get("password", ""))
+    member = store.authenticate_member(email, f.get("password", ""))
     if member:  # invited teammate
+        store.clear_login_throttle(email)
         org = store.get_account(member["account_id"])
         resp = _redirect("/app")
         _set_session(resp, org, member["role"], member["id"], platform_role="customer")
         _audit(org["id"], "login", actor=member["email"], detail=f"member · role {member['role']}")
         return resp
+    # Failed password — throttle the identity (AC-7) and log the attempt.
+    store.note_login_failure(email)
+    existing = store.get_account_by_email(email)
+    if existing:
+        _audit(existing["id"], "login.fail", actor=email, detail="bad password")
     return _html(web.auth_form("login", "Wrong email or password (or account suspended).",
-                               f.get("email", "")), 401)
+                               email), 401)
 
 
 def _issue_and_send_otp(acct: dict, tf: dict) -> None:
@@ -427,12 +487,16 @@ async def verify_2fa(request: Request):
     if not aid:
         return _redirect("/login")
     f = await _form(request)
-    if store.verify_otp(aid, f.get("code", "")):
+    tf = store.get_2fa(aid)
+    ok = (store.verify_totp(aid, f.get("code", "")) if tf["channel"] == "totp"
+          else store.verify_otp(aid, f.get("code", "")))
+    if ok:
         acct = store.get_account(aid)
         resp = _redirect(_post_auth_dest(acct))
         _set_session(resp, acct, "owner", 0)
         resp.delete_cookie(PENDING_2FA_COOKIE)
-        _audit(acct["id"], "login", actor=acct["email"], detail="owner · password + 2FA")
+        _audit(acct["id"], "login", actor=acct["email"],
+               detail=f"owner · password + 2FA ({tf['channel'] or 'otp'})")
         return resp
     return _html(web.twofa_verify_form("That code didn't match or has expired."), 401)
 
@@ -526,8 +590,17 @@ def _require(request: Request):
             and request.url.path.startswith("/app")
             and request.url.path != "/app/welcome"):
         return acct, _redirect("/app/welcome")
-    # Pilots run free for now — trial-expiry gating to Billing is parked along with
-    # the routing/savings billing model. (Re-enable by restoring the check below.)
+    # Admin-enforced MFA (IA-2): when the org requires MFA, the owner can't use the app
+    # until 2FA is enrolled. The Security page (where you enroll), the 2FA endpoints, and
+    # logout stay reachable so there's no lock-out loop.
+    if (request.method == "GET" and not acct.get("member_id")
+            and request.url.path.startswith("/app")
+            and request.url.path not in ("/app/security", "/app/settings")):
+        try:
+            if store.get_security_policy(acct["id"])["require_mfa"] and not acct.get("twofa_enabled"):
+                return acct, _redirect("/app/security?mfa=required")
+        except Exception:  # noqa: BLE001 — never hard-fail navigation on a policy read
+            pass
     return acct, None
 
 

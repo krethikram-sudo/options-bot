@@ -12,12 +12,14 @@ entitlement + mode from here; the gateway reports realized savings here.
 Stdlib only (sqlite3, hmac, hashlib, secrets) — no auth/crypto dependencies.
 """
 
+import base64
 import hashlib
 import hmac
 import json
 import os
 import secrets
 import sqlite3
+import struct
 import time
 from datetime import datetime, timezone
 
@@ -246,6 +248,11 @@ CREATE TABLE IF NOT EXISTS otp_codes (
     expires_at REAL NOT NULL,
     attempts INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS login_throttle (
+    email TEXT PRIMARY KEY,            -- per-identity failed-login tracking (owners + members)
+    fails INTEGER NOT NULL DEFAULT 0,
+    locked_until REAL                 -- unix ts the lockout lifts; NULL = not locked
+);
 CREATE TABLE IF NOT EXISTS feedback (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     account_id INTEGER,            -- intentionally NOT FK-cascaded: cancel reasons survive deletion
@@ -371,6 +378,15 @@ _MIGRATIONS = [
     "ALTER TABLE outlay_connections ADD COLUMN identity_titles TEXT",  # JSON {identifier: job title} (eng direct reports)
     "ALTER TABLE outlay_programs ADD COLUMN start_ts REAL",  # program timeline start (unix); NULL → treat as created/now
     "ALTER TABLE outlay_programs ADD COLUMN end_ts REAL",  # program timeline end (unix); NULL → start + period_days
+    # Gov-readiness security hardening:
+    "ALTER TABLE accounts ADD COLUMN session_epoch INTEGER NOT NULL DEFAULT 0",  # bump to invalidate all sessions (logout-everywhere / password change)
+    "ALTER TABLE accounts ADD COLUMN totp_secret TEXT",  # base32 TOTP secret (encrypted at rest); set when channel='totp'
+    "ALTER TABLE members ADD COLUMN session_epoch INTEGER NOT NULL DEFAULT 0",  # same, per invited member
+    "ALTER TABLE settings ADD COLUMN require_mfa INTEGER NOT NULL DEFAULT 0",  # admin policy: every member must have MFA enrolled
+    "ALTER TABLE settings ADD COLUMN session_idle_min INTEGER NOT NULL DEFAULT 0",  # idle timeout (minutes); 0 = default
+    "ALTER TABLE settings ADD COLUMN session_max_hours INTEGER NOT NULL DEFAULT 0",  # absolute session lifetime (hours); 0 = default
+    "ALTER TABLE settings ADD COLUMN security_webhook TEXT",  # incident/breach notification webhook (customer's SOC/SIEM)
+    "ALTER TABLE settings ADD COLUMN data_region TEXT",  # surfaced data-residency region label
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -484,25 +500,58 @@ def verify_password(password: str, pw_hash: str, salt: str) -> bool:
 
 
 def make_session(account_id: int, role: str, team_role: str = "owner",
-                 member_id: int = 0, path: str | None = None) -> str:
-    payload = f"{account_id}:{role}:{team_role}:{member_id}:{int(time.time())}"
+                 member_id: int = 0, epoch: int = 0, seen: float | None = None,
+                 path: str | None = None) -> str:
+    """Signed stateless session. Carries `issued` (absolute lifetime), `seen`
+    (sliding idle-timeout anchor, refreshed on activity), and `epoch` (bumped to
+    revoke all sessions on logout-everywhere / password change)."""
+    now = int(time.time())
+    seen = int(seen if seen is not None else now)
+    payload = f"{account_id}:{role}:{team_role}:{member_id}:{now}:{seen}:{int(epoch)}"
+    sig = hmac.new(_secret(path), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}:{sig}"
+
+
+def reseal_session(token: str, path: str | None = None) -> str | None:
+    """Re-issue a valid token with `seen` bumped to now (sliding refresh), preserving
+    issued/epoch. Returns None if the token is invalid."""
+    sess = read_session(token, path)
+    if not sess:
+        return None
+    now = int(time.time())
+    payload = (f"{sess['account_id']}:{sess['role']}:{sess['team_role']}:"
+               f"{sess['member_id']}:{int(sess['issued'])}:{now}:{int(sess['epoch'])}")
     sig = hmac.new(_secret(path), payload.encode(), hashlib.sha256).hexdigest()
     return f"{payload}:{sig}"
 
 
 def read_session(token: str, path: str | None = None) -> dict | None:
     try:
-        account_id, role, team_role, member_id, issued, sig = token.rsplit(":", 5)
+        account_id, role, team_role, member_id, issued, seen, epoch, sig = token.rsplit(":", 7)
     except (ValueError, AttributeError):
         return None
-    payload = f"{account_id}:{role}:{team_role}:{member_id}:{issued}"
+    payload = f"{account_id}:{role}:{team_role}:{member_id}:{issued}:{seen}:{epoch}"
     expected = hmac.new(_secret(path), payload.encode(), hashlib.sha256).hexdigest()
     if not hmac.compare_digest(expected, sig):
         return None
-    if time.time() - float(issued) > SESSION_TTL:
+    if time.time() - float(issued) > SESSION_TTL:   # hard absolute cap (per-account max enforced in _current)
         return None
     return {"account_id": int(account_id), "role": role, "team_role": team_role,
-            "member_id": int(member_id), "issued": float(issued)}
+            "member_id": int(member_id), "issued": float(issued),
+            "seen": float(seen), "epoch": int(epoch)}
+
+
+def bump_session_epoch(account_id: int, member_id: int = 0, path: str | None = None) -> None:
+    """Invalidate all of this principal's existing sessions (logout-everywhere)."""
+    conn = connect(path)
+    try:
+        if member_id:
+            conn.execute("UPDATE members SET session_epoch=session_epoch+1 WHERE id=?", (member_id,))
+        else:
+            conn.execute("UPDATE accounts SET session_epoch=session_epoch+1 WHERE id=?", (account_id,))
+        conn.commit()
+    finally:
+        conn.close()
 
 
 # --------------------------------------------------------------------------- #
@@ -521,8 +570,9 @@ def create_account(email: str, password: str, company: str = "", role: str = "cu
     email = (email or "").strip().lower()
     if "@" not in email or len(email) < 5:
         raise StoreError("Enter a valid email address.")
-    if len(password or "") < 8:
-        raise StoreError("Password must be at least 8 characters.")
+    problem = password_problem(password)
+    if problem:
+        raise StoreError(problem)
     now = now or time.time()
     pw_hash, salt = hash_password(password)
     conn = connect(path)
@@ -579,6 +629,119 @@ def authenticate(email: str, password: str, path: str | None = None) -> dict | N
 
 
 # --------------------------------------------------------------------------- #
+# Password policy (NIST SP 800-63B: length over complexity + breach screening)
+# --------------------------------------------------------------------------- #
+
+PASSWORD_MIN_LEN = 8
+# A small bundled denylist of the most common/breached passwords — the offline
+# floor of "screen against known-breached" (AC/IA, 800-63B 5.1.1.2). The online
+# HIBP k-anonymity check (below) extends this and fails OPEN on any network error,
+# so signups never break on a transient outage.
+_COMMON_WEAK = {
+    "password", "password1", "password123", "passw0rd", "123456", "1234567",
+    "12345678", "123456789", "1234567890", "qwerty", "qwerty123", "abc123",
+    "111111", "000000", "iloveyou", "admin", "admin123", "letmein", "welcome",
+    "welcome1", "monkey", "dragon", "sunshine", "princess", "football", "baseball",
+    "trustno1", "changeme", "secret", "master", "shadow", "superman", "michael",
+    "outlay", "outlay123", "test1234", "pass1234", "p@ssw0rd", "qwertyuiop",
+}
+
+
+def _hibp_breached(password: str) -> bool | None:
+    """k-anonymity check against Have I Been Pwned. Sends only the first 5 hex chars
+    of the SHA-1; never the password. Returns True/False, or None on any error
+    (caller treats None as 'not breached' — fail open, never block on a hiccup)."""
+    try:
+        import urllib.request
+        sha1 = hashlib.sha1(password.encode()).hexdigest().upper()
+        prefix, suffix = sha1[:5], sha1[5:]
+        req = urllib.request.Request(
+            f"https://api.pwnedpasswords.com/range/{prefix}",
+            headers={"User-Agent": "Outlay-pw-check", "Add-Padding": "true"})
+        with urllib.request.urlopen(req, timeout=3) as resp:  # noqa: S310
+            body = resp.read().decode("utf-8", "replace")
+        for line in body.splitlines():
+            h, _, count = line.partition(":")
+            if h.strip().upper() == suffix and count.strip() not in ("", "0"):
+                return True
+        return False
+    except Exception:  # noqa: BLE001 — fail open
+        return None
+
+
+def password_problem(password: str) -> str | None:
+    """Return a user-facing reason the password is unacceptable, or None if OK.
+    Enforces NIST 800-63B: a minimum length, and screening against common/breached
+    passwords (always the bundled list; the online HIBP check runs only when
+    CONSOLE_HIBP_CHECK=1, so tests/dev stay offline and fast)."""
+    pw = password or ""
+    if len(pw) < PASSWORD_MIN_LEN:
+        return f"Password must be at least {PASSWORD_MIN_LEN} characters."
+    if len(pw) > 200:
+        return "Password is too long (max 200 characters)."
+    if pw.lower() in _COMMON_WEAK:
+        return "That password is on the breached/common-password list — choose a different one."
+    if os.environ.get("CONSOLE_HIBP_CHECK") == "1" and _hibp_breached(pw) is True:
+        return "That password has appeared in a known data breach — choose a different one."
+    return None
+
+
+# --------------------------------------------------------------------------- #
+# Login lockout / throttling (NIST 800-53 AC-7)
+# --------------------------------------------------------------------------- #
+
+LOCKOUT_THRESHOLD = 5      # consecutive failures before lockout
+LOCKOUT_SECONDS = 900      # 15-minute lockout window
+
+
+def login_locked(email: str, path: str | None = None, now: float | None = None) -> int:
+    """Seconds remaining on a lockout for this identity, or 0 if not locked."""
+    email = (email or "").strip().lower()
+    now = now or time.time()
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT locked_until FROM login_throttle WHERE email=?", (email,)).fetchone()
+    finally:
+        conn.close()
+    lu = (row["locked_until"] if row else None) or 0
+    return int(lu - now) if lu and lu > now else 0
+
+
+def note_login_failure(email: str, path: str | None = None, now: float | None = None) -> int:
+    """Record a failed login; lock the identity after LOCKOUT_THRESHOLD in a row.
+    Returns seconds of lockout now in effect (0 if not yet locked)."""
+    email = (email or "").strip().lower()
+    now = now or time.time()
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT fails, locked_until FROM login_throttle WHERE email=?", (email,)).fetchone()
+        fails = ((row["fails"] if row else 0) or 0) + 1
+        locked_until = None
+        if fails >= LOCKOUT_THRESHOLD:
+            locked_until = now + LOCKOUT_SECONDS
+            fails = 0  # reset the counter; the lock is the penalty
+        conn.execute(
+            "INSERT INTO login_throttle(email, fails, locked_until) VALUES(?,?,?) "
+            "ON CONFLICT(email) DO UPDATE SET fails=excluded.fails, locked_until=excluded.locked_until",
+            (email, fails, locked_until))
+        conn.commit()
+    finally:
+        conn.close()
+    return LOCKOUT_SECONDS if locked_until else 0
+
+
+def clear_login_throttle(email: str, path: str | None = None) -> None:
+    """Reset failure tracking on a successful login."""
+    email = (email or "").strip().lower()
+    conn = connect(path)
+    try:
+        conn.execute("DELETE FROM login_throttle WHERE email=?", (email,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+# --------------------------------------------------------------------------- #
 # Two-factor authentication (email/SMS one-time codes)
 # --------------------------------------------------------------------------- #
 
@@ -603,9 +766,96 @@ def set_2fa(account_id: int, channel: str, dest: str, path: str | None = None) -
 def disable_2fa(account_id: int, path: str | None = None) -> None:
     conn = connect(path)
     try:
-        conn.execute("UPDATE accounts SET twofa_enabled=0, twofa_channel=NULL, twofa_dest=NULL WHERE id=?",
-                     (account_id,))
+        conn.execute("UPDATE accounts SET twofa_enabled=0, twofa_channel=NULL, twofa_dest=NULL,"
+                     " totp_secret=NULL WHERE id=?", (account_id,))
         conn.execute("DELETE FROM otp_codes WHERE account_id=?", (account_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+# --- TOTP authenticator (RFC 6238) — phishing-resistant-grade MFA, no shared OTP --- #
+
+def new_totp_secret() -> str:
+    """A fresh base32 TOTP secret to show on enrollment (provisioning URI / QR)."""
+    return base64.b32encode(secrets.token_bytes(20)).decode("ascii").rstrip("=")
+
+
+def totp_code(secret_b32: str, now: float | None = None, step: int = 30, digits: int = 6) -> str:
+    counter = int((now or time.time()) // step)
+    key = base64.b32decode(secret_b32 + "=" * (-len(secret_b32) % 8))
+    mac = hmac.new(key, struct.pack(">Q", counter), hashlib.sha1).digest()
+    off = mac[-1] & 0x0F
+    val = (struct.unpack(">I", mac[off:off + 4])[0] & 0x7FFFFFFF) % (10 ** digits)
+    return str(val).zfill(digits)
+
+
+def set_totp(account_id: int, secret_b32: str, path: str | None = None) -> None:
+    """Enable TOTP 2FA, storing the secret encrypted at rest."""
+    from . import secret_box
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE accounts SET twofa_enabled=1, twofa_channel='totp', twofa_dest=NULL,"
+                     " totp_secret=? WHERE id=?", (secret_box.encrypt(secret_b32), account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def verify_totp(account_id: int, code: str, path: str | None = None,
+                now: float | None = None, window: int = 1) -> bool:
+    """Verify a TOTP code (±1 time step for clock drift)."""
+    from . import secret_box
+    acct = get_account(account_id, path)
+    enc = acct.get("totp_secret") if acct else None
+    if not enc:
+        return False
+    secret = secret_box.decrypt(enc)
+    if not secret:
+        return False
+    code = (code or "").strip().replace(" ", "")
+    if not code.isdigit():
+        return False
+    base = now or time.time()
+    for drift in range(-window, window + 1):
+        if hmac.compare_digest(totp_code(secret, base + drift * 30), code):
+            return True
+    return False
+
+
+# --- Account security policy (admin-enforced MFA, session timeouts, residency) --- #
+
+def get_security_policy(account_id: int, path: str | None = None) -> dict:
+    s = get_settings(account_id, path)
+    return {
+        "require_mfa": bool(s.get("require_mfa")),
+        "session_idle_min": int(s.get("session_idle_min") or 0),
+        "session_max_hours": int(s.get("session_max_hours") or 0),
+        "security_webhook": s.get("security_webhook") or "",
+        "data_region": s.get("data_region") or "",
+    }
+
+
+def update_security_policy(account_id: int, *, require_mfa=None, session_idle_min=None,
+                           session_max_hours=None, security_webhook=None, data_region=None,
+                           path: str | None = None) -> None:
+    get_settings(account_id, path)  # ensure a row exists
+    sets, vals = [], []
+    if require_mfa is not None:
+        sets.append("require_mfa=?"); vals.append(1 if require_mfa else 0)
+    if session_idle_min is not None:
+        sets.append("session_idle_min=?"); vals.append(max(0, int(session_idle_min)))
+    if session_max_hours is not None:
+        sets.append("session_max_hours=?"); vals.append(max(0, int(session_max_hours)))
+    if security_webhook is not None:
+        sets.append("security_webhook=?"); vals.append((security_webhook or "").strip()[:300] or None)
+    if data_region is not None:
+        sets.append("data_region=?"); vals.append((data_region or "").strip()[:80] or None)
+    if not sets:
+        return
+    conn = connect(path)
+    try:
+        conn.execute(f"UPDATE settings SET {', '.join(sets)} WHERE account_id=?", (*vals, account_id))
         conn.commit()
     finally:
         conn.close()
@@ -1685,12 +1935,13 @@ def remove_member(member_id: int, account_id: int, path: str | None = None) -> N
 
 
 def set_member_password(member_id: int, new_password: str, path: str | None = None) -> None:
-    if len(new_password or "") < 8:
-        raise StoreError("Password must be at least 8 characters.")
+    problem = password_problem(new_password)
+    if problem:
+        raise StoreError(problem)
     pw_hash, salt = hash_password(new_password)
     conn = connect(path)
     try:
-        conn.execute("UPDATE members SET pw_hash=?, pw_salt=?, status='active' WHERE id=?",
+        conn.execute("UPDATE members SET pw_hash=?, pw_salt=?, status='active', session_epoch=session_epoch+1 WHERE id=?",
                      (pw_hash, salt, member_id))
         conn.commit()
     finally:
@@ -2394,12 +2645,14 @@ def proof_summary(account_id: int, since: float | None = None, path: str | None 
 # --------------------------------------------------------------------------- #
 
 def set_password(account_id: int, new_password: str, path: str | None = None) -> None:
-    if len(new_password or "") < 8:
-        raise StoreError("Password must be at least 8 characters.")
+    problem = password_problem(new_password)
+    if problem:
+        raise StoreError(problem)
     pw_hash, salt = hash_password(new_password)
     conn = connect(path)
     try:
-        conn.execute("UPDATE accounts SET pw_hash=?, pw_salt=? WHERE id=?",
+        # Bump the session epoch so a password change logs out all existing sessions.
+        conn.execute("UPDATE accounts SET pw_hash=?, pw_salt=?, session_epoch=session_epoch+1 WHERE id=?",
                      (pw_hash, salt, account_id))
         conn.commit()
     finally:
