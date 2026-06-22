@@ -198,14 +198,14 @@ data,"** which zeroes out most questionnaire risk.
 
 ### (b) Configure / document — modest effort, do now
 - Set **audit-log retention ≥ 90 days hot** + written retention policy (AU-11)
-- Write an **Incident Response Plan** (IR-8) with the **Maryland 1-hour MD-SOC** notification path + capability
+- Write an **Incident Response Plan** (IR-8) with the **Maryland 1-hour MD-SOC** notification path + capability — ✅ drafted: [`incident-response-plan.md`](incident-response-plan.md)
 - **Monthly vulnerability scanning** + patch SLAs (30/90/180) + an **annual third-party pen test**
 - **Backup/DR** with defined + annually-tested **RTO/RPO** (CP-9/10)
 - **Secure SDLC / SSDF** practices; generate an **SBOM** (asked even if not federally mandated)
 - **Password/session policy** per 800-63B; **phishing-resistant MFA** (FIDO2/WebAuthn) for admins; **AAL2** docs
 - **Personnel background checks** (PS-3) for staff with data access
 - **AI artifacts:** model/system/data cards + an **Acceptable Use Policy** (AI RMF / M-26-04)
-- **NIST CSF self-assessment** + a controls questionnaire response **mapped to 800-53**
+- **NIST CSF self-assessment** + a controls questionnaire response **mapped to 800-53** — ✅ drafted: [`nist-csf-self-assessment.md`](nist-csf-self-assessment.md) + [`security-questionnaire.md`](security-questionnaire.md)
 - Finalize the **VPAT/ACR** (already drafted) and a **data-use-agreement / breach-terms** template
 - **Start SOC 2 Type II** — the highest-leverage single item (6–15 mo)
 
