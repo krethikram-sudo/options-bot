@@ -251,6 +251,21 @@ a.kpi:hover .kdrill{opacity:1;color:var(--grn-d)}
 .mbar .mt{flex:1;height:7px;border-radius:999px;background:var(--paper2);overflow:hidden;position:relative}
 .mbar .mt span{position:absolute;left:0;top:0;bottom:0;border-radius:999px}
 .mbar .mv{width:74px;text-align:right;flex:none;font-variant-numeric:tabular-nums}
+.lensbar{margin-top:16px;border:1px solid var(--line);border-radius:12px;background:var(--paper);padding:10px 12px}
+.lensrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lensbar .lab{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);font-weight:600}
+.lensform{display:flex;align-items:center;gap:8px;margin:0}
+.lensform select{padding:5px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff}
+.lensbar .lsp{flex:1}
+.saveview{display:flex;align-items:center;gap:6px;margin:0}
+.saveview input[name=name]{padding:5px 9px;border:1px solid var(--line);border-radius:8px;font-size:13px;width:160px}
+.defck{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:3px}
+.vchips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:9px;padding-top:9px;border-top:1px solid var(--line2)}
+.vchip{font-size:12.5px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--body);text-decoration:none}
+.vchip.on{background:var(--grn-l);border-color:var(--grn);color:var(--grn-d);font-weight:600}
+.vchip-wrap{display:inline-flex;align-items:center;gap:2px}
+.vx{border:none;background:none;color:var(--faint);cursor:pointer;font-size:14px;line-height:1;padding:0 2px}
+.vx:hover{color:var(--red)}
 .exrow{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;padding:11px 2px;border-top:1px solid var(--line);text-decoration:none}
 .exrow:first-of-type{border-top:none}
 .exrow:hover{text-decoration:none}
@@ -1739,23 +1754,91 @@ def _finance_attention(report: dict | None, budget_statuses: list[dict] | None,
             f'<div class=fa-list>{rows}</div></div>')
 
 
-def _home_team_card(report: dict) -> str:
-    """Consolidated 'where it landed' card for the finance Home — top teams with a
-    one-click drill into that cost-center's tickets, and a link to the full breakdown."""
-    teams = [t for t in (report.get("team_spend") or []) if t.get("team")]
-    if not teams:
-        return ('<div class=ocard><div class=dh>By team / cost-center</div>'
-                '<p class=muted style="margin:0;font-size:13px">No team mapping yet — engineering maps '
-                'people to teams on Connect.</p></div>')
-    tmax = max([t.get("spent_usd", 0) for t in teams] + [1]) or 1
+HOME_GROUPINGS = {
+    "team": "Team / cost-center", "class": "Work type",
+    "project": "Project / epic", "person": "Engineer",
+}
+
+
+def _breakdown_rows(report: dict, group_by: str) -> tuple[str, list[dict]]:
+    """(card title, rows) for a Home breakdown dimension. Each row: label, usd, share,
+    and a drill href (a scope page where one exists, else the Spend tab)."""
+    from . import outlay_app
+    if group_by == "class":
+        data = [{"label": c["task_class"], "usd": c.get("spent_usd", 0), "share": c.get("share", 0),
+                 "href": f'/app/outlay/scope?type=class&id={quote(str(c["task_class"]))}'}
+                for c in outlay_app.class_spend(report)]
+        return "By work type", data
+    if group_by == "project":
+        data = [{"label": p["project"], "usd": p.get("spent_usd", 0), "share": p.get("share", 0),
+                 "href": "/app/outlay"} for p in outlay_app.project_spend(report) if p.get("project")]
+        return "By project / epic", data
+    if group_by == "person":
+        total = (report.get("spend", {}) or {}).get("total_usd", 0) or 1
+        data = [{"label": p["user"], "usd": p.get("spent_usd", 0),
+                 "share": p.get("share", p.get("spent_usd", 0) / total), "href": "/app/outlay"}
+                for p in (report.get("people") or []) if p.get("user")]
+        return "By engineer", data
+    data = [{"label": t["team"], "usd": t.get("spent_usd", 0), "share": t.get("share", 0),
+             "href": f'/app/outlay/scope?type=team&id={quote(str(t["team"]))}'}
+            for t in (report.get("team_spend") or []) if t.get("team")]
+    return "By team / cost-center", data
+
+
+def _home_breakdown_card(report: dict, group_by: str = "team", top_n: int = 5) -> str:
+    """The consolidated 'where it landed' card on the finance Home — re-sliced by the
+    Home lens (team / work type / project / engineer), top-N, with per-row drill-downs."""
+    title, data = _breakdown_rows(report, group_by)
+    if not data:
+        return (f'<div class=ocard><div class=dh>{_e(title)}</div>'
+                '<p class=muted style="margin:0;font-size:13px">No data for this breakdown yet.</p></div>')
+    dmax = max([d["usd"] for d in data] + [1]) or 1
+    shown = data if (top_n or 0) <= 0 else data[:top_n]
     rows = "".join(
-        f'<div class=erow><a class=nm href="/app/outlay/scope?type=team&id={quote(str(t["team"]))}">'
-        f'{_e(str(t["team"]))} <small>· {t.get("share",0)*100:.0f}%</small> <span class=drill>→</span></a>'
-        f'<span class=amt>{money(t.get("spent_usd",0))}</span>'
-        f'<div class=ebar><span style="width:{t.get("spent_usd",0)/tmax*100:.0f}%;background:var(--grn)"></span></div></div>'
-        for t in teams[:5])
-    return (f'<div class=ocard><div class=dh>By team / cost-center'
-            f'<a class=sub href="/app/outlay">all teams →</a></div>{rows}</div>')
+        f'<div class=erow><a class=nm href="{d["href"]}">{_e(str(d["label"]))} '
+        f'<small>· {d["share"]*100:.0f}%</small> <span class=drill>→</span></a>'
+        f'<span class=amt>{money(d["usd"])}</span>'
+        f'<div class=ebar><span style="width:{d["usd"]/dmax*100:.0f}%;background:var(--grn)"></span></div></div>'
+        for d in shown)
+    more = (f'<a class=sub href="/app/outlay">all {len(data)} →</a>' if len(data) > len(shown)
+            else '<a class=sub href="/app/outlay">details →</a>')
+    return f'<div class=ocard><div class=dh>{_e(title)}{more}</div>{rows}</div>'
+
+
+def _lens_bar(group_by: str, top_n: int, views: list[dict], active_view_id: int = 0) -> str:
+    """The finance Home lens + saved-views control. Group-by + Top-N re-slice the
+    breakdown card (GET, server-rendered); saved views capture a named lens, one of
+    which can be the person's default landing."""
+    def opt(v, cur, label):
+        return f'<option value="{v}"{" selected" if str(cur) == str(v) else ""}>{_e(label)}</option>'
+    grp = "".join(opt(k, group_by, lbl) for k, lbl in HOME_GROUPINGS.items())
+    tops = "".join(opt(n, top_n, ("All" if n == 0 else f"Top {n}")) for n in (5, 10, 0))
+    lens_form = (
+        '<form method=get action="/app" class=lensform>'
+        f'<span class=lab>Group by</span><select name=group onchange="this.form.submit()">{grp}</select>'
+        f'<span class=lab>Show</span><select name=top onchange="this.form.submit()">{tops}</select>'
+        '<noscript><button class="btn sec sm">Apply</button></noscript></form>')
+    chips = '<a class="vchip' + (' on' if not active_view_id else '') + '" href="/app">Default</a>'
+    for v in views:
+        on = " on" if v["id"] == active_view_id else ""
+        star = "★ " if v.get("is_default") else ""
+        chips += (f'<span class=vchip-wrap><a class="vchip{on}" href="/app?view={v["id"]}">{star}{_e(v["name"])}</a>'
+                  f'<form method=post action="/app/views/delete" style="display:inline">'
+                  f'<input type=hidden name=id value="{v["id"]}">'
+                  f'<button class=vx title="Delete view">×</button></form></span>')
+    save = (
+        '<form method=post action="/app/views" class=saveview>'
+        f'<input type=hidden name=group value="{_e(group_by)}"><input type=hidden name=top value="{int(top_n)}">'
+        '<input name=name placeholder="Save this view as…" maxlength=60 required>'
+        '<label class=defck><input type=checkbox name=make_default value=1> default</label>'
+        '<button class="btn sec sm">Save</button></form>')
+    setdef = ""
+    if active_view_id:
+        setdef = (f'<form method=post action="/app/views/default" style="display:inline">'
+                  f'<input type=hidden name=id value="{active_view_id}">'
+                  f'<button class="btn sec sm">Make default</button></form>')
+    return (f'<div class=lensbar><div class=lensrow>{lens_form}<span class=lsp></span>{setdef}{save}</div>'
+            f'<div class=vchips><span class=lab>Views</span>{chips}</div></div>')
 
 
 def _home_governance_card(program_statuses: list[dict], budget_statuses: list[dict]) -> str:
@@ -1792,7 +1875,9 @@ def _home_governance_card(program_statuses: list[dict], budget_statuses: list[di
 def overview_page(account: dict, report: dict | None, statuses: list[dict] | None = None,
                   history: list[dict] | None = None, conn: dict | None = None,
                   has_budget: bool = False, persona: str = "",
-                  program_statuses: list[dict] | None = None) -> str:
+                  program_statuses: list[dict] | None = None,
+                  lens: dict | None = None, views: list[dict] | None = None,
+                  active_view_id: int = 0) -> str:
     """The role-aware home — the first screen after sign-in. A concise glance
     (KPIs, budget status, forecast) with jump-offs into the deeper areas; the
     attribution detail lives on the Spend page."""
@@ -1851,8 +1936,13 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
         # (where it landed · governance · forecast). The deep detail lives one click
         # away on Spend / Governance / Estimate, so Home stays a glance, not a scroll.
         attention = _finance_attention(report, statuses, program_statuses)
+        lens = lens or {}
+        group_by = lens.get("group_by", "team")
+        top_n = int(lens.get("top_n", 5))
+        lens_bar = _lens_bar(group_by, top_n, views or [], active_view_id)
         consolidated = ('<div class=ogrid style="margin-top:16px">'
-                        + _home_team_card(report) + _home_governance_card(program_statuses, statuses)
+                        + _home_breakdown_card(report, group_by, top_n)
+                        + _home_governance_card(program_statuses, statuses)
                         + '</div><div class=ogrid style="margin-top:16px">' + _forecast_card(report)
                         + _home_actions_card() + '</div>')
         body = (tb + head + _persona_switch(persona) + _staleness_banner(report, conn)
@@ -1860,7 +1950,7 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
                 + attention
                 + _kpis_row(report, history, persona)
                 + _recon_strip(report) + _pricing_warn(report) + fidelity + tm_row
-                + consolidated + _sync_line(report, conn))
+                + lens_bar + consolidated + _sync_line(report, conn))
         return page("Home", body, account, active="/app")
 
     # Engineering (and pre-persona) keep the operate-focused layout.

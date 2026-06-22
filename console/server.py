@@ -554,11 +554,92 @@ def app_dashboard(request: Request):
     statuses = outlay_app.budget_statuses(report, budgets) if report else []
     programs = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"])) if report else []
     hist = store.outlay_history(acct["id"]) if report else []
-    persona = store.get_persona(acct["id"], acct.get("member_id", 0) or 0)
+    member_id = acct.get("member_id", 0) or 0
+    persona = store.get_persona(acct["id"], member_id)
+    lens, views, active_view_id = _resolve_home_lens(request, acct["id"], member_id, persona)
     return _html(web.overview_page(acct, report, statuses, hist,
                                    store.get_outlay_connection(acct["id"]),
                                    has_budget=bool(budgets), persona=persona,
-                                   program_statuses=programs))
+                                   program_statuses=programs, lens=lens, views=views,
+                                   active_view_id=active_view_id))
+
+
+def _resolve_home_lens(request: Request, account_id: int, member_id: int, persona: str):
+    """Resolve the finance Home lens from query params + saved views.
+    Precedence: explicit ?group/?top (ad-hoc) > ?view=ID > the person's default saved
+    view > the opinionated default (group by team, top 5)."""
+    if persona != "finance":
+        return {}, [], 0
+    views = store.list_dashboard_views(account_id, member_id)
+    q = request.query_params
+    valid_groups = set(web.HOME_GROUPINGS)
+
+    def clean(lens):
+        g = lens.get("group_by", "team")
+        g = g if g in valid_groups else "team"
+        try:
+            t = int(lens.get("top_n", 5))
+        except (TypeError, ValueError):
+            t = 5
+        return {"group_by": g, "top_n": t if t in (0, 5, 10) else 5}
+
+    if "group" in q or "top" in q:
+        return clean({"group_by": q.get("group", "team"), "top_n": q.get("top", 5)}), views, 0
+    if q.get("view"):
+        try:
+            vid = int(q["view"])
+        except ValueError:
+            vid = 0
+        for v in views:
+            if v["id"] == vid:
+                return clean(v.get("lens") or {}), views, vid
+    dv = store.get_default_dashboard_view(account_id, member_id)
+    if dv:
+        return clean(dv.get("lens") or {}), views, dv["id"]
+    return {"group_by": "team", "top_n": 5}, views, 0
+
+
+@app.post("/app/views")
+async def app_views_save(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    name = (f.get("name") or "").strip()
+    if name:
+        lens = {"group_by": (f.get("group") or "team"), "top_n": int(f.get("top") or 5)}
+        store.add_dashboard_view(acct["id"], name, lens, member_id=acct.get("member_id", 0) or 0,
+                                 make_default=bool(f.get("make_default")))
+    return _redirect("/app")
+
+
+@app.post("/app/views/default")
+async def app_views_default(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    try:
+        vid = int(f.get("id") or 0)
+    except ValueError:
+        vid = 0
+    store.set_default_dashboard_view(acct["id"], vid, member_id=acct.get("member_id", 0) or 0)
+    return _redirect(f"/app?view={vid}" if vid else "/app")
+
+
+@app.post("/app/views/delete")
+async def app_views_delete(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    try:
+        vid = int(f.get("id") or 0)
+    except ValueError:
+        vid = 0
+    if vid:
+        store.delete_dashboard_view(acct["id"], vid, member_id=acct.get("member_id", 0) or 0)
+    return _redirect("/app")
 
 
 @app.get("/app/estimate", response_class=HTMLResponse)

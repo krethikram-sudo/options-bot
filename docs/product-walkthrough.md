@@ -60,7 +60,10 @@ screen-by-screen customer flow for **each persona** (Finance and Engineering).*
 >     short design study (`docs/finance-ux-proposal.md`) of FinOps/Datadog/Ramp/BI patterns.
 > 15. **Nav trimmed to Home · Spend · Governance** — Budgets + Programs merge into one
 >     **Governance** deep view; the Summary nav item is folded into Home.
-> *(Phase 2 = a period/group lens bar + saved views; Phase 3 = pin/reorder/hide. Coming next.)*
+> 16. **Phase 2 — lens bar + saved views.** The Home breakdown card re-slices by
+>     group-by (team / work type / project / engineer) + top-N; users save named views
+>     and set a default landing (per-person, stored in `dashboard_views`).
+> *(Phase 3 = pin/reorder/hide cards with a persisted layout. Coming next.)*
 
 **Status of this audit:** A live end-to-end smoke test was run against the actual
 app (FastAPI test client driving real routes). **54 of 55 checks passed**; the one
@@ -267,9 +270,14 @@ away:
   **Allocated to teams** · *Open work items*.
 - **"Why this number is the right one"** — the cache-aware-vs-naive trust callout.
 - **Spend trend** + **Top movers**.
-- **Consolidated drill-in cards:** *By team / cost-center* (→ Spend) · *Governance*
-  status roll-up (→ Governance) · *Forecast · open work* (→ Estimate) · *Reports & deep
-  views* (board readout, full breakdown, budgets & programs).
+- **Lens bar + saved views** *(Phase 2)* — a control row to **Group by** (team / work
+  type / project / engineer) and **Show** top-N, re-slicing the breakdown card without
+  leaving Home. Save a configured lens as a named **view** ("Board readout", "By work
+  type"); pick one as your **default landing**. Per-person, so finance and an analyst can
+  each have their own.
+- **Consolidated drill-in cards:** *By {lens}* (→ Spend) · *Governance* status roll-up
+  (→ Governance) · *Forecast · open work* (→ Estimate) · *Reports & deep views* (board
+  readout, full breakdown, budgets & programs).
 
 *(The old `/app/outlay/summary` URL now redirects here.)*
 

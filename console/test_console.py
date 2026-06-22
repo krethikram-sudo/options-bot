@@ -2941,6 +2941,32 @@ def test_finance_attention_panel_and_summary_view(env, client):
     assert "on track" in clear and "Needs your attention" not in clear
 
 
+def test_finance_home_lens_and_saved_views(env, client):
+    """Phase 2: the finance Home has a group-by lens (team/work-type/project/engineer)
+    and per-person saved views with a default-landing picker."""
+    from console import store
+    _signup(client, email="lens@x.com")
+    acct = store.get_account_by_email("lens@x.com")
+    store.set_persona(acct["id"], "finance", acct.get("member_id", 0) or 0)
+    client.post("/app/outlay/sample", follow_redirects=True)
+    home = client.get("/app").text
+    assert "class=lensbar" in home and "By team / cost-center" in home   # opinionated default
+    # ad-hoc re-slice by the lens
+    assert "By work type" in client.get("/app?group=class").text
+    assert "By engineer" in client.get("/app?group=person&top=10").text
+    # save a default view (group by engineer)
+    client.post("/app/views", data={"name": "People view", "group": "person", "top": "10",
+                                     "make_default": "1"}, follow_redirects=True)
+    vs = store.list_dashboard_views(acct["id"], 0)
+    assert len(vs) == 1 and vs[0]["is_default"] == 1 and vs[0]["lens"]["group_by"] == "person"
+    assert "By engineer" in client.get("/app").text          # default applied on bare /app
+    assert "People view" in client.get("/app").text          # chip shows
+    # delete → back to the opinionated default (team)
+    client.post("/app/views/delete", data={"id": str(vs[0]["id"])}, follow_redirects=True)
+    assert store.list_dashboard_views(acct["id"], 0) == []
+    assert "By team / cost-center" in client.get("/app").text
+
+
 def test_unit_economics_engine_and_card(env, client):
     from console import outlay_app
     # engine: per-ticket / per-closed / rework / by-class from attributed tickets
