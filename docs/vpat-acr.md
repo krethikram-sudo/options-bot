@@ -7,9 +7,11 @@
 **Contact:** hello@outlay-ai.com
 
 > **Status: DRAFT / self-assessment.** This ACR is produced from the team's own
-> testing (automated axe-core audits passing with zero violations, plus manual
-> keyboard and screen-reader spot checks). It has not yet been validated by an
-> independent third-party accessibility auditor. We will commission an
+> testing: an **automated accessibility gate in CI** (asserts a programmatic name on
+> every rendered form control, `alt` on images, and page language + title — see
+> `console/test_console.py::test_accessibility_structural_gate`), plus manual
+> keyboard/screen-reader and **axe-core** spot checks. It has not yet been validated
+> by an independent third-party accessibility auditor. We will commission an
 > independent VPAT before final state-government submission. Maryland procurement
 > note: this report explicitly covers **Nonvisual Access (NTIAA / COMAR
 > 14.33.02)** expectations alongside WCAG 2.1 AA and Section 508.
@@ -27,7 +29,8 @@ The Outlay web console (`/app/*`): authentication, overview, spend attribution,
 budgets, programs, estimate, accuracy, connect, settings, security, and audit
 surfaces. Server-rendered HTML; no native mobile app. Evaluated on current
 Chromium/Firefox/Safari with keyboard-only navigation and screen-reader spot
-checks; automated checks via axe-core.
+checks; automated structural checks gate every release (CI), with axe-core used
+for manual spot checks.
 
 ---
 
@@ -106,8 +109,12 @@ Nonvisual Access standards for procured IT.
 1. **Independent audit** — commission a third-party VPAT validation before final
    Maryland submission; replace the "DRAFT / self-assessment" banner on sign-off.
 
-*Resolved since first draft: 4.1.3 Status Messages — post-action confirmations
-now use `role=status` and are announced to assistive tech.*
+*Resolved since first draft: (a) 4.1.3 Status Messages — post-action confirmations
+now use `role=status` and are announced to assistive tech; (b) 4.1.2 / 3.3.2
+Name, Role, Value — a June 2026 self-audit found several form controls (auth,
+forgot-password, SSO config, feedback, saved-views, account-deletion) whose visible
+labels weren't programmatically associated; all now carry an `aria-label`, and a CI
+gate (`test_accessibility_structural_gate`) prevents regressions.*
 
 ---
 

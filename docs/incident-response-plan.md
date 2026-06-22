@@ -112,19 +112,23 @@ plan**.
 | **Consumer breach (MD PIPA §14-3504)** | Unauthorized acquisition of **personal information** | **AG-first**, then affected individuals **≤45 days** post-investigation — **expected to be N/A**: we hold no such PII; **encryption is a statutory safe harbor** | Only if ever triggered |
 | **Internal** | Any Sev-1/2 | Immediate | IC pages team |
 
-**Honest status:** the **webhook capability is shipped** (Trust Center → *Incident / breach
-notification webhook*). The **MD-SOC direct-reporting path is a contractual/operational commitment**
-activated per Maryland engagement — not a product feature. We do not currently hold a 24/7 staffed
-SOC; the 1-hour capability is met by the webhook + an on-call founder/Security Lead, and this is
-stated plainly to procurement.
+**Honest status:** the **incident webhook is shipped and fires an HMAC-signed alert on each
+security event** — failed login, account lockout, MFA enable/disable, password reset,
+security-policy change, log-out-everywhere (Trust Center → *Incident / breach notification
+webhook*; signature verifiable via the per-account secret shown there). The **MD-SOC
+direct-reporting path is a contractual/operational commitment** activated per Maryland engagement —
+not a product feature. We do not currently hold a 24/7 staffed SOC; the 1-hour capability is met by
+the webhook + an on-call founder/Security Lead, and this is stated plainly to procurement.
 
 ---
 
 ## 5. Evidence & retention
 
-- **Audit log** retained **≥90 days** (kept indefinitely by default; the audit trail is never
-  governed by the spend-data retention controls). CSV export and SIEM stream available for the
-  reviewing authority.
+- **Audit log** kept for the **life of the account** — never auto-purged, and the configurable
+  spend-data retention/auto-purge controls never touch the audit trail. (Full-account erasure
+  removes it with all tenant data, by design, to honor a right-to-be-forgotten request — capture
+  any records needed for an open investigation *before* honoring such a request.) CSV export and
+  SIEM stream available for the reviewing authority.
 - Incident records (timeline, severity, actions, notifications, post-mortem) retained **≥1 year**.
 - Chain-of-custody for any preserved artifacts noted in the incident record.
 

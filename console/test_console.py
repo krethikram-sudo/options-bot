@@ -2410,13 +2410,30 @@ def test_outlay_connect_page_has_all_trackers(env, client):
     assert c["tracker"] == "jira" and c["jira_token"] == "tok"
 
 
-def test_secret_box_roundtrip():
+def test_secret_box_roundtrip(monkeypatch):
+    monkeypatch.setenv("CONSOLE_SECRET", "test-secret")
     from console import secret_box
     e = secret_box.encrypt("hello-token")
     assert secret_box.decrypt(e) == "hello-token"
     assert secret_box.decrypt("plain-legacy") == "plain-legacy"   # pre-encryption passthrough
     if secret_box.available():
         assert e.startswith("enc:") and "hello-token" not in e
+
+
+def test_secret_box_fails_safe_without_key(monkeypatch):
+    """Gov-readiness: with no key material we must NOT silently use a world-known
+    default key — encrypting a secret raises instead (unless dev explicitly opts in)."""
+    from console import secret_box
+    if not secret_box.available():
+        pytest.skip("cryptography not installed")
+    monkeypatch.delenv("CONSOLE_SECRET", raising=False)
+    monkeypatch.delenv("CONSOLE_SECRETBOX_KEY", raising=False)
+    monkeypatch.delenv("CONSOLE_ALLOW_INSECURE_SECRETBOX", raising=False)
+    with pytest.raises(RuntimeError):
+        secret_box.encrypt("would-be-secret")
+    # explicit dev opt-in restores the (clearly-labelled insecure) default
+    monkeypatch.setenv("CONSOLE_ALLOW_INSECURE_SECRETBOX", "1")
+    assert secret_box.decrypt(secret_box.encrypt("x")) == "x"
 
 
 def test_outlay_token_encrypted_at_rest(env, client):
@@ -2437,6 +2454,42 @@ def test_outlay_token_encrypted_at_rest(env, client):
     # preserve-on-blank still works through encryption
     store.save_outlay_connection(acct["id"], github_owner="acme", github_repo="web2", github_token="")
     assert store.get_outlay_connection(acct["id"])["github_token"] == "ghp_supersecret"
+
+
+def _raw(store, col, table, acct_id):
+    return store.connect().execute(
+        f"SELECT {col} FROM {table} WHERE account_id=?", (acct_id,)).fetchone()
+
+
+def test_secondary_connector_secrets_encrypted_at_rest(env, client):
+    """Slack/Teams webhook URL, SSO client_secret, and the webhook HMAC signing
+    secret are bearer credentials — they must be encrypted at rest, not just the
+    tracker/provider tokens. (Audit finding M1.)"""
+    _, store = env
+    from console import secret_box
+    _signup(client, email="sec2@x.com")
+    acct = store.get_account_by_email("sec2@x.com")
+
+    # 1) Slack/Teams incoming webhook URL
+    store.set_slack_webhook(acct["id"], "https://hooks.slack.com/services/T/B/zzSECRET")
+    assert store.get_slack_webhook(acct["id"]) == "https://hooks.slack.com/services/T/B/zzSECRET"
+    # 2) SSO OIDC client_secret
+    store.set_sso(acct["id"], enabled=True, domain="sec2.com", client_id="cid",
+                  client_secret="oidc-shhh", auth_url="https://idp/a",
+                  token_url="https://idp/t", userinfo_url="https://idp/u")
+    assert store.get_sso(acct["id"])["client_secret"] == "oidc-shhh"
+    # 3) Webhook HMAC signing secret (returned once in cleartext; stored encrypted)
+    wh = store.create_webhook(acct["id"], "https://soc.example.com/hook")
+    assert wh["secret"].startswith("whsec_")
+    assert store.list_webhooks(acct["id"])[0]["secret"] == wh["secret"]  # decrypts for signing
+
+    if secret_box.available():
+        assert _raw(store, "slack_webhook", "outlay_connections", acct["id"])["slack_webhook"].startswith("enc:")
+        assert "zzSECRET" not in _raw(store, "slack_webhook", "outlay_connections", acct["id"])["slack_webhook"]
+        cs = _raw(store, "client_secret", "sso_configs", acct["id"])["client_secret"]
+        assert cs.startswith("enc:") and "oidc-shhh" not in cs
+        ws = _raw(store, "secret", "webhooks", acct["id"])["secret"]
+        assert ws.startswith("enc:") and wh["secret"] not in ws
 
 
 def test_outlay_auto_sync_due_selection(env, client):
@@ -3047,6 +3100,216 @@ def test_trust_center_and_artifacts(env, client):
     client.post("/app/security/policy", data={"require_mfa": "1", "data_region": "US"}, follow_redirects=True)
     actions = [r["action"] for r in st.list_audit(acct["id"])]
     assert "security.policy" in actions
+
+
+# --- Audit findings: remediation coverage --------------------------------- #
+
+def test_security_webhook_fires_signed_on_security_event(env, client):
+    """C2: a configured incident/breach webhook receives a SIGNED POST on security
+    events (and nothing on non-security actions)."""
+    _, store = env
+    _signup(client, email="soc@x.com")
+    acct = store.get_account_by_email("soc@x.com")
+    store.update_security_policy(acct["id"], security_webhook="https://soc.acme.gov/hook")
+    sent = []
+    store.notify_security_event(acct["id"], "login.fail", actor="soc@x.com", detail="bad password",
+                                post_fn=lambda url, body, headers: sent.append((url, body, headers)) or 200)
+    assert sent, "a security event must dispatch to the configured webhook"
+    url, body, headers = sent[0]
+    assert url == "https://soc.acme.gov/hook"
+    # signature verifies against the per-account secret
+    expect = store.sign_payload(store.security_webhook_secret(acct["id"]), body)
+    assert headers["x-outlay-signature"] == expect and headers["x-outlay-event"] == "login.fail"
+    # a non-security action does NOT fire the SOC hook
+    assert store.notify_security_event(acct["id"], "login", post_fn=lambda *a: 200) is False
+    # and with no webhook configured, nothing is dispatched
+    store.update_security_policy(acct["id"], security_webhook="")
+    again = []
+    store.notify_security_event(acct["id"], "login.fail",
+                                post_fn=lambda url, body, headers: again.append(1) or 200)
+    assert not again
+
+
+def test_forbidden_payload_value_scan(env):
+    """C3: the ingest boundary rejects a credential-looking VALUE even under an
+    innocuous field name — not just known sensitive key names."""
+    _, store = env
+    # key-name match (existing behavior)
+    assert store.forbidden_payload_reason({"messages": []})
+    # secret VALUE hidden under a benign key (the bypass the audit flagged)
+    assert store.forbidden_payload_reason({"deployment_id": "d1", "note": "sk-ant-api03-AbCdEf012345"})
+    assert store.forbidden_payload_reason({"rows": [{"summary": "Bearer abcdef0123456789ABCDEF"}]})
+    assert store.forbidden_payload_reason({"k": "ghp_0123456789abcdefghijABCDEFGHIJ012345"})
+    # legitimate aggregate metadata passes clean
+    assert store.forbidden_payload_reason(
+        {"deployment_id": "d1", "requests": 100, "routed": 40, "baseline_cost": 12.5,
+         "category": "support", "ticket_id": "ENG-123"}) is None
+
+
+def test_budget_changes_audited(env, client):
+    """M3: budget add/delete are security-relevant config changes and must be audited."""
+    _, store = env
+    _signup(client, email="bud@x.com")
+    acct = store.get_account_by_email("bud@x.com")
+    client.post("/app/outlay/budgets",
+                data={"limit_usd": "500", "scope_type": "overall", "period_days": "30"},
+                follow_redirects=True)
+    bid = store.list_outlay_budgets(acct["id"])[0]["id"]
+    client.post("/app/outlay/budgets/delete", data={"id": str(bid)}, follow_redirects=True)
+    actions = [r["action"] for r in store.list_audit(acct["id"])]
+    assert "budget.add" in actions and "budget.delete" in actions
+
+
+def test_login_lockout_is_audited(env, client):
+    """M4: a lockout is a security signal — it produces an audit row for the account."""
+    _, store = env
+    _signup(client, email="locka@x.com")
+    acct = store.get_account_by_email("locka@x.com")
+    for _ in range(5):
+        client.post("/login", data={"email": "locka@x.com", "password": "wrong"})
+    client.post("/login", data={"email": "locka@x.com", "password": "wrong"})  # now locked
+    assert "login.locked" in [r["action"] for r in store.list_audit(acct["id"])]
+
+
+def test_lockout_clears_on_successful_login(env, client):
+    """A few failures below the threshold then a success clears the throttle."""
+    _, store = env
+    _signup(client, email="clear@x.com")
+    for _ in range(3):
+        client.post("/login", data={"email": "clear@x.com", "password": "wrong"})
+    assert store.note_login_failure.__module__  # sanity
+    ok = client.post("/login", data={"email": "clear@x.com", "password": "k7-otter-ledger"})
+    assert ok.status_code in (302, 303, 307)
+    assert store.login_locked("clear@x.com") == 0   # counter reset
+
+
+def test_2fa_and_password_reset_events_audited(env, client):
+    """Coverage: 2FA enable/disable and password reset emit audit rows."""
+    _, store = env
+    _signup(client, email="ev@x.com")
+    acct = store.get_account_by_email("ev@x.com")
+    code = store.issue_otp(acct["id"])   # same code the /app/2fa/start email would carry
+    client.post("/app/2fa/confirm", data={"code": code}, follow_redirects=True)
+    client.post("/app/2fa/disable", follow_redirects=True)
+    _, token = store.create_reset("ev@x.com")
+    store.consume_reset(token, "fresh-otter-ledger-9")
+    actions = [r["action"] for r in store.list_audit(acct["id"])]
+    assert "2fa.enable" in actions and "2fa.disable" in actions and "password.reset" in actions
+
+
+def test_password_change_revokes_sessions(env):
+    """AC-12: a password change bumps the session epoch, invalidating other sessions."""
+    server, store = env
+    store.init_db()
+    a = store.create_account("pw@x.com", "k7-otter-ledger")
+    store.set_persona(a["id"], "business", 0)
+    other = TestClient(server.app, follow_redirects=False)
+    other.post("/login", data={"email": "pw@x.com", "password": "k7-otter-ledger"})
+    assert other.get("/app/security").status_code == 200
+    store.set_password(a["id"], "brand-new-otter-9")     # rotates the epoch
+    assert other.get("/app/security", follow_redirects=False).status_code in (302, 303, 307)
+
+
+def test_absolute_session_timeout_enforced(env, monkeypatch):
+    """AC-12: a session past its absolute lifetime is rejected on the next request."""
+    server, store = env
+    store.init_db()
+    a = store.create_account("abs@x.com", "k7-otter-ledger")
+    store.set_persona(a["id"], "business", 0)
+    store.update_security_policy(a["id"], session_max_hours=1)
+    c = TestClient(server.app, follow_redirects=False)
+    c.post("/login", data={"email": "abs@x.com", "password": "k7-otter-ledger"})
+    assert c.get("/app/security").status_code == 200
+    import console.server as srv
+    future = time.time() + 2 * 3600   # capture real now BEFORE patching (time module is shared)
+    monkeypatch.setattr(srv.time, "time", lambda: future)  # +2h > 1h cap
+    assert c.get("/app/security", follow_redirects=False).status_code in (302, 303, 307)
+
+
+# --- C4: automated accessibility gate (substantiates the WCAG/508 claim) --- #
+
+class _A11yChecker:
+    """Lightweight structural accessibility checker: every focusable input has an
+    accessible name (label/aria-label), every <img> has alt, and the page declares a
+    language + title. Not a full axe-core run, but a real automated WCAG 2.1 gate for
+    the success criteria most often regressed (1.1.1, 1.3.1, 3.3.2, 4.1.2)."""
+    from html.parser import HTMLParser as _HP
+
+    class _P(_HP):
+        NEEDS_NAME = {"input", "select", "textarea"}
+        SKIP_TYPES = {"hidden", "submit", "button", "image", "reset"}
+
+        def __init__(self):
+            super().__init__()
+            self.label_for, self.ids_named, self.controls, self.imgs = set(), [], [], []
+            self._label_depth = 0
+            self.has_lang = self.has_title = False
+
+        def handle_starttag(self, tag, attrs):
+            a = dict(attrs)
+            if tag == "html" and a.get("lang"):
+                self.has_lang = True
+            if tag == "label":
+                self._label_depth += 1
+                if a.get("for"):
+                    self.label_for.add(a["for"])
+            if tag == "img":
+                self.imgs.append("alt" in a)
+            if tag in self.NEEDS_NAME:
+                if (a.get("type") or "text").lower() in self.SKIP_TYPES:
+                    return
+                named = bool(a.get("aria-label") or a.get("aria-labelledby") or a.get("title")
+                             or self._label_depth > 0)
+                self.controls.append((named, a.get("id"), a.get("name") or "?"))
+
+        def handle_endtag(self, tag):
+            if tag == "label" and self._label_depth:
+                self._label_depth -= 1
+
+        def handle_data(self, data):
+            if self.getpos()[0] and not self.has_title:
+                pass
+
+    def violations(self, htmltext: str) -> list[str]:
+        p = self._P()
+        p.feed(htmltext)
+        self.has_title = "<title>" in htmltext
+        out = []
+        if not p.has_lang:
+            out.append("missing <html lang>")
+        if "<title>" not in htmltext:
+            out.append("missing <title>")
+        for named, cid, name in p.controls:
+            if not named and (cid is None or cid not in p.label_for):
+                out.append(f"input '{name}' has no accessible name (label/aria-label)")
+        for has_alt in p.imgs:
+            if not has_alt:
+                out.append("<img> without alt")
+        return out
+
+
+def test_accessibility_structural_gate(env, client):
+    """Every rendered form control has an accessible name; pages declare lang + title.
+    Substantiates the VPAT 'Supports' ratings with an automated check (audit C4)."""
+    _, store = env
+    _signup(client, email="a11y@x.com")
+    acct = store.get_account_by_email("a11y@x.com")
+    store.set_persona(acct["id"], "business", 0)
+    client.post("/app/outlay/sample", follow_redirects=True)
+    chk = _A11yChecker()
+    server, _ = env
+    public = TestClient(server.app, follow_redirects=False)   # logged-out: sees /login, /signup
+    authed = ["/app", "/app/security", "/app/settings", "/app/outlay/budgets",
+              "/app/outlay/connect", "/app/team", "/app/outlay/programs"]
+    problems = {}
+    for path, cl in ([(p, public) for p in ("/login", "/signup", "/forgot")]
+                     + [(p, client) for p in authed]):
+        r = cl.get(path)
+        if r.status_code == 200:
+            v = chk.violations(r.text)
+            if v:
+                problems[path] = v
+    assert not problems, f"accessibility violations: {problems}"
 
 
 def test_finance_home_customizable_layout(env, client):

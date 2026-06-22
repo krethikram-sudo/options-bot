@@ -42,6 +42,45 @@ FORBIDDEN_METER_KEYS = {
     "completion", "api_key", "apikey", "x-api-key", "authorization", "secret",
 }
 
+# Value-level scan (complements the key-name denylist): refuse a payload whose string
+# VALUES look like a credential, so a secret slipped under an innocuous field name
+# (e.g. {"note": "sk-ant-..."}) is still caught. Patterns are high-signal prefixes +
+# JWTs + long Bearer/hex blobs — chosen to avoid false-positives on dollars/counts/ids.
+_SECRET_VALUE_RE = __import__("re").compile(
+    r"(sk-[A-Za-z0-9-]{16,}"          # OpenAI/Anthropic-style keys
+    r"|sk-ant-[A-Za-z0-9_-]{8,}"
+    r"|gh[pousr]_[A-Za-z0-9]{20,}"    # GitHub tokens
+    r"|xox[baprs]-[A-Za-z0-9-]{10,}"  # Slack tokens
+    r"|AKIA[0-9A-Z]{12,}"             # AWS access key id
+    r"|AIza[0-9A-Za-z_-]{20,}"        # Google API key
+    r"|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{6,}"  # JWT
+    r"|[Bb]earer\s+[A-Za-z0-9._-]{16,})")
+
+
+def _looks_secret_value(s) -> bool:
+    return isinstance(s, str) and bool(_SECRET_VALUE_RE.search(s))
+
+
+def forbidden_payload_reason(obj, path: str = "") -> str | None:
+    """Return a human reason if `obj` (at any nesting depth) carries a forbidden KEY
+    NAME (prompt/output/secret fields) or a string VALUE that looks like a credential;
+    else None. The boundary that keeps prompts/outputs/keys out of vendor storage."""
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if str(k).lower() in FORBIDDEN_METER_KEYS:
+                return f"forbidden key '{str(path + '.' + str(k)).lstrip('.')}'"
+            hit = forbidden_payload_reason(v, f"{path}.{k}")
+            if hit:
+                return hit
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            hit = forbidden_payload_reason(v, f"{path}[{i}]")
+            if hit:
+                return hit
+    elif _looks_secret_value(obj):
+        return f"value at '{path.lstrip('.') or '(root)'}' looks like a credential"
+    return None
+
 
 def _db_path() -> str:
     return os.environ.get("CONSOLE_DB", "console.db")
@@ -1274,17 +1313,19 @@ def set_slack_webhook(account_id: int, url: str | None, path: str | None = None)
         from . import notify
         if not notify.is_safe_url(url):
             raise StoreError("Slack webhook must be a public https URL (not localhost / internal / metadata).")
-    _upsert_connection_field(account_id, "slack_webhook", url, path)
+    from . import secret_box  # a Slack/Teams incoming-webhook URL is a bearer secret — encrypt at rest
+    _upsert_connection_field(account_id, "slack_webhook", secret_box.encrypt(url), path)
 
 
 def get_slack_webhook(account_id: int, path: str | None = None) -> str | None:
+    from . import secret_box
     conn = connect(path)
     try:
         row = conn.execute("SELECT slack_webhook FROM outlay_connections WHERE account_id=?",
                           (account_id,)).fetchone()
     finally:
         conn.close()
-    return (row["slack_webhook"] if row else None) or None
+    return secret_box.decrypt(row["slack_webhook"] if row else None) or None
 
 
 def set_anomaly_threshold(account_id: int, threshold: float, path: str | None = None) -> None:
@@ -1560,6 +1601,7 @@ def get_outlay_connection(account_id: int, path: str | None = None) -> dict | No
     d = dict(r)
     for k in _OUTLAY_SECRETS:  # decrypt for use (and to preserve on re-save)
         d[k] = secret_box.decrypt(d.get(k))
+    d["slack_webhook"] = secret_box.decrypt(d.get("slack_webhook"))  # bearer secret, encrypted at rest
     return d
 
 
@@ -2935,10 +2977,11 @@ def create_webhook(account_id: int, url: str, events: str = "all",
         raise StoreError("webhook url must be a public address (not localhost / internal / metadata)")
     now = now or time.time()
     secret = "whsec_" + secrets.token_urlsafe(24)
+    from . import secret_box  # HMAC signing secret — encrypt at rest (returned once in cleartext)
     conn = connect(path)
     try:
         cur = conn.execute("INSERT INTO webhooks(account_id, url, secret, events, active, created_at)"
-                           " VALUES(?,?,?,?,1,?)", (account_id, url.strip(), secret,
+                           " VALUES(?,?,?,?,1,?)", (account_id, url.strip(), secret_box.encrypt(secret),
                                                     (events or "all").strip(), now))
         wid = cur.lastrowid
         conn.commit()
@@ -2948,11 +2991,17 @@ def create_webhook(account_id: int, url: str, events: str = "all",
 
 
 def list_webhooks(account_id: int, path: str | None = None) -> list[dict]:
+    from . import secret_box
     conn = connect(path)
     try:
         rows = conn.execute("SELECT * FROM webhooks WHERE account_id=? ORDER BY created_at DESC",
                             (account_id,)).fetchall()
-        return [dict(r) for r in rows]
+        out = []
+        for r in rows:  # decrypt the signing secret for delivery/redelivery + display
+            d = dict(r)
+            d["secret"] = secret_box.decrypt(d.get("secret"))
+            out.append(d)
+        return out
     finally:
         conn.close()
 
@@ -2980,6 +3029,63 @@ def _matching_webhooks(account_id: int, event_type: str, path: str | None = None
 
 def sign_payload(secret: str, body: bytes) -> str:
     return "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+
+
+# --- Security / incident webhook (the SOC/SIEM alert hook) ------------------ #
+# Distinct from the product `webhooks` table above (which carries spend/budget
+# events): this fires on AUTHENTICATION / SECURITY events to the customer's
+# incident endpoint, supporting their notification SLA (e.g. Maryland MD-SOC).
+
+# Audit actions that are security-relevant enough to alert a SOC on.
+SECURITY_EVENT_ACTIONS = {
+    "login.fail", "login.locked", "2fa.enable", "2fa.disable",
+    "password.reset", "security.policy", "session.logout_all",
+}
+
+
+def security_webhook_secret(account_id: int) -> str:
+    """Deterministic per-account HMAC secret for verifying security-webhook posts.
+    Derived from CONSOLE_SECRET so the customer can be shown a stable value to
+    verify the `x-outlay-signature` header — no extra secret to store."""
+    base = os.environ.get("CONSOLE_SECRET") or "dev-insecure-console-secret"
+    return "swhsec_" + hmac.new(base.encode(), f"secwebhook:{account_id}".encode(),
+                                hashlib.sha256).hexdigest()[:40]
+
+
+def notify_security_event(account_id: int, action: str, actor: str = "", detail: str = "",
+                          path: str | None = None, post_fn=None, now: float | None = None) -> bool:
+    """Best-effort: POST a signed alert to the account's incident/breach webhook on a
+    security event. Returns True if a post was dispatched. Never raises into the caller
+    (auth flows must not break if the SOC endpoint is down)."""
+    if action not in SECURITY_EVENT_ACTIONS:
+        return False
+    try:
+        url = (get_security_policy(account_id, path) or {}).get("security_webhook")
+        if not url:
+            return False
+        from . import notify
+        if not notify.is_safe_url(url):
+            return False
+        body = json.dumps({"event": action, "ts": now or time.time(), "account_id": account_id,
+                           "actor": actor, "detail": detail}, separators=(",", ":")).encode()
+        headers = {"content-type": "application/json", "user-agent": "Outlay-Security",
+                   "x-outlay-event": action,
+                   "x-outlay-signature": sign_payload(security_webhook_secret(account_id), body)}
+
+        def _send():
+            try:
+                _webhook_attempt(url, body, headers, post_fn)
+            except Exception:  # noqa: BLE001 — fire-and-forget
+                pass
+
+        if post_fn is not None:  # tests / synchronous path
+            _send()
+        else:
+            import threading
+            threading.Thread(target=_send, daemon=True).start()
+        return True
+    except Exception:  # noqa: BLE001 — never break the auth flow on a webhook hiccup
+        return False
 
 
 WEBHOOK_MAX_ATTEMPTS = 3          # immediate, in-thread attempts on the first dispatch
@@ -3183,10 +3289,15 @@ def prune_webhook_deliveries(now: float | None = None, keep_days: int = 30,
 # --------------------------------------------------------------------------- #
 
 def get_sso(account_id: int, path: str | None = None) -> dict:
+    from . import secret_box
     conn = connect(path)
     try:
         row = conn.execute("SELECT * FROM sso_configs WHERE account_id=?", (account_id,)).fetchone()
-        return dict(row) if row else {"account_id": account_id, "enabled": 0}
+        if not row:
+            return {"account_id": account_id, "enabled": 0}
+        d = dict(row)
+        d["client_secret"] = secret_box.decrypt(d.get("client_secret"))  # OIDC secret, encrypted at rest
+        return d
     finally:
         conn.close()
 
@@ -3212,9 +3323,11 @@ def set_sso(account_id: int, *, enabled: bool | None = None, domain: str | None 
             "default_role": (cur.get("default_role") or "member") if default_role is None
                             else (default_role if default_role in TEAM_ROLES else "member"),
         }
+        from . import secret_box  # OIDC client_secret is a credential — encrypt at rest
         conn.execute("UPDATE sso_configs SET enabled=?, domain=?, client_id=?, client_secret=?,"
                      " auth_url=?, token_url=?, userinfo_url=?, default_role=? WHERE account_id=?",
-                     (new["enabled"], new["domain"], new["client_id"], new["client_secret"],
+                     (new["enabled"], new["domain"], new["client_id"],
+                      secret_box.encrypt(new["client_secret"]),
                       new["auth_url"], new["token_url"], new["userinfo_url"], new["default_role"],
                       account_id))
         conn.commit()
@@ -3227,10 +3340,15 @@ def sso_by_domain(domain: str, path: str | None = None) -> dict | None:
     domain = (domain or "").strip().lower()
     if not domain:
         return None
+    from . import secret_box
     conn = connect(path)
     try:
         row = conn.execute("SELECT * FROM sso_configs WHERE domain=? AND enabled=1", (domain,)).fetchone()
-        return dict(row) if row else None
+        if not row:
+            return None
+        d = dict(row)
+        d["client_secret"] = secret_box.decrypt(d.get("client_secret"))
+        return d
     finally:
         conn.close()
 

@@ -1930,8 +1930,8 @@ def _lens_bar(group_by: str, top_n: int, views: list[dict], active_view_id: int 
     tops = "".join(opt(n, top_n, ("All" if n == 0 else f"Top {n}")) for n in (5, 10, 0))
     lens_form = (
         '<form method=get action="/app" class=lensform>'
-        f'<span class=lab>Group by</span><select name=group onchange="this.form.submit()">{grp}</select>'
-        f'<span class=lab>Show</span><select name=top onchange="this.form.submit()">{tops}</select>'
+        f'<span class=lab>Group by</span><select name=group aria-label="Group spend by" onchange="this.form.submit()">{grp}</select>'
+        f'<span class=lab>Show</span><select name=top aria-label="Number of rows to show" onchange="this.form.submit()">{tops}</select>'
         '<noscript><button class="btn sec sm">Apply</button></noscript></form>')
     chips = '<a class="vchip' + (' on' if not active_view_id else '') + '" href="/app">Default</a>'
     for v in views:
@@ -1944,7 +1944,7 @@ def _lens_bar(group_by: str, top_n: int, views: list[dict], active_view_id: int 
     save = (
         '<form method=post action="/app/views" class=saveview>'
         f'<input type=hidden name=group value="{_e(group_by)}"><input type=hidden name=top value="{int(top_n)}">'
-        '<input name=name placeholder="Save this view as…" maxlength=60 required>'
+        '<input name=name aria-label="Name this saved view" placeholder="Save this view as…" maxlength=60 required>'
         '<label class=defck><input type=checkbox name=make_default value=1> default</label>'
         '<button class="btn sec sm">Save</button></form>')
     setdef = ""
@@ -2519,7 +2519,7 @@ def outlay_connect_page(account: dict, conn: dict | None) -> str:
           <code>alice@acme.com, Platform</code>, <code>@acme.com, Internal</code>,
           <code>ci-deploy-bot, Platform</code>.</p>
         <form method=post action="/app/outlay/identity">
-          <textarea name=identity_map rows=5 placeholder="alice@acme.com, Platform
+          <textarea name=identity_map aria-label="Identity map (email or handle, team per line)" rows=5 placeholder="alice@acme.com, Platform
 @acme.com, Internal
 ci-deploy-bot, Platform">{idmap}</textarea>
           <button class="btn sec" style="margin-top:12px">Save team map</button>
@@ -3266,7 +3266,7 @@ def auth_form(kind: str, error: str = "", email: str = "") -> str:
     title = "Start your free trial" if is_signup else "Sign in"
     err = f'<div class="note bad">{_e(error)}</div>' if error else ""
     company = ('<div class=field><label>Company <span class=muted>(optional)</span></label>'
-               '<input name=company placeholder="Acme Inc."></div>') if is_signup else ""
+               '<input name=company aria-label="Company name" placeholder="Acme Inc."></div>') if is_signup else ""
     consent = ('<div class=field><label class=row style="gap:8px;font-weight:400;font-size:13px">'
                '<input type=checkbox name=accept value=1 required style="width:auto"> '
                'I agree to the <a href="https://outlay-ai.com/legal/terms.html" target=_blank>Terms</a>'
@@ -3279,7 +3279,7 @@ def auth_form(kind: str, error: str = "", email: str = "") -> str:
            '<label class=row style="gap:0;font-weight:600;font-size:13px;color:var(--muted)">'
            'Or sign in with your company SSO</label>'
            '<form method=get action="/sso/start" style="display:flex;gap:8px;margin-top:6px">'
-           '<input name=email type=email required placeholder="you@company.com" '
+           '<input name=email type=email aria-label="Email for SSO sign-in" required placeholder="you@company.com" '
            'style="flex:1">'
            '<button class="btn sec" type=submit style="white-space:nowrap">Use SSO</button>'
            '</form></div>')
@@ -3294,10 +3294,10 @@ def auth_form(kind: str, error: str = "", email: str = "") -> str:
       {err}
       <form method=post action="/{kind}">
         <div class=field><label>Work email</label>
-          <input name=email type=email required value="{_e(email)}" placeholder="you@company.com"></div>
+          <input name=email type=email aria-label="Email address" required value="{_e(email)}" placeholder="you@company.com"></div>
         {company}
         <div class=field><label>Password</label>
-          <input name=password type=password required minlength=8 placeholder="At least 8 characters"></div>
+          <input name=password type=password aria-label="Password" required minlength=8 placeholder="At least 8 characters"></div>
         {consent}
         <button class="btn" style="width:100%">{_e(sub)}</button>
       </form>
@@ -3748,7 +3748,8 @@ def _trust_controls(account: dict, policy: dict, twofa: dict, enroll_secret: str
             '<form method=post action="/app/security/policy">'
             f'<label style="display:flex;gap:8px;align-items:center;margin:6px 0 12px;font-size:14px">'
             f'<input type=checkbox name=require_mfa value=1 {ck}> <b>Require multi-factor authentication</b> '
-            f'for everyone in this workspace (IA-2).</label>'
+            f'for account owners &amp; admins (IA-2). <span class=muted>Invited members authenticate via '
+            f'your SSO/IdP, which enforces its own MFA policy.</span></label>'
             '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:end">'
             '<label class=fld><span>Idle timeout (minutes, 0 = none)</span>'
             f'<input name=session_idle_min type=number min=0 max=1440 value="{idle}"></label>'
@@ -3773,7 +3774,7 @@ def _trust_controls(account: dict, policy: dict, twofa: dict, enroll_secret: str
         '<a class=exrow href="/app/security/ai-card" target=_blank><span class=nm>AI model &amp; system card + Acceptable Use Policy</span>'
         '<span class=exd>Where AI is used, no-training guarantee, human oversight — NIST AI RMF / MD AI Act.</span><span class=exarr>→</span></a>'
         '<a class=exrow href="/app/audit/export.csv"><span class=nm>Audit log export (CSV → SIEM)</span>'
-        '<span class=exd>Every privileged + auth event; retained ≥ 90 days.</span><span class=exarr>→</span></a>'
+        '<span class=exd>Every privileged + auth event; kept for the life of the account (never auto-purged).</span><span class=exarr>→</span></a>'
         f'<div class=note style="margin-top:12px"><b>Status.</b> SOC 2 Type II — <b>in progress</b>. '
         f'Hosting — Fly.io (SOC 2 / ISO 27001 data centers); a FedRAMP-Moderate region is on the '
         f'roadmap for StateRAMP/GovRAMP-gated deals. Data region: <b>{_e(policy.get("data_region") or "US")}</b>.</div></div>')
@@ -3841,9 +3842,12 @@ def security_page(account: dict, policy: dict | None = None, twofa: dict | None 
              "we were never in the path."))}
 
     {card("Accessibility (Section 508 / WCAG 2.1 AA)",
-          li("The console is built to <b>WCAG 2.1 AA / Section 508</b>; an automated axe-core audit "
-             "passes with <b>zero violations</b>. A <b>VPAT / ACR</b> is available for your review "
-             "(covering WCAG 2.1 AA, Section 508, and Maryland Nonvisual Access / NTIAA)."))}
+          li("The console is built to <b>WCAG 2.1 AA / Section 508</b>, with an <b>automated "
+             "accessibility gate in CI</b> (programmatic names on every control, image alt text, "
+             "page language + title) plus manual keyboard/screen-reader and axe-core spot-checks. "
+             "A <b>VPAT / ACR</b> (self-assessment; independent validation on the roadmap) is "
+             "available for your review (covering WCAG 2.1 AA, Section 508, and Maryland Nonvisual "
+             "Access / NTIAA)."))}
 
     {card("AI transparency &amp; model use",
           li("<b>Where AI is used.</b> Outlay uses a model only to <b>classify work into task "
@@ -3890,9 +3894,11 @@ def vpat_page(account: dict) -> str:
     <h1>VPAT / Accessibility Conformance Report</h1>
     <p class=muted style="max-width:74ch">Outlay's console is built to <b>WCAG 2.1 AA</b> and
       <b>Section 508</b>, and supports Maryland's <b>Nonvisual Access (NTIAA)</b> requirements. An
-      automated axe-core audit passes with <b>zero violations</b>; keyboard operability, focus order,
-      contrast, and screen-reader labeling are verified. This is the in-product summary — the full,
-      signed ACR (VPAT 2.5 format) is available from
+      <b>automated accessibility gate in CI</b> checks programmatic naming, image alt text, and page
+      language/title on every release; keyboard operability, focus order, contrast, and
+      screen-reader labeling are verified with manual + axe-core spot-checks. This is the in-product
+      summary (self-assessment; independent third-party validation on the roadmap) — the full ACR
+      (VPAT 2.5 format) is available from
       <a href="mailto:hello@outlay-ai.com?subject=Outlay%20VPAT">hello@outlay-ai.com</a>.</p>
     <div class=card style="padding:0;margin-top:16px"><table>
       <thead><tr><th>Standard</th><th>Level</th><th>Conformance</th></tr></thead>
@@ -3982,7 +3988,7 @@ def _retention_section(account: dict, retention_days: int = 0, purged: bool = Fa
       {perr}
       <form method=post action="/app/outlay/purge" style="display:flex;gap:10px;align-items:center"
             onsubmit="return confirm('Erase all ingested spend data (report + history)? This cannot be undone.')">
-        <input name=confirm autocomplete=off placeholder="type: delete"
+        <input name=confirm aria-label="Type delete to confirm erasing data" autocomplete=off placeholder="type: delete"
                style="padding:7px 10px;border:1px solid var(--line);border-radius:8px">
         <button class="btn sec sm" style="color:#b00020;border-color:#e3b3b3">Erase data</button>
       </form>
@@ -4042,9 +4048,9 @@ def _danger_zone(account: dict, delete_error: bool = False) -> str:
       <form method=post action="/app/account/delete"
             onsubmit="return confirm('Permanently delete your account and all data? This cannot be undone.')">
         <div class=field><label>Type your email (<b>{email}</b>) to confirm</label>
-          <input name=confirm_email type=email autocomplete=off placeholder="{email}" required></div>
+          <input name=confirm_email type=email aria-label="Type your email to confirm account deletion" autocomplete=off placeholder="{email}" required></div>
         <div class=field><label>What made you leave? <span class="small muted">(optional, helps us a lot)</span></label>
-          <textarea name=reason rows=2 placeholder="e.g. savings weren't enough / too hard to set up / quality concern"></textarea></div>
+          <textarea name=reason aria-label="Reason for leaving (optional)" rows=2 placeholder="e.g. savings weren't enough / too hard to set up / quality concern"></textarea></div>
         <button class=btn style="background:#b00020;border-color:#b00020">Delete my account</button>
       </form>
     </div>"""
@@ -4415,13 +4421,13 @@ def _sso_section(sso: dict, scim_token: str = "") -> str:
       <div class=field><label class=row><input type=checkbox name=enabled value=1 {chk}
         style="width:auto;margin-right:8px"> Enable SSO</label></div>
       <div class="grid cols-2">
-        <div class=field><label>Email domain</label><input name=domain value="{v('domain')}" placeholder="yourdomain.com"></div>
-        <div class=field><label>Default role for new users</label><select name=default_role>{role_opts}</select></div>
-        <div class=field><label>Client ID</label><input name=client_id value="{v('client_id')}"></div>
-        <div class=field><label>Client secret</label><input name=client_secret type=password value="{v('client_secret')}"></div>
-        <div class=field><label>Authorization URL</label><input name=auth_url value="{v('auth_url')}" placeholder="https://idp/authorize"></div>
-        <div class=field><label>Token URL</label><input name=token_url value="{v('token_url')}" placeholder="https://idp/token"></div>
-        <div class=field><label>Userinfo URL</label><input name=userinfo_url value="{v('userinfo_url')}" placeholder="https://idp/userinfo"></div>
+        <div class=field><label>Email domain</label><input name=domain aria-label="Email domain" value="{v('domain')}" placeholder="yourdomain.com"></div>
+        <div class=field><label>Default role for new users</label><select name=default_role aria-label="Default role for new users">{role_opts}</select></div>
+        <div class=field><label>Client ID</label><input name=client_id aria-label="OIDC client ID" value="{v('client_id')}"></div>
+        <div class=field><label>Client secret</label><input name=client_secret aria-label="OIDC client secret" type=password value="{v('client_secret')}"></div>
+        <div class=field><label>Authorization URL</label><input name=auth_url aria-label="Authorization URL" value="{v('auth_url')}" placeholder="https://idp/authorize"></div>
+        <div class=field><label>Token URL</label><input name=token_url aria-label="Token URL" value="{v('token_url')}" placeholder="https://idp/token"></div>
+        <div class=field><label>Userinfo URL</label><input name=userinfo_url aria-label="Userinfo URL" value="{v('userinfo_url')}" placeholder="https://idp/userinfo"></div>
       </div>
       <button class=btn>Save SSO</button>
     </form></div>
@@ -4549,7 +4555,7 @@ def forgot_form(sent: bool = False, email: str = "") -> str:
       <p class=muted small>Enter your email and we'll send a reset link.</p>
       <form method=post action="/forgot">
         <div class=field><label>Email</label>
-          <input name=email type=email required value="{_e(email)}" placeholder="you@company.com"></div>
+          <input name=email type=email aria-label="Email address" required value="{_e(email)}" placeholder="you@company.com"></div>
         <button class="btn" style="width:100%">Send reset link</button>
       </form>
       <p class="small center muted" style="margin-top:14px"><a href="/login">Back to sign in</a></p>
@@ -4565,7 +4571,7 @@ def reset_form(token: str, error: str = "") -> str:
       <form method=post action="/reset">
         <input type=hidden name=token value="{_e(token)}">
         <div class=field><label>New password</label>
-          <input name=password type=password required minlength=8 placeholder="At least 8 characters"></div>
+          <input name=password type=password aria-label="Password" required minlength=8 placeholder="At least 8 characters"></div>
         <button class="btn" style="width:100%">Update password</button>
       </form>
     </div></div>"""
@@ -4645,7 +4651,7 @@ def _feedback_widget() -> str:
             '<option value=problem>&#128030; Something&#39;s broken</option>'
             '<option value=praise>&#128077; What&#39;s working</option>'
             '<option value=other>&#128172; Other</option></select>'
-            '<input name=comment required placeholder="What would make Outlay better?" '
+            '<input name=comment aria-label="Your feedback" required placeholder="What would make Outlay better?" '
             'style="flex:1;min-width:220px;padding:8px 10px;border:1px solid var(--line);border-radius:8px">'
             '<button class="btn sm">Send</button></form>'
             '<p class="small muted" style="margin-top:6px">Goes straight to the founder — just your note, '
