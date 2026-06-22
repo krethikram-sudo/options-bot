@@ -1,11 +1,11 @@
-"""Monthly finance close pack.
+"""Monthly business close pack.
 
-Month-end close is a recurring finance workflow: pull the period's AI spend,
+Month-end close is a recurring business workflow: pull the period's AI spend,
 load it into the books / FinOps tool, file the audit readout. This emails that
 artifact on a monthly cadence — a short summary, the FOCUS-aligned CSV attached
-(the thing finance loads), and a link to the printable close report.
+(the thing business loads), and a link to the printable close report.
 
-Opt-in (off by default); finance turns it on from Settings. Pure builder
+Opt-in (off by default); business turns it on from Settings. Pure builder
 (`build_close_pack`) so it's testable without SMTP; `send_*` wraps it with
 delivery + the monthly cadence guard. Mirrors `spend_digest.py`.
 """

@@ -196,7 +196,7 @@ def _current(request: Request) -> dict | None:
         acct["team_role"] = "owner"
         acct["member_id"] = 0
         acct["display_email"] = acct["email"]
-    # Persona (finance/eng) drives the role-aware lens *and* nav ordering, so make
+    # Persona (business/eng) drives the role-aware lens *and* nav ordering, so make
     # it available to every page() render — not just the Spend page.
     try:
         acct["persona"] = store.get_persona(acct["id"], acct.get("member_id", 0) or 0)
@@ -557,8 +557,8 @@ def app_dashboard(request: Request):
     member_id = acct.get("member_id", 0) or 0
     persona = store.get_persona(acct["id"], member_id)
     lens, views, active_view_id = _resolve_home_lens(request, acct["id"], member_id, persona)
-    layout = store.get_dashboard_layout(acct["id"], member_id) if persona == "finance" else {}
-    customize = persona == "finance" and request.query_params.get("customize") == "1"
+    layout = store.get_dashboard_layout(acct["id"], member_id) if persona == "business" else {}
+    customize = persona == "business" and request.query_params.get("customize") == "1"
     return _html(web.overview_page(acct, report, statuses, hist,
                                    store.get_outlay_connection(acct["id"]),
                                    has_budget=bool(budgets), persona=persona,
@@ -568,10 +568,10 @@ def app_dashboard(request: Request):
 
 
 def _resolve_home_lens(request: Request, account_id: int, member_id: int, persona: str):
-    """Resolve the finance Home lens from query params + saved views.
+    """Resolve the business Home lens from query params + saved views.
     Precedence: explicit ?group/?top (ad-hoc) > ?view=ID > the person's default saved
     view > the opinionated default (group by team, top 5)."""
-    if persona != "finance":
+    if persona != "business":
         return {}, [], 0
     views = store.list_dashboard_views(account_id, member_id)
     q = request.query_params
@@ -647,7 +647,7 @@ async def app_views_delete(request: Request):
 
 @app.post("/app/layout")
 async def app_layout(request: Request):
-    """Persist the finance Home card layout — reorder / hide / show / reset (Phase 3)."""
+    """Persist the business Home card layout — reorder / hide / show / reset (Phase 3)."""
     acct, redir = _require(request)
     if redir:
         return redir
@@ -693,7 +693,7 @@ def app_estimate(request: Request):
 
 def _slack_notify(account_id: int, text: str) -> None:
     """Post an alert to the account's Slack/Teams webhook if one is configured —
-    best-effort, alongside email + webhooks. Slack is where eng + finance live."""
+    best-effort, alongside email + webhooks. Slack is where eng + business live."""
     try:
         url = store.get_slack_webhook(account_id)
         if url:
@@ -1085,7 +1085,7 @@ async def app_set_persona(request: Request):
         return redir
     f = await _form(request)
     p = (f.get("persona") or "").strip()
-    if p in ("finance", "eng"):
+    if p in ("business", "eng"):
         store.set_persona(acct["id"], p, member_id=acct.get("member_id", 0) or 0)
     # From the first-run gate, advance to the rest of onboarding (org + invite);
     # the in-app persona switch keeps landing on Spend.
@@ -1135,7 +1135,7 @@ async def app_outlay_run(request: Request):
 @app.post("/app/demo/enter")
 async def app_demo_enter(request: Request):
     """Turn demo mode on for a gated demo account — seeds a full worked customer
-    (report, budgets, programs, a synced source) and drops into Finance."""
+    (report, budgets, programs, a synced source) and drops into Business."""
     acct, redir = _require(request)
     if redir:
         return redir
@@ -1426,7 +1426,7 @@ def app_outlay_programs(request: Request):
 
 @app.get("/app/outlay/summary")
 def app_outlay_summary(request: Request):
-    """The quarterly summary is now consolidated into the finance Home — keep the URL
+    """The quarterly summary is now consolidated into the business Home — keep the URL
     working (bookmarks, the close-report link) by redirecting there."""
     acct, redir = _require(request)
     if redir:
@@ -1436,7 +1436,7 @@ def app_outlay_summary(request: Request):
 
 @app.get("/app/outlay/governance", response_class=HTMLResponse)
 def app_outlay_governance(request: Request):
-    """Consolidated finance governance — budgets + programs in one deep view."""
+    """Consolidated business governance — budgets + programs in one deep view."""
     acct, redir = _require(request)
     if redir:
         return redir
@@ -1524,7 +1524,7 @@ async def app_outlay_programs_delete(request: Request):
 
 @app.get("/app/outlay/export.csv")
 def app_outlay_export(request: Request, view: str = "tickets"):
-    """Download a CSV slice of the report (tickets/people/classes/savings) for finance."""
+    """Download a CSV slice of the report (tickets/people/classes/savings) for business."""
     acct, redir = _require(request)
     if redir:
         return redir
@@ -1612,7 +1612,7 @@ def api_v1_enforcement(request: Request, ticket: str = "", team: str = "", work_
 @app.post("/api/v1/enforcement/report")
 async def api_v1_enforcement_report(request: Request):
     """The gateway reports how many calls it blocked / routed down per program, so
-    the console can show finance the hard cap is actually biting. Token-authed;
+    the console can show business the hard cap is actually biting. Token-authed;
     body: {"counts": {"<program_id>": n}}."""
     resolved, err = _api_auth(request)
     if err:
@@ -1673,7 +1673,7 @@ def app_audit_export(request: Request):
 
 @app.get("/app/outlay/close-report.html", response_class=HTMLResponse)
 def app_outlay_close_report(request: Request):
-    """A printable finance close report — the VP-ready audit readout for the current
+    """A printable business close report — the VP-ready audit readout for the current
     window (total, attribution, forecast, flags, accuracy, reconciliation). Opens in
     a new tab; print-to-PDF for the books."""
     acct, redir = _require(request)
@@ -2072,7 +2072,7 @@ async def team_invite(request: Request):
     # Pre-set the invitee's experience so they skip the first-run role gate — for an
     # invited user we already know who they are and which view fits their role.
     persona = (f.get("persona") or "").strip()
-    if persona in ("finance", "eng"):
+    if persona in ("business", "eng"):
         store.set_persona(acct["id"], persona, member_id=m["id"])
     _audit(acct["id"], "member.invite", actor=acct.get("display_email") or acct.get("email", ""),
            detail=f"{m['email']} as {f.get('role', 'member')}" + (f" ({persona})" if persona else ""))

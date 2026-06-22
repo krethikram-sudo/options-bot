@@ -441,7 +441,7 @@ def _sidenav(account: dict, active: str) -> str:
     The IA is grouped: ANALYZE (the spend/forecast surfaces a user works in daily),
     SOURCES (where data comes in), and WORKSPACE (team/settings/activity admin).
     The ANALYZE group is role-aware — each persona surfaces *different* primary
-    capabilities, not just a reorder: finance/FinOps gets the allocate-budget-govern
+    capabilities, not just a reorder: business/FinOps gets the allocate-budget-govern
     tools (per-team chargeback lives on Spend + Programs enforcement); engineering
     gets the ship-efficiently tools (Accuracy + Estimate). Nothing is truly hidden —
     the other surfaces stay reachable via the Overview's Explore hub and contextual
@@ -455,8 +455,8 @@ def _sidenav(account: dict, active: str) -> str:
     estimate = ("/app/outlay/estimate", "Estimate")
     programs = ("/app/outlay/programs", "Programs")
     governance = ("/app/outlay/governance", "Governance")
-    if persona == "finance":
-        # Consolidated finance IA: the Overview (Home) is the consolidated default;
+    if persona == "business":
+        # Consolidated business IA: the Overview (Home) is the consolidated default;
         # Spend is the attribution detail; Governance merges budgets + programs.
         analyze = [spend, governance]
     elif persona == "eng":
@@ -466,10 +466,10 @@ def _sidenav(account: dict, active: str) -> str:
         analyze = [spend, accuracy, budgets, estimate]
 
     # Sources is the *setup* surface — connecting trackers + AI usage and the
-    # machine API. That's engineering's job. Finance consumes the spend after
+    # machine API. That's engineering's job. Business consumes the spend after
     # the fact and never connects anything, so it has no Sources group at all.
     sources: list[tuple[str, str]] = []
-    if persona != "finance":
+    if persona != "business":
         sources.append(("/app/outlay/connect", "Connect"))
         if is_admin:
             sources.append(("/app/api", "API"))
@@ -488,7 +488,7 @@ def _sidenav(account: dict, active: str) -> str:
             for href, text in items)
         return f'<div class=navgrp>{label}</div>{rows}'
 
-    home_label = "Home" if persona == "finance" else "Overview"
+    home_label = "Home" if persona == "business" else "Overview"
     home = f'<a class="{"on" if active == "/app" else ""}" href="/app">{home_label}</a>'
     out = home + grp("Analyze", analyze)
     if sources:
@@ -749,10 +749,10 @@ def _onboarding(conn: dict | None, report: dict | None, has_budget: bool, person
     demo mode it's hidden — the account is presented as an already-running customer."""
     if demo_mode:
         return ""
-    # Finance never does setup — connecting trackers, AI usage, running audits and
-    # reconciling are all engineering's job. Finance manages the spend after the
-    # fact, so the setup checklist is hidden entirely for the finance persona.
-    if persona == "finance":
+    # Business never does setup — connecting trackers, AI usage, running audits and
+    # reconciling are all engineering's job. Business manages the spend after the
+    # fact, so the setup checklist is hidden entirely for the business persona.
+    if persona == "business":
         return ""
     conn = conn or {}
     tracker = conn.get("tracker") or "github"
@@ -775,11 +775,11 @@ def _onboarding(conn: dict | None, report: dict | None, has_budget: bool, person
         ("Connect your AI usage", has_usage, "/app/outlay/connect", "Add key", "connect"),
         ("Run your first audit", has_report, "/app/outlay/connect", "Run", "connect"),
         # Verifying the total reconciles to a real invoice is what turns "a number"
-        # into "a number finance trusts" — the activation step the trust work feeds.
+        # into "a number business trusts" — the activation step the trust work feeds.
         ("Verify your numbers", has_reconciled, "/app/outlay/connect", "Reconcile", "connect"),
     ]
-    if persona == "finance":
-        # Cost-center allocation is the finance lead view — make it a setup step.
+    if persona == "business":
+        # Cost-center allocation is the business lead view — make it a setup step.
         steps.append(("Map people to teams", has_identity, "/app/outlay/connect#teams", "Map teams", "teams"))
     steps.append(("Set a budget", has_budget, "/app/outlay/budgets", "Set a budget", "budgets"))
 
@@ -807,7 +807,7 @@ def _onboarding(conn: dict | None, report: dict | None, has_budget: bool, person
 
 def _recon_strip(report: dict) -> str:
     """Reconciliation banner: Outlay's computed spend vs the provider's billed figure.
-    The thing that lets finance trust the number."""
+    The thing that lets business trust the number."""
     rec = (report or {}).get("reconciliation") or {}
     inv = rec.get("invoice_usd")
     if not inv:
@@ -839,7 +839,7 @@ def _recon_strip(report: dict) -> str:
 
 def _pricing_warn(report: dict) -> str:
     """Honest flag when some spend was priced by nearest-tier fallback (an
-    unrecognized model id). For a finance product, an estimated number must never
+    unrecognized model id). For a business product, an estimated number must never
     masquerade as exact — so we name it and the dollar amount. Hidden below 0.5%."""
     pf = (report or {}).get("pricing_fidelity") or {}
     usd, share = pf.get("fallback_usd", 0.0), pf.get("fallback_share", 0.0)
@@ -897,11 +897,11 @@ def _persona_card(value: str, title: str, desc: str) -> str:
 
 
 def _persona_switch(persona: str) -> str:
-    """Small affordance to flip between the finance and engineering views."""
-    if persona not in ("finance", "eng"):
+    """Small affordance to flip between the business and engineering views."""
+    if persona not in ("business", "eng"):
         return ""
-    cur = "Finance" if persona == "finance" else "Engineering"
-    other, label = ("eng", "Engineering") if persona == "finance" else ("finance", "Finance")
+    cur = "Business" if persona == "business" else "Engineering"
+    other, label = ("eng", "Engineering") if persona == "business" else ("business", "Business")
     return (f'<div class=syncline style="margin:-4px 0 16px">Viewing as <b>{cur}</b> · '
             f'<form method=post action="/app/persona" style="display:inline;margin:0">'
             f'<input type=hidden name=persona value="{other}">'
@@ -930,17 +930,17 @@ def _demo_banner(account: dict) -> str:
                 '<span class=sp></span>' + reset +
                 '<form method=post action="/app/demo/enter" style="margin:0">'
                 '<button class="btn sec sm">Enter demo mode →</button></form></div>')
-    persona = (account.get("persona") or "finance").lower()
+    persona = (account.get("persona") or "business").lower()
 
     def pbtn(val: str, label: str) -> str:
-        sel = persona == val or (val == "finance" and persona not in ("finance", "eng"))
+        sel = persona == val or (val == "business" and persona not in ("business", "eng"))
         return (f'<form method=post action="/app/persona" style="display:inline;margin:0">'
                 f'<input type=hidden name=persona value="{val}">'
                 f'<button class="seg{" on" if sel else ""}" type=submit>{label}</button></form>')
     return ('<div class="demobar"><span class=dl>● Demo mode</span>'
             '<span class=dt>Sample data — for live demos.</span>'
             '<span class=sp></span>'
-            '<span class=segwrap>' + pbtn("finance", "Finance") + pbtn("eng", "Engineering") + '</span>'
+            '<span class=segwrap>' + pbtn("business", "Business") + pbtn("eng", "Engineering") + '</span>'
             '<a class="btn sec sm" href="/app/demo/guide">Demo guide</a>'
             '<form method=post action="/app/demo/exit" style="margin:0">'
             '<button class="btn sec sm">Exit demo</button></form></div>')
@@ -965,10 +965,10 @@ def demo_guide_page(account: dict) -> str:
 
     body = (
         '<div class=ohead><h1>Demo guide</h1>'
-        '<p>A suggested walkthrough for a live demo. Start with Finance, then switch to '
+        '<p>A suggested walkthrough for a live demo. Start with Business, then switch to '
         'Engineering — the nav and KPIs change with each persona. Everything here is seeded '
         'sample data.</p></div>'
-        + flow("finance", "Finance", "allocate · budget · govern")
+        + flow("business", "Business", "allocate · budget · govern")
         + flow("eng", "Engineering", "forecast · estimate · ship efficiently")
         + '<p class=muted style="font-size:12.5px;margin-top:16px">Done? Use <b>Exit demo</b> in the '
           'top banner to wipe the sample data and return to the standard customer experience.</p>')
@@ -984,7 +984,7 @@ def _persona_chooser() -> str:
         '<div class=dh>How will you use Outlay? '
         '<span class=sub>Pick the view that fits your role — you can switch anytime in Settings.</span></div>'
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class=cols-2>'
-        + _persona_card("finance", "Finance / FinOps",
+        + _persona_card("business", "Business / FinOps",
                         "Total AI spend, the quarter forecast vs budget, spend by team and project, "
                         "and alerts before you overspend.")
         + _persona_card("eng", "Engineering leader",
@@ -995,7 +995,7 @@ def _persona_chooser() -> str:
 
 def _role_gate(next_to: str = "welcome") -> str:
     """The first-run role question — two side-by-side tiles. The owner identifies
-    themselves; their pick sets the persona (finance/eng) and unlocks the product."""
+    themselves; their pick sets the persona (business/eng) and unlocks the product."""
     def tile(value: str, title: str, blurb: str) -> str:
         return (f'<form method=post action="/app/persona" style="margin:0;display:flex">'
                 f'<input type=hidden name=persona value="{value}">'
@@ -1007,10 +1007,10 @@ def _role_gate(next_to: str = "welcome") -> str:
                 f'<div style="margin-top:16px;color:var(--grn-d);font-weight:600;font-size:13px">Continue →</div>'
                 f'</button></form>')
     tiles = (
-        tile("finance", "I’m a finance leader setting this up for my business",
+        tile("business", "I’m a business leader running this for my company",
              "You’ll lead with total AI spend, the quarter forecast vs budget, allocation to teams and "
              "cost centers, and guardrails that flag before you overspend.")
-        + tile("eng", "I’m an engineering leader using this for my business",
+        + tile("eng", "I’m an engineering leader using this for my company",
                "You’ll lead with spend by ticket, epic and engineer, runaway-ticket flags, and estimates "
                "for planned work before you build it."))
     return f'<div class=cols-2 style="display:grid;gap:16px">{tiles}</div>'
@@ -1145,7 +1145,7 @@ def welcome_page(account: dict, conn: dict | None, idmap: str = "",
     gate; once a role is chosen it becomes Step 2 — add org structure + invite the
     counterpart — with a clear jump to the dashboard."""
     persona = (account.get("persona") or "").lower()
-    if persona not in ("finance", "eng"):
+    if persona not in ("business", "eng"):
         # Step 1 — an undismissable, centered takeover over the blurred app. The
         # customer can't proceed to anything until they identify their role.
         gate = ('<div class=eyebrow style="font-size:11.5px;font-weight:600;letter-spacing:.1em;'
@@ -1165,18 +1165,18 @@ def welcome_page(account: dict, conn: dict | None, idmap: str = "",
                   '<div class=ocard style="height:150px;margin-top:16px"></div>')
         return page("Welcome", behind, account, active="/app", overlay=gate)
 
-    fin = persona == "finance"
-    counter_persona = "eng" if fin else "finance"
-    counter_label = "engineering leader" if fin else "finance leader"
+    fin = persona == "business"
+    counter_persona = "eng" if fin else "business"
+    counter_label = "engineering leader" if fin else "business leader"
     placeholder = "vp.eng@company.com" if fin else "cfo@company.com"
 
     # Share with the other discipline's leader. Single fixed role (no picker): the
-    # finance leader invites their engineering counterpart, and vice-versa.
-    share_title = "Invite your counterpart" if fin else "Share with your finance partner"
-    share_btn = "Send invite" if fin else "Share with finance"
+    # business leader invites their engineering counterpart, and vice-versa.
+    share_title = "Invite your counterpart" if fin else "Share with your business partner"
+    share_btn = "Send invite" if fin else "Share with business"
     share_card = (
         f'<div class=ocard style="margin-top:16px"><div class=dh>{share_title}</div>'
-        f'<p class=muted style="margin:-4px 0 10px;font-size:13.5px">Outlay is best when finance and '
+        f'<p class=muted style="margin:-4px 0 10px;font-size:13.5px">Outlay is best when business and '
         f'engineering share one workspace. Invite your {counter_label} — they’ll land straight in their own '
         f'view, with no setup question to answer.</p>'
         '<form method=post action="/app/team/invite" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">'
@@ -1193,12 +1193,12 @@ def welcome_page(account: dict, conn: dict | None, idmap: str = "",
             '<span class=muted style="font-size:12.5px">These steps are optional — you can do them later '
             'from Connect and Team.</span></div>')
     if fin:
-        # Finance: just share with the engineering counterpart (no org upload).
+        # Business: just share with the engineering counterpart (no org upload).
         intro = '<p>Invite your engineering counterpart, then jump into the product.</p>'
-        body = f'<div class=ohead><h1>You’re set up as Finance</h1>{intro}</div>' + share_card + done
+        body = f'<div class=ohead><h1>You’re set up as Business</h1>{intro}</div>' + share_card + done
     else:
-        # Engineering: upload direct reports (job titles), then share with finance.
-        intro = ('<p>Upload your direct reports and invite them with one click, share with your finance '
+        # Engineering: upload direct reports (job titles), then share with business.
+        intro = ('<p>Upload your direct reports and invite them with one click, share with your business '
                  'partner, then jump into the product.</p>')
         body = (f'<div class=ohead><h1>You’re set up as Engineering</h1>{intro}</div>'
                 + _org_upload_form("welcome", "title")
@@ -1216,7 +1216,7 @@ def _kpicard(label, value, sub, grn=False, href=None) -> str:
 
 def _kpis_row(report: dict, history: list[dict] | None, persona: str) -> str:
     """The four headline KPIs — shared by Overview and Spend. The *set* is
-    role-aware, not just the order: finance leads with money + allocation
+    role-aware, not just the order: business leads with money + allocation
     (cost-center / showback) + the budget forecast; engineering leads with
     attribution coverage + the runaway tickets to go fix."""
     sp = report.get("spend", {})
@@ -1233,11 +1233,11 @@ def _kpis_row(report: dict, history: list[dict] | None, persona: str) -> str:
     open_kpi = _kpicard("Open work items", str(open_items),
                         f"{fc.get('items_costed', 0)} costed from history",
                         href="/app/outlay/estimate")
-    if persona == "finance":
+    if persona == "business":
         teams = [t for t in (report.get("team_spend") or []) if t.get("team")]
         top = teams[0] if teams else None
         # No connect link in the fallback — mapping people to teams is engineering's
-        # setup step, not finance's.
+        # setup step, not business's.
         alloc_kpi = _kpicard(
             "Allocated to teams", str(len(teams)),
             (f"top: {_e(str(top['team']))} · {money(top['spent_usd'])}" if top
@@ -1433,7 +1433,7 @@ def _sample_strip(report: dict, account: dict | None = None) -> str:
 def _data_quality_badge(report: dict, conn: dict | None) -> str:
     """A single 'can I trust these numbers?' verdict — Good / Fair / Poor — with the
     contributing checks one click away. The individual signals already render as
-    strips below; this is the at-a-glance rollup finance asked for. Hidden until
+    strips below; this is the at-a-glance rollup business asked for. Hidden until
     there's real spend to judge."""
     if not (report or {}).get("spend", {}).get("total_usd", 0):
         return ""
@@ -1602,7 +1602,7 @@ def _fidelity_callout(report: dict, persona: str = "") -> str:
         return ""
     share = cf.get("cache_read_share", 0.0)
     who = ("Your reported AI spend is the cache-aware figure"
-           if persona == "finance" else "This is the cache-aware figure")
+           if persona == "business" else "This is the cache-aware figure")
     return (
         '<div class=ocard style="border-color:var(--grn);background:linear-gradient(180deg,var(--grn-l),#fff)">'
         '<div class=dh>Why this number is the right one</div>'
@@ -1635,7 +1635,7 @@ def _explore_card(persona: str) -> str:
         "programs": ("/app/outlay/programs", "Program budgets",
                      "Budget a program across teams and enforce a hard cap."),
     }
-    order = (["spend", "budgets", "programs", "accuracy"] if persona == "finance"
+    order = (["spend", "budgets", "programs", "accuracy"] if persona == "business"
              else ["spend", "estimate", "accuracy", "budgets"])
     rows = ""
     for key in order:
@@ -1646,8 +1646,8 @@ def _explore_card(persona: str) -> str:
 
 
 def _finance_waiting(account: dict) -> str:
-    """The finance empty-state. Finance never connects anything — engineering does
-    all the setup. So instead of a 'Connect your sources' CTA, finance sees a calm
+    """The business empty-state. Business never connects anything — engineering does
+    all the setup. So instead of a 'Connect your sources' CTA, business sees a calm
     'your data is on its way' state with a one-click invite for the engineering
     counterpart who actually wires up the sources."""
     intro = (
@@ -1657,10 +1657,10 @@ def _finance_waiting(account: dict) -> str:
         '<b>That setup is engineering’s job</b>, not yours. Once your engineering counterpart connects '
         'the sources, your numbers fill in here automatically — nothing for you to install.</p></div>')
     # Sample preview stays demo-account-only (the standing rule), so the founder can
-    # walk a finance prospect through the real dashboard instead of an empty room.
+    # walk a business prospect through the real dashboard instead of an empty room.
     preview = ('<div class="row" style="margin:0 0 18px"><form method=post action="/app/outlay/sample" '
                'style="margin:0"><button class="btn">See it with sample data →</button></form>'
-               '<span class=muted style="font-size:12.5px;align-self:center">Preview the finance dashboard '
+               '<span class=muted style="font-size:12.5px;align-self:center">Preview the business dashboard '
                'with a worked example.</span></div>') if account.get("_can_demo") else ""
     steps = (
         '<div class=ocard style="margin-top:4px"><div class=dh>What happens next</div>'
@@ -1685,7 +1685,7 @@ def _finance_waiting(account: dict) -> str:
 
 def _finance_attention(report: dict | None, budget_statuses: list[dict] | None,
                        program_statuses: list[dict] | None) -> str:
-    """Finance's 'review these' panel — auto-flags what's off track so finance can act
+    """Business's 'review these' panel — auto-flags what's off track so business can act
     without drilling into the data: programs/budgets already over or projected to
     overspend, and runaway tickets. Ranked worst-first; each item is plain language
     with the dollar figure and a one-click link to address it. When everything is on
@@ -1901,7 +1901,7 @@ def _breakdown_rows(report: dict, group_by: str) -> tuple[str, list[dict]]:
 
 
 def _home_breakdown_card(report: dict, group_by: str = "team", top_n: int = 5) -> str:
-    """The consolidated 'where it landed' card on the finance Home — re-sliced by the
+    """The consolidated 'where it landed' card on the business Home — re-sliced by the
     Home lens (team / work type / project / engineer), top-N, with per-row drill-downs."""
     title, data = _breakdown_rows(report, group_by)
     if not data:
@@ -1921,7 +1921,7 @@ def _home_breakdown_card(report: dict, group_by: str = "team", top_n: int = 5) -
 
 
 def _lens_bar(group_by: str, top_n: int, views: list[dict], active_view_id: int = 0) -> str:
-    """The finance Home lens + saved-views control. Group-by + Top-N re-slice the
+    """The business Home lens + saved-views control. Group-by + Top-N re-slice the
     breakdown card (GET, server-rendered); saved views capture a named lens, one of
     which can be the person's default landing."""
     def opt(v, cur, label):
@@ -1957,7 +1957,7 @@ def _lens_bar(group_by: str, top_n: int, views: list[dict], active_view_id: int 
 
 
 def _home_governance_card(program_statuses: list[dict], budget_statuses: list[dict]) -> str:
-    """Consolidated governance card for the finance Home — a roll-up of program/budget
+    """Consolidated governance card for the business Home — a roll-up of program/budget
     status with a drill into the Governance deep view."""
     progs = program_statuses or []
     buds = budget_statuses or []
@@ -1997,14 +1997,14 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     """The role-aware home — the first screen after sign-in. A concise glance
     (KPIs, budget status, forecast) with jump-offs into the deeper areas; the
     attribution detail lives on the Spend page."""
-    chooser = _persona_chooser() if persona not in ("finance", "eng") else ""
+    chooser = _persona_chooser() if persona not in ("business", "eng") else ""
     checklist = _onboarding(conn, report, has_budget, persona, demo_mode=bool(account.get("demo_mode")))
     # The trial banner lives on Overview only (the home screen) — the sidebar pill
     # persists trial status on every other page, so it isn't repeated app-wide.
     tb = _account_trial_banner(account)
     if not report:
-        if persona == "finance":
-            # Finance does no setup — show the 'data on its way' + invite-engineering
+        if persona == "business":
+            # Business does no setup — show the 'data on its way' + invite-engineering
             # state instead of a connect CTA and form.
             return page("Home", tb + chooser + _finance_waiting(account), account, active="/app")
         intro = (
@@ -2022,7 +2022,7 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
         return page("Home", tb + chooser + intro + cta + checklist + _outlay_connect(),
                     account, active="/app")
 
-    if persona == "finance":
+    if persona == "business":
         head = (f'<div class=ohead><h1>{_quarter_label()} at a glance</h1>'
                 '<p>What needs action, the headline numbers, and where your spend landed — '
                 'drill into any card for the detail.</p></div>')
@@ -2046,8 +2046,8 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     unit = _unit_econ_card(report)
     unit = f'<div style="margin-top:16px">{unit}</div>' if unit else ""
 
-    if persona == "finance":
-        # Consolidated finance Home, F-pattern: act-first attention panel → KPI
+    if persona == "business":
+        # Consolidated business Home, F-pattern: act-first attention panel → KPI
         # scorecard → trust callout → trend band → consolidated drill-in cards
         # (where it landed · governance · forecast). The deep detail lives one click
         # away on Spend / Governance / Estimate, so Home stays a glance, not a scroll.
@@ -2102,7 +2102,7 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
 
 
 def _home_actions_card() -> str:
-    """Finance Home quick-actions card — the board readout and the deep views."""
+    """Business Home quick-actions card — the board readout and the deep views."""
     return ('<div class=ocard><div class=dh>Reports &amp; deep views</div>'
             '<a class=exrow href="/app/outlay/close-report.html" target=_blank>'
             '<span class=nm>Board readout (print to PDF)</span>'
@@ -2126,7 +2126,7 @@ def _home_module_order(layout: dict) -> list[str]:
 
 
 def _home_modules(cards: dict, layout: dict, customize: bool) -> str:
-    """The customizable module deck on the finance Home — render the cards in the
+    """The customizable module deck on the business Home — render the cards in the
     person's saved order, omitting hidden ones. In customize mode each card gets
     move/hide controls and hidden cards can be re-added, all persisted per person."""
     order = _home_module_order(layout)
@@ -2205,10 +2205,10 @@ def _unit_econ_card(report: dict) -> str:
 def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None = None,
                 history: list[dict] | None = None, conn: dict | None = None,
                 has_budget: bool = False, persona: str = "") -> str:
-    chooser = _persona_chooser() if persona not in ("finance", "eng") else ""
+    chooser = _persona_chooser() if persona not in ("business", "eng") else ""
     checklist = _onboarding(conn, report, has_budget, persona, demo_mode=bool(account.get("demo_mode")))
     if not report:
-        if persona == "finance":
+        if persona == "business":
             return page("Spend", chooser + _finance_waiting(account), account, active="/app/outlay")
         intro = (
             '<div class=ohead><h1>Your AI spend, on your roadmap.</h1>'
@@ -2228,7 +2228,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     sp = report.get("spend", {})
     cov = sp.get("ticket_coverage", 0.0)
 
-    if persona == "finance":
+    if persona == "business":
         ohead = ('<div class=ohead><h1>Where your AI spend goes</h1>'
                  '<p>Every dollar attributed — by team and cost-center, work type, and ticket. '
                  'Forecast and budget live on <a href="/app">Overview</a>.</p></div>')
@@ -2284,7 +2284,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
         people_card = (f'<div class=ocard><div class=dh>Spend by engineer'
                        f'<span class=sub>team-fidelity · user→cost</span></div>{prows}</div>')
 
-    # Spend by team / cost-center (finance allocation view)
+    # Spend by team / cost-center (business allocation view)
     teams = report.get("team_spend") or []
     team_card = ""
     if any(t.get("team") != "(unassigned)" for t in teams):
@@ -2307,8 +2307,8 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
 
     # Attribution-only grid — forecast/estimate now live on Overview and their
     # own pages, so Spend stays focused on "where every dollar went".
-    if persona == "finance":
-        # Finance leads with team/cost-center allocation, then work-type, then ticket
+    if persona == "business":
+        # Business leads with team/cost-center allocation, then work-type, then ticket
         # detail; per-engineer (individual-name) detail is an engineering concern.
         g1 = f'<div class=ogrid>{team_card or class_card}{spend_card}</div>'
         extra = f'<div style="margin-top:16px">{class_card}</div>' if team_card else ""
@@ -2318,7 +2318,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
         g2 = (f'<div style="margin-top:16px">{people_card}</div>' if people_card else "")
         grid = g1 + g2 + model_row + anomaly_row
 
-    if persona == "finance":
+    if persona == "business":
         olinks = ('<div class=olinks>'
                   '<a href="/app/outlay/programs">Program budgets →</a>'
                   '<a href="/app/outlay/budgets">Budgets &amp; guardrails →</a>'
@@ -2346,8 +2346,8 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                   '<a href="/app/outlay/export.csv?view=people">engineers</a></div>')
 
     # The coverage diagnostic tells you to connect PRs / map teams — an engineering
-    # setup action. Finance doesn't do setup, so it's hidden for that persona.
-    cov_diag = "" if persona == "finance" else _coverage_diag(report)
+    # setup action. Business doesn't do setup, so it's hidden for that persona.
+    cov_diag = "" if persona == "business" else _coverage_diag(report)
     cov_diag = f'<div style="margin:16px 0">{cov_diag}</div>' if cov_diag else ""
 
     body = (chooser + ohead + _persona_switch(persona) + _staleness_banner(report, conn)
@@ -2526,7 +2526,7 @@ ci-deploy-bot, Platform">{idmap}</textarea>
         </form>
       </details>
       <details class=ocard style="margin-top:12px" id=alerts>
-        <summary class=dh style="cursor:pointer;list-style:none">Slack alerts <span class=sub>where eng &amp; finance live</span></summary>
+        <summary class=dh style="cursor:pointer;list-style:none">Slack alerts <span class=sub>where eng &amp; business live</span></summary>
         <p class=muted style="margin:8px 0 10px;font-size:13.5px">Get budget and runaway-ticket alerts in
           Slack (or Teams). Paste an <a href="https://api.slack.com/messaging/webhooks" target=_blank>incoming
           webhook URL</a> — we post a one-line alert when a budget trips or a ticket goes runaway.
@@ -2809,7 +2809,7 @@ def budgets_page(account: dict, report: dict | None, statuses: list[dict],
 
 
 def _program_timeline_html(s: dict) -> str:
-    """Per-program calendar timeline + month-by-month projection — so finance sees
+    """Per-program calendar timeline + month-by-month projection — so business sees
     *when* a program is set to breach, with start/end dates and a pro-rated cap line."""
     tl = s.get("timeline") or {}
     if not tl:
@@ -2960,7 +2960,7 @@ def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> s
 
 def governance_page(account: dict, report: dict | None, budget_statuses: list[dict],
                     program_statuses: list[dict], projects: list[dict] | None = None) -> str:
-    """The consolidated finance governance deep-view — budgets + programs in one place
+    """The consolidated business governance deep-view — budgets + programs in one place
     (the merged 'Governance' nav destination). Programs lead (cross-team caps with
     timelines), then single-scope budgets."""
     head = ('<div class=ohead><h1>Governance</h1>'
@@ -3153,7 +3153,7 @@ def landing() -> str:
         ("Accuracy you can check", "We don't ask you to trust a vendor benchmark. The forecast is back-tested "
          "leave-one-out on <b>your own</b> closed tickets, and we always show the measured error."),
         ("Reconciled to the invoice", "Every fidelity tier is shown so the total ties out to your provider's "
-         "billed figure. A number finance can take to the board."),
+         "billed figure. A number business can take to the board."),
     ]
     steps_html = "".join(
         f'<div class="card step"><span class=n>{n}</span><h3>{h}</h3><p>{p}</p></div>' for n, h, p in steps)
@@ -3316,8 +3316,8 @@ def _trial_banner(plan: dict, trial: dict, persona: str = "") -> str:
     if plan.get("plan") == "paid":
         return ""
     if trial.get("not_started"):
-        if persona == "finance":
-            # Finance doesn't connect anything — engineering does. Point them at the
+        if persona == "business":
+            # Business doesn't connect anything — engineering does. Point them at the
             # invite, not at the setup form.
             return (f'<div class="note">Your <b>{store.TRIAL_DAYS}-day free trial starts once your data is '
                     f'connected</b> — your engineering counterpart wires up the sources. '
@@ -3359,8 +3359,8 @@ def _trial_pill(account: dict | None) -> str:
         return ""
     persona = ((account or {}).get("persona") or "").lower()
     if trial.get("not_started"):
-        # Finance never visits Connect — its trial starts when engineering connects.
-        href = "/app/team" if persona == "finance" else "/app/outlay/connect"
+        # Business never visits Connect — its trial starts when engineering connects.
+        href = "/app/team" if persona == "business" else "/app/outlay/connect"
         return f'<a class="trialpill" href="{href}">Trial · starts at setup</a>'
     if trial["active"]:
         d = trial["days_left"]
@@ -3820,7 +3820,7 @@ def _retention_section(account: dict, retention_days: int = 0, purged: bool = Fa
 
 def _digest_section(account: dict) -> str:
     """Toggle the scheduled emails: the weekly spend digest (on by default) and the
-    monthly finance close pack (opt-in, with the FOCUS CSV attached)."""
+    monthly business close pack (opt-in, with the FOCUS CSV attached)."""
     on = account.get("digest_weekly", 1) in (1, True, "1")
     cp = account.get("close_pack_monthly", 0) in (1, True, "1")
     checked = " checked" if on else ""
@@ -3838,7 +3838,7 @@ def _digest_section(account: dict) -> str:
           Also posted to <b>Slack/Teams</b> when a webhook is connected.</span></span></label>
         <label style="display:flex;gap:8px;align-items:flex-start;font-size:14px;cursor:pointer;margin-bottom:12px">
           <input type=checkbox name=close_pack value=1{cp_checked} style="margin-top:3px">
-          <span><b>Monthly finance close pack</b><br><span class="small muted">A month-end email with the
+          <span><b>Monthly business close pack</b><br><span class="small muted">A month-end email with the
           period summary and the <b>FOCUS-aligned CSV attached</b> — the artifact you load into the books /
           your FinOps tool — plus a link to the printable close report.</span></span></label>
         <button class="btn sec sm">Save</button>
@@ -4304,7 +4304,7 @@ def team_page(account: dict, members: list[dict], invite_link: str = "",
           <select name=role>{role_opts}</select></label>
         <label class=fld style="min-width:150px"><span>Experience</span>
           <select name=persona><option value="">Let them choose</option>
-            <option value="finance">Finance leader</option>
+            <option value="business">Business leader</option>
             <option value="eng">Engineering leader</option></select></label>
         <button class=btn>Send invite</button>
       </form>
@@ -4317,8 +4317,8 @@ def team_page(account: dict, members: list[dict], invite_link: str = "",
     </div>"""
     roster_note = (f'<div class=okbox style="margin-bottom:16px">{_e(roster)}</div>' if roster else "")
     directory = _org_directory(account, members) or members_card
-    # Engineering manages direct reports (with job titles); finance does not upload an org.
-    upload = "" if (account.get("persona") or "").lower() == "finance" else _org_upload_form(kind="title")
+    # Engineering manages direct reports (with job titles); business does not upload an org.
+    upload = "" if (account.get("persona") or "").lower() == "business" else _org_upload_form(kind="title")
     body = (head + invite_note + roster_note + directory
             + upload + invite_card + _sso_section(sso or {}, scim_token))
     return page("Team", body, account, "/app/team")

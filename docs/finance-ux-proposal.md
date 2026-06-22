@@ -1,22 +1,22 @@
-# Finance UX — simplify to consolidated views + personalization
+# Business UX — simplify to consolidated views + personalization
 
-*Design proposal (research-backed) for making the finance experience easier to follow:
+*Design proposal (research-backed) for making the business experience easier to follow:
 start consolidated, let users deep-dive or change the view, and let them customize it to
 their preference. This is a proposal to react to — no code changes yet.*
 
 ---
 
-## 1. Where the finance UX is today
+## 1. Where the business UX is today
 
-After the last few rounds, the finance persona has four Analyze destinations —
+After the last few rounds, the business persona has four Analyze destinations —
 **Summary · Spend · Budgets · Programs** — plus the Overview home. It's content-rich and
 the data is good, but the *navigation* has grown:
 
 - **Two near-duplicate landing pages.** The Overview and the new Summary both open with
-  the attention panel + KPIs + roll-ups. A finance user has to learn which is "home."
+  the attention panel + KPIs + roll-ups. A business user has to learn which is "home."
 - **Long, stacked pages.** Overview alone stacks: trial banner → attention panel → 4 KPIs
   → trust callout → unit economics → trend → movers → forecast → explore. It's a scroll.
-- **One-size layout.** Every finance user sees the same cards in the same order. A CFO who
+- **One-size layout.** Every business user sees the same cards in the same order. A CFO who
   only cares about "are we on budget?" and a FinOps analyst who lives in per-team
   chargeback get the identical page.
 - **No saved context.** You can't say "always land me on last quarter, grouped by team"
@@ -64,11 +64,11 @@ CFO spend tools (Ramp, Brex), and BI (Tableau, Amplitude):
 
 ---
 
-## 3. Proposed direction for Outlay finance
+## 3. Proposed direction for Outlay business
 
 Four moves, in priority order:
 
-### (a) Collapse to ONE consolidated **Finance Home**
+### (a) Collapse to ONE consolidated **Business Home**
 Merge Overview + Summary into a single opinionated home laid out F-pattern:
 
 ```
@@ -91,7 +91,7 @@ Merge Overview + Summary into a single opinionated home laid out F-pattern:
 - The attention panel stays the top, action-first band.
 - Budgets and Programs become **summary cards on Home** with "drill in ▸"; the full
   Budgets/Programs pages remain as the deep views (no capability lost, less nav).
-- Result: finance nav shrinks from **Summary · Spend · Budgets · Programs** to
+- Result: business nav shrinks from **Summary · Spend · Budgets · Programs** to
   **Home · Spend · Governance** (Budgets+Programs under one "Governance" deep view), or
   even **Home · Spend** with everything else reachable by drilling from Home.
 
@@ -158,7 +158,7 @@ users and the opinionated default is always the fallback.
 1. **How far to go now?** Setup 1 only, or commit to the phased 1→2→3?
 2. **Nav shape:** `Home · Spend · Governance` (Budgets+Programs merged) vs keep them
    separate but demoted to drill targets?
-3. **Customization depth:** saved *views* (lenses) are usually enough for finance; do you
+3. **Customization depth:** saved *views* (lenses) are usually enough for business; do you
    want full pin/reorder/hide (Setup 3), or is that over-building for the buyer?
 4. **Default lens:** quarter-to-date grouped by team — is that the right out-of-box CFO view?
 

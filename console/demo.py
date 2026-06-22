@@ -6,7 +6,7 @@ Access is gated to accounts whose email is in the `DEMO_ACCOUNT_EMAILS` env var
 (comma-separated; `*` allows any account — used in tests). Entering demo mode
 seeds the worked sample report + history, a mix of budgets, a couple of program
 budgets (one enforcing a hard cap), and a "connected, just synced" source, then
-drops into the Finance persona. Exiting wipes all of that back to a clean
+drops into the Business persona. Exiting wipes all of that back to a clean
 standard-customer state. Nothing here ever touches real customer data.
 """
 from __future__ import annotations
@@ -41,8 +41,8 @@ def is_demo_account(email: str | None) -> bool:
 # The talk-track a presenter follows, per persona — also rendered as the in-app
 # "Demo guide". Kept here so the script and the UI never drift.
 SCRIPT = {
-    "finance": [
-        ("Overview", "/app/outlay", "Lead with the finance KPIs: total attributed spend, "
+    "business": [
+        ("Overview", "/app/outlay", "Lead with the business KPIs: total attributed spend, "
          "how much is allocated to teams, invoice reconciliation."),
         ("Spend", "/app/outlay", "Drill into the per-team / cost-center allocation — the chargeback view."),
         ("Budgets", "/app/outlay/budgets", "Show guardrails: one team over, one warning, one healthy."),
@@ -140,7 +140,7 @@ def clear(account_id: int) -> None:
 
 def enter(account_id: int, member_id: int = 0, now: float | None = None) -> None:
     """Turn demo mode ON: clear any prior state, seed a full worked account, mark
-    a freshly-synced GitHub connection, default to the Finance persona."""
+    a freshly-synced GitHub connection, default to the Business persona."""
     now = now or time.time()
     clear(account_id)
     report = _seed_report(account_id, now=now)
@@ -151,7 +151,7 @@ def enter(account_id: int, member_id: int = 0, now: float | None = None) -> None
     store.save_outlay_connection(account_id, tracker="github",
                                  github_owner="acme", github_repo="platform")
     store.mark_outlay_synced(account_id, now=now)
-    store.set_persona(account_id, "finance", member_id=member_id)
+    store.set_persona(account_id, "business", member_id=member_id)
     store.set_demo_mode(account_id, True)
 
 
