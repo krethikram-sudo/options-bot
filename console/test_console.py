@@ -1158,6 +1158,29 @@ def test_marketing_session_check_and_get_logout(env, client):
     assert client.get("/api/session").json()["signed_in"] is False
 
 
+def test_logout_sticks_after_session_used(env, client, monkeypatch):
+    """Regression: the sliding-session middleware must NOT re-issue the cookie over a
+    logout. Once any time has passed (so a reseal differs from the live token), POST and
+    GET logout both have to actually sign you out."""
+    import console.server as srv
+    server, store = env
+    _signup(client, email="bye@b.com")
+    # advance time so reseal_session produces a *different* token than the live one
+    future = time.time() + 600
+    monkeypatch.setattr(srv.time, "time", lambda: future)
+    monkeypatch.setattr(store.time, "time", lambda: future)
+    client.post("/logout", follow_redirects=False)
+    assert client.get("/api/session").json()["signed_in"] is False
+    assert client.get("/app", follow_redirects=False).status_code in (302, 303, 307)
+    # and the GET path (marketing "Sign out") too
+    _signup(client, email="bye2@b.com")
+    future2 = time.time() + 600
+    monkeypatch.setattr(srv.time, "time", lambda: future2)
+    monkeypatch.setattr(store.time, "time", lambda: future2)
+    client.get("/logout", follow_redirects=False)
+    assert client.get("/api/session").json()["signed_in"] is False
+
+
 def test_member_login_and_team_nav(env, client):
     _, store = env
     owner = store.create_account("o3@b.com", "k7-otter-ledger")
