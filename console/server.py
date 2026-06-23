@@ -571,6 +571,34 @@ def logout(request: Request):
     return resp
 
 
+# GET logout so the marketing site's "Sign out" link works as a plain navigation
+# (same-site to app.outlay-ai.com → cookie cleared → redirect back to the landing page).
+@app.get("/logout")
+def logout_get(request: Request):
+    return logout(request)
+
+
+# Lightweight cross-origin session check for the (static) marketing site, so it can show
+# "signed in" state. Same-site (outlay-ai.com ⇄ app.outlay-ai.com) so the Lax cookie is sent;
+# CORS echoes the marketing origin + allows credentials so the JS can read the result.
+_SESSION_CORS_ORIGINS = {"https://outlay-ai.com", "https://www.outlay-ai.com"}
+
+
+@app.get("/api/session")
+def api_session(request: Request):
+    acct = _current(request)
+    body = ({"signed_in": True, "email": acct.get("display_email") or acct.get("email", "")}
+            if acct else {"signed_in": False})
+    resp = JSONResponse(body)
+    origin = request.headers.get("origin", "")
+    if origin in _SESSION_CORS_ORIGINS:
+        resp.headers["Access-Control-Allow-Origin"] = origin
+        resp.headers["Access-Control-Allow-Credentials"] = "true"
+        resp.headers["Vary"] = "Origin"
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
 @app.get("/forgot", response_class=HTMLResponse)
 def forgot_get():
     return _html(web.forgot_form())

@@ -602,7 +602,7 @@ def page(title: str, body: str, account: dict | None = None, active: str = "", b
         takeover = f'<div class=takeover><div class=tk-card>{overlay}</div></div>' if overlay else ""
         chrome = (
             f'<div class="{shell_cls}"><aside class=side>'
-            '<a class=brand href="/app">Outlay<span class=dot>.ai</span></a>'
+            '<a class=brand href="https://outlay-ai.com/">Outlay<span class=dot>.ai</span></a>'
             f'<nav class=sidenav>{links}{admin}</nav>'
             f'<div class=side-foot>{_trial_pill(account)}<div class=email>{em}</div>'
             '<form method=post action="/logout" style="margin:0">'

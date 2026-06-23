@@ -1135,6 +1135,29 @@ def test_owner_login_unchanged(env, client):
     assert r.status_code == 303 and r.headers["location"] == "/app"
 
 
+def test_marketing_session_check_and_get_logout(env, client):
+    """The static marketing site reflects signed-in state via a CORS'd /api/session,
+    and 'Sign out' works as a plain GET navigation back to the landing page."""
+    server, store = env
+    ORIGIN = "https://outlay-ai.com"
+    # signed out → signed_in:false; CORS echoes an allowed origin + credentials
+    r = client.get("/api/session", headers={"origin": ORIGIN})
+    assert r.json() == {"signed_in": False}
+    assert r.headers["access-control-allow-origin"] == ORIGIN
+    assert r.headers["access-control-allow-credentials"] == "true"
+    # a disallowed origin gets no ACAO (the browser would block it)
+    assert "access-control-allow-origin" not in client.get(
+        "/api/session", headers={"origin": "https://evil.example"}).headers
+    # signed in → signed_in:true + the account email
+    _signup(client, email="sess@b.com")
+    r2 = client.get("/api/session", headers={"origin": ORIGIN})
+    assert r2.json()["signed_in"] is True and r2.json()["email"] == "sess@b.com"
+    # GET /logout clears the session and redirects to the landing page
+    lo = client.get("/logout", follow_redirects=False)
+    assert lo.status_code in (302, 303, 307) and "outlay-ai.com" in lo.headers["location"]
+    assert client.get("/api/session").json()["signed_in"] is False
+
+
 def test_member_login_and_team_nav(env, client):
     _, store = env
     owner = store.create_account("o3@b.com", "k7-otter-ledger")
