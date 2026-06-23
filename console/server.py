@@ -1721,6 +1721,20 @@ def app_outlay_export_focus(request: Request):
                              headers={"content-disposition": 'attachment; filename="outlay-focus.csv"'})
 
 
+@app.get("/app/outlay/variance.csv")
+def app_outlay_variance_csv(request: Request):
+    """Quarterly program plan-vs-actual variance report as CSV (for finance)."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    report = store.get_outlay_report(acct["id"])
+    statuses = (outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"]),
+                                            store.program_histories(acct["id"])) if report else [])
+    rep = outlay_app.variance_report(statuses)
+    return PlainTextResponse(outlay_app.variance_report_csv(rep), media_type="text/csv",
+                             headers={"content-disposition": f'attachment; filename="outlay-variance-{rep["quarter"].replace(" ", "-")}.csv"'})
+
+
 @app.get("/api/v1/spend")
 def api_v1_spend(request: Request):
     """Token-authed spend export for BI/warehouse pipelines. Bearer (or

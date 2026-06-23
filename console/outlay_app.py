@@ -873,6 +873,73 @@ def program_earned_value(report: dict, program: dict) -> Optional[dict]:
     }
 
 
+def variance_report(statuses: list[dict], now: float | None = None) -> dict:
+    """Finance-facing quarterly plan-vs-actual roll-up across programs. Consolidates the
+    per-program pacing + earned-value reads into one table + totals + an on-track tally —
+    the artifact finance pulls each quarter to see which programs are tracking to budget."""
+    import datetime as _dt
+    d = (_dt.datetime.fromtimestamp(now, _dt.timezone.utc) if now
+         else _dt.datetime.now(_dt.timezone.utc))
+    quarter = f"Q{(d.month - 1) // 3 + 1} {d.year}"
+
+    rows, counts = [], {"on track": 0, "watch": 0, "off track": 0, "gathering baseline": 0}
+    tb = ta = tp = tproj = tover = 0.0
+    for s in statuses:
+        budget = s.get("limit_usd", 0) or 0
+        if not budget:
+            continue
+        actual = s.get("spent_usd", 0) or 0
+        pc, pr = s.get("pacing") or {}, s.get("progress") or {}
+        planned = pc.get("planned_to_date_usd") if pc.get("ready") else None
+        if pr.get("ready"):                              # earned-value is the most accurate read
+            projected, rating = pr.get("projected_total_usd", 0), pr.get("rating", "on track")
+        elif pc.get("ready"):                            # else the time-based pacing
+            projected = pc.get("projected_end_usd", 0)
+            rating = {"ok": "on track", "warn": "watch", "over": "off track"}.get(pc.get("status"), "on track")
+        else:
+            projected, rating = s.get("projected_usd", 0) or 0, "gathering baseline"
+        var_usd = (actual - planned) if planned is not None else None
+        var_pct = (var_usd / planned) if (planned and var_usd is not None) else None
+        over = max(0.0, (projected or 0) - budget)
+        rows.append({
+            "name": s.get("name"), "budget_usd": round(budget, 2),
+            "actual_to_date_usd": round(actual, 2),
+            "planned_to_date_usd": round(planned, 2) if planned is not None else None,
+            "variance_usd": round(var_usd, 2) if var_usd is not None else None,
+            "variance_pct": round(var_pct, 4) if var_pct is not None else None,
+            "progress_pct": pr.get("progress_pct") if pr.get("ready") else None,
+            "cost_variance_pct": pr.get("cost_variance_pct") if pr.get("ready") else None,
+            "rating": rating, "projected_total_usd": round(projected or 0, 2),
+            "over_budget_usd": round(over, 2),
+        })
+        tb += budget; ta += actual; tproj += (projected or 0); tover += over
+        if planned is not None:
+            tp += planned
+        counts[rating] = counts.get(rating, 0) + 1
+    return {
+        "quarter": quarter, "rows": rows, "n": len(rows), "counts": counts,
+        "totals": {"budget_usd": round(tb, 2), "actual_to_date_usd": round(ta, 2),
+                   "planned_to_date_usd": round(tp, 2), "projected_total_usd": round(tproj, 2),
+                   "over_budget_usd": round(tover, 2), "variance_usd": round(ta - tp, 2)},
+    }
+
+
+def variance_report_csv(rep: dict) -> str:
+    """The quarterly variance report as CSV (for finance to load into a sheet)."""
+    import csv
+    import io
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["program", "budget_usd", "actual_to_date_usd", "planned_to_date_usd",
+                "variance_usd", "variance_pct", "progress_pct", "cost_variance_pct",
+                "rating", "projected_total_usd", "over_budget_usd"])
+    for r in rep.get("rows", []):
+        w.writerow([r["name"], r["budget_usd"], r["actual_to_date_usd"], r["planned_to_date_usd"],
+                    r["variance_usd"], r["variance_pct"], r["progress_pct"], r["cost_variance_pct"],
+                    r["rating"], r["projected_total_usd"], r["over_budget_usd"]])
+    return buf.getvalue()
+
+
 def enforced_programs(report: dict, programs: list[dict]) -> list[dict]:
     """Programs the gateway should currently ENFORCE — i.e. enforce_mode='hard' and
     over their cap. Returns the action + members + numbers so the in-path client can

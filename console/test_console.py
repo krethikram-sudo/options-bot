@@ -3102,6 +3102,48 @@ def test_program_earned_value_drives_status_and_renders(env, client):
     assert "Off Track" in page and "over forecast" in page and "% of" in page
 
 
+def test_quarterly_variance_report_engine_and_csv():
+    from console import outlay_app
+    # two programs: one off-track (earned-value), one on-track via time-pacing
+    statuses = [
+        {"name": "Platform", "limit_usd": 1000.0, "spent_usd": 700.0, "projected_usd": 1400.0,
+         "pacing": {"ready": True, "status": "warn", "planned_to_date_usd": 500.0,
+                    "projected_end_usd": 1300.0},
+         "progress": {"ready": True, "rating": "off track", "projected_total_usd": 1450.0,
+                      "cost_variance_pct": 0.30, "progress_pct": 0.5}},
+        {"name": "Launch", "limit_usd": 800.0, "spent_usd": 300.0, "projected_usd": 600.0,
+         "pacing": {"ready": True, "status": "ok", "planned_to_date_usd": 320.0,
+                    "projected_end_usd": 640.0},
+         "progress": {"ready": False}},
+        {"name": "No budget", "limit_usd": 0},  # skipped — no cap
+    ]
+    rep = outlay_app.variance_report(statuses, now=1_750_000_000.0)
+    assert rep["n"] == 2 and rep["quarter"].startswith("Q")
+    plat = rep["rows"][0]
+    assert plat["rating"] == "off track" and plat["variance_usd"] == 200.0  # 700 actual − 500 planned
+    assert plat["projected_total_usd"] == 1450.0 and plat["over_budget_usd"] == 450.0
+    launch = rep["rows"][1]
+    assert launch["rating"] == "on track" and launch["projected_total_usd"] == 640.0
+    assert rep["totals"]["budget_usd"] == 1800.0 and rep["totals"]["actual_to_date_usd"] == 1000.0
+    assert rep["counts"]["off track"] == 1 and rep["counts"]["on track"] == 1
+    csv = outlay_app.variance_report_csv(rep)
+    assert "program,budget_usd" in csv and "Platform" in csv and "off track" in csv
+
+
+def test_quarterly_variance_renders_on_governance_and_csv(env, client):
+    _, store = env
+    _signup(client, email="var@x.com")
+    acct = store.get_account_by_email("var@x.com")
+    store.set_persona(acct["id"], "business", 0)
+    store.add_outlay_program(acct["id"], "Platform", [{"scope_type": "overall"}], 1000.0, period_days=100)
+    store.save_outlay_report(acct["id"], _ev_report([150, 160, 140], open_n=1, class_median=100))
+    gov = client.get("/app/outlay/governance").text
+    assert "Quarterly variance" in gov and "Off Track" in gov and "Export CSV" in gov
+    csv = client.get("/app/outlay/variance.csv")
+    assert csv.status_code == 200 and "text/csv" in csv.headers["content-type"]
+    assert "program,budget_usd" in csv.text and "Platform" in csv.text
+
+
 def test_program_enforcement_decision_endpoint(env, client):
     from console import outlay_app, store
     _signup(client, email="enf@x.com")
