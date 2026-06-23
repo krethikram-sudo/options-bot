@@ -4377,6 +4377,12 @@ def test_monthly_close_pack_builds_attaches_focus_and_cadence(env, client, monke
     assert "FOCUS-aligned" in pack["body"] and "close-report.html" in pack["body"]
     # the attached CSV is the FOCUS export (spec column names)
     assert pack["csv"].splitlines()[0].startswith("BilledCost,EffectiveCost")
+    # programs surface in the close pack too — an over-budget one is named off track
+    assert "Programs:" not in pack["body"]      # none defined yet
+    store.add_outlay_program(acct["id"], "Migration",
+                             [{"scope_type": "overall", "scope_id": None}], limit_usd=1.0)
+    body2 = close_pack.build_close_pack(acct["id"])["body"]
+    assert "Programs: 1 off track" in body2 and "Migration" in body2
 
     # due now; sending attaches the CSV, marks sent; monthly cadence holds it back
     assert acct["id"] in store.accounts_due_for_close_pack()

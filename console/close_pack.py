@@ -65,6 +65,24 @@ def build_close_pack(account_id: int, path: Optional[str] = None) -> Optional[di
         lines.append("")
     if statuses:
         lines.append(f"Budgets: {over} over, {len(statuses) - over} on track.")
+    # Programs (named budgets spanning teams/projects) — the month-end on-track tally,
+    # with the off-track ones named so finance can chase them at close.
+    programs = store.list_outlay_programs(account_id, path)
+    if programs:
+        prog_statuses = outlay_app.program_statuses(
+            report, programs, store.program_histories(account_id, path=path))
+        p_off = [s for s in prog_statuses if s["status"] == "over"]
+        p_watch = [s for s in prog_statuses if s["status"] == "warn"]
+        lines.append(f"Programs: {len(p_off)} off track, {len(p_watch)} to watch, "
+                     f"{len(prog_statuses) - len(p_off) - len(p_watch)} on track.")
+        for s in p_off:
+            prog = s.get("progress") or {}
+            if prog.get("ready"):
+                var = prog.get("cost_variance_pct", 0) * 100
+                lines.append(f"  {s.get('name', 'program')}: completed work {abs(var):.0f}% "
+                             f"{'over' if var >= 0 else 'under'} forecast.")
+            else:
+                lines.append(f"  {s.get('name', 'program')}: on pace to exceed its budget.")
     if rec.get("invoice_usd"):
         lines.append(f"Reconciled: within {abs(rec.get('delta_pct', 0)):.0f}% of your provider invoice.")
     lines.append(f"Data confidence: {dq.get('score', 'n/a').title()}.")
