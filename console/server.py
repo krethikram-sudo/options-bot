@@ -23,7 +23,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import (HTMLResponse, JSONResponse, PlainTextResponse,
                                RedirectResponse, Response)
 
-from . import demo, notify, outlay_app, store, stripe_billing, web, webauthn_box
+from . import cost_to_serve, demo, notify, outlay_app, store, stripe_billing, web, webauthn_box
 
 COOKIE = "mp_session"
 PENDING_2FA_COOKIE = "mp_2fa"  # short-lived marker between password and OTP steps
@@ -2710,7 +2710,8 @@ def admin_overview(request: Request):
             "pending_proposals": len(store.list_proposals(a["id"], status="pending")),
         })
     return _html(web.admin_overview(acct, rev, rows, store.count_pending_proposals(),
-                                    funnel=store.activation_funnel(), feedback=store.list_feedback(30)))
+                                    funnel=store.activation_funnel(), feedback=store.list_feedback(30),
+                                    fleet_cost=store.fleet_cost_to_serve()))
 
 
 @app.get("/admin/proposals", response_class=HTMLResponse)
@@ -2767,8 +2768,11 @@ def admin_account(request: Request, account_id: int):
     reset_link = notify.reset_link(reset_token) if reset_token else ""
     proposals = store.list_proposals(account_id, status="pending")
     history = store.proposal_history(account_id)
+    n_active = max(1, sum(1 for a in store.list_accounts() if a["status"] != "suspended"))
+    cost = cost_to_serve.estimate(store.account_cost_drivers(account_id), active_accounts=n_active)
     return _html(web.admin_account_detail(acct, target, plan, trial, settings, bill, cats,
-                                          _suggestions(cats, settings), reset_link, proposals, history))
+                                          _suggestions(cats, settings), reset_link, proposals, history,
+                                          cost=cost))
 
 
 @app.post("/admin/accounts/{account_id}/proposal")

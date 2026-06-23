@@ -4878,8 +4878,35 @@ def _feedback_panel(feedback: list[dict] | None) -> str:
             f'<tbody>{trs}</tbody></table></div>')
 
 
+def _fleet_ktlo_card(fc: dict | None) -> str:
+    if not fc:
+        return ""
+    top = "".join(
+        f'<tr><td><a href="/admin/accounts/{r["id"]}">{_e(r["email"])}</a></td>'
+        f'<td>{money(r["loaded_monthly"])}/mo</td><td class="small muted">{_e(r["tier_signal"])} · '
+        f'{_e(r["primary_driver"])}</td></tr>' for r in fc.get("top", []))
+    return (
+        '<div class=card style="margin-top:16px"><div class=label>Cost to serve (KTLO) · all customers</div>'
+        '<p class="small muted" style="margin:4px 0 10px">What it costs US to run the product. Outlay makes '
+        '<b>no LLM calls</b> — cost is infra only (storage + CPU/sync + egress + email), so marginal '
+        'cost-to-serve is near-zero; the fixed always-on machine dominates.</p>'
+        f'<div style="display:flex;gap:24px;flex-wrap:wrap">'
+        f'<div><div class=stat>{money(fc["total_loaded_monthly"])}</div>'
+        '<div class="small muted">total loaded / mo</div></div>'
+        f'<div><div class=stat>{money(fc["total_marginal_monthly"])}</div>'
+        '<div class="small muted">total marginal / mo</div></div>'
+        f'<div><div class=stat>{money(fc["avg_loaded_per_account"])}</div>'
+        '<div class="small muted">avg / account</div></div>'
+        f'<div><div class=stat>{money(fc["fixed_monthly"])}</div>'
+        '<div class="small muted">fixed base (machine)</div></div></div>'
+        + (f'<table style="margin-top:12px"><thead><tr><th>Most expensive to serve</th><th>Loaded</th>'
+           f'<th>Tier · driver</th></tr></thead><tbody>{top}</tbody></table>' if top else '')
+        + '</div>')
+
+
 def admin_overview(account: dict, rev: dict, rows: list[dict], pending: int = 0,
-                   funnel: dict | None = None, feedback: list[dict] | None = None) -> str:
+                   funnel: dict | None = None, feedback: list[dict] | None = None,
+                   fleet_cost: dict | None = None) -> str:
     trs = ""
     for r in rows:
         badge = (f'<span class="badge {r["plan_badge"]}">{_e(r["plan_label"])}</span>')
@@ -4918,6 +4945,7 @@ def admin_overview(account: dict, rev: dict, rows: list[dict], pending: int = 0,
       {pending_card}
     </div>
     {_funnel_panel(funnel)}
+    {_fleet_ktlo_card(fleet_cost)}
     <h2>Customers</h2>
     <div class=card style="padding:0">
       <table><thead><tr><th>Account</th><th>Plan</th><th>Lifetime savings</th>
@@ -5098,11 +5126,50 @@ def _audit_section(history: list[dict]) -> str:
             f'<th>By</th><th>When</th></tr></thead><tbody>{rows}</tbody></table></div>')
 
 
+def _cost_to_serve_card(cost: dict | None, bill: dict | None) -> str:
+    """Admin KTLO panel — what it costs US to serve this account, and the cost drivers."""
+    if not cost:
+        return ""
+    d = cost.get("drivers", {})
+    tier_col = {"light": "var(--grn-d)", "standard": "var(--amber)", "heavy": "var(--red)"}.get(
+        cost.get("tier_signal"), "var(--muted)")
+
+    def line(label, val):
+        return (f'<div style="display:flex;justify-content:space-between;font-size:12.5px;margin:2px 0">'
+                f'<span class=muted>{label}</span><span>{val}</span></div>')
+    rev = (bill or {}).get("would_bill", 0) or 0
+    margin = rev - cost["loaded_monthly"] if rev else None
+    margin_html = (f'<div style="margin-top:8px;font-size:12.5px">Revenue {money(rev)}/mo · '
+                   f'<b style="color:{"var(--grn-d)" if margin and margin >= 0 else "var(--red)"}">'
+                   f'margin {money(margin)}</b></div>') if rev else (
+                   '<div class=muted style="margin-top:8px;font-size:12px">Free pilot — no revenue yet.</div>')
+    return (
+        '<div class=ocard style="margin-top:16px"><div class=dh>Cost to serve (KTLO) '
+        f'<span class=sub style="color:{tier_col}">{_e(cost.get("tier_signal","?"))} · admin</span></div>'
+        '<p class=muted style="font-size:12px;margin:4px 0 10px">No LLM cost — Outlay is deterministic '
+        'metadata analytics on BYOK data. Cost = infra (storage + CPU/sync + egress + email).</p>'
+        f'<div style="font-size:20px;font-weight:700">{money(cost["loaded_monthly"])}'
+        '<span class=muted style="font-size:12px;font-weight:400"> / mo loaded '
+        f'({money(cost["marginal_monthly"])} marginal + {money(cost["allocated_fixed_monthly"])} '
+        'fixed share)</span></div>'
+        f'{line("storage · " + str(cost["storage_mb"]) + " MB", money(cost["cost_storage"]))}'
+        f'{line("compute · " + str(cost["syncs_per_month"]) + " syncs/mo", money(cost["cost_compute"]))}'
+        f'{line("egress", money(cost["cost_egress"]))}'
+        f'{line("email", money(cost["cost_email"]))}'
+        '<div style="margin-top:8px;border-top:1px solid var(--line);padding-top:8px">'
+        f'{line("drivers", "")}'
+        f'<div class=muted style="font-size:11.5px">{d.get("tickets",0):,} tickets · '
+        f'{d.get("history_rows",0):,} snapshots · sync {("every " + str(d.get("sync_hours")) + "h") if d.get("sync_hours") else "manual"} · '
+        f'retention {d.get("retention_days") or "∞"}d · {d.get("connectors",0)} connectors · '
+        f'biggest line: <b>{_e(cost.get("primary_driver","?"))}</b></div></div>'
+        f'{margin_html}</div>')
+
+
 def admin_account_detail(account: dict, target: dict, plan: dict, trial: dict,
                          settings: dict, bill: dict, cats: list[dict],
                          suggestions: list[str], reset_link: str = "",
                          proposals: list[dict] | None = None,
-                         history: list[dict] | None = None) -> str:
+                         history: list[dict] | None = None, cost: dict | None = None) -> str:
     cat_rows = ""
     for c in cats:
         esc_rate = (100 * c["escalations"] / c["routed"]) if c["routed"] else 0
@@ -5141,7 +5208,8 @@ def admin_account_detail(account: dict, target: dict, plan: dict, trial: dict,
       <tbody>{cat_rows or '<tr><td colspan=5 class=muted>No metering yet.</td></tr>'}</tbody></table></div>
 
     <h2>Suggested actions</h2>
-    <div class=card><ul style="margin:0;padding-left:20px">{sugg}</ul></div>"""
+    <div class=card><ul style="margin:0;padding-left:20px">{sugg}</ul></div>
+    {_cost_to_serve_card(cost, bill)}"""
     reset_note = (f'<div class="note">Reset link (valid 1h): <a href="{_e(reset_link)}">{_e(reset_link)}</a></div>'
                   if reset_link else "")
     body += f"""

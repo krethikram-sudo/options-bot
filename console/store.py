@@ -3682,3 +3682,61 @@ def revenue_overview(path: str | None = None, now: float | None = None) -> dict:
         "cycle_pct": round(100 * cycle_savings / cycle_baseline) if cycle_baseline else 0,
         "total_pct": round(100 * total_savings / total_baseline) if total_baseline else 0,
     }
+
+
+def account_cost_drivers(account_id: int, path: str | None = None) -> dict:
+    """Per-account cost-to-serve drivers (admin/KTLO). Cheap counts + the live report
+    size — fed to `cost_to_serve.estimate`. Outlay makes no LLM calls, so cost is infra:
+    storage of the report + history, CPU per sync, a little egress + email."""
+    report = get_outlay_report(account_id, path)
+    report_bytes = len(json.dumps(report)) if report else 0
+    tickets = len(report.get("tickets", [])) if report else 0
+    conn = connect(path)
+    try:
+        def n(sql, *a):
+            return conn.execute(sql, a).fetchone()[0] or 0
+        history_rows = n("SELECT COUNT(*) FROM outlay_history WHERE account_id=?", account_id)
+        prog_history_rows = n("SELECT COUNT(*) FROM outlay_program_history WHERE account_id=?", account_id)
+        audit_rows = n("SELECT COUNT(*) FROM audit_log WHERE account_id=?", account_id)
+        delivery_rows = n("SELECT COUNT(*) FROM webhook_deliveries WHERE account_id=?", account_id)
+        webhooks = n("SELECT COUNT(*) FROM webhooks WHERE account_id=?", account_id)
+        members = n("SELECT COUNT(*) FROM members WHERE account_id=? AND status!='removed'", account_id)
+        crow = conn.execute(
+            "SELECT auto_sync_hours, github_token, anthropic_key, cursor_key, jira_token, linear_key"
+            " FROM outlay_connections WHERE account_id=?", (account_id,)).fetchone()
+        rrow = conn.execute("SELECT retention_days FROM accounts WHERE id=?", (account_id,)).fetchone()
+        srow = conn.execute(
+            "SELECT digest_weekly, close_pack_monthly FROM accounts WHERE id=?", (account_id,)).fetchone()
+    finally:
+        conn.close()
+    sync_hours = (crow["auto_sync_hours"] if crow else 0) or 0
+    connectors = sum(1 for k in ("github_token", "anthropic_key", "cursor_key", "jira_token", "linear_key")
+                     if crow and crow[k]) if crow else 0
+    retention_days = (rrow["retention_days"] if rrow else 0) or 0
+    emails_month = (4 if (srow and srow["digest_weekly"]) else 0) + \
+                   (1 if (srow and srow["close_pack_monthly"]) else 0) + 1  # + occasional alerts
+    return {"report_bytes": report_bytes, "tickets": tickets, "events": report_bytes // 250,
+            "history_rows": history_rows, "prog_history_rows": prog_history_rows,
+            "audit_rows": audit_rows, "delivery_rows": delivery_rows, "webhooks": webhooks,
+            "members": members, "sync_hours": sync_hours, "connectors": connectors,
+            "retention_days": retention_days, "emails_month": emails_month}
+
+
+def fleet_cost_to_serve(path: str | None = None) -> dict:
+    """Cost-to-serve rolled up across all accounts (admin overview)."""
+    from . import cost_to_serve as cts
+    accounts = [a for a in list_accounts(path) if a["status"] != "suspended"]
+    n_active = max(1, len(accounts))
+    rows = []
+    total_marginal = total_loaded = 0.0
+    for a in accounts:
+        est = cts.estimate(account_cost_drivers(a["id"], path), active_accounts=n_active)
+        total_marginal += est["marginal_monthly"]
+        total_loaded += est["loaded_monthly"]
+        rows.append({"id": a["id"], "email": a["email"], **est})
+    rows.sort(key=lambda r: r["loaded_monthly"], reverse=True)
+    return {"n_accounts": len(accounts), "fixed_monthly": cts.FLY_BASE_MONTHLY,
+            "total_marginal_monthly": round(total_marginal, 4),
+            "total_loaded_monthly": round(total_loaded, 4),
+            "avg_loaded_per_account": round(total_loaded / n_active, 4),
+            "top": rows[:8]}

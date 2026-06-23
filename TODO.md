@@ -1,6 +1,6 @@
 # ModelPilot — Running TODO (founder)
 
-Living checklist. Claude keeps this current as we work. Last updated: **2026-06-21**.
+Living checklist. Claude keeps this current as we work. Last updated: **2026-06-23**.
 (Detailed legal/terms analysis lives in `modelpilot/LAUNCH_CHECKLIST.md`; this is the
 short, prioritized running list.)
 
@@ -13,7 +13,15 @@ Live URLs:
 
 > **▶️ RESUME HERE next session:** Product is **Outlay** (spend attribution + forecasting + budget
 > enforcement); routing/ModelPilot engine is parked. The full product is built and the marketing site +
-> console are on the brand domains. **Latest shipped (2026-06-21): enforce-budget-by-program (opt-in
+> console are on the brand domains. **Latest shipped (2026-06-23, this session — all merged + deployed):
+> (1) GOV-READINESS — adversarial security audit + full remediation (#218: security webhook now fires
+> on auth events, recursive secret-value ingest guard, fail-safe secret_box key, 3 secondary secrets
+> encrypted, budget/lockout auditing, automated a11y CI gate); member MFA (#219, require_mfa gates every
+> principal via per-member TOTP); WebAuthn/passkeys (#220, owners + members, verified in a real browser).
+> Trust Center + questionnaire + NIST-CSF + IR plan docs. (2) PROGRAM BUDGET PACING (#220) — real-time
+> plan-vs-actual: per-program spend time-series, projected-breach DATE, AND the earned-value on-track
+> rating the founder asked for (forecast vs actual on COMPLETED tickets → CPI / on-track-watch-off-track
+> / how-far-off %, using our own cost model as the per-component forecast).** **Earlier (2026-06-21): enforce-budget-by-program (opt-in
 > gateway, block/route-down) + reallocate + per-program enforcement history; sign-in funnel replaces
 > pilot-request across the site (#152); landing page simplified — deep-dive sections moved to a new
 > `/platform` page, no content lost (#153); console UI/copy matched to the website — `landing()`
@@ -103,6 +111,47 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 ---
 
 ## ✅ Done
+
+### 2026-06-23 — program budget pacing: real-time plan-vs-actual + earned-value rating (#220)
+- [x] **Per-program spend time-series** (`outlay_program_history`) written on every sync, with the same
+      retention / erasure / account-delete plumbing as `outlay_history` — the substrate for pacing.
+- [x] **Time-based pacing** (`outlay_app.program_pacing`): actual-to-date vs the budget's linear pace,
+      smoothed burn rate, blended EAC, **interpolated projected-breach DATE**; "gathering baseline" gating.
+- [x] **Earned-value (progress-based) rating** (`program_earned_value`) — the founder's preferred model:
+      for a program's COMPLETED tickets, compares forecasted vs actual cost (forecast = the ticket's
+      class-median, our own cost model). **CPI = Σforecast(done)/Σactual(done) → on-track / watch / off-track
+      rating + how-far-off %** + progress (forecasted share done) + EVM EAC. Two axes combined worst-of:
+      execution quality (CPI) and budget headroom (run-rate). Gated behind ≥3 completed components.
+- [x] **Surfacing:** headline on-track rating strip + plan-vs-actual bars on each program card; business +
+      engineering attention panels auto-flag off-pace programs in plain language with the date / variance.
+- [x] Uses only existing metadata (ticket status + cost + class) — no new customer input, no new private
+      data. Scope/design in `docs/program-pacing-scope.md`. 234 tests (2 webauthn ceremony tests skip w/o lib).
+
+### 2026-06-23 — government-readiness: audit + remediation + MFA hardening + passkeys (#218–#220)
+- [x] **Deep research** on Maryland-state + federal tech/security requirements (`docs/gov-tech-security-
+      requirements.md`) and a 10-gap product build plan; all 10 product gaps built (auth/session hardening +
+      Trust Center): admin-enforced MFA, TOTP, session idle/epoch/log-out-everywhere, account lockout,
+      password breach-screening, auth-event audit completeness, audit retention, incident webhook,
+      pluggable KMS key hook, data-residency statement.
+- [x] **Adversarial security audit + remediation** (#218, `docs/security-audit-2026-06.md`): 5-stream
+      control-by-control verification of every doc claim against the code. Fixed: the incident/breach
+      **webhook now actually fires** (HMAC-signed) on security events (was a dead field); the ingest 422
+      boundary now scans **values** for credential patterns at any depth (was field-name-only); **3 secondary
+      secrets encrypted at rest** (Slack webhook, SSO client_secret, webhook signing secret); `secret_box`
+      **fails safe** (no world-known default key); budget changes + lockouts audited; **automated accessibility
+      CI gate** added (+ ~20 unlabeled controls fixed) — the "axe-core" claim had no test. +16 tests.
+- [x] **Member MFA** (#219): per-member TOTP so an org `require_mfa` policy compels **every** principal —
+      owners, admins, and invited members — not just owners.
+- [x] **WebAuthn / passkeys (FIDO2)** (#220): phishing-resistant MFA for owners + members via the vetted
+      `py_webauthn` lib (enroll + passkey login + cloned-authenticator detection + cross-account rejection);
+      full HTTP ceremony tested via a software authenticator; **verified in a real browser post-deploy**.
+- [x] **Persona reframe** finance-leader → business-leader across product + site; Trust Center artifacts
+      (VPAT/ACR, AI model+system+data card + AUP), security questionnaire, NIST-CSF self-assessment, and an
+      IR plan (with Maryland's 1-hour MD-SOC path) — the reviewer-facing collateral.
+- [ ] **Gov-readiness — remaining (external/funded, not code):** SOC 2 Type II (highest-leverage), annual
+      pen test + monthly vuln scans, the **FedRAMP-Moderate cloud re-host** (federal + GovRAMP-state unlock).
+      Confirm the bar with Maryland DoIT (data classification + any agency-level GovRAMP ask). Set
+      `CONSOLE_RP_ID`/`CONSOLE_BASE_URL` per host (done for prod — passkeys verified).
 
 ### 2026-06-21 — per-program enforcement history (daily trend + sparkline)
 - [x] `outlay_program_enforcement` daily buckets (PK program_id+day); `record_program_enforcement` now also
@@ -715,6 +764,13 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 - [ ] (Optional) Custom domain `app.modelpilot.app` via `fly certs add` — currently on free `.fly.dev`.
 
 ## 🧩 Product (optional / later)
+- [ ] **Program pacing P2/P3** (follow-ups to the 2026-06-23 earned-value work): a quarterly plan-vs-actual
+      **variance report** view; optionally a **customer-entered per-component forecast** (vs. our model's
+      class figure) — heavier, needs plan→ticket mapping; pacing→alert is already wired via the existing
+      `program.over/warn` webhook + Slack path.
+- [ ] **Open risk (scale):** the report is a JSON blob in SQLite — fine now, a ceiling at millions of
+      events/month (future: aggregate storage / pagination). **Open risk (coverage):** ticket attribution
+      depends on branches/PRs encoding ticket ids; surfaced honestly, recovered via session/PR-ref linking.
 - [ ] **Tuning model = Option A (metadata-only), chosen for the moat.** Per-customer tuning is driven by
       traffic metadata (labels, token counts, outcomes) — never prompt content — and ALL routing/tuning
       IP stays server-side (the shipped client carries none of it; leak-audit-enforced in

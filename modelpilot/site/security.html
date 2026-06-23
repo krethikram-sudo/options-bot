@@ -68,8 +68,9 @@
         <li><span class="ck">✓</span><div><b>Your API keys.</b> Your provider key stays on your side and calls Anthropic directly.</div></li>
         <li><span class="ck">✓</span><div><b>Customer / PII data.</b> Anything inside a prompt stays inside your boundary.</div></li>
       </ul>
-      <p class="muted" style="font-size:13px;margin:14px 0 0">Ingestion <b>rejects any payload</b> with prompt
-        text, outputs, or secret-looking keys (HTTP 422) — the boundary is enforced, not just promised.</p>
+      <p class="muted" style="font-size:13px;margin:14px 0 0">Ingestion <b>rejects payloads</b> carrying
+        sensitive field names (prompts, outputs, keys) or credential-looking values (HTTP 422) — defense in
+        depth on top of a client that only ever sends aggregates.</p>
     </div>
     <div class="owner">
       <div class="role">Metadata only</div>
@@ -91,6 +92,24 @@
       pulls metadata: usage counts, models, and ticket references. Your prompts, model outputs, and API
       keys stay entirely on your side; there's nothing for us to see in your traffic because we're not in
       it.</p>
+
+    <h2>Access control &amp; sign-in security</h2>
+    <ul>
+      <li><span class="ck">·</span><div><b>Phishing-resistant passkeys (WebAuthn / FIDO2)</b> — Touch ID, Windows Hello, or a security key — plus authenticator (TOTP) and email codes. <b>Admins can require MFA for everyone</b> (owners and invited members), enforced before access.</div></li>
+      <li><span class="ck">·</span><div><b>SSO via SAML / OIDC + SCIM</b> provisioning and de-provisioning, with <b>role-based access</b> (owner / admin / member, least privilege).</div></li>
+      <li><span class="ck">·</span><div><b>Session &amp; account controls</b> — configurable idle and absolute session limits, one-click "log out everywhere", account lockout on repeated failures, and password screening against known-breached lists.</div></li>
+      <li><span class="ck">·</span><div><b>Encrypted at rest</b> — connector tokens and secrets are encrypted at the application layer, so a database-file leak alone never exposes them.</div></li>
+      <li><span class="ck">·</span><div><b>Full audit log → your SIEM</b> — every privileged and authentication event (including failed logins and security-policy changes), with CSV + streaming export, plus a signed incident/breach webhook to your SOC.</div></li>
+    </ul>
+
+    <h2>Trust Center &amp; compliance posture</h2>
+    <p>In-app there's a <b>Trust Center</b> with your security policy, sign-in controls, and downloadable
+      artifacts: a <b>VPAT / ACR</b> (WCAG&nbsp;2.1&nbsp;AA · Section&nbsp;508), an <b>AI model &amp; system + data card
+      with an Acceptable Use Policy</b>, and the audit-log export. Our controls map to <b>NIST&nbsp;800-53</b> and
+      the SOC&nbsp;2 criteria.</p>
+    <p class="muted" style="font-size:13px;margin:8px 0 0"><b>Honest status:</b> <b>SOC&nbsp;2 Type&nbsp;II is in
+      progress</b> (not yet held); FedRAMP / StateRAMP-GovRAMP and FIPS-validated cryptography are on the roadmap
+      for government deployments. We never claim a certification we don't hold — ask us for current status.</p>
 
     <h2>Data handling, isolation &amp; exit</h2>
     <ul>
