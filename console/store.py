@@ -450,6 +450,8 @@ _MIGRATIONS = [
     "ALTER TABLE settings ADD COLUMN session_max_hours INTEGER NOT NULL DEFAULT 0",  # absolute session lifetime (hours); 0 = default
     "ALTER TABLE settings ADD COLUMN security_webhook TEXT",  # incident/breach notification webhook (customer's SOC/SIEM)
     "ALTER TABLE settings ADD COLUMN data_region TEXT",  # surfaced data-residency region label
+    "ALTER TABLE accounts ADD COLUMN name TEXT",  # owner's display name (optional); falls back to email alias
+    "ALTER TABLE members ADD COLUMN name TEXT",   # invited member's display name (optional)
 ]
 
 OTP_TTL = 600          # one-time code lifetime (seconds)
@@ -627,9 +629,10 @@ class StoreError(ValueError):
 
 def create_account(email: str, password: str, company: str = "", role: str = "customer",
                    path: str | None = None, now: float | None = None,
-                   consent: bool = False) -> dict:
+                   consent: bool = False, name: str = "") -> dict:
     """Create an account + its deployment + default settings + a started trial.
-    `consent=True` records that the owner accepted the Terms + Privacy Policy."""
+    `consent=True` records that the owner accepted the Terms + Privacy Policy.
+    `name` is an optional display name; when blank we fall back to the email alias."""
     email = (email or "").strip().lower()
     if "@" not in email or len(email) < 5:
         raise StoreError("Enter a valid email address.")
@@ -642,9 +645,10 @@ def create_account(email: str, password: str, company: str = "", role: str = "cu
     try:
         try:
             cur = conn.execute(
-                "INSERT INTO accounts(email, company, pw_hash, pw_salt, role, status, created_at,"
-                " tos_accepted_at) VALUES(?,?,?,?,?, 'active', ?, ?)",
-                (email, company.strip(), pw_hash, salt, role, now, now if consent else None))
+                "INSERT INTO accounts(email, company, name, pw_hash, pw_salt, role, status, created_at,"
+                " tos_accepted_at) VALUES(?,?,?,?,?,?, 'active', ?, ?)",
+                (email, company.strip(), (name or "").strip()[:120], pw_hash, salt, role, now,
+                 now if consent else None))
         except sqlite3.IntegrityError:
             raise StoreError("An account with that email already exists.")
         account_id = cur.lastrowid
@@ -680,6 +684,39 @@ def get_account_by_email(email: str, path: str | None = None) -> dict | None:
         return dict(row) if row else None
     finally:
         conn.close()
+
+
+def set_account_name(account_id: int, name: str, path: str | None = None) -> None:
+    """Set the owner's display name (blank clears it → fall back to email alias)."""
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE accounts SET name=? WHERE id=?",
+                     ((name or "").strip()[:120], account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def set_member_name(member_id: int, account_id: int, name: str, path: str | None = None) -> None:
+    """Set an invited member's display name (scoped to their org)."""
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE members SET name=? WHERE id=? AND account_id=?",
+                     ((name or "").strip()[:120], member_id, account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def display_name(principal: dict | None) -> str:
+    """Best display name for an account/member row: explicit name, else email alias."""
+    if not principal:
+        return ""
+    name = (principal.get("name") or "").strip()
+    if name:
+        return name
+    email = (principal.get("email") or "").strip()
+    return email.split("@")[0] if "@" in email else email
 
 
 def authenticate(email: str, password: str, path: str | None = None) -> dict | None:

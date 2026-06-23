@@ -595,6 +595,11 @@ def page(title: str, body: str, account: dict | None = None, active: str = "", b
                      f'<a class="{"on" if active == "/admin/leads" else ""}" href="/admin/leads">Pilot requests</a>'
                      f'<a class="{"on" if active == "/admin/health" else ""}" href="/admin/health">Scheduler health</a>')
         em = _e(account.get("display_email") or account["email"])
+        # Prefer a real display name (set in Settings) over the raw email in the sidebar.
+        _dn = (account.get("display_name") or "").strip()
+        who = (f'<div class=who style="font-weight:600;font-size:13px;'
+               f'overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{_e(_dn)}</div>'
+               f'<div class=email>{em}</div>') if _dn and _dn != em else f'<div class=email>{em}</div>'
         # `overlay` is an undismissable, centered takeover (the first-run role gate):
         # the app renders behind it, blurred and non-interactive, so the customer
         # can't move on until they choose.
@@ -604,7 +609,7 @@ def page(title: str, body: str, account: dict | None = None, active: str = "", b
             f'<div class="{shell_cls}"><aside class=side>'
             '<a class=brand href="https://outlay-ai.com/">Outlay<span class=dot>.ai</span></a>'
             f'<nav class=sidenav>{links}{admin}</nav>'
-            f'<div class=side-foot>{_trial_pill(account)}<div class=email>{em}</div>'
+            f'<div class=side-foot>{_trial_pill(account)}{who}'
             '<form method=post action="/logout" style="margin:0">'
             '<button class="btn sec sm" style="width:100%;color:var(--red)">Sign out</button></form></div>'
             f'</aside><main class=main><div class=inner>{_demo_banner(account)}'
@@ -3428,6 +3433,8 @@ def auth_form(kind: str, error: str = "", email: str = "") -> str:
     is_signup = kind == "signup"
     title = "Start your free trial" if is_signup else "Sign in"
     err = f'<div class="note bad">{_e(error)}</div>' if error else ""
+    full_name = ('<div class=field><label>Your name <span class=muted>(optional)</span></label>'
+                 '<input name=name aria-label="Your name" placeholder="Jane Doe"></div>') if is_signup else ""
     company = ('<div class=field><label>Company <span class=muted>(optional)</span></label>'
                '<input name=company aria-label="Company name" placeholder="Acme Inc."></div>') if is_signup else ""
     consent = ('<div class=field><label class=row style="gap:8px;font-weight:400;font-size:13px">'
@@ -3458,6 +3465,7 @@ def auth_form(kind: str, error: str = "", email: str = "") -> str:
       <form method=post action="/{kind}">
         <div class=field><label>Work email</label>
           <input name=email type=email aria-label="Email address" required value="{_e(email)}" placeholder="you@company.com"></div>
+        {full_name}
         {company}
         <div class=field><label>Password</label>
           <input name=password type=password aria-label="Password" required minlength=8 placeholder="At least 8 characters"></div>
@@ -3834,7 +3842,7 @@ def settings_page(account: dict, settings: dict, saved: bool = False,
     # the /app/settings POST still accepts the legacy routing fields.)
     saved_note = '<div class="note" role=status>Settings saved.</div>' if saved else ""
     body = (f"<h1>Settings</h1>{saved_note}"
-            + _settings_group("Account &amp; team", _settings_links(account))
+            + _settings_group("Account &amp; team", _profile_section(account), _settings_links(account))
             + _settings_group("Security", _twofa_section(account, twofa))
             + _settings_group("Notifications", _digest_section(account))
             + _settings_group("Help us improve", _feedback_widget())
@@ -4249,6 +4257,29 @@ def _digest_section(account: dict) -> str:
           <span><b>Monthly business close pack</b><br><span class="small muted">A month-end email with the
           period summary and the <b>FOCUS-aligned CSV attached</b> — the artifact you load into the books /
           your FinOps tool — plus a link to the printable close report.</span></span></label>
+        <button class="btn sec sm">Save</button>
+      </form>
+    </div>"""
+
+
+def _profile_section(account: dict) -> str:
+    """Your display name — shown in the nav and across the product. Available to every
+    signed-in principal (owner or member); blank falls back to the email alias."""
+    # The member's own name when signed in as a member; otherwise the owner's.
+    if account.get("member_id"):
+        current = (account.get("member_name") or "").strip()
+    else:
+        current = (account.get("name") or "").strip()
+    alias = (account.get("display_email") or account.get("email") or "").split("@")[0]
+    return f"""
+    <div class=card style="margin-top:16px" id=profile>
+      <div class=label>Your name</div>
+      <p class="small muted" style="margin:.2em 0 .8em">Shown in the top navigation and across Outlay.
+        Leave blank to use your email alias (<b>{_e(alias)}</b>).</p>
+      <form method=post action="/app/profile" style="display:flex;gap:10px;align-items:center">
+        <input name=name value="{_e(current)}" aria-label="Your display name" maxlength=120
+               placeholder="Jane Doe"
+               style="flex:1;padding:7px 10px;border:1px solid var(--line);border-radius:8px">
         <button class="btn sec sm">Save</button>
       </form>
     </div>"""
