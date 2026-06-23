@@ -80,6 +80,29 @@ def test_create_account_sets_trial_and_deployment(env):
     assert store.trial_status(a["id"])["active"]
 
 
+def test_free_text_fields_are_length_capped(env):
+    """Free-text fields a trial user controls are bounded server-side (no unbounded
+    blobs in the DB) and consistent with the display-name cap."""
+    _, store = env
+    a = store.create_account("cap@y.com", "k7-otter-ledger", company="C" * 5000,
+                             name="N" * 5000)
+    acct = store.get_account(a["id"])
+    assert len(acct["company"]) == 200 and len(acct["name"]) == 120
+    # deployment label (create + rename) and API key name are capped, and the returned
+    # row matches what's actually stored (no pre-cap value leaking back)
+    d = store.create_deployment(a["id"], label="L" * 5000)
+    assert len(d["label"]) == 120
+    store.rename_deployment(d["deployment_id"], a["id"], "R" * 5000)
+    relabeled = next(x for x in store.deployments_for(a["id"]) if x["deployment_id"] == d["deployment_id"])
+    assert len(relabeled["label"]) == 120
+    k = store.create_api_key(a["id"], d["deployment_id"], name="K" * 5000)
+    assert len(k["name"]) == 120
+    # an absurdly long webhook URL is rejected, not silently truncated into junk
+    import pytest
+    with pytest.raises(store.StoreError):
+        store.create_webhook(a["id"], "https://example.com/" + "a" * 3000)
+
+
 def test_trial_clock_starts_at_setup_not_signup(env):
     _, store = env
     a = store.create_account("setup@y.com", "k7-otter-ledger")
