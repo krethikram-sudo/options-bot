@@ -657,8 +657,8 @@ def create_account(email: str, password: str, company: str = "", role: str = "cu
             cur = conn.execute(
                 "INSERT INTO accounts(email, company, name, pw_hash, pw_salt, role, status, created_at,"
                 " tos_accepted_at) VALUES(?,?,?,?,?,?, 'active', ?, ?)",
-                (email, company.strip(), (name or "").strip()[:120], pw_hash, salt, role, now,
-                 now if consent else None))
+                (email, (company or "").strip()[:200], (name or "").strip()[:120], pw_hash, salt,
+                 role, now, now if consent else None))
         except sqlite3.IntegrityError:
             raise StoreError("An account with that email already exists.")
         account_id = cur.lastrowid
@@ -2306,10 +2306,11 @@ def create_deployment(account_id: int, label: str = "", path: str | None = None,
     Savings across all of an account's deployments roll up to one bill."""
     now = now or time.time()
     dep = "dep_" + secrets.token_hex(12)
+    label = (label or "deployment").strip()[:120]
     conn = connect(path)
     try:
         conn.execute("INSERT INTO deployments(deployment_id, account_id, label, created_at)"
-                     " VALUES(?,?,?,?)", (dep, account_id, (label or "deployment").strip(), now))
+                     " VALUES(?,?,?,?)", (dep, account_id, label, now))
         conn.commit()
     finally:
         conn.close()
@@ -2322,7 +2323,7 @@ def rename_deployment(deployment_id: str, account_id: int, label: str,
     conn = connect(path)
     try:
         conn.execute("UPDATE deployments SET label=? WHERE deployment_id=? AND account_id=?",
-                     ((label or "").strip(), deployment_id, account_id))
+                     ((label or "").strip()[:120], deployment_id, account_id))
         conn.commit()
     finally:
         conn.close()
@@ -2597,12 +2598,12 @@ def create_api_key(account_id: int, deployment_id: str, name: str = "",
     full = KEY_PREFIX + secrets.token_urlsafe(24)
     prefix = full[:16]
     key_hash = hashlib.sha256(full.encode()).hexdigest()
+    name = (name or "key").strip()[:120]
     conn = connect(path)
     try:
         conn.execute("INSERT INTO api_keys(account_id, deployment_id, name, prefix, key_hash,"
                      " created_at, expires_at) VALUES(?,?,?,?,?,?,?)",
-                     (account_id, deployment_id, (name or "key").strip(), prefix, key_hash, now,
-                      expires_at))
+                     (account_id, deployment_id, name, prefix, key_hash, now, expires_at))
         conn.commit()
     finally:
         conn.close()
@@ -3256,6 +3257,8 @@ def create_webhook(account_id: int, url: str, events: str = "all",
                    path: str | None = None, now: float | None = None) -> dict:
     if not (url or "").startswith(("http://", "https://")):
         raise StoreError("webhook url must be http(s)")
+    if len(url) > 2000:   # reject rather than silently truncate a URL into something broken
+        raise StoreError("webhook url is too long")
     from . import notify
     if not notify.is_safe_url(url):
         raise StoreError("webhook url must be a public address (not localhost / internal / metadata)")
