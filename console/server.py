@@ -17,6 +17,7 @@ import json
 import os
 import secrets
 import time
+from contextlib import asynccontextmanager
 from urllib.parse import parse_qs, quote
 
 from fastapi import FastAPI, Request
@@ -31,7 +32,62 @@ WA_REG_COOKIE = "mp_wareg"     # short-lived WebAuthn registration challenge
 WA_AUTH_COOKIE = "mp_waauth"   # short-lived WebAuthn login-assertion challenge
 # Where to send users after they sign out — the public marketing landing page.
 LANDING_URL = os.environ.get("LANDING_URL", "https://outlay-ai.com/")
-app = FastAPI(title="Outlay console")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup: init the DB and, for single-machine deploys, start the in-process
+    background loops (digest / auto-sync / maintenance) driven by the *_EVERY_MIN env
+    vars. Shutdown: cancel them. (Under a real external scheduler, leave the env vars at
+    0 and POST the /internal/outlay/* endpoints instead — both sweeps are idempotent and
+    cadence-guarded, so running them as often as hourly only fires genuinely-due work.)"""
+    store.init_db()
+    tasks = []
+
+    hours = float(os.environ.get("CONSOLE_DIGEST_HOURS", "0") or 0)
+    if hours > 0:
+        from . import digest
+
+        async def _digest_loop():
+            while True:
+                await asyncio.sleep(hours * 3600)
+                try:
+                    await asyncio.to_thread(digest.send_digest)
+                except Exception:  # noqa: BLE001 — digest must never crash the server
+                    pass
+        tasks.append(asyncio.create_task(_digest_loop()))
+
+    every = float(os.environ.get("OUTLAY_AUTOSYNC_EVERY_MIN", "0") or 0)
+    if every > 0:
+        async def _autosync_loop():
+            while True:
+                await asyncio.sleep(every * 60)
+                try:
+                    summary = await asyncio.to_thread(_run_due_syncs)
+                    store.mark_cron_run("sync-due", summary)
+                except Exception:  # noqa: BLE001 — a sweep must never crash the server
+                    pass
+        tasks.append(asyncio.create_task(_autosync_loop()))
+
+    maint = float(os.environ.get("OUTLAY_MAINTENANCE_EVERY_MIN", "0") or 0)
+    if maint > 0:
+        async def _maintenance_loop():
+            while True:
+                await asyncio.sleep(maint * 60)
+                try:
+                    await asyncio.to_thread(_run_maintenance)
+                except Exception:  # noqa: BLE001 — a sweep must never crash the server
+                    pass
+        tasks.append(asyncio.create_task(_maintenance_loop()))
+
+    try:
+        yield
+    finally:
+        for t in tasks:
+            t.cancel()
+
+
+app = FastAPI(title="Outlay console", lifespan=lifespan)
 
 
 @app.middleware("http")
@@ -64,71 +120,6 @@ async def _slide_session(request: Request, call_next):
         resp.set_cookie(COOKIE, fresh, httponly=True, samesite="lax", secure=secure,
                         max_age=store.SESSION_TTL)
     return resp
-
-
-@app.on_event("startup")
-async def _startup():
-    store.init_db()
-    app.state.digest_task = None
-    hours = float(os.environ.get("CONSOLE_DIGEST_HOURS", "0") or 0)
-    if hours > 0:
-        import asyncio
-
-        from . import digest
-
-        async def _digest_loop():
-            while True:
-                await asyncio.sleep(hours * 3600)
-                try:
-                    await asyncio.to_thread(digest.send_digest)
-                except Exception:  # noqa: BLE001 — digest must never crash the server
-                    pass
-
-        app.state.digest_task = asyncio.create_task(_digest_loop())
-
-    # In-process schedulers for single-machine deploys: set the *_EVERY_MIN env vars
-    # and the one always-on machine self-drives every background sweep — no external
-    # cron needed. (Under a real external scheduler, leave these at 0 and POST the
-    # /internal/outlay/* endpoints instead.) Both sweeps are idempotent and cadence-
-    # guarded, so running them as often as hourly only fires genuinely-due work.
-    import asyncio
-
-    app.state.autosync_task = None
-    every = float(os.environ.get("OUTLAY_AUTOSYNC_EVERY_MIN", "0") or 0)
-    if every > 0:
-        async def _autosync_loop():
-            while True:
-                await asyncio.sleep(every * 60)
-                try:
-                    summary = await asyncio.to_thread(_run_due_syncs)
-                    store.mark_cron_run("sync-due", summary)
-                except Exception:  # noqa: BLE001 — a sweep must never crash the server
-                    pass
-
-        app.state.autosync_task = asyncio.create_task(_autosync_loop())
-
-    # Maintenance sweep: weekly digest + monthly close pack + webhook redelivery +
-    # retention purge (all cadence-guarded). Drives /admin/health 'digest-due'.
-    app.state.maintenance_task = None
-    maint = float(os.environ.get("OUTLAY_MAINTENANCE_EVERY_MIN", "0") or 0)
-    if maint > 0:
-        async def _maintenance_loop():
-            while True:
-                await asyncio.sleep(maint * 60)
-                try:
-                    await asyncio.to_thread(_run_maintenance)
-                except Exception:  # noqa: BLE001 — a sweep must never crash the server
-                    pass
-
-        app.state.maintenance_task = asyncio.create_task(_maintenance_loop())
-
-
-@app.on_event("shutdown")
-async def _shutdown():
-    for name in ("digest_task", "autosync_task", "maintenance_task"):
-        task = getattr(app.state, name, None)
-        if task is not None:
-            task.cancel()
 
 
 # --------------------------------------------------------------------------- #
