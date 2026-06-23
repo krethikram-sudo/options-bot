@@ -43,6 +43,11 @@ async def _slide_session(request: Request, call_next):
     tok = request.cookies.get(COOKIE)
     if not tok:
         return resp
+    # If the handler already managed the session cookie (login, logout, account
+    # delete, log-out-everywhere), respect it — never re-issue over a delete/refresh.
+    if any(k == b"set-cookie" and v.startswith(COOKIE.encode() + b"=")
+           for k, v in resp.raw_headers):
+        return resp
     sess = store.read_session(tok)
     if not sess:
         return resp
