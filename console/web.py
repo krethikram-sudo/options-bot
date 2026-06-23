@@ -3063,6 +3063,48 @@ def programs_page(account: dict, report: dict | None, statuses: list[dict]) -> s
                 account, active="/app/outlay/programs")
 
 
+def _variance_section(program_statuses: list[dict]) -> str:
+    """Finance's quarterly plan-vs-actual roll-up across programs (one table + totals)."""
+    from . import outlay_app
+    rep = outlay_app.variance_report(program_statuses or [])
+    if not rep["rows"]:
+        return ""
+    tone = {"on track": "var(--grn-d)", "watch": "var(--amber)", "off track": "var(--red)",
+            "gathering baseline": "var(--muted)"}
+    rws = ""
+    for r in rep["rows"]:
+        planned = money(r["planned_to_date_usd"]) if r["planned_to_date_usd"] is not None else "—"
+        if r["variance_usd"] is None:
+            var = "—"
+        else:
+            vcol = "var(--red)" if r["variance_usd"] > 0 else "var(--grn-d)"
+            pct = (f' ({"+" if r["variance_pct"] > 0 else ""}{r["variance_pct"] * 100:.0f}%)'
+                   if r["variance_pct"] is not None else "")
+            var = (f'<span style="color:{vcol}">{"+" if r["variance_usd"] > 0 else ""}'
+                   f'{money(r["variance_usd"])}{pct}</span>')
+        over = f' <span class=muted style="font-size:12px">({money(r["over_budget_usd"])} over)</span>' \
+            if r["over_budget_usd"] > 0 else ""
+        rws += (f'<tr><td><b>{_e(r["name"])}</b></td><td>{money(r["budget_usd"])}</td>'
+                f'<td>{money(r["actual_to_date_usd"])}</td><td>{planned}</td><td>{var}</td>'
+                f'<td style="color:{tone.get(r["rating"], "var(--muted)")};font-weight:600">'
+                f'{_e(r["rating"].title())}</td>'
+                f'<td>{money(r["projected_total_usd"])}{over}</td></tr>')
+    t = rep["totals"]
+    chips = " · ".join(f"{n} {k}" for k, n in rep["counts"].items() if n)
+    total = (f'<tr style="border-top:2px solid var(--ink)"><td><b>Total ({rep["n"]})</b></td>'
+             f'<td><b>{money(t["budget_usd"])}</b></td><td><b>{money(t["actual_to_date_usd"])}</b></td>'
+             f'<td><b>{money(t["planned_to_date_usd"])}</b></td><td><b>{money(t["variance_usd"])}</b></td>'
+             f'<td></td><td><b>{money(t["projected_total_usd"])}</b></td></tr>')
+    return (
+        f'<div class=ocard style="margin-top:16px"><div class=dh>Quarterly variance — {_e(rep["quarter"])}'
+        f'<a class=sub href="/app/outlay/variance.csv">Export CSV →</a></div>'
+        f'<p class=muted style="font-size:12.5px;margin:2px 0 10px">Plan vs. actual across programs this '
+        f'quarter{(" · " + _e(chips)) if chips else ""}.</p>'
+        '<table><thead><tr><th>Program</th><th>Budget</th><th>Actual</th><th>Planned</th>'
+        '<th>Variance</th><th>Rating</th><th>Projected</th></tr></thead>'
+        f'<tbody>{rws}{total}</tbody></table></div>')
+
+
 def governance_page(account: dict, report: dict | None, budget_statuses: list[dict],
                     program_statuses: list[dict], projects: list[dict] | None = None) -> str:
     """The consolidated business governance deep-view — budgets + programs in one place
@@ -3073,11 +3115,12 @@ def governance_page(account: dict, report: dict | None, budget_statuses: list[di
             'projects with a timeline; <b>budgets</b> cap a single scope. Both project your pace and '
             'flag a breach <b>before</b> month-end.</p></div>')
     attention = _finance_attention(report, budget_statuses, program_statuses)
+    variance = _variance_section(program_statuses)
     programs = (f'<h2 style="font-size:16px;margin:18px 0 6px">Programs</h2>'
                 f'{_programs_section(account, report, program_statuses)}')
     budgets = (f'<h2 style="font-size:16px;margin:24px 0 6px">Budgets</h2>'
                f'{_budgets_section(account, report, budget_statuses, projects)}')
-    return page("Governance", head + attention + programs + budgets,
+    return page("Governance", head + attention + variance + programs + budgets,
                 account, active="/app/outlay/governance")
 
 
