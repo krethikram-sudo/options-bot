@@ -112,6 +112,16 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-23 — input-cap hardening + program pacing across all notification surfaces (#233–#235)
+- [x] **Free-text fields length-capped** (#233): company (200), deployment label + API-key name (120),
+      webhook URL rejected >2000 — bounds user-controlled input, consistent with the display-name cap.
+      Also fixed `create_deployment`/`create_api_key` returning the pre-cap value instead of what's stored.
+- [x] **Program pacing reaches the proactive channels** (#234 weekly digest, #235 monthly close pack): the
+      earned-value on-track/off-track signal (forecast vs actual on completed work + run-rate vs cap) now
+      appears in the Monday digest (email + Slack) and the month-end close pack, not just in-app. Confirmed
+      it was already complete elsewhere: Governance page + Overview + variance CSV (#225) + real-time
+      `program.warn/over` webhook/email/Slack (which already folds in the execution axis via `_worse`).
+
 ### 2026-06-23 — profile names, a11y gate, scale observability, coverage honesty (#227–#231)
 - [x] **Real display name** (#227): `name` on accounts + members; optional at signup; editable in
       Settings (`/app/profile`, audit-logged); shown in the in-app sidebar + the marketing-site account
