@@ -871,24 +871,36 @@ def _coverage_diag(report: dict) -> str:
     bf = sp.get("by_fidelity_usd") or {}
     team_usd = bf.get("team", 0.0)        # reached a team, but no ticket → branch had no ticket/PR link
     inv_usd = bf.get("invoice", 0.0)      # no ticket and no team signal at all
+
+    def _share(x):
+        return f"{x / total * 100:.0f}%" if total > 0 else "0%"
+
     recs = ""
     if team_usd > 0:
-        recs += (f'<li><b>{money(team_usd)}</b> ran on branches with no ticket or linked PR. '
-                 f'<b>Connect your PRs</b> — most reference the issue they close ("Closes #123"), '
-                 f'which recovers the link automatically, no branch renaming. '
+        recs += (f'<li><b>{money(team_usd)}</b> (<b>{_share(team_usd)}</b> of spend) ran on branches with '
+                 f'no ticket or linked PR. <b>Connect your PRs</b> — most reference the issue they close '
+                 f'("Closes #123"), which recovers the link automatically, no branch renaming. '
                  f'<a href="/app/outlay/connect">Connect →</a></li>')
     if inv_usd > 0:
-        recs += (f'<li><b>{money(inv_usd)}</b> had no team or ticket signal. Map people to teams '
-                 f'(email / API-key id → team) so at least cost-center allocation lands. '
-                 f'<a href="/app/outlay/connect#teams">Set up →</a></li>')
+        recs += (f'<li><b>{money(inv_usd)}</b> (<b>{_share(inv_usd)}</b> of spend) had no team or ticket '
+                 f'signal. Map people to teams (email / API-key id → team) so at least cost-center '
+                 f'allocation lands. <a href="/app/outlay/connect#teams">Set up →</a></li>')
     if not recs:
         return ""
+    # Honest upper bound: the team-tier spend already resolves to a team, so linking PRs
+    # could lift ticket coverage by AT MOST its share (only the calls whose PR references
+    # an issue actually recover). Framed as a ceiling — never a promised number.
+    headroom = ""
+    if team_usd > 0:
+        headroom = (f'<p class="small muted" style="margin:8px 0 0">Connecting PRs could lift ticket '
+                    f'coverage by <b>up to +{_share(team_usd)}</b> (to ~{min(100, (cov + team_usd / total) * 100):.0f}%) '
+                    f'— only the calls whose PR references an issue recover, so treat it as a ceiling.</p>')
     return (f'<div class=ocard style="border-color:var(--amber);background:var(--amber-l)">'
             f'<div class=dh>Lift your ticket coverage'
             f'<span class=sub>{cov*100:.0f}% mapped to a ticket</span></div>'
             f'<p class=muted style="font-size:13px;margin:0 0 8px">Coverage depends on resolving each '
             f'AI call\'s branch to a ticket. Here\'s where yours is leaking — and the no-effort fix:</p>'
-            f'<ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.6">{recs}</ul></div>')
+            f'<ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.6">{recs}</ul>{headroom}</div>')
 
 
 def _persona_card(value: str, title: str, desc: str) -> str:
