@@ -69,8 +69,9 @@
 
   function apply(s) {
     if (!s || !s.signed_in) return;
-    // Username = the email alias (everything before the @).
-    var name = (s.email || "Account").split("@")[0] || "Account";
+    // Prefer the display name; fall back to the email alias (everything before the @).
+    var name = (s.name || "").trim() ||
+               (s.email || "Account").split("@")[0] || "Account";
     // Replace the nav "Sign in" button with the account menu.
     var signin = document.querySelector('.navcta a.btn.primary[href*="/login"]') ||
                  document.querySelector('.navcta a[href*="app.outlay-ai.com/login"]');

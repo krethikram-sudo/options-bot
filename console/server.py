@@ -221,11 +221,14 @@ def _current(request: Request) -> dict | None:
         acct["team_role"] = sess["team_role"]
         acct["member_id"] = m["id"]
         acct["display_email"] = m["email"]
+        acct["display_name"] = store.display_name(m)            # the member's own name, not the owner's
+        acct["member_name"] = (m.get("name") or "").strip()
         acct["twofa_enabled"] = bool(m.get("twofa_enabled"))   # the member's own MFA state, not the org's
     else:
         acct["team_role"] = "owner"
         acct["member_id"] = 0
         acct["display_email"] = acct["email"]
+        acct["display_name"] = store.display_name(acct)
     # A passkey counts as enrolled MFA too — reflect the principal's full second-factor
     # state so the admin require_mfa gate treats a passkey-only user as enrolled.
     try:
@@ -415,7 +418,8 @@ async def signup(request: Request):
                                    f.get("email", "")), 400)
     try:
         acct = store.create_account(f.get("email", ""), f.get("password", ""),
-                                    company=f.get("company", ""), consent=True)
+                                    company=f.get("company", ""), name=f.get("name", ""),
+                                    consent=True)
     except store.StoreError as e:
         return _html(web.auth_form("signup", str(e), f.get("email", "")), 400)
     resp = _redirect("/app")  # brand-new customer -> Overview (product home)
@@ -583,7 +587,8 @@ _SESSION_CORS_ORIGINS = {"https://outlay-ai.com", "https://www.outlay-ai.com"}
 @app.get("/api/session")
 def api_session(request: Request):
     acct = _current(request)
-    body = ({"signed_in": True, "email": acct.get("display_email") or acct.get("email", "")}
+    body = ({"signed_in": True, "email": acct.get("display_email") or acct.get("email", ""),
+             "name": acct.get("display_name") or ""}
             if acct else {"signed_in": False})
     resp = JSONResponse(body)
     origin = request.headers.get("origin", "")
@@ -2288,6 +2293,24 @@ async def settings_post(request: Request):
     except store.StoreError:
         pass
     return _redirect("/app/settings?saved=1")
+
+
+@app.post("/app/profile")
+async def profile_post(request: Request):
+    """Update the current principal's display name (owner or member)."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    name = (f.get("name", "") or "").strip()[:120]
+    mid = acct.get("member_id", 0) or 0
+    if mid:
+        store.set_member_name(mid, acct["id"], name)
+    else:
+        store.set_account_name(acct["id"], name)
+    _audit(acct["id"], "profile.name", actor=acct.get("display_email"),
+           detail="updated display name")
+    return _redirect("/app/settings?saved=1#profile")
 
 
 def _connect_html(acct: dict, new_key: str = ""):

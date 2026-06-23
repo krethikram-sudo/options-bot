@@ -490,6 +490,44 @@ def test_settings_update(env, client):
     assert 'role=status>Settings saved.' in saved or 'role="status">Settings saved.' in saved
 
 
+def test_display_name_falls_back_to_email_alias(env):
+    _, store = env
+    a = store.create_account("jane@acme.dev", "k7-otter-ledger")
+    assert a["name"] in (None, "")                       # column exists, blank by default
+    assert store.display_name(a) == "jane"               # alias before the @
+    b = store.create_account("bob@acme.dev", "k7-otter-ledger", name="Bob Q. Public")
+    assert b["name"] == "Bob Q. Public"
+    assert store.display_name(b) == "Bob Q. Public"      # explicit name wins
+    assert store.display_name(None) == ""
+
+
+def test_signup_captures_name(env, client):
+    _, store = env
+    client.post("/signup", data={"email": "named@b.com", "password": "k7-otter-ledger",
+                                 "name": "Ada Lovelace", "company": "Acme", "accept": "1"})
+    acct = store.get_account_by_email("named@b.com")
+    assert acct["name"] == "Ada Lovelace"
+
+
+def test_profile_name_update_and_session(env, client):
+    _, store = env
+    _signup(client, email="owner@b.com")
+    # /api/session reflects the alias until a name is set
+    s = client.get("/api/session").json()
+    assert s["signed_in"] and s["name"] == "owner"
+    # set a display name via the profile editor
+    r = client.post("/app/profile", data={"name": "Grace Hopper"}, follow_redirects=False)
+    assert r.status_code == 303
+    acct = store.get_account_by_email("owner@b.com")
+    assert store.get_account(acct["id"])["name"] == "Grace Hopper"
+    # session + nav now carry the real name; sidebar shows it
+    assert client.get("/api/session").json()["name"] == "Grace Hopper"
+    assert "Grace Hopper" in client.get("/app/settings").text
+    # clearing it falls back to the alias again
+    client.post("/app/profile", data={"name": ""})
+    assert client.get("/api/session").json()["name"] == "owner"
+
+
 def test_convert_without_stripe_marks_paid(env, client):
     server, store = env
     _signup(client, email="pay@b.com")
