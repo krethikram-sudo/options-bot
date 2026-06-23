@@ -1701,9 +1701,18 @@ def _finance_attention(report: dict | None, budget_statuses: list[dict] | None,
         nm = _e(s.get("name") or "program")
         tl = s.get("timeline") or {}
         pc = s.get("pacing") or {}
+        pr = s.get("progress") or {}
         ready = pc.get("ready")
-        # Prefer pacing's date-precise, actual-vs-plan read when we have enough signal.
         proj = pc.get("projected_end_usd", 0) if ready else s.get("projected_usd", 0)
+        # Earned-value (forecast vs actual on completed work) adds an execution read on top
+        # of the budget overspend flag — append it when we have a confident rating.
+        ev = pr if pr.get("ready") else None
+        if ev and abs(ev.get("cost_variance_pct", 0)) >= 0.05:
+            cv = ev["cost_variance_pct"] * 100
+            ev_bit = (f' · completed work is <b>{abs(cv):.0f}% {"over" if cv > 0 else "under"} '
+                      f'forecast</b> at {ev.get("progress_pct",0)*100:.0f}% done')
+        else:
+            ev_bit = ""
         if ready and pc.get("projected_breach_date") and pc["projected_breach_date"] != "now":
             when = f' — projected to exceed budget on <b>{_e(pc["projected_breach_date"])}</b>'
         elif tl.get("breach_month"):
@@ -1713,19 +1722,19 @@ def _finance_attention(report: dict | None, budget_statuses: list[dict] | None,
         over = (proj or 0) - (s.get("limit_usd", 0) or 0)
         if s.get("status") == "over":
             already = (s.get("spent_usd", 0) or 0) >= (s.get("limit_usd", 0) or 0)
-            verb = "is already over budget" if already else "is projected to overspend"
+            verb = ("is off track on forecast" if (ev and ev["status"] == "over"
+                                                   and not (already or over > 0))
+                    else ("is already over budget" if already else "is projected to overspend"))
             items.append((2, f'<span class=fa-dot style="background:var(--red)"></span>'
                           f'<span class=fa-txt>Program <b>{nm}</b> {verb} — projected '
                           f'<b>{money(proj)}</b> vs {money(s.get("limit_usd",0))} cap '
-                          f'({money(abs(over))} over){when}.</span>'
+                          f'({money(abs(over))} over){ev_bit}{when}.</span>'
                           f'<a class="btn sec sm" href="/app/outlay/programs">Review →</a>'))
         elif s.get("status") == "warn":
-            pace_bit = (f' · pacing <b>{abs(pc.get("variance_pct",0))*100:.0f}% over plan</b>'
-                        if ready and pc.get("variance_pct", 0) > 0 else "")
             items.append((1, f'<span class=fa-dot style="background:var(--amber)"></span>'
                           f'<span class=fa-txt>Program <b>{nm}</b> is tracking hot — projected '
                           f'<b>{money(proj)}</b> of {money(s.get("limit_usd",0))} '
-                          f'({s.get("pct_used",0)*100:.0f}% used){pace_bit}{when}.</span>'
+                          f'({s.get("pct_used",0)*100:.0f}% used){ev_bit}{when}.</span>'
                           f'<a class="btn sec sm" href="/app/outlay/programs">Review →</a>'))
 
     for s in (budget_statuses or []):
@@ -2905,6 +2914,38 @@ def _program_pacing_html(s: dict) -> str:
             f'<div class=muted style="font-size:11.5px;margin-top:5px">to date{breach_html}</div></div>')
 
 
+def _program_progress_html(s: dict) -> str:
+    """Headline on-track rating from forecast-vs-actual on COMPLETED work (earned value).
+    The most accurate read: are finished components costing what we forecast, and at this
+    rate will the program land within budget?"""
+    pr = s.get("progress")
+    if not pr:
+        return ""
+    if not pr.get("ready"):
+        return ('<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px;'
+                'font-size:12px;color:var(--muted)">On-track rating — gathering baseline '
+                '(rates once a few components have completed).</div>')
+    col = {"ok": "var(--grn-d)", "warn": "var(--amber)", "over": "var(--red)"}.get(pr["status"], "var(--grn-d)")
+    icon = "&#10003;" if pr["status"] == "ok" else "&#9888;"
+    cv = pr.get("cost_variance_pct", 0) * 100
+    var_word = (f'completed work is <b>{abs(cv):.0f}% {"over" if cv > 0 else "under"} forecast</b>'
+                if abs(cv) >= 1 else 'completed work is <b>on forecast</b>')
+    over = pr.get("over_budget_by_usd", 0)
+    proj_html = (f'projected <b style="color:{col}">{money(pr.get("projected_total_usd", 0))}</b>'
+                 + (f' vs {money(s.get("limit_usd", 0))} budget (&#9650;{money(over)} over)'
+                    if over > 0 else ' &mdash; within budget'))
+    return (
+        '<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">'
+        '<div style="display:flex;justify-content:space-between;align-items:center">'
+        f'<span style="font-weight:700;color:{col};font-size:13.5px">{icon} '
+        f'{_e(pr.get("rating", "").title())}</span>'
+        f'<span class=muted style="font-size:11.5px">{pr.get("components_done")}/'
+        f'{pr.get("components_total")} components done</span></div>'
+        f'<div style="font-size:12.5px;margin-top:4px">{pr.get("progress_pct", 0) * 100:.0f}% of '
+        f'forecasted work complete &middot; {var_word}</div>'
+        f'<div class=muted style="font-size:12px;margin-top:2px">{proj_html}</div></div>')
+
+
 def _programs_section(account: dict, report: dict | None, statuses: list[dict]) -> str:
     """The programs management UI (status cards with timelines + define form), without
     the page chrome — composed by both the standalone Programs page and Governance."""
@@ -2951,6 +2992,7 @@ def _programs_section(account: dict, report: dict | None, statuses: list[dict]) 
                  f'<form method=post action="/app/outlay/programs/delete" style="margin:0">'
                  f'<input type=hidden name=id value="{s["id"]}">'
                  f'<button class="btn sec sm">Remove</button></form></div>'
+                 f'{_program_progress_html(s)}'
                  f'{_program_pacing_html(s)}'
                  f'{spark_row}'
                  f'{_program_timeline_html(s)}'

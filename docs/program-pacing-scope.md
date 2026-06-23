@@ -95,7 +95,21 @@ Tolerances configurable (e.g. warn >10% over plan; alert when projected to breac
 > every sync; `program_pacing()` engine (actual-to-date vs. linear plan, smoothed burn rate, blended
 > EAC, interpolated projected-breach **date**, min-data "gathering baseline" gating); program-card
 > pacing strip + plan-vs-actual bars; pacing drives the headline status and enriches the business +
-> engineering attention flags. P2/P3 below remain.
+> engineering attention flags.
+>
+> **Status — PROGRESS-BASED (earned-value) pacing BUILT** *(the founder's preferred model — pace by
+> work completed, not calendar time).* `program_earned_value(report, program)`: for a program's
+> **completed components (tickets)** it compares **forecasted vs actual cost**, where each component's
+> forecast = its **class's typical (median) cost** — the same robust per-class figure the cost model
+> and anomaly detector already use (and that the Accuracy back-test validates per closed ticket).
+> Outputs a clean **on-track / watch / off-track** rating from **CPI = Σforecast(done)/Σactual(done)**,
+> a **how-far-off** metric (cost-variance %), **progress** (forecasted share of work done), and a
+> projected total (EVM EAC = Σforecast ÷ CPI). Two independent axes are combined (worst-of): **execution
+> quality** (this) and **budget headroom** (the time/run-rate pacing above) — a program flags if either
+> is bad. Gated behind ≥3 completed components ("gathering baseline"). Surfaced as the headline rating
+> strip on the program card + woven into the business attention flags. **Component = ticket**;
+> forecast = our model (no new customer input). Data used is the existing metadata (ticket status +
+> cost + class) — no extra private data.
 
 ## 8. Phasing & rough effort
 | Phase | Scope | Effort |

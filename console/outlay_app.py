@@ -576,6 +576,13 @@ def _pace_status(spent: float, limit: float, window: int, period: int) -> tuple:
     return round(projected, 2), status
 
 
+_STATUS_RANK = {"ok": 0, "warn": 1, "over": 2}
+
+
+def _worse(a: str, b: str) -> str:
+    return a if _STATUS_RANK.get(a, 0) >= _STATUS_RANK.get(b, 0) else b
+
+
 def program_spend(report: dict, program: dict) -> float:
     """Cumulative spend attributed to one program from a report (a ticket matching ANY
     of the program's members counts once — no double-count across overlapping scopes)."""
@@ -611,10 +618,13 @@ def program_statuses(report: dict, programs: list[dict], histories: dict | None 
                "pct_used": round(spent / limit, 3) if limit else 0.0, "status": status}
         row["timeline"] = _program_timeline(p, spent, projected, limit, period)
         row["pacing"] = program_pacing(p, histories.get(p.get("id"), []), spent)
-        # When pacing has enough signal, let it drive the headline status (it's the more
-        # accurate, actual-vs-plan read); otherwise keep the run-rate status.
-        if row["pacing"].get("ready"):
-            row["status"] = row["pacing"]["status"]
+        row["progress"] = program_earned_value(report, p)
+        # Budget headroom (spent/run-rate vs cap) — prefer the time-based pacing read.
+        budget_status = row["pacing"]["status"] if row["pacing"].get("ready") else status
+        # Execution quality (forecast vs actual on completed work) — a separate axis.
+        exec_status = row["progress"]["status"] if (row["progress"] and row["progress"].get("ready")) else "ok"
+        # A program needs attention if EITHER is bad → take the worse.
+        row["status"] = _worse(budget_status, exec_status)
         out.append(row)
     return out
 
@@ -777,6 +787,90 @@ def program_pacing(program: dict, history: list[dict], current_spent: float,
 def _now_ts() -> float:
     import time as _t
     return _t.time()
+
+
+# --- Progress / earned-value pacing (forecast vs actual on COMPLETED work) --- #
+# This is the more accurate read the founder asked for: instead of pacing against
+# calendar time, pace against *work actually completed*. For each completed component
+# (ticket) we have its actual cost and a per-component forecast (its class's typical
+# cost — the same robust class figure the anomaly detector uses). Comparing forecasted
+# vs actual over completed work gives an on-track / not rating and a "how far off" %.
+EV_MIN_DONE = 3            # need at least this many completed components before we rate
+EV_OK_CPI = 0.92          # completed work within ~8% of forecast → on track
+EV_WARN_CPI = 0.80        # 8–20% over forecast → watch; worse → off track
+
+
+def program_earned_value(report: dict, program: dict) -> Optional[dict]:
+    """On-track rating from forecast-vs-actual on a program's COMPLETED tickets.
+
+    CPI = Σforecast(done) / Σactual(done) — ≥1 means completed components came in at or
+    under their forecast; <1 means they ran hot. Progress = forecasted share of work done.
+    Projected total = budget / CPI. Honest: returns ready=False ('gathering baseline')
+    until enough components have completed."""
+    if not report:
+        return None
+    tickets = report.get("tickets") or []
+    members = program.get("members") or []
+    if not tickets or not members:
+        return None
+    if any(m.get("scope_type") == "overall" for m in members):
+        scoped = tickets
+    else:
+        scoped = [t for t in tickets
+                  if any(_scope_match(t, m.get("scope_type"), m.get("scope_id")) for m in members)]
+    if not scoped:
+        return None
+    # Per-component forecast = the class's typical (median) cost.
+    cfc = {cs.get("task_class"): (cs.get("median_usd") or cs.get("mean_usd") or 0.0)
+           for cs in (report.get("class_stats") or [])}
+
+    def fc(t):
+        return cfc.get(t.get("task_class")) or (t.get("cost_usd", 0.0) or 0.0)
+
+    done = [t for t in scoped if str(t.get("status") or "").lower() in _CLOSED_STATUSES]
+    forecast_done = sum(fc(t) for t in done)
+    actual_done = sum(t.get("cost_usd", 0.0) or 0.0 for t in done)
+    forecast_all = sum(fc(t) for t in scoped)
+    n_done = len(done)
+    ready = n_done >= EV_MIN_DONE and forecast_done > 0 and actual_done > 0
+
+    cpi = (forecast_done / actual_done) if actual_done > 0 else 0.0
+    progress = (forecast_done / forecast_all) if forecast_all > 0 else 0.0
+    cost_variance_pct = ((actual_done - forecast_done) / forecast_done) if forecast_done > 0 else 0.0
+    budget = program.get("limit_usd", 0) or 0
+    # EVM estimate-at-completion: the total forecasted work, adjusted by how efficiently
+    # completed work has tracked its forecast (BAC / CPI, with BAC = Σforecast over scoped work).
+    projected_total = (forecast_all / cpi) if cpi > 0 else forecast_all
+    over_budget_by = max(0.0, projected_total - budget) if budget else 0.0
+
+    # Status is the *execution* read (are completed components costing what we forecast),
+    # a separate axis from budget headroom — the caller combines the two.
+    if not ready:
+        pace, status = "baseline", "ok"
+    elif cpi < EV_WARN_CPI:
+        pace, status = "over_forecast", "over"          # completed work >25% over forecast
+    elif cpi < EV_OK_CPI:
+        pace, status = "over_pace", "warn"
+    elif cpi > 1.08:
+        pace, status = "under_forecast", "ok"
+    else:
+        pace, status = "on_track", "ok"
+
+    return {
+        "ready": ready,
+        "status": status,                          # ok | warn | over
+        "pace": pace,
+        "rating": "on track" if status == "ok" else ("watch" if status == "warn" else "off track"),
+        "cpi": round(cpi, 3),
+        "progress_pct": round(progress, 4),        # forecasted share of work completed
+        "forecast_done_usd": round(forecast_done, 2),
+        "actual_done_usd": round(actual_done, 2),
+        "cost_variance_pct": round(cost_variance_pct, 4),   # + = completed work over forecast
+        "projected_total_usd": round(projected_total, 2),
+        "over_budget_by_usd": round(over_budget_by, 2),
+        "components_done": n_done,
+        "components_total": len(scoped),
+    }
 
 
 def enforced_programs(report: dict, programs: list[dict]) -> list[dict]:

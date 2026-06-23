@@ -2966,6 +2966,56 @@ def test_program_pacing_renders_on_programs_page(env, client):
     assert ("exceeds budget" in page or "over plan" in page)    # over-pace surfaced in plain language
 
 
+# --- Progress / earned-value pacing (forecast vs actual on completed work) - #
+
+def _ev_report(done_costs, open_n, class_median, task_class="feature"):
+    tickets = [{"ticket_id": f"D{i}", "task_class": task_class, "status": "done",
+                "cost_usd": c, "team_id": "plat"} for i, c in enumerate(done_costs)]
+    tickets += [{"ticket_id": f"O{i}", "task_class": task_class, "status": "open",
+                 "cost_usd": 0.0, "team_id": "plat"} for i in range(open_n)]
+    return {"tickets": tickets,
+            "class_stats": [{"task_class": task_class, "n": 12, "median_usd": class_median,
+                             "mean_usd": class_median}],
+            "spend": {"total_usd": sum(done_costs)}}
+
+
+def test_program_earned_value_over_on_and_baseline():
+    from console import outlay_app
+    prog = {"id": 1, "limit_usd": 500.0, "members": [{"scope_type": "overall"}]}
+
+    # OFF TRACK: 3 completed tickets each ~150 vs class forecast 100 → CPI ~0.67 (50% over)
+    ev = outlay_app.program_earned_value(_ev_report([150, 160, 140], open_n=1, class_median=100), prog)
+    assert ev["ready"] and ev["status"] == "over" and ev["rating"] == "off track"
+    assert 0.64 < ev["cpi"] < 0.70
+    assert 0.45 < ev["cost_variance_pct"] < 0.55          # ~50% over forecast on completed work
+    assert 580 < ev["projected_total_usd"] < 620          # forecast_all(400)/CPI(0.667) ≈ 600
+    assert ev["over_budget_by_usd"] > 0                    # 600 projected vs 500 budget
+    assert ev["components_done"] == 3 and ev["components_total"] == 4
+    assert 0.7 < ev["progress_pct"] < 0.8                 # 3 of 4 forecasted units done
+
+    # ON TRACK: completed cost ≈ forecast (CPI ≈ 1)
+    ev2 = outlay_app.program_earned_value(_ev_report([100, 105, 95], open_n=2, class_median=100), prog)
+    assert ev2["ready"] and ev2["status"] == "ok" and ev2["rating"] == "on track"
+
+    # BASELINE: fewer than the minimum completed components → don't rate yet
+    ev3 = outlay_app.program_earned_value(_ev_report([150, 150], open_n=3, class_median=100), prog)
+    assert ev3["ready"] is False
+
+
+def test_program_earned_value_drives_status_and_renders(env, client):
+    _, store = env
+    from console import outlay_app
+    _signup(client, email="ev@x.com")
+    acct = store.get_account_by_email("ev@x.com")
+    store.add_outlay_program(acct["id"], "All", [{"scope_type": "overall"}], 1000.0, period_days=100)
+    report = _ev_report([150, 160, 140], open_n=1, class_median=100)
+    store.save_outlay_report(acct["id"], report)
+    st = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"]))[0]
+    assert st["progress"]["ready"] and st["status"] == "over"   # off-forecast execution flags it
+    page = client.get("/app/outlay/programs").text
+    assert "Off Track" in page and "over forecast" in page and "% of" in page
+
+
 def test_program_enforcement_decision_endpoint(env, client):
     from console import outlay_app, store
     _signup(client, email="enf@x.com")
