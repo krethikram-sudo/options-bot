@@ -5102,10 +5102,52 @@ _CRON_JOB_INFO = {
 }
 
 
-def admin_health_page(account: dict, cron: dict, runs: dict) -> str:
+def _fmt_bytes(n: int) -> str:
+    n = float(n or 0)
+    for unit in ("B", "KB", "MB", "GB"):
+        if n < 1024 or unit == "GB":
+            return f"{n:.0f} {unit}" if unit == "B" else f"{n:.1f} {unit}"
+        n /= 1024
+    return f"{n:.1f} GB"
+
+
+def _report_storage_card(storage: dict | None) -> str:
+    """Surface the JSON-blob scale ceiling: per-account report blobs grow with the
+    ticket tail; this makes the largest blob + fleet total visible so we act on the
+    real fix (aggregate storage / pagination) before it bites, not after."""
+    if not storage:
+        return ""
+    over = storage.get("over_soft_limit")
+    badge = ('<span class="badge suspended">large</span>' if over
+             else '<span class="badge paid">ok</span>')
+    soft = _fmt_bytes(storage.get("soft_limit_bytes"))
+    mx = _fmt_bytes(storage.get("max_bytes"))
+    acct_id = storage.get("max_account_id")
+    biggest = (f'<a href="/admin/accounts/{acct_id}">account {acct_id}</a>'
+               if acct_id is not None else "—")
+    note = ('' if not over else
+            f'<div class="small muted" style="margin-top:3px">Largest blob is over the '
+            f'{soft} soft limit — time to plan aggregate storage / pagination '
+            f'(<code>OUTLAY_REPORT_SOFT_LIMIT_BYTES</code> to tune the alert).</div>')
+    return (
+        '<h2 style="margin-top:26px">Report storage</h2>'
+        '<p class=muted style="margin-top:-4px">Each account\'s current report is one JSON blob in '
+        'SQLite. Fine today; a ceiling at millions of events/month. Watched here so the fix lands '
+        'before it\'s urgent.</p>'
+        '<div class=card style="padding:0"><table>'
+        '<thead><tr><th>Metric</th><th>Status</th><th>Value</th></tr></thead><tbody>'
+        f'<tr><td><b>Largest report blob</b><div class="small muted">soft limit {soft}</div></td>'
+        f'<td>{badge}</td><td class="small">{mx} · {biggest}{note}</td></tr>'
+        f'<tr><td><b>Stored reports</b></td><td><span class="badge paid">—</span></td>'
+        f'<td class="small">{storage.get("count", 0)} reports · {_fmt_bytes(storage.get("total_bytes"))} total</td></tr>'
+        '</tbody></table></div>')
+
+
+def admin_health_page(account: dict, cron: dict, runs: dict, storage: dict | None = None) -> str:
     """Operator view of scheduled-job freshness — a missing/broken cron scheduler is
     the silent failure mode for the digest / close-pack / retention / redelivery
-    sweeps, so make 'last run' visible with a clear stale flag."""
+    sweeps, so make 'last run' visible with a clear stale flag. Also surfaces the
+    report-blob storage ceiling."""
     any_stale = any(c["stale"] for c in cron.values())
     banner = ("" if not any_stale else
               '<div class=ostrip style="background:var(--red-l)"><span>'
@@ -5137,7 +5179,8 @@ def admin_health_page(account: dict, cron: dict, runs: dict) -> str:
         '<thead><tr><th>Job</th><th>Status</th><th>Last run</th><th>Age / last result</th></tr></thead>'
         f'<tbody>{rows}</tbody></table></div>'
         '<p class="small muted" style="margin-top:12px">External monitors can poll '
-        '<code>GET /api/health</code> — it returns <code>cron_ok</code> and per-job freshness.</p>')
+        '<code>GET /api/health</code> — it returns <code>cron_ok</code> and per-job freshness.</p>'
+        f'{_report_storage_card(storage)}')
     return page("Scheduler health", body, account, "/admin/health")
 
 

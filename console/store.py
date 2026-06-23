@@ -16,12 +16,22 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import os
 import secrets
 import sqlite3
 import struct
 import time
 from datetime import datetime, timezone
+
+_log = logging.getLogger("outlay.store")
+
+# Each account's current report is stored as one JSON blob (outlay_reports.report).
+# That's fine today but grows with the per-ticket row tail — a known scale ceiling at
+# millions of events/month. We don't truncate (finance needs the full tail), but we
+# DO watch the blob size so the ceiling is observable long before it bites: above this
+# soft limit we log a warning and flag it on /admin/health. Tunable via env.
+OUTLAY_REPORT_SOFT_LIMIT_BYTES = int(os.environ.get("OUTLAY_REPORT_SOFT_LIMIT_BYTES", 5_000_000))
 
 TRIAL_DAYS = 14
 DEFAULT_RATE = 0.20            # we bill 20% of realized savings (Pay-as-you-go)
@@ -1250,17 +1260,48 @@ def save_outlay_report(account_id: int, report: dict, path: str | None = None,
                        now: float | None = None) -> None:
     """Upsert the account's current Outlay report (the serialized engine output)."""
     now = now or time.time()
+    blob = json.dumps(report)
     conn = connect(path)
     try:
         conn.execute("INSERT OR REPLACE INTO outlay_reports(account_id, ts, report) VALUES(?,?,?)",
-                     (account_id, now, json.dumps(report)))
+                     (account_id, now, blob))
         conn.commit()
     finally:
         conn.close()
+    # Watch the JSON-blob scale ceiling: warn (don't truncate) when a report gets large,
+    # so the ceiling is visible in logs + /admin/health before it's a real problem.
+    n_bytes = len(blob.encode("utf-8"))
+    if n_bytes > OUTLAY_REPORT_SOFT_LIMIT_BYTES and not (report or {}).get("_sample"):
+        _log.warning("outlay report for account %s is %d bytes (> soft limit %d)",
+                     account_id, n_bytes, OUTLAY_REPORT_SOFT_LIMIT_BYTES)
     # Setup is "complete" the moment real data lands — start the trial clock then,
     # not at signup. Sample/demo data doesn't count.
     if not (report or {}).get("_sample"):
         start_trial(account_id, path=path, now=now)
+
+
+def outlay_report_storage_stats(path: str | None = None) -> dict:
+    """Fleet-wide size of the stored report blobs — the JSON-in-SQLite scale ceiling
+    made observable. Byte length via CAST(... AS BLOB) so multibyte JSON counts
+    correctly. Returns the count, total/largest bytes, the largest account, and whether
+    anything is over the soft limit (for the operator health surface)."""
+    conn = connect(path)
+    try:
+        row = conn.execute(
+            "SELECT COUNT(*) AS n, COALESCE(SUM(length(CAST(report AS BLOB))),0) AS total, "
+            "COALESCE(MAX(length(CAST(report AS BLOB))),0) AS mx FROM outlay_reports").fetchone()
+        top = conn.execute(
+            "SELECT account_id, length(CAST(report AS BLOB)) AS b FROM outlay_reports "
+            "ORDER BY b DESC LIMIT 1").fetchone()
+    finally:
+        conn.close()
+    max_bytes = int(row["mx"] or 0)
+    return {"count": int(row["n"] or 0),
+            "total_bytes": int(row["total"] or 0),
+            "max_bytes": max_bytes,
+            "max_account_id": int(top["account_id"]) if top else None,
+            "soft_limit_bytes": OUTLAY_REPORT_SOFT_LIMIT_BYTES,
+            "over_soft_limit": max_bytes > OUTLAY_REPORT_SOFT_LIMIT_BYTES}
 
 
 def get_outlay_report(account_id: int, path: str | None = None) -> dict | None:
