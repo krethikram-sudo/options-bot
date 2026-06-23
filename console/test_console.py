@@ -4301,6 +4301,23 @@ def test_weekly_digest_builds_and_respects_cadence(env, client, monkeypatch):
     assert acct["id"] not in store.accounts_due_for_digest(now=time.time() + 30 * 24 * 3600)
 
 
+def test_weekly_digest_surfaces_program_pacing(env, client):
+    """A program tracking over budget shows up in the weekly digest — the earned-value /
+    pacing signal reaches the Monday email, not just the in-app view."""
+    from console import spend_digest, store
+    _signup(client, email="prog@x.com")
+    acct = store.get_account_by_email("prog@x.com")
+    client.post("/app/outlay/sample", follow_redirects=True)
+    # no programs yet → digest doesn't mention programs at all
+    assert "Programs:" not in spend_digest.build_account_digest(acct["id"])["body"]
+    # a whole-account program with a $1 cap is over budget against the sample spend
+    store.add_outlay_program(acct["id"], "Platform rebuild",
+                             [{"scope_type": "overall", "scope_id": None}], limit_usd=1.0)
+    body = spend_digest.build_account_digest(acct["id"])["body"]
+    assert "Programs:" in body and "off track" in body
+    assert "Platform rebuild" in body
+
+
 def test_weekly_digest_also_posts_to_slack(env, client, monkeypatch):
     from console import spend_digest, store, notify
     _signup(client, email="digsl@x.com")
