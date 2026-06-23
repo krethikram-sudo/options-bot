@@ -81,6 +81,33 @@ def build_account_digest(account_id: int, path: Optional[str] = None) -> Optiona
             lines.append(f"Budgets: {', '.join(parts)} — review before month-end.")
         else:
             lines.append(f"Budgets: all {len(statuses)} on track.")
+    # Programs off track — the earned-value / pacing signal (forecast vs actual on
+    # completed work, plus run-rate vs cap). The headline of the program-budget work,
+    # so a leader sees a slipping program in the Monday email, not just in-app.
+    programs = store.list_outlay_programs(account_id, path)
+    if programs:
+        histories = store.program_histories(account_id, path=path)
+        prog_statuses = outlay_app.program_statuses(report, programs, histories)
+        off = [s for s in prog_statuses if s["status"] == "over"]
+        watch = [s for s in prog_statuses if s["status"] == "warn"]
+        if off or watch:
+            parts = ([f"{len(off)} off track"] if off else []) + \
+                    ([f"{len(watch)} to watch"] if watch else [])
+            lines.append(f"Programs: {', '.join(parts)}.")
+            # Name the worst one with its earned-value read, when there's enough
+            # completed work for an honest rating.
+            worst = (off or watch)[0]
+            prog = worst.get("progress") or {}
+            if prog.get("ready"):
+                var = prog.get("cost_variance_pct", 0) * 100
+                lines.append(f"  {worst.get('name', 'program')}: {prog.get('rating', 'off track')} — "
+                             f"completed work is {abs(var):.0f}% "
+                             f"{'over' if var >= 0 else 'under'} forecast.")
+            else:
+                lines.append(f"  {worst.get('name', 'program')}: on pace to exceed its budget.")
+        else:
+            lines.append(f"Programs: all {len(prog_statuses)} on track.")
+
     if anomalies:
         worst = anomalies[0]
         lines.append(f"Runaway tickets: {len(anomalies)} — worst {worst.get('ticket_id')} "
