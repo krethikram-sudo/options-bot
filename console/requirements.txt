@@ -6,3 +6,7 @@ cryptography>=42.0
 # records the plan; metering still accrues) and turns Stripe on once it's present
 # and STRIPE_SECRET_KEY is set.
 stripe>=8.0
+# Passkeys / WebAuthn (FIDO2) — phishing-resistant MFA. The vetted library that does
+# the attestation/assertion verification (webauthn_box.py wraps it). Console degrades
+# gracefully without it (passkey features report unavailable).
+webauthn>=2.0

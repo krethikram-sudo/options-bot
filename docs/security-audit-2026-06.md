@@ -47,9 +47,10 @@ cross-doc honesty on SOC 2 / FIPS / Fly.io.
 ---
 
 ## Remaining (tracked, not regressions)
-- ~~**Member-MFA enrollment**~~ — ✅ **built** (per-member TOTP; `require_mfa` now compels every
-  invited teammate). The remaining phishing-resistant step is **WebAuthn/passkeys (FIDO2)** for both
-  owners and members.
+- ~~**Member-MFA enrollment**~~ — ✅ **built** (per-member TOTP; `require_mfa` compels every teammate).
+- ~~**WebAuthn/passkeys (FIDO2)**~~ — ✅ **built** for owners and members (enroll + passkey login +
+  cloned-authenticator detection, via the vetted `py_webauthn` library). The phishing-resistant MFA
+  upgrade is now shipped, not roadmap.
 - **secret_box KDF** — current single-pass SHA-256 derivation is retained for backward-compat;
   hardening is the KMS-key path (`CONSOLE_SECRETBOX_KEY`) or a key-rotation migration.
 - **Independent third-party VPAT** validation; **SOC 2 Type II**; the **FedRAMP-Moderate re-host** —

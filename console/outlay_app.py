@@ -576,29 +576,55 @@ def _pace_status(spent: float, limit: float, window: int, period: int) -> tuple:
     return round(projected, 2), status
 
 
-def program_statuses(report: dict, programs: list[dict]) -> list[dict]:
-    """Spend-vs-budget for *programs* — named budgets spanning several teams /
-    projects / work types. A ticket matching ANY member counts once (no double-count
-    across overlapping members). Same pace projection + status as single-scope budgets."""
-    tickets = report.get("tickets", []) if report else []
+_STATUS_RANK = {"ok": 0, "warn": 1, "over": 2}
+
+
+def _worse(a: str, b: str) -> str:
+    return a if _STATUS_RANK.get(a, 0) >= _STATUS_RANK.get(b, 0) else b
+
+
+def program_spend(report: dict, program: dict) -> float:
+    """Cumulative spend attributed to one program from a report (a ticket matching ANY
+    of the program's members counts once — no double-count across overlapping scopes)."""
+    members = program.get("members") or []
+    if not members:
+        return 0.0
     total = (report.get("spend", {}) or {}).get("total_usd", 0.0) if report else 0.0
+    if any(m.get("scope_type") == "overall" for m in members):
+        return total
+    tickets = report.get("tickets", []) if report else []
+    return sum(t.get("cost_usd", 0) for t in tickets
+               if any(_scope_match(t, m.get("scope_type"), m.get("scope_id")) for m in members))
+
+
+def program_spends(report: dict, programs: list[dict]) -> dict:
+    """{program_id: spent_usd} — the per-program snapshot persisted on each sync."""
+    return {p["id"]: round(program_spend(report, p), 4) for p in programs if p.get("id") is not None}
+
+
+def program_statuses(report: dict, programs: list[dict], histories: dict | None = None) -> list[dict]:
+    """Spend-vs-budget for *programs* — named budgets spanning several teams /
+    projects / work types. Attaches real-time **pacing** (actual-to-date vs the budget's
+    expected pace) when a per-program spend history is supplied."""
     window = (report.get("window_days") if report else None) or 30
+    histories = histories or {}
     out = []
     for p in programs:
-        members = p.get("members") or []
-        if not members:
-            spent = 0.0
-        elif any(m.get("scope_type") == "overall" for m in members):
-            spent = total
-        else:
-            spent = sum(t.get("cost_usd", 0) for t in tickets
-                        if any(_scope_match(t, m.get("scope_type"), m.get("scope_id")) for m in members))
+        spent = program_spend(report, p)
         limit = p.get("limit_usd", 0) or 0
         period = p.get("period_days") or 90
         projected, status = _pace_status(spent, limit, window, period)
         row = {**p, "spent_usd": round(spent, 2), "projected_usd": projected,
                "pct_used": round(spent / limit, 3) if limit else 0.0, "status": status}
         row["timeline"] = _program_timeline(p, spent, projected, limit, period)
+        row["pacing"] = program_pacing(p, histories.get(p.get("id"), []), spent)
+        row["progress"] = program_earned_value(report, p)
+        # Budget headroom (spent/run-rate vs cap) — prefer the time-based pacing read.
+        budget_status = row["pacing"]["status"] if row["pacing"].get("ready") else status
+        # Execution quality (forecast vs actual on completed work) — a separate axis.
+        exec_status = row["progress"]["status"] if (row["progress"] and row["progress"].get("ready")) else "ok"
+        # A program needs attention if EITHER is bad → take the worse.
+        row["status"] = _worse(budget_status, exec_status)
         out.append(row)
     return out
 
@@ -658,6 +684,192 @@ def _program_timeline(program: dict, spent: float, projected: float, limit: floa
         "projected_end_usd": round(run_rate_total, 2),
         "months": months,
         "breach_month": breach,
+    }
+
+
+# Pacing tolerances + minimum signal before we flag confidently (honesty guardrail:
+# projections are unstable when little has elapsed / few measurements exist).
+PACE_OVER_PCT = 0.10          # >10% above the budget's expected pace ⇒ at-risk
+PACE_UNDER_PCT = -0.10        # >10% below ⇒ ahead of plan
+PACE_MIN_ELAPSED = 0.15       # need ≥15% of the program elapsed, OR…
+PACE_MIN_SNAPSHOTS = 2        # …≥2 measured snapshots, before a confident flag
+BURN_WINDOW_DAYS = 14.0       # smoothing window for the recent burn rate
+
+
+def program_pacing(program: dict, history: list[dict], current_spent: float,
+                   now: float | None = None) -> dict:
+    """Real-time budget pacing for an in-flight program: actual cumulative spend to
+    date vs. the budget's *expected* pace (linear over the program's life), a smoothed
+    burn rate, a projected end spend, and — if it's trending over — the projected
+    breach **date**. Honest by construction: until enough has elapsed / been measured,
+    `ready=False` and we say "gathering baseline" rather than cry wolf.
+
+    `history` is this program's ascending [{ts, spent_usd}] snapshots; `current_spent`
+    is the freshest actual (latest report)."""
+    from datetime import datetime, timezone, timedelta
+
+    nowt = now if now is not None else _now_ts()
+    limit = program.get("limit_usd", 0) or 0
+    period = program.get("period_days") or 90
+    start_ts = program.get("start_ts") or (nowt - period * 86400)
+    end_ts = program.get("end_ts") or (start_ts + period * 86400)
+    total_days = max(1.0, (end_ts - start_ts) / 86400)
+    elapsed_days = min(total_days, max(0.0, (nowt - start_ts) / 86400))
+    remaining_days = max(0.0, total_days - elapsed_days)
+    frac_elapsed = elapsed_days / total_days
+
+    ac = float(current_spent or 0.0)                 # actual-to-date (freshest)
+    pv = limit * frac_elapsed                         # planned-to-date (linear plan)
+    variance_usd = ac - pv
+    variance_pct = (ac / pv - 1.0) if pv > 0 else 0.0
+
+    # Smoothed recent burn rate from history: latest vs. the earliest point within the
+    # burn window. Falls back to the simple proportional rate (AC / elapsed) if we don't
+    # have two usable snapshots yet.
+    burn_per_day = (ac / elapsed_days) if elapsed_days > 0 else 0.0
+    pts = sorted([h for h in history if h.get("ts")], key=lambda h: h["ts"])
+    if len(pts) >= 2:
+        latest = pts[-1]
+        cutoff = latest["ts"] - BURN_WINDOW_DAYS * 86400
+        earlier = next((p for p in pts if p["ts"] >= cutoff), pts[0])
+        dt_days = (latest["ts"] - earlier["ts"]) / 86400
+        if dt_days >= 0.5:
+            burn_per_day = max(0.0, (latest["spent_usd"] - earlier["spent_usd"]) / dt_days)
+
+    # Estimate-at-completion: blend the recent-burn extrapolation with the simple
+    # proportional estimate so neither a spike nor a lull dominates.
+    eac_runrate = ac + burn_per_day * remaining_days
+    eac_prop = (ac / frac_elapsed) if frac_elapsed > 0 else ac
+    eac = round((eac_runrate + eac_prop) / 2.0, 2) if len(pts) >= 2 else round(eac_prop, 2)
+
+    # Projected breach date: when the extrapolated actual crosses the cap.
+    breach_date = None
+    if limit:
+        if ac >= limit:
+            breach_date = "now"
+        elif burn_per_day > 0 and (ac + burn_per_day * remaining_days) > limit:
+            days_to = (limit - ac) / burn_per_day
+            breach_date = (datetime.fromtimestamp(nowt, timezone.utc)
+                           + timedelta(days=days_to)).strftime("%b %-d, %Y")
+
+    ready = bool(limit) and frac_elapsed > 0 and (len(pts) >= PACE_MIN_SNAPSHOTS
+                                                  or frac_elapsed >= PACE_MIN_ELAPSED)
+    if not ready:
+        pace, status = "baseline", "ok"
+    elif ac >= limit or (limit and eac > limit):
+        pace = "projected_breach" if ac < limit else "over_budget"
+        status = "over"
+    elif (limit and eac >= 0.95 * limit) or variance_pct > PACE_OVER_PCT:
+        pace, status = "over_pace", "warn"
+    elif variance_pct < PACE_UNDER_PCT:
+        pace, status = "ahead", "ok"
+    else:
+        pace, status = "on_track", "ok"
+
+    return {
+        "ready": ready,
+        "status": status,                      # ok | warn | over (drives the existing colour)
+        "pace": pace,                          # baseline|ahead|on_track|over_pace|projected_breach|over_budget
+        "planned_to_date_usd": round(pv, 2),
+        "actual_to_date_usd": round(ac, 2),
+        "variance_usd": round(variance_usd, 2),
+        "variance_pct": round(variance_pct, 4),
+        "burn_per_day_usd": round(burn_per_day, 2),
+        "projected_end_usd": eac,
+        "over_budget_by_usd": round(max(0.0, eac - limit), 2) if limit else 0.0,
+        "projected_breach_date": breach_date,
+        "frac_elapsed": round(frac_elapsed, 4),
+        "days_left": int(round(remaining_days)),
+        "snapshots": len(pts),
+    }
+
+
+def _now_ts() -> float:
+    import time as _t
+    return _t.time()
+
+
+# --- Progress / earned-value pacing (forecast vs actual on COMPLETED work) --- #
+# This is the more accurate read the founder asked for: instead of pacing against
+# calendar time, pace against *work actually completed*. For each completed component
+# (ticket) we have its actual cost and a per-component forecast (its class's typical
+# cost — the same robust class figure the anomaly detector uses). Comparing forecasted
+# vs actual over completed work gives an on-track / not rating and a "how far off" %.
+EV_MIN_DONE = 3            # need at least this many completed components before we rate
+EV_OK_CPI = 0.92          # completed work within ~8% of forecast → on track
+EV_WARN_CPI = 0.80        # 8–20% over forecast → watch; worse → off track
+
+
+def program_earned_value(report: dict, program: dict) -> Optional[dict]:
+    """On-track rating from forecast-vs-actual on a program's COMPLETED tickets.
+
+    CPI = Σforecast(done) / Σactual(done) — ≥1 means completed components came in at or
+    under their forecast; <1 means they ran hot. Progress = forecasted share of work done.
+    Projected total = budget / CPI. Honest: returns ready=False ('gathering baseline')
+    until enough components have completed."""
+    if not report:
+        return None
+    tickets = report.get("tickets") or []
+    members = program.get("members") or []
+    if not tickets or not members:
+        return None
+    if any(m.get("scope_type") == "overall" for m in members):
+        scoped = tickets
+    else:
+        scoped = [t for t in tickets
+                  if any(_scope_match(t, m.get("scope_type"), m.get("scope_id")) for m in members)]
+    if not scoped:
+        return None
+    # Per-component forecast = the class's typical (median) cost.
+    cfc = {cs.get("task_class"): (cs.get("median_usd") or cs.get("mean_usd") or 0.0)
+           for cs in (report.get("class_stats") or [])}
+
+    def fc(t):
+        return cfc.get(t.get("task_class")) or (t.get("cost_usd", 0.0) or 0.0)
+
+    done = [t for t in scoped if str(t.get("status") or "").lower() in _CLOSED_STATUSES]
+    forecast_done = sum(fc(t) for t in done)
+    actual_done = sum(t.get("cost_usd", 0.0) or 0.0 for t in done)
+    forecast_all = sum(fc(t) for t in scoped)
+    n_done = len(done)
+    ready = n_done >= EV_MIN_DONE and forecast_done > 0 and actual_done > 0
+
+    cpi = (forecast_done / actual_done) if actual_done > 0 else 0.0
+    progress = (forecast_done / forecast_all) if forecast_all > 0 else 0.0
+    cost_variance_pct = ((actual_done - forecast_done) / forecast_done) if forecast_done > 0 else 0.0
+    budget = program.get("limit_usd", 0) or 0
+    # EVM estimate-at-completion: the total forecasted work, adjusted by how efficiently
+    # completed work has tracked its forecast (BAC / CPI, with BAC = Σforecast over scoped work).
+    projected_total = (forecast_all / cpi) if cpi > 0 else forecast_all
+    over_budget_by = max(0.0, projected_total - budget) if budget else 0.0
+
+    # Status is the *execution* read (are completed components costing what we forecast),
+    # a separate axis from budget headroom — the caller combines the two.
+    if not ready:
+        pace, status = "baseline", "ok"
+    elif cpi < EV_WARN_CPI:
+        pace, status = "over_forecast", "over"          # completed work >25% over forecast
+    elif cpi < EV_OK_CPI:
+        pace, status = "over_pace", "warn"
+    elif cpi > 1.08:
+        pace, status = "under_forecast", "ok"
+    else:
+        pace, status = "on_track", "ok"
+
+    return {
+        "ready": ready,
+        "status": status,                          # ok | warn | over
+        "pace": pace,
+        "rating": "on track" if status == "ok" else ("watch" if status == "warn" else "off track"),
+        "cpi": round(cpi, 3),
+        "progress_pct": round(progress, 4),        # forecasted share of work completed
+        "forecast_done_usd": round(forecast_done, 2),
+        "actual_done_usd": round(actual_done, 2),
+        "cost_variance_pct": round(cost_variance_pct, 4),   # + = completed work over forecast
+        "projected_total_usd": round(projected_total, 2),
+        "over_budget_by_usd": round(over_budget_by, 2),
+        "components_done": n_done,
+        "components_total": len(scoped),
     }
 
 

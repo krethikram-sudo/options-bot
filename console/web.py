@@ -1700,20 +1700,41 @@ def _finance_attention(report: dict | None, budget_statuses: list[dict] | None,
             continue
         nm = _e(s.get("name") or "program")
         tl = s.get("timeline") or {}
-        when = (f' — set to breach in <b>{_e(tl["breach_month"])}</b>' if tl.get("breach_month") else "")
+        pc = s.get("pacing") or {}
+        pr = s.get("progress") or {}
+        ready = pc.get("ready")
+        proj = pc.get("projected_end_usd", 0) if ready else s.get("projected_usd", 0)
+        # Earned-value (forecast vs actual on completed work) adds an execution read on top
+        # of the budget overspend flag — append it when we have a confident rating.
+        ev = pr if pr.get("ready") else None
+        if ev and abs(ev.get("cost_variance_pct", 0)) >= 0.05:
+            cv = ev["cost_variance_pct"] * 100
+            ev_bit = (f' · completed work is <b>{abs(cv):.0f}% {"over" if cv > 0 else "under"} '
+                      f'forecast</b> at {ev.get("progress_pct",0)*100:.0f}% done')
+        else:
+            ev_bit = ""
+        if ready and pc.get("projected_breach_date") and pc["projected_breach_date"] != "now":
+            when = f' — projected to exceed budget on <b>{_e(pc["projected_breach_date"])}</b>'
+        elif tl.get("breach_month"):
+            when = f' — set to breach in <b>{_e(tl["breach_month"])}</b>'
+        else:
+            when = ""
+        over = (proj or 0) - (s.get("limit_usd", 0) or 0)
         if s.get("status") == "over":
             already = (s.get("spent_usd", 0) or 0) >= (s.get("limit_usd", 0) or 0)
-            verb = "is already over budget" if already else "is projected to overspend"
+            verb = ("is off track on forecast" if (ev and ev["status"] == "over"
+                                                   and not (already or over > 0))
+                    else ("is already over budget" if already else "is projected to overspend"))
             items.append((2, f'<span class=fa-dot style="background:var(--red)"></span>'
                           f'<span class=fa-txt>Program <b>{nm}</b> {verb} — projected '
-                          f'<b>{money(s.get("projected_usd",0))}</b> vs {money(s.get("limit_usd",0))} cap '
-                          f'({money(abs(over_amt(s)))} over){when}.</span>'
+                          f'<b>{money(proj)}</b> vs {money(s.get("limit_usd",0))} cap '
+                          f'({money(abs(over))} over){ev_bit}{when}.</span>'
                           f'<a class="btn sec sm" href="/app/outlay/programs">Review →</a>'))
         elif s.get("status") == "warn":
             items.append((1, f'<span class=fa-dot style="background:var(--amber)"></span>'
                           f'<span class=fa-txt>Program <b>{nm}</b> is tracking hot — projected '
-                          f'<b>{money(s.get("projected_usd",0))}</b> of {money(s.get("limit_usd",0))} '
-                          f'({s.get("pct_used",0)*100:.0f}% used){when}.</span>'
+                          f'<b>{money(proj)}</b> of {money(s.get("limit_usd",0))} '
+                          f'({s.get("pct_used",0)*100:.0f}% used){ev_bit}{when}.</span>'
                           f'<a class="btn sec sm" href="/app/outlay/programs">Review →</a>'))
 
     for s in (budget_statuses or []):
@@ -1859,9 +1880,17 @@ def _eng_project_card(program_statuses: list[dict] | None) -> str:
         st = s.get("status", "ok")
         col = {"ok": "var(--grn-d)", "warn": "var(--amber)", "over": "var(--red)"}.get(st)
         tl = s.get("timeline") or {}
+        pc = s.get("pacing") or {}
         days = tl.get("days_left")
-        when = (f'breach {_e(tl["breach_month"])}' if tl.get("breach_month")
-                else (f'{days}d left' if days is not None else "on track"))
+        # prefer the date-precise pacing read; fall back to the month-bucket timeline
+        if pc.get("ready") and pc.get("projected_breach_date") and pc["projected_breach_date"] != "now":
+            when = f'exceeds budget {_e(pc["projected_breach_date"])}'
+        elif tl.get("breach_month"):
+            when = f'breach {_e(tl["breach_month"])}'
+        elif pc.get("ready") and pc.get("pace") == "over_pace":
+            when = f'{abs(pc.get("variance_pct",0))*100:.0f}% over plan'
+        else:
+            when = (f'{days}d left' if days is not None else "on track")
         rows += (f'<div class=erow><a class=nm href="/app/outlay/budgets">{_e(s.get("name"))} '
                  f'<small style="color:{col}">· {st} · {when}</small> <span class=drill>→</span></a>'
                  f'<span class=amt>{money(s.get("spent_usd",0))}<small class=muted> / {money(s.get("limit_usd",0))}</small></span></div>')
@@ -2843,6 +2872,80 @@ def _program_timeline_html(s: dict) -> str:
             f'{mrows}</div>')
 
 
+def _program_pacing_html(s: dict) -> str:
+    """Real-time pacing strip: actual cumulative spend vs the budget's expected pace to
+    date, the projected end spend, and — if trending over — the projected breach DATE.
+    Honest by construction: shows 'gathering baseline' until there's enough signal."""
+    pc = s.get("pacing") or {}
+    if not pc:
+        return ""
+    if not pc.get("ready"):
+        return ('<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px;'
+                'font-size:12px;color:var(--muted)">Gathering baseline — real-time pacing flags '
+                'appear once more of the program has elapsed.</div>')
+    labels = {"ahead": ("ahead of plan", "var(--grn-d)"), "on_track": ("on track", "var(--grn-d)"),
+              "over_pace": ("over plan pace", "var(--amber)"),
+              "projected_breach": ("projected to exceed budget", "var(--red)"),
+              "over_budget": ("over budget", "var(--red)")}
+    lbl, col = labels.get(pc.get("pace"), ("on track", "var(--grn-d)"))
+    pv, ac = pc.get("planned_to_date_usd", 0), pc.get("actual_to_date_usd", 0)
+    vpct = pc.get("variance_pct", 0)
+    arrow = "&#9650;" if vpct > 0 else ("&#9660;" if vpct < 0 else "&#8226;")
+    var_html = f'<span class=muted>{arrow} {abs(vpct) * 100:.0f}% vs plan</span>' if pv else ""
+    breach = pc.get("projected_breach_date")
+    breach_html = (f' · <span style="color:var(--red);font-weight:600">exceeds budget '
+                   f'{"now" if breach == "now" else "on " + _e(breach)}</span>') if breach else ""
+    mx = max(ac, pv, 1)
+    bar = ('display:inline-block;flex:1;height:7px;background:var(--paper2);border-radius:4px;'
+           'position:relative;overflow:hidden')
+
+    def row(name, val, pct, fill):
+        return (f'<div style="display:flex;align-items:center;gap:8px;margin-top:3px">'
+                f'<span class=muted style="width:48px;font-size:11.5px">{name}</span>'
+                f'<span style="{bar}"><span style="display:block;height:100%;width:{pct:.0f}%;'
+                f'background:{fill};border-radius:4px"></span></span>'
+                f'<span style="font-size:11.5px;width:64px;text-align:right">{money(val)}</span></div>')
+    return (f'<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">'
+            f'<div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px">'
+            f'<span><b style="color:{col}">{lbl}</b> {var_html}</span>'
+            f'<span class=muted>proj. end <b style="color:{col}">{money(pc.get("projected_end_usd", 0))}</b></span></div>'
+            f'{row("actual", ac, ac / mx * 100, col)}'
+            f'{row("planned", pv, pv / mx * 100, "var(--ink)")}'
+            f'<div class=muted style="font-size:11.5px;margin-top:5px">to date{breach_html}</div></div>')
+
+
+def _program_progress_html(s: dict) -> str:
+    """Headline on-track rating from forecast-vs-actual on COMPLETED work (earned value).
+    The most accurate read: are finished components costing what we forecast, and at this
+    rate will the program land within budget?"""
+    pr = s.get("progress")
+    if not pr:
+        return ""
+    if not pr.get("ready"):
+        return ('<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px;'
+                'font-size:12px;color:var(--muted)">On-track rating — gathering baseline '
+                '(rates once a few components have completed).</div>')
+    col = {"ok": "var(--grn-d)", "warn": "var(--amber)", "over": "var(--red)"}.get(pr["status"], "var(--grn-d)")
+    icon = "&#10003;" if pr["status"] == "ok" else "&#9888;"
+    cv = pr.get("cost_variance_pct", 0) * 100
+    var_word = (f'completed work is <b>{abs(cv):.0f}% {"over" if cv > 0 else "under"} forecast</b>'
+                if abs(cv) >= 1 else 'completed work is <b>on forecast</b>')
+    over = pr.get("over_budget_by_usd", 0)
+    proj_html = (f'projected <b style="color:{col}">{money(pr.get("projected_total_usd", 0))}</b>'
+                 + (f' vs {money(s.get("limit_usd", 0))} budget (&#9650;{money(over)} over)'
+                    if over > 0 else ' &mdash; within budget'))
+    return (
+        '<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">'
+        '<div style="display:flex;justify-content:space-between;align-items:center">'
+        f'<span style="font-weight:700;color:{col};font-size:13.5px">{icon} '
+        f'{_e(pr.get("rating", "").title())}</span>'
+        f'<span class=muted style="font-size:11.5px">{pr.get("components_done")}/'
+        f'{pr.get("components_total")} components done</span></div>'
+        f'<div style="font-size:12.5px;margin-top:4px">{pr.get("progress_pct", 0) * 100:.0f}% of '
+        f'forecasted work complete &middot; {var_word}</div>'
+        f'<div class=muted style="font-size:12px;margin-top:2px">{proj_html}</div></div>')
+
+
 def _programs_section(account: dict, report: dict | None, statuses: list[dict]) -> str:
     """The programs management UI (status cards with timelines + define form), without
     the page chrome — composed by both the standalone Programs page and Governance."""
@@ -2889,6 +2992,8 @@ def _programs_section(account: dict, report: dict | None, statuses: list[dict]) 
                  f'<form method=post action="/app/outlay/programs/delete" style="margin:0">'
                  f'<input type=hidden name=id value="{s["id"]}">'
                  f'<button class="btn sec sm">Remove</button></form></div>'
+                 f'{_program_progress_html(s)}'
+                 f'{_program_pacing_html(s)}'
                  f'{spark_row}'
                  f'{_program_timeline_html(s)}'
                  # Reallocate inline: change the cap, or flip alert <-> hard, in place.
@@ -3209,23 +3314,38 @@ def landing() -> str:
     return page("Put AI compute on a budget", body)
 
 
-def twofa_verify_form(error: str = "", note: str = "") -> str:
+def twofa_verify_form(error: str = "", note: str = "", has_code: bool = True,
+                      has_passkey: bool = False) -> str:
     err = f'<div class="note bad">{_e(error)}</div>' if error else ""
     nt = f'<div class="note">{_e(note)}</div>' if note else ""
+    # Passkey button first (strongest, one tap). Falls through to the code form below.
+    passkey = ""
+    if has_passkey:
+        passkey = ('<button type=button class="btn" style="width:100%" onclick="loginPasskey()">'
+                   '&#128273; Sign in with a passkey</button>'
+                   + ('<div style="text-align:center;color:var(--muted);font-size:12px;margin:12px 0">'
+                      'or use a code</div>' if has_code else ''))
+    code_form = ""
+    if has_code:
+        code_form = (
+            '<form method=post action="/login/verify">'
+            '<div class=field><label>Verification code</label>'
+            '<input name=code inputmode=numeric autocomplete=one-time-code pattern="[0-9]*" maxlength=6 '
+            'required placeholder="123456" style="letter-spacing:4px;font-size:18px"></div>'
+            '<button class="btn" style="width:100%">Verify &amp; sign in</button></form>'
+            '<form method=post action="/login/verify/resend" style="margin-top:10px">'
+            '<button class="btn sec sm" style="width:100%">Resend code</button></form>')
+    sub = ("Use your authenticator app, a passkey, or the code we sent." if (has_passkey and has_code)
+           else "Use your passkey to finish signing in." if has_passkey
+           else "Enter the 6-digit code. It expires in 10 minutes.")
     body = f"""
     <div class=auth><div class=card>
       <h1>Verify it's you</h1>
-      <p class=muted small>Enter the 6-digit code we just sent you. It expires in 10 minutes.</p>
+      <p class=muted small>{sub}</p>
       {err}{nt}
-      <form method=post action="/login/verify">
-        <div class=field><label>Verification code</label>
-          <input name=code inputmode=numeric autocomplete=one-time-code pattern="[0-9]*" maxlength=6
-            required placeholder="123456" style="letter-spacing:4px;font-size:18px"></div>
-        <button class="btn" style="width:100%">Verify &amp; sign in</button>
-      </form>
-      <form method=post action="/login/verify/resend" style="margin-top:10px">
-        <button class="btn sec sm" style="width:100%">Resend code</button></form>
-    </div></div>"""
+      {passkey}
+      {code_form}
+    </div></div>{_WEBAUTHN_JS if has_passkey else ''}"""
     return page("Verify", body)
 
 
@@ -3681,11 +3801,69 @@ def settings_page(account: dict, settings: dict, saved: bool = False,
     return page("Settings", body, account, "/app/settings")
 
 
+# Minimal WebAuthn browser glue (base64url + create/get + fetch). Embedded once on the
+# Security page and the 2FA-verify page. Kept dependency-free and small on purpose.
+_WEBAUTHN_JS = """
+<script>
+const b64uTo=b=>Uint8Array.from(atob(b.replace(/-/g,'+').replace(/_/g,'/').padEnd(b.length+(4-b.length%4)%4,'=')),c=>c.charCodeAt(0));
+const toB64u=a=>btoa(String.fromCharCode(...new Uint8Array(a))).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
+function pkCreate(o){o.challenge=b64uTo(o.challenge);o.user.id=b64uTo(o.user.id);(o.excludeCredentials||[]).forEach(c=>c.id=b64uTo(c.id));return navigator.credentials.create({publicKey:o});}
+function pkGet(o){o.challenge=b64uTo(o.challenge);(o.allowCredentials||[]).forEach(c=>c.id=b64uTo(c.id));return navigator.credentials.get({publicKey:o});}
+function regCred(c){return {id:c.id,rawId:toB64u(c.rawId),type:c.type,clientExtensionResults:{},response:{clientDataJSON:toB64u(c.response.clientDataJSON),attestationObject:toB64u(c.response.attestationObject)}};}
+function authCred(c){const r=c.response;return {id:c.id,rawId:toB64u(c.rawId),type:c.type,clientExtensionResults:{},response:{clientDataJSON:toB64u(r.clientDataJSON),authenticatorData:toB64u(r.authenticatorData),signature:toB64u(r.signature),userHandle:r.userHandle?toB64u(r.userHandle):null}};}
+async function enrollPasskey(){
+  try{
+    const o=await (await fetch('/app/2fa/webauthn/options',{method:'POST'})).json();
+    if(o.error){alert(o.error);return;}
+    const cred=await pkCreate(o);
+    const label=(navigator.userAgentData&&navigator.userAgentData.platform)||navigator.platform||'Passkey';
+    const r=await (await fetch('/app/2fa/webauthn/verify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential:regCred(cred),label})})).json();
+    if(r.ok){location.href='/app/security?ok=passkey';}else{alert(r.error||'Could not add passkey.');}
+  }catch(e){alert('Passkey setup was cancelled or failed.');}
+}
+async function loginPasskey(){
+  try{
+    const o=await (await fetch('/login/webauthn/options',{method:'POST'})).json();
+    if(o.error){alert(o.error);return;}
+    const cred=await pkGet(o);
+    const r=await (await fetch('/login/webauthn/verify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential:authCred(cred)})})).json();
+    if(r.ok){location.href=r.redirect||'/app';}else{alert(r.error||'Could not verify passkey.');}
+  }catch(e){alert('Passkey sign-in was cancelled or failed.');}
+}
+</script>"""
+
+
+def _passkey_block(passkeys: list | None, webauthn_on: bool) -> str:
+    """Passkey enrollment + management inside 'Your sign-in security'."""
+    if not webauthn_on:
+        return ""
+    rows = ""
+    for k in (passkeys or []):
+        when = _fmt_date(k.get("created_at")) if k.get("created_at") else ""
+        rows += (f'<div style="display:flex;justify-content:space-between;align-items:center;'
+                 f'gap:10px;margin-top:6px;font-size:13px">'
+                 f'<span>&#128273; <b>{_e(k.get("label") or "Passkey")}</b>'
+                 f'<span class=muted style="font-size:11.5px"> · added {when}</span></span>'
+                 f'<form method=post action="/app/2fa/webauthn/delete" style="margin:0">'
+                 f'<input type=hidden name=id value="{k["id"]}">'
+                 f'<button class="btn sec sm">Remove</button></form></div>')
+    listing = rows or '<p class=muted style="font-size:12.5px;margin:6px 0 0">No passkeys yet.</p>'
+    return (
+        '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">'
+        '<div style="font-weight:600;font-size:13.5px">Passkeys '
+        '<span class=muted style="font-weight:400">· phishing-resistant (FIDO2 / WebAuthn)</span></div>'
+        '<p class=muted style="font-size:12.5px;margin:4px 0 8px">A passkey (Touch ID, Windows Hello, '
+        'a security key) is the strongest second factor — it can\'t be phished or replayed.</p>'
+        f'{listing}'
+        '<button type=button class="btn sec sm" style="margin-top:10px" onclick="enrollPasskey()">'
+        'Add a passkey →</button></div>')
+
+
 def _trust_controls(account: dict, policy: dict, twofa: dict, enroll_secret: str = "",
-                    flash: str = "") -> str:
+                    flash: str = "", passkeys: list | None = None, webauthn_on: bool = False) -> str:
     """Interactive Trust Center controls — the org security policy (admin-enforced MFA,
     session timeouts, data residency, incident webhook), this person's sign-in security
-    (2FA incl. TOTP enrollment + log-out-everywhere), and the compliance artifacts."""
+    (2FA incl. TOTP + passkeys + log-out-everywhere), and the compliance artifacts."""
     is_admin = account.get("team_role") in ("owner", "admin")
     mfa_on = bool(twofa.get("enabled"))
     fl = {"mfa-required": ('<div class="note warn" role=alert>Your organization requires multi-factor '
@@ -3694,6 +3872,7 @@ def _trust_controls(account: dict, policy: dict, twofa: dict, enroll_secret: str
           "totp-on": '<div class=note role=status>Authenticator app enabled.</div>',
           "totp-bad": '<div class="note bad" role=alert>That code didn\'t match — try again.</div>',
           "logged-out-all": '<div class=note role=status>Signed out of all other sessions.</div>',
+          "passkey-on": '<div class=note role=status>Passkey added.</div>',
           }.get(flash, "")
 
     # --- This person's sign-in security ---
@@ -3736,6 +3915,7 @@ def _trust_controls(account: dict, policy: dict, twofa: dict, enroll_secret: str
             f'{email_opt}</div>')
     signin = (f'<div class=ocard style="margin-top:16px"><div class=dh>Your sign-in security</div>'
               f'{twofa_block}'
+              f'{_passkey_block(passkeys, webauthn_on)}'
               '<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">'
               '<form method=post action="/app/security/logout-all" style="margin:0">'
               '<button class="btn sec sm">Log out everywhere</button>'
@@ -3785,11 +3965,12 @@ def _trust_controls(account: dict, policy: dict, twofa: dict, enroll_secret: str
         f'Hosting — Fly.io (SOC 2 / ISO 27001 data centers); a FedRAMP-Moderate region is on the '
         f'roadmap for StateRAMP/GovRAMP-gated deals. Data region: <b>{_e(policy.get("data_region") or "US")}</b>.</div></div>')
 
-    return fl + signin + pol + artifacts
+    return fl + signin + pol + artifacts + (_WEBAUTHN_JS if webauthn_on else "")
 
 
 def security_page(account: dict, policy: dict | None = None, twofa: dict | None = None,
-                  enroll_secret: str = "", flash: str = "") -> str:
+                  enroll_secret: str = "", flash: str = "", passkeys: list | None = None,
+                  webauthn_on: bool = False) -> str:
     """In-app security & compliance Trust Center — interactive controls (org policy,
     sign-in security, compliance artifacts) plus the reviewer-facing summary. Every
     claim maps to a shipped feature; certification status is stated honestly."""
@@ -3804,7 +3985,8 @@ def security_page(account: dict, policy: dict | None = None, twofa: dict | None 
         return (f'<div class=ocard style="margin-top:16px"><div class=dh>{title}</div>'
                 f'<ul style="list-style:none;padding:0;margin:8px 0 0">{lis}</ul>{note_h}</div>')
 
-    controls = _trust_controls(account, policy or {}, twofa or {}, enroll_secret, flash)
+    controls = _trust_controls(account, policy or {}, twofa or {}, enroll_secret, flash,
+                               passkeys=passkeys, webauthn_on=webauthn_on)
     body = f"""
     <h1>Security &amp; compliance</h1>
     <p class=muted style="max-width:72ch">Your Trust Center — manage your security policy and sign-in,

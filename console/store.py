@@ -292,6 +292,18 @@ CREATE TABLE IF NOT EXISTS login_throttle (
     fails INTEGER NOT NULL DEFAULT 0,
     locked_until REAL                 -- unix ts the lockout lifts; NULL = not locked
 );
+CREATE TABLE IF NOT EXISTS webauthn_credentials (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL REFERENCES accounts(id),  -- the org
+    member_id INTEGER NOT NULL DEFAULT 0,                 -- 0 = the account owner; else the member
+    credential_id TEXT UNIQUE NOT NULL,                   -- base64url, the authenticator's credential id
+    public_key TEXT NOT NULL,                             -- base64url COSE public key (not secret)
+    sign_count INTEGER NOT NULL DEFAULT 0,                -- clone-detection counter
+    label TEXT,                                           -- user-friendly name ("MacBook Touch ID")
+    created_at REAL NOT NULL,
+    last_used_at REAL
+);
+CREATE INDEX IF NOT EXISTS idx_webauthn_principal ON webauthn_credentials (account_id, member_id);
 CREATE TABLE IF NOT EXISTS feedback (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     account_id INTEGER,            -- intentionally NOT FK-cascaded: cancel reasons survive deletion
@@ -317,6 +329,14 @@ CREATE TABLE IF NOT EXISTS outlay_history (
     total_usd REAL NOT NULL,          -- spend in the window at each data refresh
     forecast_usd REAL NOT NULL        -- forecast for open work, for trend context
 );
+CREATE TABLE IF NOT EXISTS outlay_program_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL,
+    program_id INTEGER NOT NULL,
+    ts REAL NOT NULL,
+    spent_usd REAL NOT NULL           -- the program's cumulative spend at each data refresh (pacing substrate)
+);
+CREATE INDEX IF NOT EXISTS idx_program_history ON outlay_program_history (account_id, program_id, ts);
 CREATE TABLE IF NOT EXISTS outlay_connections (
     account_id INTEGER PRIMARY KEY,   -- one connection config per account (upserted)
     github_owner TEXT,
@@ -885,6 +905,92 @@ def verify_totp(account_id: int, code: str, path: str | None = None,
     return False
 
 
+# --- WebAuthn / passkeys (FIDO2) — phishing-resistant MFA ------------------- #
+
+def add_webauthn_credential(account_id: int, member_id: int, credential_id: str, public_key: str,
+                            sign_count: int = 0, label: str | None = None,
+                            path: str | None = None, now: float | None = None) -> int:
+    conn = connect(path)
+    try:
+        cur = conn.execute(
+            "INSERT INTO webauthn_credentials(account_id, member_id, credential_id, public_key,"
+            " sign_count, label, created_at) VALUES(?,?,?,?,?,?,?)",
+            (account_id, int(member_id or 0), credential_id, public_key, int(sign_count),
+             (label or "Passkey")[:80], now or time.time()))
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
+
+
+def list_webauthn_credentials(account_id: int, member_id: int = 0,
+                              path: str | None = None) -> list[dict]:
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT id, credential_id, label, created_at, last_used_at FROM webauthn_credentials"
+            " WHERE account_id=? AND member_id=? ORDER BY created_at",
+            (account_id, int(member_id or 0))).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def webauthn_credential_ids(account_id: int, member_id: int = 0,
+                            path: str | None = None) -> list[str]:
+    return [c["credential_id"] for c in list_webauthn_credentials(account_id, member_id, path)]
+
+
+def get_webauthn_credential(credential_id: str, path: str | None = None) -> dict | None:
+    """Look up a stored credential by its (base64url) credential id — used at login to
+    resolve which principal + public key is asserting."""
+    conn = connect(path)
+    try:
+        row = conn.execute("SELECT * FROM webauthn_credentials WHERE credential_id=?",
+                           (credential_id,)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def update_webauthn_sign_count(cred_db_id: int, new_count: int, path: str | None = None,
+                               now: float | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute("UPDATE webauthn_credentials SET sign_count=?, last_used_at=? WHERE id=?",
+                     (int(new_count), now or time.time(), cred_db_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def delete_webauthn_credential(cred_db_id: int, account_id: int, member_id: int = 0,
+                               path: str | None = None) -> bool:
+    conn = connect(path)
+    try:
+        cur = conn.execute("DELETE FROM webauthn_credentials WHERE id=? AND account_id=? AND member_id=?",
+                           (cred_db_id, account_id, int(member_id or 0)))
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def principal_has_mfa(account_id: int, member_id: int = 0, path: str | None = None) -> bool:
+    """True if the principal (owner or member) has ANY second factor enrolled — a TOTP/
+    email channel OR at least one passkey. This is the canonical 'MFA satisfied' check
+    used by the admin require_mfa gate and the login second-factor decision."""
+    if get_2fa(account_id, path, member_id=member_id)["enabled"]:
+        return True
+    conn = connect(path)
+    try:
+        n = conn.execute("SELECT COUNT(*) c FROM webauthn_credentials WHERE account_id=? AND member_id=?",
+                         (account_id, int(member_id or 0))).fetchone()["c"]
+        return n > 0
+    finally:
+        conn.close()
+
+
 # --- Account security policy (admin-enforced MFA, session timeouts, residency) --- #
 
 def get_security_policy(account_id: int, path: str | None = None) -> dict:
@@ -991,6 +1097,28 @@ def read_pending_2fa(token: str, path: str | None = None, max_age: int = 600) ->
     return int(aid), int(mid)
 
 
+def make_challenge_token(challenge_b64: str, path: str | None = None) -> str:
+    """Sign a WebAuthn challenge for round-tripping via a short-lived cookie (the
+    challenge is base64url, so it has no ':' to collide with the delimiter)."""
+    payload = f"wac:{challenge_b64}:{int(time.time())}"
+    sig = hmac.new(_secret(path), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}:{sig}"
+
+
+def read_challenge_token(token: str, path: str | None = None, max_age: int = 300) -> str | None:
+    try:
+        marker, ch, issued, sig = token.split(":")
+    except (ValueError, AttributeError):
+        return None
+    if marker != "wac":
+        return None
+    payload = f"{marker}:{ch}:{issued}"
+    good = hmac.new(_secret(path), payload.encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(good, sig) or time.time() - int(issued) > max_age:
+        return None
+    return ch
+
+
 def list_accounts(path: str | None = None) -> list[dict]:
     conn = connect(path)
     try:
@@ -1035,8 +1163,9 @@ def delete_account(account_id: int, path: str | None = None) -> None:
         # log, personas, OTP codes, and feedback — full erasure for DPA/right-to-be-forgotten)
         for tbl in ("api_keys", "request_logs", "proposals", "webhooks", "webhook_deliveries",
                     "budget_alerts", "resets", "members", "sso_configs", "settings", "plans",
-                    "personas", "audit_log", "otp_codes",
-                    "outlay_reports", "outlay_history", "outlay_connections", "outlay_budgets",
+                    "personas", "audit_log", "otp_codes", "webauthn_credentials",
+                    "outlay_reports", "outlay_history", "outlay_program_history",
+                    "outlay_connections", "outlay_budgets",
                     "outlay_programs", "outlay_program_enforcement",
                     "deployments"):
             conn.execute(f"DELETE FROM {tbl} WHERE account_id=?", (account_id,))
@@ -1145,6 +1274,7 @@ def delete_outlay_report(account_id: int, path: str | None = None) -> None:
     try:
         conn.execute("DELETE FROM outlay_reports WHERE account_id=?", (account_id,))
         conn.execute("DELETE FROM outlay_history WHERE account_id=?", (account_id,))
+        conn.execute("DELETE FROM outlay_program_history WHERE account_id=?", (account_id,))
         conn.commit()
     finally:
         conn.close()
@@ -1187,17 +1317,32 @@ def record_outlay_snapshot(account_id: int, report: dict, path: str | None = Non
                   for c in (report.get("class_spend") or [])},
     })
     ts = now or time.time()
+    # Per-program spend snapshots (the budget-pacing substrate) — computed from the same
+    # report. Lazy import avoids a store<->outlay_app cycle at module load.
+    prog_spends = {}
+    try:
+        programs = list_outlay_programs(account_id, path)
+        if programs:
+            from . import outlay_app
+            prog_spends = outlay_app.program_spends(report, programs)
+    except Exception:  # noqa: BLE001 — a history write must never break a sync
+        prog_spends = {}
     conn = connect(path)
     try:
         conn.execute("INSERT INTO outlay_history(account_id, ts, total_usd, forecast_usd, breakdown)"
                      " VALUES(?,?,?,?,?)", (account_id, ts, total, fc, breakdown))
+        for pid, spent in prog_spends.items():
+            conn.execute("INSERT INTO outlay_program_history(account_id, program_id, ts, spent_usd)"
+                         " VALUES(?,?,?,?)", (account_id, pid, ts, spent))
         # Enforce the account's retention window inline so it holds even without the
         # cron (a pilot that set 90-day retention shouldn't accumulate forever).
         row = conn.execute("SELECT retention_days FROM accounts WHERE id=?", (account_id,)).fetchone()
         rd = (row["retention_days"] if row else 0) or 0
         if rd:
-            conn.execute("DELETE FROM outlay_history WHERE account_id=? AND ts < ?",
-                         (account_id, ts - rd * 86400))
+            cutoff = ts - rd * 86400
+            conn.execute("DELETE FROM outlay_history WHERE account_id=? AND ts < ?", (account_id, cutoff))
+            conn.execute("DELETE FROM outlay_program_history WHERE account_id=? AND ts < ?",
+                         (account_id, cutoff))
         conn.commit()
     finally:
         conn.close()
@@ -1220,6 +1365,39 @@ def outlay_history(account_id: int, limit: int = 12, path: str | None = None) ->
         except (ValueError, TypeError):
             d["breakdown"] = {}
         out.append(d)
+    return out
+
+
+def program_history(account_id: int, program_id: int, limit: int = 60,
+                    path: str | None = None) -> list[dict]:
+    """A program's spend snapshots, oldest→newest — the pacing substrate (actual-to-date)."""
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT ts, spent_usd FROM outlay_program_history WHERE account_id=? AND program_id=?"
+            " ORDER BY ts DESC LIMIT ?", (account_id, program_id, limit)).fetchall()
+    finally:
+        conn.close()
+    return [dict(r) for r in reversed(rows)]
+
+
+def program_histories(account_id: int, program_ids: list[int] | None = None,
+                      path: str | None = None) -> dict:
+    """{program_id: [{ts, spent_usd}, …ascending]} for all (or the given) programs — one
+    query, so the pacing engine can be fed without N round-trips."""
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT program_id, ts, spent_usd FROM outlay_program_history WHERE account_id=?"
+            " ORDER BY ts ASC", (account_id,)).fetchall()
+    finally:
+        conn.close()
+    out: dict = {}
+    want = set(program_ids) if program_ids else None
+    for r in rows:
+        if want is not None and r["program_id"] not in want:
+            continue
+        out.setdefault(r["program_id"], []).append({"ts": r["ts"], "spent_usd": r["spent_usd"]})
     return out
 
 
@@ -1258,6 +1436,8 @@ def purge_outlay_history(account_id: int, retention_days: int, path: str | None 
     try:
         cur = conn.execute("DELETE FROM outlay_history WHERE account_id=? AND ts < ?",
                            (account_id, cutoff))
+        conn.execute("DELETE FROM outlay_program_history WHERE account_id=? AND ts < ?",
+                     (account_id, cutoff))
         conn.commit()
         return cur.rowcount or 0
     finally:
@@ -1288,6 +1468,7 @@ def purge_outlay_data(account_id: int, path: str | None = None) -> None:
     try:
         conn.execute("DELETE FROM outlay_reports WHERE account_id=?", (account_id,))
         conn.execute("DELETE FROM outlay_history WHERE account_id=?", (account_id,))
+        conn.execute("DELETE FROM outlay_program_history WHERE account_id=?", (account_id,))
         conn.commit()
     finally:
         conn.close()
