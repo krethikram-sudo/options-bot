@@ -2649,7 +2649,7 @@ def estimate_backlog_page(account: dict, report: dict | None, overall_budget_usd
     form = f"""<details class=ocard{"" if from_backlog else " open"} style="margin-top:16px"><summary class=dh style="cursor:pointer;list-style:none">{paste_title}<span class=muted style="font-weight:400;font-size:12px"> · optional what-if</span></summary>
       <p class=muted style="margin:8px 0 10px;font-size:13.5px">Model work you haven't filed yet. A JSON list of items — each with a <b>title</b>, and ideally
         <b>requirements</b>, <b>design_docs</b>, and/or story <b>points</b>.</p>
-      <textarea id=ol_plan rows=6 placeholder='{{"items":[{{"id":"PROJ-1","title":"Add SSO","requirements":"SAML + SCIM, multi-tenant, audit log","points":8}}]}}'></textarea>
+      <textarea id=ol_plan aria-label="Planned backlog as JSON" rows=6 placeholder='{{"items":[{{"id":"PROJ-1","title":"Add SSO","requirements":"SAML + SCIM, multi-tenant, audit log","points":8}}]}}'></textarea>
       <button class="btn" style="margin-top:12px" onclick="estRun(this)">Estimate →</button>
       <script>function estRun(btn){{btn.classList.add('loading');btn.disabled=true;
         fetch('/app/outlay/estimate/run',{{method:'POST',headers:{{'content-type':'application/json'}},
@@ -4369,9 +4369,9 @@ def _api_keys_section(keys: list[dict], deployments: list[dict], new_key: str = 
     {table}
     <div class=card style="margin-top:12px">
       <form method=post action="/app/keys" class=row style="gap:8px">
-        <input name=name placeholder="key name (e.g. prod)" style="max-width:200px">
-        <select name=deployment_id>{dep_opts}</select>
-        <select name=expires_in_days title="Set an expiry for rotating keys">{exp_opts}</select>{ret}
+        <input name=name aria-label="API key name" placeholder="key name (e.g. prod)" style="max-width:200px">
+        <select name=deployment_id aria-label="Deployment for this key">{dep_opts}</select>
+        <select name=expires_in_days aria-label="API key expiry" title="Set an expiry for rotating keys">{exp_opts}</select>{ret}
         <button class=btn>Create API key</button>
       </form>
     </div>"""
@@ -4399,8 +4399,8 @@ def _webhooks_section(webhooks: list[dict], deliveries: list[dict] | None = None
     {table}
     <div class=card style="margin-top:12px">
       <form method=post action="/app/webhooks" class=row style="gap:8px">
-        <input name=url placeholder="https://your-app.com/hooks/outlay" style="min-width:280px">
-        <select name=events>
+        <input name=url aria-label="Webhook URL" placeholder="https://your-app.com/hooks/outlay" style="min-width:280px">
+        <select name=events aria-label="Webhook events">
           <option value="all">all events</option>{opts}
         </select>
         <button class=btn>Add webhook</button>
@@ -4591,7 +4591,7 @@ def connect_page(account: dict, deployments: list[dict], brain_url: str, console
           <td><code>{_e(d['deployment_id'])}</code></td>
           <td><form method=post action="/app/deployments/rename" class=row style="gap:6px">
             <input type=hidden name=deployment_id value="{_e(d['deployment_id'])}">
-            <input name=label value="{_e(d.get('label') or '')}" style="padding:6px;max-width:200px">
+            <input name=label aria-label="Deployment label" value="{_e(d.get('label') or '')}" style="padding:6px;max-width:200px">
             <button class="btn sec sm">Rename</button></form></td>
           <td class="small muted">{_fmt_date(d.get('created_at'))}</td></tr>"""
     welcome = ('<div class=note style="margin-bottom:18px"><b>Welcome to Outlay 👋</b> '
@@ -4628,7 +4628,7 @@ client = Anthropic(base_url="http://127.0.0.1:8400")  # your key stays local</pr
       <tbody>{dep_rows}</tbody></table></div>
     <div class=card style="margin-top:12px">
       <form method=post action="/app/deployments" class=row style="gap:8px">
-        <input name=label placeholder="e.g. production-api" style="max-width:240px">
+        <input name=label aria-label="New deployment label" placeholder="e.g. production-api" style="max-width:240px">
         <button class=btn>Add deployment</button>
       </form>
     </div>
