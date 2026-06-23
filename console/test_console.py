@@ -3827,9 +3827,15 @@ def test_accessibility_structural_gate(env, client):
     chk = _A11yChecker()
     server, _ = env
     public = TestClient(server.app, follow_redirects=False)   # logged-out: sees /login, /signup
-    authed = ["/app", "/app/security", "/app/settings", "/app/outlay/budgets",
-              "/app/outlay/connect", "/app/team", "/app/outlay/programs"]
-    problems = {}
+    # Every customer-facing rendered page — the gate must cover the whole app surface,
+    # not a sample, so a new page can't regress accessibility unnoticed.
+    # (/app/estimate is intentionally a 303 redirect to /app/outlay/estimate — parked.)
+    authed = ["/app", "/app/welcome", "/app/security", "/app/security/vpat",
+              "/app/security/ai-card", "/app/settings", "/app/outlay", "/app/outlay/scope",
+              "/app/outlay/budgets", "/app/outlay/connect", "/app/outlay/programs",
+              "/app/outlay/governance", "/app/outlay/accuracy", "/app/outlay/estimate",
+              "/app/team", "/app/audit", "/app/api", "/app/connect", "/app/logs", "/app/billing"]
+    problems, skipped = {}, []
     for path, cl in ([(p, public) for p in ("/login", "/signup", "/forgot")]
                      + [(p, client) for p in authed]):
         r = cl.get(path)
@@ -3837,7 +3843,12 @@ def test_accessibility_structural_gate(env, client):
             v = chk.violations(r.text)
             if v:
                 problems[path] = v
+        else:
+            skipped.append((path, r.status_code))
     assert not problems, f"accessibility violations: {problems}"
+    # A page that silently redirects would escape the gate — fail loudly so we either
+    # fix the page's preconditions in this test or learn it stopped rendering.
+    assert not skipped, f"pages did not render 200 (uncovered by a11y gate): {skipped}"
 
 
 def test_finance_home_customizable_layout(env, client):
