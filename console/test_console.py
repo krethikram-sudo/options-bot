@@ -4420,6 +4420,11 @@ def test_coverage_diagnostic_explains_low_coverage(env, client):
     diag = web._coverage_diag(low)
     assert "Lift your ticket coverage" in diag
     assert "Connect your PRs" in diag and "Map people to teams" in diag
+    # each leak is quantified as a share of spend, and the recoverable headroom is an
+    # explicit upper bound (team tier = 600/1000), not a promised number
+    assert "60%</b> of spend" in diag             # team-tier leak share
+    assert "up to +60%" in diag and "ceiling" in diag
+    assert "~80%" in diag                          # 20% current + up-to-60% recoverable
     # healthy coverage → no nag
     assert web._coverage_diag({"spend": {"total_usd": 1000.0, "ticket_coverage": 0.8,
                                          "by_fidelity_usd": {"branch": 800.0}}}) == ""
