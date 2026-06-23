@@ -2792,7 +2792,8 @@ def admin_health(request: Request):
     acct, redir = _require_admin(request)
     if redir:
         return redir
-    return _html(web.admin_health_page(acct, store.cron_health(), store.get_cron_runs()))
+    return _html(web.admin_health_page(acct, store.cron_health(), store.get_cron_runs(),
+                                       storage=store.outlay_report_storage_stats()))
 
 
 @app.post("/admin/proposals/bulk")
@@ -3234,9 +3235,15 @@ def health():
         cron = store.cron_health()
     except Exception:  # noqa: BLE001 — health must never throw
         cron = {}
+    try:
+        storage = store.outlay_report_storage_stats()
+    except Exception:  # noqa: BLE001 — health must never throw
+        storage = {}
     return {"ok": True, "stripe": stripe_billing.enabled(),
             "cron_ok": all(not c["stale"] for c in cron.values()) if cron else True,
-            "cron": cron}
+            "cron": cron,
+            "storage_ok": not storage.get("over_soft_limit", False),
+            "report_max_bytes": storage.get("max_bytes", 0)}
 
 
 def main():

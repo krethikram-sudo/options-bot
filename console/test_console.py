@@ -644,6 +644,31 @@ def test_cron_health_tracking_and_surfaces(env, client):
     client.post("/login", data={"email": "ops@b.com", "password": "k7-otter-ledger"})
     page = client.get("/admin/health").text
     assert "Scheduler health" in page and "sync-due" in page and "digest-due" in page
+    # the report-storage ceiling is surfaced on the same operator page
+    assert "Report storage" in page
+
+
+def test_report_storage_stats_and_soft_limit(env, client, monkeypatch):
+    server, store = env
+    # no reports yet → zeroed, nothing over the limit
+    s0 = store.outlay_report_storage_stats()
+    assert s0["count"] == 0 and s0["max_bytes"] == 0 and not s0["over_soft_limit"]
+
+    a = store.create_account("blob@b.com", "k7-otter-ledger")
+    store.save_outlay_report(a["id"], {"spend": {"total_usd": 1.0}, "rows": ["x"] * 50})
+    s1 = store.outlay_report_storage_stats()
+    assert s1["count"] == 1 and s1["max_bytes"] > 0 and s1["max_account_id"] == a["id"]
+    assert not s1["over_soft_limit"]            # tiny blob, well under the default
+
+    # a low soft limit trips the over-limit flag (the operator alert), no truncation
+    monkeypatch.setattr(store, "OUTLAY_REPORT_SOFT_LIMIT_BYTES", 10)
+    s2 = store.outlay_report_storage_stats()
+    assert s2["over_soft_limit"] and s2["soft_limit_bytes"] == 10
+    # the report itself is untouched — we warn, we don't drop data
+    assert len(store.get_outlay_report(a["id"])["rows"]) == 50
+    # /api/health reflects the storage rollup
+    hj = client.get("/api/health").json()
+    assert "storage_ok" in hj and hj["storage_ok"] is False
 
 
 def test_admin_can_view_and_manage(env, client):
