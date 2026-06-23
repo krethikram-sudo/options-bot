@@ -624,6 +624,46 @@ def test_admin_can_view_and_manage(env, client):
     assert store.get_plan(cust["id"])["rate"] == pytest.approx(0.30)
 
 
+def test_cost_to_serve_estimator_economics():
+    """The KTLO model: no LLM cost → marginal cost-to-serve is tiny even for a heavy
+    account; the fixed always-on machine dominates."""
+    from console import cost_to_serve as c
+    light = c.estimate({"report_bytes": 50_000, "tickets": 80, "history_rows": 8,
+                        "sync_hours": 0, "retention_days": 90, "connectors": 1}, active_accounts=5)
+    heavy = c.estimate({"report_bytes": 4_000_000, "tickets": 8000, "history_rows": 2000,
+                        "prog_history_rows": 1500, "audit_rows": 5000, "delivery_rows": 800,
+                        "sync_hours": 1, "retention_days": 365, "connectors": 4, "webhooks": 2},
+                       active_accounts=5)
+    # heavy costs more to serve than light, on every axis that matters…
+    assert heavy["marginal_monthly"] > light["marginal_monthly"]
+    assert heavy["syncs_per_month"] > light["syncs_per_month"]
+    assert heavy["tier_signal"] == "heavy" and light["tier_signal"] == "light"
+    # …yet even the heavy account's MARGINAL cost is a few cents — no per-token COGS.
+    assert heavy["marginal_monthly"] < 0.50
+    # fixed base is shared across active accounts
+    assert light["allocated_fixed_monthly"] == pytest.approx(c.FLY_BASE_MONTHLY / 5)
+
+
+def test_account_cost_drivers_and_admin_panel(env, client):
+    _, store = env
+    from console import cost_to_serve
+    store.create_account("ktlo-boss@b.com", "k7-otter-ledger", role="admin")
+    cust = store.create_account("ktlo-cust@b.com", "k7-otter-ledger")
+    store.save_outlay_report(cust["id"], {"spend": {"total_usd": 500.0},
+                                          "tickets": [{"ticket_id": "A", "task_class": "feature",
+                                                       "status": "done", "cost_usd": 10.0}]})
+    store.record_outlay_snapshot(cust["id"], {"spend": {"total_usd": 500.0}})
+    drivers = store.account_cost_drivers(cust["id"])
+    assert drivers["report_bytes"] > 0 and drivers["tickets"] == 1 and drivers["history_rows"] >= 1
+    est = cost_to_serve.estimate(drivers)
+    assert est["loaded_monthly"] >= est["marginal_monthly"] > 0
+    # admin account page renders the KTLO panel; overview renders the fleet rollup
+    client.post("/login", data={"email": "ktlo-boss@b.com", "password": "k7-otter-ledger"})
+    detail = client.get(f"/admin/accounts/{cust['id']}").text
+    assert "Cost to serve (KTLO)" in detail and "no llm" in detail.lower()
+    assert "Cost to serve (KTLO) · all customers" in client.get("/admin").text
+
+
 # --- machine API ---------------------------------------------------------- #
 
 def test_api_entitlement_and_meter(env, client):
