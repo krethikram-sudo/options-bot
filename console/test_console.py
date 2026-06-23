@@ -1661,6 +1661,21 @@ def test_overview_is_role_aware_home(env, client):
     assert "Backlog estimate" not in spend            # estimate card → Estimate page
 
 
+def test_overview_greets_by_real_name_only(env, client):
+    """The Overview home greets a returning user by first name — but only when they've
+    set a real name, never the email alias (which would read oddly)."""
+    _signup(client, email="grace.hopper@navy.mil")
+    client.post("/app/outlay/sample", follow_redirects=True)
+    # no name set → no greeting, and definitely not the alias
+    home = client.get("/app").text
+    assert "Welcome back" not in home
+    # set a real name → greeted by first name
+    client.post("/app/profile", data={"name": "Grace Hopper"})
+    home = client.get("/app").text
+    assert "Welcome back, Grace" in home
+    assert "Welcome back, Grace Hopper" not in home   # first name only
+
+
 def test_security_compliance_page_for_reviewers(env, client):
     """The in-app security summary a customer's security reviewer reads — every
     claim maps to a shipped feature, and the certification status is honest."""

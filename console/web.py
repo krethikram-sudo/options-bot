@@ -2033,6 +2033,17 @@ def _home_governance_card(program_statuses: list[dict], budget_statuses: list[di
             f'<a class=sub href="/app/outlay/governance" style="margin-left:auto">manage →</a></div>{rows}</div>')
 
 
+def _home_greeting(account: dict) -> str:
+    """A small, friendly 'welcome back, <first name>' over the Overview header — only
+    when the person has set a real name (never the email alias, which reads oddly)."""
+    name = ((account.get("member_name") if account.get("member_id") else account.get("name")) or "").strip()
+    if not name:
+        return ""
+    first = name.split()[0]
+    return (f'<div class="small muted" style="margin:0 0 2px;font-weight:600">'
+            f'Welcome back, {_e(first)} \U0001F44B</div>')
+
+
 def overview_page(account: dict, report: dict | None, statuses: list[dict] | None = None,
                   history: list[dict] | None = None, conn: dict | None = None,
                   has_budget: bool = False, persona: str = "",
@@ -2068,12 +2079,13 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
         return page("Home", tb + chooser + intro + cta + checklist + _outlay_connect(),
                     account, active="/app")
 
+    greet = _home_greeting(account)
     if persona == "business":
-        head = (f'<div class=ohead><h1>{_quarter_label()} at a glance</h1>'
+        head = (f'<div class=ohead>{greet}<h1>{_quarter_label()} at a glance</h1>'
                 '<p>What needs action, the headline numbers, and where your spend landed — '
                 'drill into any card for the detail.</p></div>')
     else:
-        head = ('<div class=ohead><h1>AI spend at a glance</h1>'
+        head = (f'<div class=ohead>{greet}<h1>AI spend at a glance</h1>'
                 '<p>The headline numbers, your budget status, and where to dig in.</p></div>')
 
     # Trend + movers row — lay out as a pair when both are present, else a single
