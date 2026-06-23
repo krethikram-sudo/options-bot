@@ -112,6 +112,30 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## ✅ Done
 
+### 2026-06-23 — profile names, a11y gate, scale observability, coverage honesty (#227–#231)
+- [x] **Real display name** (#227): `name` on accounts + members; optional at signup; editable in
+      Settings (`/app/profile`, audit-logged); shown in the in-app sidebar + the marketing-site account
+      menu (`/api/session` returns it; `auth-nav.js` prefers name over the email alias). Falls back to the
+      email alias when blank. Greeting on the Overview home ("Welcome back, &lt;first name&gt;", #231),
+      shown only when a real name is set.
+- [x] **Accessibility CI gate extended to the full app surface** (#228): the structural WCAG gate went
+      from 7 → 20 customer-facing pages and now fails loudly if any listed page stops rendering 200.
+      Surfaced + fixed 9 real violations (form controls without accessible names on /app/api, /app/connect,
+      /app/outlay/estimate).
+- [x] **Report-blob scale ceiling made observable** (#229, no behavior change): `outlay_report_storage_stats`
+      (fleet count + largest/total blob bytes + over-soft-limit flag); `save_outlay_report` warns past
+      `OUTLAY_REPORT_SOFT_LIMIT_BYTES` (default 5 MB, **no truncation** — finance keeps the full tail);
+      `/admin/health` "Report storage" card + `/api/health` `storage_ok`/`report_max_bytes`. Sets up the
+      real fix (aggregate storage / pagination) before it bites — see the "Open risk (scale)" note below.
+- [x] **Low-coverage diagnostic — quantified + honest ceiling** (#230): each leak now shows its share of
+      spend, plus an explicit upper-bound "connecting PRs could lift coverage by up to +X% (to ~Y%)" capped
+      at the team-tier share and framed as a ceiling. No fabricated attributions.
+- [x] **Security sweep** of the session/auth changes (sliding-session, logout, `/api/session`, profile):
+      clean — XSS-escaped, member-scoped authz, SameSite=Lax CSRF, constant-time tokens, absolute cap
+      survives sliding refresh. (GET /logout = intentional low-risk logout-CSRF for the marketing nav link.)
+- [ ] **Still open (the real scale fix):** aggregate/paginated report storage so a multi-million-event/month
+      account doesn't carry the whole per-ticket tail in one JSON blob. Now measurable on /admin/health.
+
 ### 2026-06-23 — program budget pacing: real-time plan-vs-actual + earned-value rating (#220)
 - [x] **Per-program spend time-series** (`outlay_program_history`) written on every sync, with the same
       retention / erasure / account-delete plumbing as `outlay_history` — the substrate for pacing.
