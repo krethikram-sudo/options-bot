@@ -3239,11 +3239,22 @@ def health():
         storage = store.outlay_report_storage_stats()
     except Exception:  # noqa: BLE001 — health must never throw
         storage = {}
+    # Deployment readiness — non-secret booleans only (never the values themselves),
+    # so a pre-flight check can confirm prod is configured to actually send email,
+    # encrypt connector tokens at rest, and set secure cookies.
+    readiness = {
+        "smtp_configured": notify.enabled(),
+        "secretbox_key_set": bool(os.environ.get("CONSOLE_SECRETBOX_KEY")
+                                  or os.environ.get("CONSOLE_SECRET")),
+        "secure_cookies": os.environ.get("CONSOLE_SECURE_COOKIES") == "1",
+        "base_url_set": bool(os.environ.get("CONSOLE_BASE_URL")),
+    }
     return {"ok": True, "stripe": stripe_billing.enabled(),
             "cron_ok": all(not c["stale"] for c in cron.values()) if cron else True,
             "cron": cron,
             "storage_ok": not storage.get("over_soft_limit", False),
-            "report_max_bytes": storage.get("max_bytes", 0)}
+            "report_max_bytes": storage.get("max_bytes", 0),
+            "readiness": readiness}
 
 
 def main():
