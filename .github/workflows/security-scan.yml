@@ -1,0 +1,83 @@
+name: security-scan
+
+# Supply-chain / dependency security evidence (SOC 2 Phase 1 control: recurring
+# vulnerability scanning + SBOM). Runs on dependency/code changes, weekly, and on
+# demand. pip-audit is an ENFORCED gate (all three requirements sets are clean
+# today, so a new vulnerable dependency fails the build); Trivy is report-only for
+# now; SBOMs are uploaded as build evidence each run.
+on:
+  push:
+    paths:
+      - "**/requirements.txt"
+      - "console/**"
+      - "outlay/**"
+      - "modelpilot/**"
+      - ".github/workflows/security-scan.yml"
+  pull_request:
+    paths:
+      - "**/requirements.txt"
+      - "console/**"
+      - "outlay/**"
+      - "modelpilot/**"
+      - ".github/workflows/security-scan.yml"
+  schedule:
+    - cron: "23 6 * * 1"   # weekly, Monday 06:23 UTC — catches newly-disclosed CVEs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install audit + SBOM tooling
+        run: pip install pip-audit cyclonedx-bom
+
+      # Dependency CVE scan across every requirements set. ENFORCED: a newly
+      # vulnerable dependency fails the job (all three are clean as of 2026-06-24).
+      - name: pip-audit — dependency CVEs (enforced)
+        run: |
+          fail=0
+          for req in requirements.txt console/requirements.txt modelpilot/requirements.txt; do
+            echo "::group::pip-audit $req"
+            pip-audit -r "$req" || fail=1
+            echo "::endgroup::"
+          done
+          exit $fail
+
+      # CycloneDX SBOM per requirements set — the artifact auditors/gov reviewers ask
+      # for. Generated even if the audit above fails (uses always()).
+      - name: Generate SBOMs (CycloneDX)
+        if: ${{ always() }}
+        run: |
+          mkdir -p sbom
+          cyclonedx-py requirements requirements.txt          -o sbom/root.cdx.json     || true
+          cyclonedx-py requirements console/requirements.txt  -o sbom/console.cdx.json  || true
+          cyclonedx-py requirements modelpilot/requirements.txt -o sbom/modelpilot.cdx.json || true
+
+      - name: Upload SBOMs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx
+          path: sbom/
+          if-no-files-found: warn
+
+      # Repo filesystem scan: vulnerable deps, misconfig, and leaked secrets.
+      # Report-only for now (exit-code 0) — flip to "1" to enforce once triaged.
+      - name: Trivy filesystem scan (report-only)
+        if: ${{ always() }}
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "0"
+          format: table

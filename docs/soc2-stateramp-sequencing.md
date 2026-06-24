@@ -107,7 +107,10 @@ Only start when a government opportunity (e.g. MHBE) is advancing to procurement
 ## Immediate next actions (this week)
 
 - [ ] Pick a compliance-automation platform (demo Vanta + Drata).
-- [ ] Stand up vuln scanning + dependency audit + SBOM in CI (cheap, we control it).
+- [x] Stand up vuln scanning + dependency audit + SBOM in CI (cheap, we control it).
+      Done — `.github/workflows/security-scan.yml`: `pip-audit` (enforced gate across
+      all three requirements sets), CycloneDX SBOMs (uploaded as evidence), Trivy fs
+      scan (report-only). Runs on dependency/code changes, weekly, and on demand.
 - [ ] Draft the SOC 2 / 800-53 control-mapping doc from the CSF self-assessment.
 - [ ] Get 2–3 pen-test quotes; schedule once Phase-1 controls are in.
 - [ ] Decide Security-only vs +Confidentiality TSC scope (BYOK/metadata-only argues
