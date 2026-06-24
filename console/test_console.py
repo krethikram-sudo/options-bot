@@ -661,6 +661,12 @@ def test_cron_health_tracking_and_surfaces(env, client):
     # public health endpoint exposes per-job freshness + a rollup
     hj = client.get("/api/health").json()
     assert "cron" in hj and "cron_ok" in hj and "sync-due" in hj["cron"]
+    # deployment-readiness booleans (for the pre-flight check) — present, never secrets
+    rd = hj["readiness"]
+    assert set(rd) == {"smtp_configured", "secretbox_key_set", "secure_cookies", "base_url_set"}
+    assert all(isinstance(v, bool) for v in rd.values())
+    # no secret VALUES leak into the health payload
+    assert "SMTP_PASSWORD" not in repr(hj) and "CONSOLE_SECRET" not in repr(hj)
 
     # admin page renders the jobs + a stale warning when overdue
     store.create_account("ops@b.com", "k7-otter-ledger", role="admin")
