@@ -24,6 +24,41 @@ Reads only the public `/api/health` endpoint (no creds, no secrets) and grades:
 Exit codes: `0` healthy (or warnings), `1` warnings under `--strict`, `2` critical
 (unreachable, or encryption key missing). Drops into a deploy gate / cron monitor.
 
+A fully-configured prod box looks like this (diff your real output against it):
+
+```
+App
+  ✓ liveness                   /api/health responded ok
+Scheduler (background sweeps)
+  ✓ sync-due                   last run 12m ago
+  ✓ digest-due                 last run 12m ago
+Report storage
+  ✓ blob size                  largest report 1.2 MB
+Deployment readiness
+  ✓ SMTP configured            transactional email will send
+  ✓ encryption key set         connector tokens encrypted at rest
+  ✓ secure cookies             Secure flag on session cookie
+  ✓ base URL set               CONSOLE_BASE_URL configured
+Result: READY — all checks passed ✓
+```
+
+Right after a deploy the scheduler jobs read "stale / never" until the first
+in-process sweep runs (~hourly) — that's a warning, not a failure.
+
+## Automated monitor (GitHub Actions)
+
+`.github/workflows/prod-health.yml` runs the pre-flight against prod **hourly**
+(and on demand via the Actions tab → "Run workflow" — use that right after a
+`make deploy`). It fails the run only on a *critical* (prod unreachable or the
+encryption key missing), so you get an Actions-failure email when prod is
+genuinely down, without noise from a transiently-stale scheduler.
+
+- Override the target with a repo **variable** `PROD_BASE_URL` (default
+  `https://app.outlay-ai.com`).
+- Add repo **secrets** `OUTLAY_SMOKE_EMAIL` / `OUTLAY_SMOKE_PASSWORD` (a dedicated
+  MFA-free smoke account) to also run the `--no-sync` login + page-render smoke
+  on every check. Without them, that step is skipped.
+
 ## 2. End-to-end smoke: real data through the real console
 
 ```
