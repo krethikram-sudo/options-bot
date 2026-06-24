@@ -8,10 +8,9 @@ name: prod-health
 # so this is time-based rather than deploy-triggered. Run it by hand right after a
 # deploy via the Actions tab ("Run workflow").
 #
-# Base URL: repo variable PROD_BASE_URL (Settings → Variables), default below.
+# Base URL: repo variable PROD_BASE_URL (Settings -> Variables), default below.
 # Optional smoke: set repo secrets OUTLAY_SMOKE_EMAIL / OUTLAY_SMOKE_PASSWORD
-# (a dedicated MFA-free smoke account) to also exercise signup-free login + page
-# render on every run.
+# (a dedicated MFA-free smoke account) to also exercise login + page render.
 on:
   schedule:
     - cron: "7 * * * *"   # hourly, at :07 (adjust cadence here)
@@ -28,6 +27,12 @@ permissions:
 jobs:
   health:
     runs-on: ubuntu-latest
+    # secrets can't be used in `if:` conditions, so hoist them (and the resolved
+    # base URL) into job-level env; steps gate on env, which IS allowed in `if:`.
+    env:
+      BASE: ${{ github.event.inputs.base || vars.PROD_BASE_URL || 'https://app.outlay-ai.com' }}
+      SMOKE_EMAIL: ${{ secrets.OUTLAY_SMOKE_EMAIL }}
+      SMOKE_PASSWORD: ${{ secrets.OUTLAY_SMOKE_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -39,18 +44,12 @@ jobs:
       # transiently-stale scheduler right after deploy doesn't redden the run; the
       # full readiness (SMTP, secure cookies, etc.) is always printed in the log.
       - name: Pre-flight health check
-        run: |
-          python scripts/preflight.py \
-            --base "${{ github.event.inputs.base || vars.PROD_BASE_URL || 'https://app.outlay-ai.com' }}"
+        run: python scripts/preflight.py --base "$BASE"
 
       # Optional end-to-end smoke — only when a smoke account is configured. --no-sync
       # so it never touches a customer's data; just proves login + every page renders.
       - name: End-to-end smoke (login + pages)
-        if: ${{ secrets.OUTLAY_SMOKE_EMAIL != '' }}
-        env:
-          SMOKE_EMAIL: ${{ secrets.OUTLAY_SMOKE_EMAIL }}
-          SMOKE_PASSWORD: ${{ secrets.OUTLAY_SMOKE_PASSWORD }}
-        run: |
-          python scripts/smoke_outlay_e2e.py \
-            --base "${{ github.event.inputs.base || vars.PROD_BASE_URL || 'https://app.outlay-ai.com' }}" \
-            --email "$SMOKE_EMAIL" --password "$SMOKE_PASSWORD" --no-sync
+        if: env.SMOKE_EMAIL != ''
+        run: >
+          python scripts/smoke_outlay_e2e.py --base "$BASE"
+          --email "$SMOKE_EMAIL" --password "$SMOKE_PASSWORD" --no-sync
