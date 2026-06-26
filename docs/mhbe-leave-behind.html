@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Outlay — Maryland Health Connection</title>
+<style>
+  @page{size:Letter;margin:0.55in 0.6in}
+  :root{--ink:#1f2430;--mut:#5c6470;--line:#e1ddd2;--grn:#0f6b4f;--grn-d:#0b513c;--grn-l:#e7f1ec;--amber:#9a5a18;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Helvetica Neue",Arial,sans-serif;color:var(--ink);font-size:10.5pt;line-height:1.4}
+  .serif{font-family:Georgia,"Times New Roman",serif}
+  h1{font-family:Georgia,serif;font-size:21pt;font-weight:700;letter-spacing:-.3px;line-height:1.05}
+  .tag{color:var(--mut);font-size:11pt;margin-top:3px}
+  .top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--grn);padding-bottom:9px;margin-bottom:13px}
+  .brand{font-family:Georgia,serif;font-size:15pt;font-weight:700}
+  .brand .d{color:var(--grn)}
+  h2{font-size:8.5pt;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--grn);margin:13px 0 6px}
+  ul{list-style:none}
+  li{position:relative;padding-left:15px;margin:4px 0}
+  li:before{content:"";position:absolute;left:0;top:5px;width:6px;height:6px;border-radius:2px;background:var(--grn)}
+  .arch{background:var(--grn-l);border:1px solid #cfe6dc;border-radius:9px;padding:12px 14px;margin:4px 0}
+  .arch b{color:var(--grn-d)}
+  .cols{display:flex;gap:18px}
+  .cols>div{flex:1}
+  .two{display:flex;gap:18px;margin-top:2px}
+  .two>div{flex:1}
+  table{width:100%;border-collapse:collapse}
+  td{padding:3px 0;border-bottom:1px solid var(--line);font-size:9.5pt;vertical-align:top}
+  td.s{text-align:right;white-space:nowrap;font-weight:700}
+  .ok{color:var(--grn)} .road{color:var(--amber)}
+  .pilot{border:1.5px solid var(--grn);border-radius:9px;padding:12px 14px;margin-top:5px}
+  .pilot h2{margin-top:0}
+  .foot{margin-top:14px;padding-top:8px;border-top:1px solid var(--line);color:var(--mut);font-size:9pt;display:flex;justify-content:space-between}
+  .lead{font-size:10.5pt;color:var(--mut);margin:2px 0 0}
+</style></head>
+<body>
+  <div class="top">
+    <div>
+      <h1>AI spend governance,<br>built for a health exchange.</h1>
+      <div class="tag">Map every AI dollar to the work that drove it · forecast it · hold it to budget.</div>
+    </div>
+    <div class="brand">Outlay<span class="d">.ai</span></div>
+  </div>
+
+  <div class="cols">
+    <div>
+      <h2>What it does</h2>
+      <ul>
+        <li><b>Attribute</b> — AI spend mapped to team, work type, ticket &amp; engineer.</li>
+        <li><b>Forecast</b> — price planned work, back-tested on your own delivered work.</li>
+        <li><b>Govern</b> — per-program budgets, real-time pacing, on-/off-track alerts.</li>
+      </ul>
+      <h2>How it connects</h2>
+      <p>Read-only links to your work tracker (Jira / GitHub / Linear) and your AI provider's usage &amp; billing API. No agents installed; nothing in any request path.</p>
+    </div>
+    <div>
+      <h2>Why it's safe for Maryland Health Connection</h2>
+      <div class="arch">
+        <b>Metadata-only · bring-your-own-key · read-only.</b><br>
+        Outlay receives token counts, ticket IDs, work types, and dollar figures —
+        <b>never prompts, model outputs, PHI, PII, or FTI</b>. None of the data
+        <b>MARS-E / ARC-AMPE, IRS Pub 1075, or HIPAA</b> govern ever reaches us, so the
+        integration sits <b>outside that data scope</b> — the boundary that stops most vendors.
+      </div>
+    </div>
+  </div>
+
+  <div class="two">
+    <div>
+      <h2>Security posture — in place today</h2>
+      <table>
+        <tr><td>SSO (OIDC) + SCIM provisioning</td><td class="s ok">&#10003;</td></tr>
+        <tr><td>Phishing-resistant MFA (passkeys)</td><td class="s ok">&#10003;</td></tr>
+        <tr><td>RBAC · audit log &#8594; SIEM export</td><td class="s ok">&#10003;</td></tr>
+        <tr><td>Configurable retention + erasure</td><td class="s ok">&#10003;</td></tr>
+        <tr><td>Encryption at rest + KMS hook</td><td class="s ok">&#10003;</td></tr>
+        <tr><td>IR plan · WCAG 2.1 AA · CI security scan</td><td class="s ok">&#10003;</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2>On the roadmap — honest</h2>
+      <table>
+        <tr><td>SOC 2 Type II</td><td class="s road">in progress</td></tr>
+        <tr><td>Annual third-party pen test</td><td class="s road">scheduled</td></tr>
+        <tr><td>StateRAMP / GovRAMP</td><td class="s road">roadmap</td></tr>
+        <tr><td>FedRAMP cloud + FIPS-validated crypto</td><td class="s road">deal-gated</td></tr>
+      </table>
+      <p style="font-size:9pt;color:var(--mut);margin-top:5px">The metadata-only architecture keeps most of these out of scope for the data we touch.</p>
+    </div>
+  </div>
+
+  <div class="pilot">
+    <h2>The pilot — read-only, metadata-only, zero data-handling risk</h2>
+    <div class="two">
+      <div><ul>
+        <li>Scoped to your <b>development / vendor AI usage</b> — not any production PHI system.</li>
+        <li>Two weeks, free. Nothing for the security review to clear on data flow.</li>
+      </ul></div>
+      <div><ul>
+        <li>You get a real <b>attribution-coverage</b> number + a <b>measured forecast accuracy</b> on your own work.</li>
+        <li>We share our SOC&nbsp;2 timeline &amp; NIST&nbsp;800-53 control mapping up front.</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>[Founder name] · [email] · outlay-ai.com</span>
+    <span>Outlay — put AI compute on a budget.</span>
+  </div>
+</body></html>
