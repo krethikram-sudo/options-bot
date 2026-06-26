@@ -122,32 +122,32 @@ ln = s.shapes.add_shape(1, Inches(LM), Inches(3.95), Inches(3.4), Inches(0.045))
 ln.fill.solid(); ln.fill.fore_color.rgb = KICKM; ln.line.fill.background(); ln.shadow.inherit = False
 para(box(s, LM, 4.3, CW, 0.7), "Prepared for Maryland Health Connection", 22, WHITE, bold=True, first=True)
 tf = box(s, LM, 6.25, CW, 1.0)
-para(tf, "[ Presenter name ]  ·  [ Title ], Outlay", 17, MINT, bold=True, first=True, space_after=3)
+para(tf, "Krethikram Gowrisankar  ·  Founder, Outlay", 17, MINT, bold=True, first=True, space_after=3)
 para(tf, "June 26, 2026  ·  outlay-ai.com", 13, RGBColor(0xBF, 0xE0, 0xD0))
 notes(s, """Cover. Open with a sentence of context, not the deck: who you are and that this is built
 specifically for Maryland Health Connection. Then advance to the About slide for a 30-second intro
-before the pitch. Fill the [ Presenter name ] / [ Title ] placeholders.""")
+before the pitch.""")
 
 # 2 — ABOUT ME
 s = slide(); kicker(s, "About")
 ov = s.shapes.add_shape(9, Inches(LM), Inches(1.75), Inches(2.7), Inches(2.7))
 ov.fill.solid(); ov.fill.fore_color.rgb = GRN; ov.line.color.rgb = GRND; ov.line.width = Pt(1.5)
 ov.shadow.inherit = False; ov.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
-para(ov.text_frame, "[ photo ]", 18, MINT, bold=True, first=True, align=PP_ALIGN.CENTER)
-para(box(s, LM, 4.6, 2.7, 0.5), "↑ drop in a headshot", 12, MUT, first=True, align=PP_ALIGN.CENTER)
-para(box(s, 3.9, 1.55, 8.8, 0.9), "[ Your name ]", 32, INK, bold=True, font=SERIF, first=True)
-para(box(s, 3.9, 2.45, 8.8, 0.5), "[ Title ] · Founder, Outlay", 18, GRN, bold=True, first=True)
-bullets(s, 3.9, 3.15, 8.85, 3.2, [
-    "[ Background — prior roles / companies, and what you led there ]",
-    "[ Domain expertise — FinOps · AI infrastructure · healthcare · government · security ]",
-    "[ Notable — scale you've operated at, a credential, or a prior exit ]",
-    "[ Why Outlay — the founding insight that made you build this ]",
-], size=16, gap=15)
-para(box(s, 3.9, 6.55, 8.85, 0.5), "krethikram@gmail.com  ·  outlay-ai.com", 14, MUT, bold=True, first=True)
-notes(s, """About me — 30-45 seconds. Establish why you're credible to a CIO / CFO / Compliance room,
-then land the one-line founding insight. Replace every [ bracketed ] placeholder with your real
-background; drop a headshot into the green circle (or leave the monogram). Keep it tight — this is
-trust-building, not a resume.""")
+para(ov.text_frame, "KG", 40, MINT, bold=True, first=True, align=PP_ALIGN.CENTER, font=SERIF)
+para(box(s, LM, 4.6, 2.7, 0.5), "San Francisco, CA", 12, MUT, first=True, align=PP_ALIGN.CENTER)
+para(box(s, 3.9, 1.5, 8.85, 0.8), "Krethikram Gowrisankar", 31, INK, bold=True, font=SERIF, first=True)
+para(box(s, 3.9, 2.35, 8.85, 0.5), "Founder, Outlay  ·  ex-Amazon (Senior PM, Tech)", 17, GRN, bold=True, first=True)
+bullets(s, 3.9, 3.0, 8.85, 3.4, [
+    "Senior PM (Tech) at Amazon — led Smart TDR, an autonomous docking system scaled to ~50% of the middle-mile network in 12 months: 1M+ automated cycles, zero safety incidents.",
+    "Delivered $40M+ annual savings and owned $50M+ annual investment / $100M+ NPV programs — cost governance and capital allocation at scale.",
+    "Repeat 0→1 builder across hardware, software, and operations; filed a provisional patent and cold-pitched Amazon leadership into a full-time PM role.",
+    "B.S. Computer Science, UW–Madison — built Outlay to bring that same financial rigor to AI/LLM spend.",
+], size=14, gap=11)
+para(box(s, 3.9, 6.62, 8.85, 0.5), "krethikram@gmail.com  ·  outlay-ai.com", 13, MUT, bold=True, first=True)
+notes(s, """About me — 30-45 seconds. The throughline to land: "I spent years at Amazon owning
+safety-critical autonomous systems and the financial models behind them — $40M+ saved, $100M+ NPV
+programs. Outlay brings that same cost-governance rigor to AI spend." Establishes you're credible on
+BOTH scale/safety (matters to a gov buyer) and financial discipline (matters to the CFO).""")
 
 # 3 — value-prop opener
 s = slide(); kicker(s, "Outlay · for Maryland Health Connection")
@@ -159,7 +159,7 @@ sh = s.shapes.add_shape(1, Inches(LM), Inches(5.55), Inches(CW), Inches(0.9))
 sh.fill.solid(); sh.fill.fore_color.rgb = GRNL; sh.line.fill.background(); sh.shadow.inherit = False
 sh.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
 para(sh.text_frame, "Attribute  ·  Forecast  ·  Govern", 24, GRND, bold=True, font=SERIF, first=True, align=PP_ALIGN.CENTER)
-para(box(s, LM, 6.85, CW, 0.4), "Outlay.ai   ·   Demo · June 26, 2026 · [presenter]", 12, MUT, bold=True, first=True)
+para(box(s, LM, 6.85, CW, 0.4), "Outlay.ai   ·   Demo · June 26, 2026 · Krethikram Gowrisankar", 12, MUT, bold=True, first=True)
 notes(s, """OPEN HERE. The one rule for this room: lead with the architecture, not the features.
 This is a state health exchange — their first instinct is "what data does this touch?" Win that in
 the first five minutes (slide 4) and the rest lands. Room: CIO (Koshanam)=technical fit,
@@ -331,7 +331,7 @@ s = slide(GRN); kicker(s, "Why now", color=KICKM)
 para(box(s, LM, 2.05, CW, 1.6), "Govern the AI spend before it scales.", 46, WHITE, bold=True, font=SERIF, first=True)
 para(box(s, LM, 3.95, CW, 1.6), "The cheapest time to put AI on a budget is at the start of the curve — "
      "which is exactly where Maryland is.", 22, MINT, first=True)
-para(box(s, LM, 6.85, CW, 0.4), "[presenter] · [email] · outlay-ai.com", 13, RGBColor(0xBF,0xE0,0xD0), first=True)
+para(box(s, LM, 6.85, CW, 0.4), "Krethikram Gowrisankar · krethikram@gmail.com · outlay-ai.com", 13, RGBColor(0xBF,0xE0,0xD0), first=True)
 notes(s, "Close, then go to the ask (slide 11) and agree the next step. Backup slides follow for Q&A.")
 
 # 13 — BACKUP: objection handling
