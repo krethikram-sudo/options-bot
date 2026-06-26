@@ -110,7 +110,46 @@ def pic(s, name, x, y, w, border=True, bcolor=None):
 
 
 # ========================================================================== #
-# 1 — title
+# 1 — COVER
+s = slide(GRN)
+tf = box(s, LM, 1.45, CW, 1.7)
+p = tf.paragraphs[0]
+for txt, col in [("Outlay", WHITE), (".ai", KICKM)]:
+    r = p.add_run(); r.text = txt; r.font.size = Pt(66); r.font.bold = True
+    r.font.name = SERIF; r.font.color.rgb = col
+para(box(s, LM, 2.95, CW, 0.7), "Put AI compute on a budget.", 24, MINT, font=SERIF, first=True)
+ln = s.shapes.add_shape(1, Inches(LM), Inches(3.95), Inches(3.4), Inches(0.045))
+ln.fill.solid(); ln.fill.fore_color.rgb = KICKM; ln.line.fill.background(); ln.shadow.inherit = False
+para(box(s, LM, 4.3, CW, 0.7), "Prepared for Maryland Health Connection", 22, WHITE, bold=True, first=True)
+tf = box(s, LM, 6.25, CW, 1.0)
+para(tf, "[ Presenter name ]  ·  [ Title ], Outlay", 17, MINT, bold=True, first=True, space_after=3)
+para(tf, "June 26, 2026  ·  outlay-ai.com", 13, RGBColor(0xBF, 0xE0, 0xD0))
+notes(s, """Cover. Open with a sentence of context, not the deck: who you are and that this is built
+specifically for Maryland Health Connection. Then advance to the About slide for a 30-second intro
+before the pitch. Fill the [ Presenter name ] / [ Title ] placeholders.""")
+
+# 2 — ABOUT ME
+s = slide(); kicker(s, "About")
+ov = s.shapes.add_shape(9, Inches(LM), Inches(1.75), Inches(2.7), Inches(2.7))
+ov.fill.solid(); ov.fill.fore_color.rgb = GRN; ov.line.color.rgb = GRND; ov.line.width = Pt(1.5)
+ov.shadow.inherit = False; ov.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+para(ov.text_frame, "[ photo ]", 18, MINT, bold=True, first=True, align=PP_ALIGN.CENTER)
+para(box(s, LM, 4.6, 2.7, 0.5), "↑ drop in a headshot", 12, MUT, first=True, align=PP_ALIGN.CENTER)
+para(box(s, 3.9, 1.55, 8.8, 0.9), "[ Your name ]", 32, INK, bold=True, font=SERIF, first=True)
+para(box(s, 3.9, 2.45, 8.8, 0.5), "[ Title ] · Founder, Outlay", 18, GRN, bold=True, first=True)
+bullets(s, 3.9, 3.15, 8.85, 3.2, [
+    "[ Background — prior roles / companies, and what you led there ]",
+    "[ Domain expertise — FinOps · AI infrastructure · healthcare · government · security ]",
+    "[ Notable — scale you've operated at, a credential, or a prior exit ]",
+    "[ Why Outlay — the founding insight that made you build this ]",
+], size=16, gap=15)
+para(box(s, 3.9, 6.55, 8.85, 0.5), "krethikram@gmail.com  ·  outlay-ai.com", 14, MUT, bold=True, first=True)
+notes(s, """About me — 30-45 seconds. Establish why you're credible to a CIO / CFO / Compliance room,
+then land the one-line founding insight. Replace every [ bracketed ] placeholder with your real
+background; drop a headshot into the green circle (or leave the monogram). Keep it tight — this is
+trust-building, not a resume.""")
+
+# 3 — value-prop opener
 s = slide(); kicker(s, "Outlay · for Maryland Health Connection")
 tf = box(s, LM, 1.45, CW, 3)
 para(tf, "AI spend, mapped to the work", 46, INK, bold=True, font=SERIF, first=True, space_after=2)
