@@ -82,6 +82,22 @@ def card(s, x, y, w, h, title, body_lines, *, border=LINE, fill=WHITE):
     return sh
 
 
+import os
+from PIL import Image
+ASSETS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "assets")
+
+
+def pic(s, name, x, y, w, border=True, bcolor=None):
+    """Place an image scaled to width w (inches), aspect preserved, with a thin frame."""
+    path = os.path.join(ASSETS, name)
+    iw, ih = Image.open(path).size
+    p = s.shapes.add_picture(path, Inches(x), Inches(y), width=Inches(w))
+    if border:
+        p.line.color.rgb = bcolor or LINE
+        p.line.width = Pt(1)
+    return p, w * ih / iw
+
+
 # ========================================================================== #
 # 1 — title
 s = slide(); kicker(s, "Outlay · for Maryland Health Connection")
@@ -89,7 +105,7 @@ tf = box(s, 0.9, 1.7, 11.5, 3)
 para(tf, "AI spend, mapped to the work that drove it —", 40, INK, bold=True, font=SERIF, first=True, space_after=2)
 para(tf, "and held to budget.", 40, GRN, bold=True, font=SERIF, space_after=14)
 para(tf, "A read-only, metadata-only governance layer for the AI behind Maryland Health Connection.", 20, MUT)
-tf = box(s, 0.9, 6.7, 11.5, 0.5); para(tf, "Outlay.ai   ·   Demo · [date] · [presenter]", 12, MUT, bold=True, first=True)
+tf = box(s, 0.9, 6.7, 11.5, 0.5); para(tf, "Outlay.ai   ·   Demo · June 26, 2026 · [presenter]", 12, MUT, bold=True, first=True)
 notes(s, """OPEN HERE. The one rule for this room: lead with the architecture, not the features.
 This is a state health exchange — their first instinct is "what data does this touch?" Win that in
 the first five minutes (slide 4) and the rest lands. Room: CIO (Koshanam)=technical fit,
@@ -127,16 +143,14 @@ sh = s.shapes.add_shape(1, Inches(0.9), Inches(0.7), Inches(4.6), Inches(0.55))
 sh.fill.solid(); sh.fill.fore_color.rgb = GRNL; sh.line.fill.background(); sh.shadow.inherit = False
 tfp = sh.text_frame; tfp.margin_top = Inches(0.05)
 para(tfp, "WHY THIS IS SAFE FOR A HEALTH EXCHANGE", 12, GRND, bold=True, first=True)
-tf = box(s, 0.9, 1.5, 11.5, 1); para(tf, "We never see PHI, PII, or FTI — by design.", 32, INK, bold=True, font=SERIF, first=True)
-tf = box(s, 0.9, 2.8, 6.6, 4)
-for t in ["Metadata-only — token counts, ticket IDs, work types, dollar figures. Never prompts or model outputs.",
+tf = box(s, 0.9, 1.45, 11.5, 1); para(tf, "We never see PHI, PII, or FTI — by design.", 30, INK, bold=True, font=SERIF, first=True)
+tf = box(s, 0.9, 2.7, 4.5, 4)
+for t in ["Metadata-only — token counts, ticket IDs, work types, dollar figures. Never prompts or outputs.",
           "Bring-your-own-key — your API keys stay in your environment.",
-          "Read-only — Outlay observes; it's not a proxy or gateway in any data path."]:
-    para(tf, t, 17, INK, bullet=True, first=(t.startswith("Metadata")), space_after=12)
-card(s, 7.9, 2.8, 4.5, 3.0, "What that means for your review",
-     [("None of the data MARS-E / ARC-AMPE, IRS Pub 1075, or HIPAA govern ever reaches us.",),
-      ("The integration sits OUTSIDE that data scope — which is what stops most vendors at the door.",)],
-     border=GRN, fill=GRNL)
+          "Read-only — never a proxy or gateway in any data path.",
+          "Out of MARS-E / IRS 1075 / HIPAA data scope — what stops most vendors at the door."]:
+    para(tf, t, 15, INK, bullet=True, first=(t.startswith("Metadata")), space_after=11)
+pic(s, "diagram-architecture.png", 5.55, 2.55, 7.25)
 notes(s, """THE slide. Slow down. "Everything I'll show runs on metadata only — token counts, ticket
 IDs, dollars. Never prompts, outputs, PHI, PII, or FTI. Your keys stay with you; we're read-only,
 never in a data path. So none of the data MARS-E, IRS 1075, or HIPAA govern reaches us — the
@@ -146,9 +160,10 @@ never leave your environment."  Name MARS-E / ARC-AMPE / 1075 yourself — it si
 
 # 5 — demo divider
 s = slide(GRN); kicker(s, "Live", color=RGBColor(0xCF,0xEE,0xDE))
-tf = box(s, 0.9, 2.4, 11.5, 2)
-para(tf, "Let's look at the product.", 40, WHITE, bold=True, font=SERIF, first=True, space_after=12)
-para(tf, "On sample data shaped like a real engineering program — the same screens you'd see on day one of a pilot.", 20, RGBColor(0xDD,0xF0,0xE7))
+tf = box(s, 0.9, 2.1, 5.4, 3)
+para(tf, "Let's look at the product.", 34, WHITE, bold=True, font=SERIF, first=True, space_after=12)
+para(tf, "On sample data shaped like a real engineering program — the same screens you'd see on day one of a pilot.", 18, RGBColor(0xDD,0xF0,0xE7))
+pic(s, "shot-overview.png", 6.7, 1.5, 6.1, bcolor=RGBColor(0xFF,0xFF,0xFF))
 notes(s, """SETUP (do before the call): signed into a demo-flagged account on app.outlay-ai.com with
 SAMPLE DATA loaded; "business" persona (or "eng" if technical); ~110% zoom; notifications off.
 Smoke it first: python scripts/preflight.py --base https://app.outlay-ai.com, then click every page once.
@@ -156,10 +171,9 @@ Backup: localhost — CONSOLE_SECRET=… DEMO_ACCOUNT_EMAILS="*" python -m conso
 
 # 6 — attribution
 s = slide(); kicker(s, "Demo · Attribution")
-tf = box(s, 0.9, 1.5, 11.5, 4)
-para(tf, "Every dollar, on the roadmap.", 32, INK, bold=True, font=SERIF, first=True, space_after=16)
-para(tf, "Spend by team and cost center, by work type, by ticket, by engineer — with the share that maps to a real work item shown honestly, and the cheapest way to lift it.", 19, MUT, space_after=12)
-para(tf, "Showback today; the same data feeds chargeback and your FOCUS-aligned export for the books.", 16, MUT)
+tf = box(s, 0.9, 1.05, 11.5, 0.7); para(tf, "Every dollar, on the roadmap.", 27, INK, bold=True, font=SERIF, first=True)
+tf = box(s, 0.9, 1.62, 11.5, 0.4); para(tf, "By team, work type, ticket, and engineer — with ticket coverage shown honestly.", 14, MUT, first=True)
+pic(s, "shot-spend.png", 2.57, 2.05, 8.2)
 notes(s, """Click path: open Spend (/app/outlay). Scroll the attribution (team / work type / ticket /
 engineer). Then point at the COVERAGE line: "We're honest about it — this is the share of spend that
 maps to a specific work item, and exactly how to lift it. We never inflate the number." Mention the
@@ -167,10 +181,9 @@ FOCUS CSV export ("the artifact your finance team loads").""")
 
 # 7 — accuracy
 s = slide(); kicker(s, "Demo · Accuracy (the honesty layer)")
-tf = box(s, 0.9, 1.5, 11.5, 4)
-para(tf, "We don't ask you to trust a vendor benchmark.", 32, INK, bold=True, font=SERIF, first=True, space_after=16)
-para(tf, "Outlay back-tests its forecast on your own closed tickets, leave-one-out: hide a ticket, predict it from the rest, compare to what it actually cost.", 19, MUT, space_after=12)
-para(tf, "You see the measured error on your data — and we never hide the sample size.", 16, MUT)
+tf = box(s, 0.9, 1.05, 11.5, 0.7); para(tf, "We don't ask you to trust a vendor benchmark.", 27, INK, bold=True, font=SERIF, first=True)
+tf = box(s, 0.9, 1.62, 11.5, 0.4); para(tf, "Back-tested on your own closed tickets, leave-one-out — the measured error on your data.", 14, MUT, first=True)
+pic(s, "shot-accuracy.png", 2.57, 2.05, 8.2)
 notes(s, """THE TRUST MOMENT — this is what separates you from a dashboard. Open Accuracy
 (/app/outlay/accuracy). "The #1 question is 'can I trust the forecast?' We don't answer with a vendor
 benchmark — we back-test on YOUR closed tickets, leave-one-out, and show the measured error, sample
@@ -178,14 +191,9 @@ size never hidden." Let a compliance/finance person sit with this; candor is the
 
 # 8 — governance
 s = slide(); kicker(s, "Demo · Governance")
-tf = box(s, 0.9, 1.4, 11.5, 1); para(tf, "Put AI compute on a budget — per program.", 30, INK, bold=True, font=SERIF, first=True)
-tf = box(s, 0.9, 2.7, 6.6, 4)
-for t in ["Program budgets spanning teams, projects, and work types.",
-          "Real-time pacing — projected to breach, and the date.",
-          "Earned-value rating — on track / watch / off track from forecast vs actual on completed work."]:
-    para(tf, t, 17, INK, bullet=True, first=(t.startswith("Program")), space_after=12)
-card(s, 7.9, 2.7, 4.5, 2.8, "Reaches you proactively",
-     [("Off-track programs surface in the weekly digest, the monthly close pack, Slack/Teams, and a webhook to your SIEM — not just in the dashboard.",)])
+tf = box(s, 0.9, 1.05, 11.5, 0.7); para(tf, "Put AI compute on a budget — per program.", 27, INK, bold=True, font=SERIF, first=True)
+tf = box(s, 0.9, 1.62, 11.5, 0.4); para(tf, "Program budgets, projected breach dates, and an on-/off-track earned-value rating.", 14, MUT, first=True)
+pic(s, "shot-governance.png", 2.57, 2.05, 8.2)
 notes(s, """The CFO segment. Open Budgets/Governance (/app/outlay/budgets, /app/outlay/governance).
 "Set a budget per program. We pace it in real time, project the breach date, and rate it on-track /
 watch / off-track from forecast vs actual on completed work — and it reaches you proactively:
