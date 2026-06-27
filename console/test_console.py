@@ -663,6 +663,26 @@ def test_commitment_page_shows_opportunities(env, client):
     assert "Prompt caching" in r.text and "Batch API" in r.text
 
 
+def test_commitment_pacing_add_and_delete(env, client):
+    _, store = env
+    _signup(client, email="pace@b.com")
+    acct = store.get_account_by_email("pace@b.com")
+    store.set_persona(acct["id"], "business", member_id=0)
+    # Add a commitment that is under-pacing → forfeit risk.
+    r = client.post("/app/outlay/commitment/add", data={
+        "provider": "anthropic", "amount_usd": "100000", "used_to_date_usd": "10000",
+        "start": "2026-06-01", "end": "2026-12-01"})
+    assert r.status_code in (302, 303)
+    rows = store.list_commitments(acct["id"])
+    assert len(rows) == 1 and rows[0]["amount_usd"] == 100000.0
+    page = client.get("/app/outlay/commitment").text
+    assert "Active commitments" in page and "anthropic" in page
+    # Delete it.
+    cid = rows[0]["id"]
+    client.post("/app/outlay/commitment/delete", data={"id": str(cid)})
+    assert store.list_commitments(acct["id"]) == []
+
+
 def test_commitment_negotiation_pack_csv(env, client):
     _, store = env
     _signup(client, email="commit2@b.com")

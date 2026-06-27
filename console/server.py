@@ -1622,7 +1622,53 @@ def app_outlay_commitment(request: Request):
     history = store.outlay_history(acct["id"]) if report else []
     view = outlay_app.commitment_view(report, history)
     opps = outlay_app.opportunities_view(report)
-    return _html(web.commitment_page(acct, view, opps))
+    pacing = outlay_app.commitment_pacing_rows(store.list_commitments(acct["id"]))
+    return _html(web.commitment_page(acct, view, opps, pacing))
+
+
+@app.post("/app/outlay/commitment/add")
+async def app_outlay_commitment_add(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    form = await _form(request)
+
+    def _date_ts(v):
+        from datetime import datetime, timezone
+        try:
+            return datetime.strptime((v or "").strip(), "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp()
+        except (ValueError, TypeError):
+            return None
+
+    try:
+        amount = float(form.get("amount_usd") or 0)
+    except (TypeError, ValueError):
+        amount = 0.0
+    try:
+        used = float(form.get("used_to_date_usd") or 0)
+    except (TypeError, ValueError):
+        used = 0.0
+    start = _date_ts(form.get("start"))
+    end = _date_ts(form.get("end"))
+    if amount > 0 and start and end:
+        store.add_commitment(acct["id"], amount, start, end,
+                             provider=str(form.get("provider") or ""),
+                             used_to_date_usd=used)
+    return _redirect("/app/outlay/commitment")
+
+
+@app.post("/app/outlay/commitment/delete")
+async def app_outlay_commitment_delete(request: Request):
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    form = await _form(request)
+    try:
+        cid = int(form.get("id"))
+        store.delete_commitment(acct["id"], cid)
+    except (TypeError, ValueError):
+        pass
+    return _redirect("/app/outlay/commitment")
 
 
 @app.get("/app/outlay/commitment-pack.csv")

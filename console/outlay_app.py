@@ -718,6 +718,37 @@ def commitment_view(report: dict | None, history: list[dict] | None = None) -> d
     }
 
 
+def commitment_pacing_rows(commitments: list[dict], now: float | None = None) -> list[dict]:
+    """Map stored active commitments to forfeit/overage pacing via the engine's
+    pace_commitment(). elapsed_fraction comes from the commitment's own term."""
+    import time
+
+    from outlay.commitment import pace_commitment
+
+    now = now or time.time()
+    out = []
+    for c in commitments:
+        start = float(c.get("start_ts") or now)
+        end = float(c.get("end_ts") or (start + 86400))
+        ef = ((now - start) / (end - start)) if end > start else 1.0
+        p = pace_commitment(float(c.get("amount_usd") or 0.0),
+                            float(c.get("used_to_date_usd") or 0.0), ef)
+        out.append({
+            "id": c.get("id"),
+            "provider": c.get("provider") or "—",
+            "kind": c.get("kind") or "committed_spend",
+            "amount_usd": round(float(c.get("amount_usd") or 0.0), 2),
+            "used_to_date_usd": p.used_to_date_usd,
+            "elapsed_pct": round(p.elapsed_fraction * 100, 0),
+            "utilization_at_end": round(p.utilization_at_end * 100, 0),
+            "status": p.status,
+            "projected_forfeit_usd": p.projected_forfeit_usd,
+            "projected_overage_usd": p.projected_overage_usd,
+            "message": p.message,
+        })
+    return out
+
+
 def opportunities_view(report: dict | None) -> dict | None:
     """Advisory optimization opportunities (spec §3e) from the stored report — prompt-
     caching candidates (from per-model token splits) and batch-API candidates (from
