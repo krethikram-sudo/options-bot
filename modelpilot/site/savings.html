@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI spend savings calculator — Outlay</title>
+<meta name="description" content="Estimate what a committed-spend discount could save on your AI/LLM bill — sized against forfeit risk, the same way Outlay's commitment recommender does it. Advisory and illustrative; your real number is measured on your own data.">
+<link rel="canonical" href="https://outlay-ai.com/savings">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:title" content="AI spend savings calculator — Outlay">
+<meta property="og:description" content="Size a committed-spend discount against forfeit risk on your AI bill. Illustrative; the real number is measured on your data.">
+<meta property="og:image" content="https://outlay-ai.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://outlay-ai.com/og-image.png">
+<link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/outlay.css?v=20260621-5">
+<script src="/auth-nav.js?v=3" defer></script>
+<style>
+  .calc{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:28px;margin:8px 0 6px}
+  @media(max-width:820px){.calc{grid-template-columns:1fr}}
+  .ctrls{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px}
+  .ctrl{margin-bottom:18px}
+  .ctrl:last-child{margin-bottom:0}
+  .ctrl label{display:block;font-size:13.5px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  .ctrl .hint{font-size:12px;color:var(--mut);font-weight:400;margin-top:3px}
+  .ctrl input[type=number]{width:100%;font:inherit;font-size:16px;padding:9px 11px;border:1px solid var(--line);
+    border-radius:9px;background:var(--bg);color:var(--ink)}
+  .ctrl input[type=range]{width:100%;accent-color:var(--grn)}
+  .rngval{float:right;font-variant-numeric:tabular-nums;color:var(--grn-d);font-weight:700}
+  .out{display:flex;flex-direction:column;gap:16px}
+  .hero-num{background:var(--grn-l);border:1px solid #bfe3d4;border-radius:14px;padding:20px 22px}
+  .hero-num .big{font-size:40px;font-weight:700;letter-spacing:-.02em;color:var(--grn-d);font-variant-numeric:tabular-nums;line-height:1}
+  .hero-num .lab{font-size:13.5px;color:var(--grn-d);margin-top:7px;font-weight:600}
+  .hero-num .sub{font-size:12.5px;color:var(--body);margin-top:6px}
+  table.scen{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.scen th,table.scen td{text-align:right;padding:8px 10px;border-bottom:1px solid var(--line2)}
+  table.scen th:first-child,table.scen td:first-child{text-align:left}
+  table.scen thead th{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);font-weight:600}
+  table.scen tbody td{font-variant-numeric:tabular-nums}
+  .risk-none{color:var(--grn-d);font-weight:600}.risk-low{color:var(--amber);font-weight:600}.risk-elevated{color:var(--red);font-weight:600}
+  .reco{background:var(--bg);border:1px solid var(--line);border-left:4px solid var(--grn);border-radius:12px;padding:16px 18px;font-size:15px;color:var(--body)}
+  .reco b{color:var(--ink)}
+  .disc{font-size:12px;color:var(--mut);margin-top:2px}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Outlay<span class="dot">.ai</span></a>
+  <input type="checkbox" id="nav-t" class="nav-toggle" hidden>
+  <div class="navlinks" id="nav-menu">
+    <a href="/#how">How it works</a>
+    <a href="/#owners">For eng &amp; business</a>
+    <a href="/#proof">Attribution</a>
+    <a href="/platform#estimate">Estimate</a>
+    <a href="/#compare">Compare</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/tour">Product Tour</a>
+    <a href="/pilot">Pilot</a>
+  </div>
+  <div class="navsp"></div>
+  <div class="navcta">
+    <a class="btn primary" href="https://app.outlay-ai.com/login">Sign in</a>
+    <label for="nav-t" class="hamburger" role="button" tabindex="0" aria-label="Open menu" aria-controls="nav-menu" aria-expanded="false"><span></span><span></span><span></span></label>
+  </div>
+</div></nav>
+
+<main id="main">
+
+<div class="page"><div class="wrap">
+  <div class="eyebrow">Savings calculator</div>
+  <h1>What could a committed-spend discount save you?</h1>
+  <p class="lede">AI vendors price like cloud — pay <b>on-demand</b>, or commit to a baseline for a
+    discount. Commit too little and you overpay; commit too much and you <b>forfeit</b> the unused part.
+    This sizes the sweet spot against forfeit risk — the same logic Outlay's commitment recommender runs
+    on your real data. <b>Illustrative</b>; your true number is measured on your own usage.</p>
+</div></div>
+
+<section style="padding-top:14px"><div class="wrap">
+  <div class="calc">
+    <div class="ctrls">
+      <div class="ctrl">
+        <label for="spend">Monthly AI spend (on-demand)</label>
+        <input type="number" id="spend" min="0" step="1000" value="90000">
+        <div class="hint">Your current blended model/LLM bill per month.</div>
+      </div>
+      <div class="ctrl">
+        <label for="steady"><span class="rngval" id="steadyv">70%</span>Steady "always-on" share</label>
+        <input type="range" id="steady" min="10" max="100" step="5" value="70">
+        <div class="hint">How much of the bill is a predictable baseline vs. spiky bursts. Steadier ⇒ more is safely committable.</div>
+      </div>
+      <div class="ctrl">
+        <label for="disc"><span class="rngval" id="discv">20%</span>Committed-spend discount</label>
+        <input type="range" id="disc" min="5" max="40" step="1" value="20">
+        <div class="hint">The discount your vendor offers for committing. Real tiers are negotiated — use your quote.</div>
+      </div>
+      <div class="ctrl">
+        <label for="growth"><span class="rngval" id="growthv">60%</span>Annual spend growth</label>
+        <input type="range" id="growth" min="0" max="150" step="5" value="60">
+        <div class="hint">Only used for the 12-month projection below.</div>
+      </div>
+    </div>
+
+    <div class="out">
+      <div class="hero-num">
+        <div class="big" id="net">$0</div>
+        <div class="lab" id="netlab">estimated net savings / year — recommended commitment</div>
+        <div class="sub" id="netsub"></div>
+      </div>
+      <div>
+        <table class="scen">
+          <thead><tr><th>Scenario</th><th>Commit / mo</th><th>Net / mo</th><th>Eff. rate</th><th>Forfeit risk</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <p class="disc">Net savings is vs. paying on-demand. Forfeit risk rises as the commit approaches your
+          peak rather than your steady floor. We bill on realized savings only — no savings, no bill.</p>
+      </div>
+      <div class="reco" id="reco"></div>
+    </div>
+  </div>
+
+  <p style="font-size:13px;color:var(--mut);max-width:760px;margin-top:18px">
+    This is a planning estimate from a simplified model (single discount, steady-floor sizing). Outlay's
+    recommender runs the same decomposition on your <b>actual</b> per-day usage, sizes against your real
+    rate card and forfeit terms, and <b>paces the commitment</b> so you don't drift into forfeit or overage.
+  </p>
+</div></div>
+
+<section class="final"><div class="wrap">
+  <h2>See the real number on your own usage.</h2>
+  <p>A read-only, metadata-only pilot sizes your commitment from real per-day spend — and shows the
+    attribution and forecast behind it. Prompts and keys never leave your box.</p>
+  <div class="center">
+    <a class="btn onnavy lg" href="https://app.outlay-ai.com/pilot-request">Become a customer →</a>
+  </div>
+</div></section>
+
+</main>
+
+<footer><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Outlay<span class="dot">.ai</span></a>
+  <span class="sep"></span>
+  <a href="/pilot">Book a pilot</a>
+  <a href="/tour">Product Tour</a>
+  <a href="/#compare">Compare</a>
+  <a href="/security">Security</a>
+  <a href="/docs/">Docs</a>
+  <a href="mailto:hello@outlay-ai.com">Contact</a>
+</div>
+<div class="wrap" style="margin-top:14px;font-size:12.5px;color:#6c7790">© 2026 Outlay · See AI spend mapped to your work, forecast it, and hold it to budget.</div>
+</footer>
+
+<script>
+(function(){var t=document.getElementById('nav-t'),h=document.querySelector('.hamburger'),m=document.getElementById('nav-menu');if(!t||!h)return;function sync(){var o=t.checked;h.setAttribute('aria-expanded',o?'true':'false');h.setAttribute('aria-label',o?'Close menu':'Open menu');}t.addEventListener('change',sync);h.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();t.checked=!t.checked;sync();}});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&t.checked){t.checked=false;sync();}});if(m)m.addEventListener('click',function(e){if(e.target.closest('a')){t.checked=false;sync();}});})();
+
+// --- Commitment math — mirrors outlay/commitment.py (committed-spend model) ---
+function fmt(n){return '$'+Math.round(n).toLocaleString('en-US');}
+function economics(commit, onDemand, d){
+  var discountedUsage = onDemand*(1-d);
+  var billed = Math.max(commit, discountedUsage);
+  var forfeited = Math.max(0, commit - discountedUsage);
+  var net = onDemand - billed;
+  var rate = onDemand>0 ? net/onDemand : 0;
+  var risk = forfeited<=0 ? 'none' : (forfeited<=0.10*billed ? 'low' : 'elevated');
+  return {commit:commit, billed:billed, forfeited:forfeited, net:net, rate:rate, risk:risk};
+}
+function scenarios(spend, steadyShare, d){
+  var floor = spend*steadyShare;          // steady monthly floor (proxy for p10-p25)
+  var b = 0.10;                            // safety buffer (matches engine default)
+  var cands = [
+    ['Conservative', floor*(1-2*b)],
+    ['Base',         floor*(1-b)],
+    ['Aggressive',   spend*(1-b)]          // commit near full run-rate
+  ];
+  return cands.map(function(c){var e=economics(Math.max(0,c[1]), spend, d); e.label=c[0]; return e;});
+}
+function recompute(){
+  var spend=+document.getElementById('spend').value||0;
+  var steady=(+document.getElementById('steady').value||0)/100;
+  var d=(+document.getElementById('disc').value||0)/100;
+  var growth=(+document.getElementById('growth').value||0)/100;
+  document.getElementById('steadyv').textContent=Math.round(steady*100)+'%';
+  document.getElementById('discv').textContent=Math.round(d*100)+'%';
+  document.getElementById('growthv').textContent=Math.round(growth*100)+'%';
+
+  var sc=scenarios(spend, steady, d);
+  var rows=sc.map(function(e){
+    return '<tr><td>'+e.label+'</td><td>'+fmt(e.commit)+'</td><td>'+fmt(e.net)+'</td><td>'+
+      (e.rate*100).toFixed(1)+'%</td><td class="risk-'+e.risk+'">'+e.risk+'</td></tr>';
+  }).join('');
+  document.getElementById('rows').innerHTML=rows;
+
+  // Recommended = max net savings (the engine's pick).
+  var best=sc.reduce(function(a,c){return c.net>a.net?c:a;}, sc[0]);
+  var annualNow=best.net*12;
+  // 12-month projection: average run-rate over a year growing at `growth`.
+  var avgFactor=(1 + (1+growth))/2;
+  var annualGrown=best.net*12*avgFactor;
+  document.getElementById('net').textContent=fmt(annualNow);
+  if(best.net<=0){
+    document.getElementById('net').textContent='$0';
+    document.getElementById('netlab').textContent='stay on-demand at this profile';
+    document.getElementById('netsub').textContent='No commitment beats on-demand here — spend is too low or too spiky to commit without forfeit.';
+    document.getElementById('reco').innerHTML='<b>Recommendation: stay on-demand.</b> A committed-spend discount would forfeit more than it saves at this steady share. Increase steady share or spend to see a commit pay off.';
+    return;
+  }
+  document.getElementById('netlab').textContent='estimated net savings / year — '+best.label.toLowerCase()+' commitment';
+  document.getElementById('netsub').textContent='≈ '+fmt(annualGrown)+'/yr factoring '+Math.round(growth*100)+'% growth · '+(best.rate*100).toFixed(0)+'% effective on your bill.';
+  document.getElementById('reco').innerHTML='<b>Recommended:</b> commit <b>'+fmt(best.commit)+
+    '/mo</b> ('+best.label.toLowerCase()+') → ~<b>'+fmt(best.net)+'/mo</b> net ('+
+    (best.rate*100).toFixed(0)+'%), forfeit risk <b>'+best.risk+'</b>. Take this run-rate to your vendor as the basis for the commit.';
+}
+['spend','steady','disc','growth'].forEach(function(id){
+  document.getElementById(id).addEventListener('input', recompute);
+});
+recompute();
+</script>
+</body></html>
