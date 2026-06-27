@@ -10,11 +10,36 @@ Stdlib + the in-repo `outlay` engine only.
 
 from __future__ import annotations
 
+import csv
 import json
 import os
 import tempfile
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+
+
+def _csv_safe(v):
+    """Neutralize CSV formula injection: a cell that starts with a formula trigger
+    (= + - @, or a leading tab/CR) is prefixed with a single quote so spreadsheet
+    apps treat it as text, not a formula. User- and tracker-derived strings
+    (company, program/team/engineer/ticket names) flow into exports, so every cell
+    is guarded. Numbers are unaffected (csv already stringifies them identically)."""
+    s = "" if v is None else str(v)
+    return ("'" + s) if s[:1] in ("=", "+", "-", "@", "\t", "\r") else s
+
+
+class _SafeCsvWriter:
+    """csv.writer wrapper that runs every cell through `_csv_safe`."""
+
+    def __init__(self, buf):
+        self._w = csv.writer(buf)
+
+    def writerow(self, row):
+        self._w.writerow([_csv_safe(c) for c in row])
+
+    def writerows(self, rows):
+        for r in rows:
+            self.writerow(r)
 
 from outlay.attribute import attribute
 from outlay.backtest import backtest
@@ -703,7 +728,7 @@ def negotiation_pack_csv(report: dict | None, history: list[dict] | None,
     from datetime import datetime, timezone
 
     buf = io.StringIO()
-    w = csv.writer(buf)
+    w = _SafeCsvWriter(buf)
     w.writerow(["Outlay — commitment negotiation pack"])
     if company:
         w.writerow(["account", company])
@@ -1091,7 +1116,7 @@ def variance_report_csv(rep: dict) -> str:
     import csv
     import io
     buf = io.StringIO()
-    w = csv.writer(buf)
+    w = _SafeCsvWriter(buf)
     w.writerow(["program", "budget_usd", "actual_to_date_usd", "planned_to_date_usd",
                 "variance_usd", "variance_pct", "progress_pct", "cost_variance_pct",
                 "rating", "projected_total_usd", "over_budget_usd"])
@@ -1210,7 +1235,7 @@ def report_focus_csv(report: dict, window_days: int = 30) -> str:
     w = csv.DictWriter(buf, fieldnames=FOCUS_COLUMNS)
     w.writeheader()
     for r in focus_rows(report, window_days):
-        w.writerow(r)
+        w.writerow({k: _csv_safe(v) for k, v in r.items()})
     return buf.getvalue()
 
 
@@ -1220,7 +1245,7 @@ def report_csv(report: dict, view: str = "tickets") -> str:
     import csv
     import io
     buf = io.StringIO()
-    w = csv.writer(buf)
+    w = _SafeCsvWriter(buf)
     report = report or {}
     if view == "people":
         w.writerow(["engineer", "spend_usd", "share_pct", "top_model", "events"])
