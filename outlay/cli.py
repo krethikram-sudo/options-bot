@@ -94,6 +94,7 @@ def run(
     as_json: bool = False,
     as_html: bool = False,
     company: str | None = None,
+    commitment: bool = False,
 ) -> str:
     events = gather_events(
         usage=usage_path,
@@ -159,6 +160,27 @@ def run(
     if calibration is not None:
         out += "\n" + format_calibration(calibration)
 
+    if commitment:
+        from .commitment import (
+            daily_spend_series,
+            decompose,
+            default_ratecard,
+            format_commitment,
+            recommend_commitment,
+        )
+
+        series = daily_spend_series(events)
+        profile = decompose(series)
+        # Blended realized $/Mtok from the customer's own spend, so the rate card
+        # reflects their actual mix rather than a list price.
+        total_cost = sum(series)
+        total_mtok = sum(e.total_tokens for e in events) / 1_000_000.0
+        blended = (total_cost / total_mtok) if total_mtok > 0 else 9.0
+        card = default_ratecard(on_demand_usd_per_mtok=blended)
+        forecast_month = profile.mean_usd * 30.0
+        scenarios = recommend_commitment(profile, forecast_month, card, floor_periods=30)
+        out += "\n\n" + format_commitment(profile, scenarios, card)
+
     return out
 
 
@@ -191,6 +213,9 @@ def main(argv: list[str] | None = None) -> int:
                    help="emit a VP-ready printable HTML audit readout")
     p.add_argument("--company", default=None,
                    help="company/team name for the HTML readout header")
+    p.add_argument("--commitment", action="store_true",
+                   help="append a commitment & procurement optimization recommendation "
+                        "(on-demand vs committed-spend discount) from the usage series")
     args = p.parse_args(argv)
 
     # Default to the bundled demo when no usage source is given.
@@ -210,6 +235,7 @@ def main(argv: list[str] | None = None) -> int:
         as_json=args.as_json,
         as_html=args.as_html,
         company=args.company,
+        commitment=args.commitment,
     ))
     return 0
 

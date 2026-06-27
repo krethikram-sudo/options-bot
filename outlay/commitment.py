@@ -22,12 +22,16 @@ provider calls — so it back-tests and unit-tests cleanly.
 
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 # Reuse the forecast module's percentile so the "floor" here lines up exactly
 # with the p10..p90 framing used everywhere else in the product.
 from .forecast import _percentile
+
+if TYPE_CHECKING:
+    from .models import UsageEvent
 
 
 # --------------------------------------------------------------------------- #
@@ -78,6 +82,44 @@ class RateCard:
     @property
     def on_demand_usd_per_token(self) -> float:
         return self.on_demand_usd_per_mtok / 1_000_000.0
+
+
+# Illustrative committed-spend tiers. Vendor committed-use discounts are
+# privately negotiated and not published, so these are clearly-labeled defaults a
+# customer overrides with their own quote — never presented as the vendor's
+# actual rate card.
+_ILLUSTRATIVE_TIERS: tuple[CommitmentTier, ...] = (
+    CommitmentTier(threshold_usd=10_000, discount=0.10),
+    CommitmentTier(threshold_usd=50_000, discount=0.20),
+    CommitmentTier(threshold_usd=250_000, discount=0.30),
+)
+
+
+def default_ratecard(provider: str = "anthropic",
+                     on_demand_usd_per_mtok: float = 9.0) -> RateCard:
+    """A starter rate card with *illustrative* commitment tiers (10/50/250k → 10/20/30%).
+
+    `on_demand_usd_per_mtok` should be the customer's blended realized rate (we can
+    compute it from their own attributed spend). Discounts are placeholders the
+    customer replaces with their negotiated terms.
+    """
+    return RateCard(provider=provider,
+                    on_demand_usd_per_mtok=on_demand_usd_per_mtok,
+                    tiers=_ILLUSTRATIVE_TIERS)
+
+
+def daily_spend_series(events: "list[UsageEvent]") -> list[float]:
+    """Collapse usage events into a per-calendar-day spend series (USD), date-sorted.
+
+    The series `decompose()` consumes — built from the same cost model as the rest
+    of the pipeline so the floor/spike split matches the attributed numbers.
+    """
+    from .pricing import cost_usd
+
+    by_day: dict[str, float] = defaultdict(float)
+    for e in events:
+        by_day[e.ts.date().isoformat()] += cost_usd(e)
+    return [by_day[d] for d in sorted(by_day)]
 
 
 # --------------------------------------------------------------------------- #
@@ -364,3 +406,43 @@ def pace_commitment(
         projected_overage_usd=round(overage, 2),
         message=msg,
     )
+
+
+# --------------------------------------------------------------------------- #
+# Text readout (CLI)
+# --------------------------------------------------------------------------- #
+def format_commitment(profile: SpendProfile, scenarios: list[CommitScenario],
+                      ratecard: RateCard, *, period: str = "month") -> str:
+    """Human-readable commitment recommendation block for the CLI report."""
+    lines = [
+        "Commitment & procurement optimization  (advisory — you execute with the vendor)",
+        "=" * 78,
+        f"  Spend profile  ({profile.n_periods} days):  "
+        f"floor ${profile.floor_usd:,.0f}/day · median ${profile.median_usd:,.0f}/day · "
+        f"peak ${profile.peak_usd:,.0f}/day",
+        f"  Steadiness:  {profile.steadiness:.0%}  "
+        f"(CoV {profile.cov:.2f}; higher steadiness ⇒ better commit candidate)",
+        f"  On-demand rate:  ${ratecard.on_demand_usd_per_mtok:,.2f}/Mtok  "
+        f"(illustrative tiers — replace with your negotiated terms)",
+        "",
+        f"  Committed-spend options (per {period}):",
+        f"    {'scenario':<13}{'commit':>12}{'discount':>10}{'billed':>12}"
+        f"{'net save':>11}{'eff rate':>10}  risk",
+    ]
+    for s in scenarios:
+        lines.append(
+            f"    {s.label:<13}{('$%s' % f'{s.commit_usd:,.0f}'):>12}"
+            f"{('%.0f%%' % (s.discount * 100)):>10}"
+            f"{('$%s' % f'{s.billed_usd:,.0f}'):>12}"
+            f"{('$%s' % f'{s.net_savings_usd:,.0f}'):>11}"
+            f"{s.effective_savings_rate:>10.1%}  {s.forfeit_risk}"
+        )
+    best = max(scenarios, key=lambda s: s.net_savings_usd) if scenarios else None
+    if best:
+        lines += [
+            "",
+            f"  ▶ Recommended: commit ${best.commit_usd:,.0f}/{period} ({best.label}) "
+            f"→ ~${best.net_savings_usd:,.0f}/{period} net "
+            f"({best.effective_savings_rate:.0%}), forfeit risk: {best.forfeit_risk}.",
+        ]
+    return "\n".join(lines)
