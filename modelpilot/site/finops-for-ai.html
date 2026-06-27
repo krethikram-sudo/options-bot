@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FinOps for AI: how to open the model-spend black box — Outlay</title>
+<meta name="description" content="AI spend moved from per-seat licenses to consumption, and consumption broke the way finance sees software cost. Here's what a FinOps-for-AI practice actually needs — attribute, forecast, govern, and optimize how you pay — and a practical playbook for this quarter.">
+<link rel="canonical" href="https://outlay-ai.com/finops-for-ai">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:type" content="article">
+<meta property="og:title" content="FinOps for AI: how to open the model-spend black box">
+<meta property="og:description" content="Consumption pricing broke how finance sees AI cost. What a FinOps-for-AI practice needs — attribute, forecast, govern, optimize how you pay — and a playbook for this quarter.">
+<meta property="og:image" content="https://outlay-ai.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://outlay-ai.com/og-image.png">
+<link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/outlay.css?v=20260621-5">
+<script src="/auth-nav.js?v=3" defer></script>
+<style>
+  .article{max-width:720px}
+  .article h2{font-size:23px;letter-spacing:-.018em;color:var(--ink);margin:32px 0 10px}
+  .article h3{font-size:17px;color:var(--ink);margin:22px 0 6px}
+  .article p{font-size:16.5px;line-height:1.6;color:var(--body);margin:0 0 15px}
+  .article ul{margin:0 0 16px;padding-left:22px}
+  .article li{font-size:16.5px;line-height:1.55;color:var(--body);margin:6px 0}
+  .article blockquote{margin:18px 0;padding:12px 18px;border-left:3px solid var(--grn);
+    background:var(--grn-l);border-radius:0 8px 8px 0;color:var(--grn-d);font-size:16px}
+  .article .stat{font-weight:700;color:var(--grn-d)}
+  .meta{color:var(--mut);font-size:13.5px;margin:0 0 6px}
+  .callout{border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:22px 0;background:var(--paper)}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Outlay<span class="dot">.ai</span></a>
+  <input type="checkbox" id="nav-t" class="nav-toggle" hidden>
+  <div class="navlinks" id="nav-menu">
+    <a href="/#how">How it works</a>
+    <a href="/#owners">For eng &amp; business</a>
+    <a href="/#proof">Attribution</a>
+    <a href="/platform#estimate">Estimate</a>
+    <a href="/#compare">Compare</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/tour">Product Tour</a>
+    <a href="/pilot">Pilot</a>
+  </div>
+  <div class="navsp"></div>
+  <div class="navcta">
+    <a class="btn primary" href="https://app.outlay-ai.com/login">Sign in</a>
+    <label for="nav-t" class="hamburger" role="button" tabindex="0" aria-label="Open menu" aria-controls="nav-menu" aria-expanded="false"><span></span><span></span><span></span></label>
+  </div>
+</div></nav>
+
+<main id="main">
+
+<div class="page"><div class="wrap">
+  <div class="eyebrow">FinOps for AI</div>
+  <h1>Your model bill is a black box. Here's how to open it.</h1>
+  <p class="lede">AI spend moved from per-seat licenses to consumption in about two years — and
+    consumption broke the way finance sees software cost. This is what a FinOps-for-AI practice
+    actually needs, and a playbook you can start this quarter.</p>
+</div></div>
+
+<section style="padding-top:14px"><div class="wrap">
+<div class="article">
+
+  <p class="meta">A practical guide · ~6 min read</p>
+
+  <p>Two years ago, "AI cost" meant a row of $20–60/month seats for a chat assistant. Today it's a
+    consumption line that scales with <em>tokens</em> — and it's the fastest-growing item in many
+    engineering budgets. Managing AI spend went from a niche concern to <span class="stat">near-universal:
+    in the 2026 State of FinOps survey, ~98% of organizations now manage AI spend, up from ~31% the year
+    before</span> — the fastest cost-discipline adoption the survey has recorded. Meanwhile the majority
+    of enterprises are <span class="stat">still increasing their AI budgets</span>, not trimming them.</p>
+
+  <p>So the bill is big, growing, and — for most teams — unexplained. The reason is structural.</p>
+
+  <h2>Why consumption broke visibility</h2>
+  <p>Per-seat software is easy to govern: you can count seats, map them to teams, and forecast next
+    year by headcount. Consumption AI doesn't work that way. Cost scales with how much each workload
+    <em>runs</em>, not how many people are licensed — and a single engineer with an agentic coding tool
+    can out-spend a whole department of seats in a week.</p>
+  <p>Three things make it opaque:</p>
+  <ul>
+    <li><b>Bills aggregate at the account level.</b> Your Anthropic or OpenAI invoice is one number per
+      key or org — no team, ticket, feature, or cost-center attached.</li>
+    <li><b>Spend is spread across providers and tools.</b> Anthropic, OpenAI, Bedrock, Azure OpenAI,
+      Cursor, Copilot — each with its own console and its own units. No native view unifies them.</li>
+    <li><b>Token accounting is subtle.</b> Cached reads bill at a fraction of base input; collapse them
+      into one "input tokens" number, as naive trackers do, and you can overstate a cached workload by
+      5–10×. If the starting number is wrong, everything downstream is.</li>
+  </ul>
+  <blockquote>The question finance actually asks — "what is AI costing us per team, per feature, per
+    engineer?" — has no answer in a provider console or a generic cost dashboard.</blockquote>
+
+  <h2>What a FinOps-for-AI practice actually needs</h2>
+  <p>Cloud FinOps matured around a loop: <b>inform → optimize → operate</b>. AI spend needs the same
+    discipline, adapted to consumption. Four capabilities, in order:</p>
+
+  <h3>1. Attribute — to the work, not just the team</h3>
+  <p>You can't govern what you can't allocate. The bar isn't "spend by team" (useful, but shallow); it's
+    spend mapped to the <b>work item</b> — the ticket, the feature, the engineer — by joining provider
+    usage to your work tracker (Jira, Linear, GitHub). That join is the hard part, and it's what turns
+    "the AI bill went up" into "the checkout refactor cost $X."</p>
+  <p>Insist on <b>honesty about confidence</b>. A per-ticket number that's secretly a guess will burn
+    your credibility with finance the first time it's wrong. Good attribution carries a fidelity tier on
+    every dollar — "this one's exact, this one's team-level ±15%."</p>
+
+  <h3>2. Forecast — and prove the error on your own data</h3>
+  <p>Allocating the past is exact arithmetic. Forecasting the future is a range — and the only honest way
+    to earn trust in a forecast is to <b>back-test it on your own delivered work</b> (leave-one-out:
+    predict a completed item as if you hadn't seen it, measure the miss). A forecast with a measured
+    error bar beats a confident point estimate every time, and it's what lets finance budget a quarter
+    instead of reacting to an invoice.</p>
+
+  <h3>3. Govern — budgets that flag the breach before month-end</h3>
+  <p>Attribution plus forecast lets you put a <b>budget on a body of work</b> and pace it in real time:
+    project the end-of-period spend from the current run-rate, and surface the breach <em>weeks before
+    the invoice</em>, with a date — not after the fact. That's the difference between a report you read
+    and a system you act on.</p>
+
+  <h3>4. Optimize how you pay — not just what you run</h3>
+  <p>Most teams pay every token at on-demand rack rate. But AI vendors price like cloud: on-demand,
+    <b>committed-spend discounts</b>, and <b>provisioned throughput</b> (PTUs, reserved capacity). Commit
+    to your steady baseline and you cut the unit price; over-commit and you forfeit the unused part. The
+    right commitment depends on knowing which of your workloads are actually <em>steady</em> — which,
+    again, comes back to attribution. There are also workload-level levers: prompt caching for repeated
+    context, batch APIs for latency-tolerant jobs, and right-sizing the model to the task.</p>
+
+  <div class="callout">
+    <b>A quick rule of thumb.</b> Provisioned capacity beats on-demand once a dedicated unit stays busy
+    enough: the break-even utilization is
+    <code>U* = (provisioned $/hr) ÷ (on-demand $/token × tokens/sec × 3600)</code>. Below it, stay
+    on-demand; above it, reserve. You can sketch your own committed-spend savings with our
+    <a href="/savings">savings calculator</a>.
+  </div>
+
+  <h2>A playbook for this quarter</h2>
+  <ul>
+    <li><b>Get one honest number first.</b> Reconcile your AI spend to the invoice, cache-aware. Don't
+      build on an inflated token count.</li>
+    <li><b>Join spend to work for one team.</b> Pick your heaviest AI consumer and attribute their spend
+      to tickets/features. The first time someone sees "this feature cost $X," the program sells itself.</li>
+    <li><b>Forecast next quarter and back-test it.</b> Quote the measured error, not a vendor benchmark.</li>
+    <li><b>Put a budget on one program</b> and turn on pacing, so you get a projected-breach date.</li>
+    <li><b>Only then, optimize how you pay.</b> Decide on-demand vs. committed at the portfolio level
+      after you have ~30+ days of attributed traffic — not on day one.</li>
+  </ul>
+
+  <h2>The honest part</h2>
+  <p>There's no credible industry benchmark for "how much FinOps-for-AI saves," and you should be
+    suspicious of anyone who quotes one. The number that matters is the one <b>measured on your own
+    traffic</b> — your attribution coverage, your forecast error, your realized commitment savings. Treat
+    any tool that asserts savings it can't measure with the skepticism it deserves.</p>
+
+  <p>That's the whole posture behind <a href="/">Outlay</a>: attribute AI spend to the work, forecast it
+    on your own delivered history, govern it with budgets and pacing, and advise on how to pay — all
+    <b>read-only and metadata-only</b>, so prompts and keys never leave your environment. If you want to
+    see it on your own numbers, <a href="https://app.outlay-ai.com/pilot-request">start a read-only
+    pilot</a> or <a href="/savings">estimate your savings</a>.</p>
+
+</div>
+</div></section>
+
+<section class="final"><div class="wrap">
+  <h2>Open the box on your own spend.</h2>
+  <p>A read-only, metadata-only pilot maps your real AI spend to the work, back-tests a forecast, and
+    sizes how to pay — in about two weeks.</p>
+  <div class="center">
+    <a class="btn onnavy lg" href="https://app.outlay-ai.com/pilot-request">Become a customer →</a>
+  </div>
+</div></section>
+
+</main>
+
+<footer><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Outlay<span class="dot">.ai</span></a>
+  <span class="sep"></span>
+  <a href="/pilot">Book a pilot</a>
+  <a href="/tour">Product Tour</a>
+  <a href="/pricing">Pricing</a>
+  <a href="/security">Security</a>
+  <a href="/docs/">Docs</a>
+  <a href="mailto:hello@outlay-ai.com">Contact</a>
+</div>
+<div class="wrap" style="margin-top:14px;font-size:12.5px;color:#6c7790">© 2026 Outlay · See AI spend mapped to your work, forecast it, and hold it to budget.</div>
+</footer>
+
+<script>
+(function(){var t=document.getElementById('nav-t'),h=document.querySelector('.hamburger'),m=document.getElementById('nav-menu');if(!t||!h)return;function sync(){var o=t.checked;h.setAttribute('aria-expanded',o?'true':'false');h.setAttribute('aria-label',o?'Close menu':'Open menu');}t.addEventListener('change',sync);h.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();t.checked=!t.checked;sync();}});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&t.checked){t.checked=false;sync();}});if(m)m.addEventListener('click',function(e){if(e.target.closest('a')){t.checked=false;sync();}});})();
+</script>
+</body></html>
