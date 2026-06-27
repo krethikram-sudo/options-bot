@@ -1,6 +1,8 @@
 """Commitment & procurement optimization engine — decomposition, committed-spend
 sizing, provisioned break-even, and pacing."""
 
+from datetime import datetime
+
 import pytest
 
 from outlay.commitment import (
@@ -9,10 +11,14 @@ from outlay.commitment import (
     ProvisionedUnit,
     RateCard,
     break_even,
+    daily_spend_series,
     decompose,
+    default_ratecard,
+    format_commitment,
     pace_commitment,
     recommend_commitment,
 )
+from outlay.models import UsageEvent
 
 # A representative Anthropic-style rate card: blended $9/Mtok on-demand, two
 # committed-spend tiers, and a provisioned unit.
@@ -164,3 +170,38 @@ def test_pace_uses_forecast_remaining_when_given():
                         forecast_remaining_usd=68_000)
     assert p.projected_end_usd == pytest.approx(98_000)
     assert p.status == "on_track"
+
+
+# --------------------------- helpers (CLI glue) ---------------------------- #
+def test_default_ratecard_has_illustrative_tiers():
+    card = default_ratecard(on_demand_usd_per_mtok=12.0)
+    assert card.on_demand_usd_per_mtok == 12.0
+    assert card.discount_at(10_000) == 0.10
+    assert card.discount_at(300_000) == 0.30
+
+
+def test_daily_spend_series_groups_by_calendar_day():
+    ev = [
+        UsageEvent(id="1", provider="anthropic", model="claude-sonnet-4-6",
+                   ts=datetime(2026, 1, 1, 9), input_tokens=1_000_000, output_tokens=0),
+        UsageEvent(id="2", provider="anthropic", model="claude-sonnet-4-6",
+                   ts=datetime(2026, 1, 1, 17), input_tokens=1_000_000, output_tokens=0),
+        UsageEvent(id="3", provider="anthropic", model="claude-sonnet-4-6",
+                   ts=datetime(2026, 1, 2, 10), input_tokens=1_000_000, output_tokens=0),
+    ]
+    series = daily_spend_series(ev)
+    assert len(series) == 2                 # two distinct days
+    assert series[0] == pytest.approx(2 * 3.0)   # day 1: 2 × $3/Mtok input
+    assert series[1] == pytest.approx(3.0)
+
+
+def test_format_commitment_renders_and_recommends_max_net():
+    profile = decompose([2_000.0] * 30)
+    card = default_ratecard(on_demand_usd_per_mtok=9.0)
+    scen = recommend_commitment(profile, profile.mean_usd * 30, card, floor_periods=30)
+    text = format_commitment(profile, scen, card)
+    assert "Commitment & procurement optimization" in text
+    assert "Recommended" in text
+    # The recommended commit must be the max-net-savings scenario.
+    best = max(scen, key=lambda s: s.net_savings_usd)
+    assert f"${best.commit_usd:,.0f}" in text
