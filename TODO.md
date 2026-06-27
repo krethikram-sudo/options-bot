@@ -27,8 +27,20 @@ Live URLs:
 > concrete pricing proposal — Team $15k / Growth $36k / Scale $90k tiers on AI-spend-under-management +
 > opt-in savings-share add-on, no clawback (#262). All claims kept measured/honest. Reusable
 > `scripts/md_to_pdf_weasy.py` green-branded md→PDF renderer added.
-> **Next on the commitment feature:** renewal/negotiation-pack export (spec §5.3), provisioned break-even
-> console card, advisory cheaper-equivalents (batch/cache/cheaper-model flags, spec §3e).
+>
+> **Then completed the whole spec + sales kit (PRs #263–271, all merged): (6)** renewal/negotiation-pack
+> CSV export (#264, spec §5.3) + provisioned-throughput directional card (#265) on the Commitments page;
+> **(7)** advisory optimization-opportunities engine `outlay/opportunities.py` (#268, spec §3e —
+> prompt-caching + batch-API candidates, honest upper-bound potential) + `--opportunities` CLI flag,
+> surfaced in the console (#270). **(8)** Security pass — hardened ALL CSV exports against formula
+> injection via a shared `_csv_safe`/`_SafeCsvWriter` (#269; new routes are auth-gated, marketing JS is
+> numeric-only). **(9)** GTM: `/pricing` page publishing the pricing *model* (#266), software-ICP
+> one-page leave-behind (#267) + demo runbook (#271) — completing the sales kit (outbound → demo →
+> leave-behind). **Full suite green: 413 passed, 2 skipped.** The commitment-optimization spec is now
+> fully implemented (§3, §3e, §4, §5) across engine + CLI + console.
+> **Next ideas (not yet built):** customer-`commitment` store table + form so commitment *pacing*
+> (`pace_commitment`, already in the engine) runs on real active commitments; a "FinOps for AI"
+> SEO/thought-leadership post; refresh the strategy deck now that "the prize" is shipped.
 >
 > **Earlier shipped (2026-06-23 — all merged + deployed):
 > (1) GOV-READINESS — adversarial security audit + full remediation (#218: security webhook now fires
