@@ -319,3 +319,71 @@ similar **~2–5% of governed spend** band.
   software for velocity.
 - **Earn the proof the research couldn't give us** — measured coverage + waste numbers from real pilots
   are both the product validation *and* the marketing stat that the refuted claims show is missing.
+
+---
+
+## 10. Commitment & procurement optimization — the highest-$ incremental lever
+
+**Why it matters.** AI vendors price like cloud: an **on-demand rack rate**, plus **committed-spend
+discounts** (commit $X/yr → ~10–40% off) and **provisioned throughput / reserved capacity** (Azure
+OpenAI PTUs, Bedrock provisioned, reserved GPUs — a fixed price for a dedicated lane). Committing
+lowers the **unit price**, but the **effective** cost depends on utilization: there's a **break-even**
+above which committing wins and below which on-demand is cheaper (you avoid paying for idle/forfeited
+capacity). Self-hosting open models on reserved GPUs is the extreme — cheapest per token only at huge,
+steady scale. In cloud FinOps this commitment/Reserved-Instance optimization is the **single
+highest-dollar lever**; reported AI-infra savings run **30–50% on GPU RIs/SPs and 30–60% in two
+quarters** across GPU/LLM/inference. [nOps; Opslyft; ProsperOps]
+
+**Why companies get it wrong (the opening).** To land above break-even you must **forecast usage and
+attribute it** well enough to size the commit. Most can't, so they (a) overpay on-demand (never
+negotiated), (b) over-commit and forfeit, or (c) under-commit and eat overage rates. Each cloud's
+PTU/CUD sales motion individually looks reasonable but **together quietly locks in over-commitment** —
+the discipline is to decide **at the portfolio level after ≥30 days of real traffic data**, which is
+exactly the attributed + forecasted history Outlay produces.
+
+**Feature sketch (incremental, built on the core data):**
+- **Commitment recommender** — from the attributed usage curve: "X% of your Anthropic/OpenAI/Bedrock
+  spend is steady → commit/provision that baseline; leave the spiky remainder on-demand," with a
+  modeled effective-savings-rate and break-even.
+- **Commitment pacing** — are you on track to *use* your committed spend, or forfeit it? (a direct
+  extension of the program/budget pacing already shipped).
+- **PTU vs on-demand split by workload** — which teams/features are steady enough to move to
+  provisioned throughput vs leave metered.
+- **Cheaper-equivalent levers, advisory (not in-path)** — flag batch-API / caching / cheaper-model
+  opportunities by workload (the routing/caching that gateways do live; Outlay *recommends* it from the
+  read-only data without sitting in the request path).
+- **Renewal / negotiation pack** — the attributed spend + forecast as leverage at contract time.
+
+This is the clearest path from **core (attribution + forecast + budget)** to a **high-ROI incremental
+TAM**, mapping onto the proven cloud-FinOps commitment-optimization business — but at the model-API
+layer the cloud optimizers don't cover.
+
+---
+
+## 11. Competitive landscape — who optimizes AI-compute spend today
+
+Three layers; **no one owns the full stack**, but the core-attribution layer is getting crowded and
+Flexera is consolidating.
+
+| Layer | Players | What they do | Gap vs Outlay |
+|---|---|---|---|
+| **Cloud commitment optimizers** | **ProsperOps** (acq. by **Flexera**, Jan 2026), **Zesty**, **nOps** | Autonomously ladder RIs / Savings Plans / CUDs to maximize discount on **cloud GPU instances** (~$5B claimed savings; 30–50% on GPU) | Optimize **infra you run**, not **LLM API commitments / model-layer PTUs**; **no work-attribution**. Most enterprises are on managed APIs they don't cover. |
+| **AI cost visibility / FinOps** *(nearest core competitors)* | **Vantage**, **CloudZero**, **Finout**, Datadog, **Flexera FinOps-for-AI**, usage.ai, Amnic | Connect OpenAI/Anthropic/cloud billing; per-request + model-level attribution; map spend to team/project/customer; anomaly detection; some forecasting | Attribution mostly at **team/project/customer** level, not the **work-item (ticket/feature) join**; cloud-first with AI bolt-ons; **none lead with metadata-only/BYOK/read-only** or forecast-against-delivered-work |
+| **LLM gateways / routers** | **LiteLLM**, **Portkey**, **OpenRouter**, Cloudflare AI Gateway, **TrueFoundry**, Helicone, Martian | **In-path** request optimization: caching (20–40% savings), cheaper-model routing, fallback, **per-key/per-team budget caps** | Sit **in the data path** (opposite of Outlay's posture); **platform-eng buyer**; do request-level cuts + budget enforcement, **not** commitment/portfolio optimization or financial governance |
+| **Provider / cloud-native dashboards** | OpenAI/Anthropic usage, Azure/AWS cost tools | Per-vendor usage + billing | Single-vendor, aggregated, no cross-provider view, no commitment intelligence |
+| **SaaS-spend / procurement** | Vendr, Tropic, Zylo, Productiv, Ramp | Negotiate/manage SaaS contracts + seats | Touch AI **seat** licenses, not **token/compute** commitment optimization |
+
+**Reads for Outlay:**
+- **Differentiation must be sharp** — the *visibility/attribution* core (Vantage/CloudZero/Finout) is
+  contested. Outlay's defensible edges: (1) **work-item attribution** via the tracker join
+  (token → ticket → engineer → feature), (2) **forecasting back-tested on the customer's own delivered
+  work**, (3) **metadata-only / BYOK / read-only** (the compliance/regulated wedge none of them lead
+  with), (4) **budget governance + pacing** as a first-class workflow, not just dashboards.
+- **The commitment-optimization layer (§10) is open at the model-API level** — but **Flexera (now
+  owning ProsperOps + FinOps-for-AI) is the most likely to stitch it together.** Move while it's a gap;
+  the work-attribution data is the moat that makes recommendations better than an infra-only optimizer.
+- **Gateways are a posture choice, not just a competitor** — they enforce in-path; Outlay governs
+  out-of-path (read-only). For regulated/compliance buyers, out-of-path is the selling point; for
+  hard-enforcement needs, a gateway integration (or the shipped enforcement endpoint) is the bridge.
+
+**Sources (§10–11):** [ProsperOps](https://www.prosperops.com/) · [ProsperOps/Flexera, Zesty, nOps](https://www.nops.io/blog/zesty-vs-prosperops-vs-nops-the-ultimate-guide/) · [nOps LLM cost tools](https://www.nops.io/blog/llm-cost-optimization-tools/) · [Vantage](https://www.vantage.sh) · [CloudZero](https://www.cloudzero.com/blog/llm-api-pricing-comparison/) · [Finout — AI cost observability](https://www.finout.io/blog/best-ai-cost-observability-tools-in-2026) · [Holori top-10 AI cost tools](https://holori.com/top-10-ai-cost-visibility-tools-in-2026/) · [LLM gateways](https://openrouter.ai/blog/insights/llm-gateway/) · [Portkey gateway guide](https://portkey.ai/buyers-guide/leading-llm-gateway-platforms) · [Opslyft AI cost optimization 2026](https://www.opslyft.com/guides/ai-cost-optimization)
