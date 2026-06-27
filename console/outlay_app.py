@@ -646,6 +646,24 @@ def commitment_view(report: dict | None, history: list[dict] | None = None) -> d
 
     scenarios = recommend_commitment(profile, forecast_month, card, floor_periods=1)
     best = max(scenarios, key=lambda s: s.net_savings_usd) if scenarios else None
+
+    # Provisioned-throughput suitability — directional. The grounded facts are the
+    # steady floor's throughput (real: floor spend ÷ blended rate) and its
+    # steadiness; the unit price/capacity is the customer's negotiated quote, so we
+    # don't fake a per-unit utilization. A large, steady base is the signal that
+    # dedicated capacity for the floor is worth pricing with the vendor.
+    provisioned = None
+    rate_per_mtok = blended or 9.0
+    if profile.floor_usd > 0 and rate_per_mtok > 0:
+        floor_mtok_per_month = profile.floor_usd / rate_per_mtok
+        steady_tok_per_sec = (floor_mtok_per_month * 1_000_000.0) / (30.0 * 86400.0)
+        # Worth pricing when the base is both steady and material (not a trickle).
+        worth = profile.steadiness >= 0.6 and steady_tok_per_sec >= 100.0
+        provisioned = {
+            "steady_tokens_per_sec": round(steady_tok_per_sec, 1),
+            "steadiness": round(profile.steadiness, 4),
+            "recommend": worth,
+        }
     return {
         "monthly_on_demand_usd": round(forecast_month, 2),
         "floor_usd": round(profile.floor_usd, 2),
@@ -671,6 +689,7 @@ def commitment_view(report: dict | None, history: list[dict] | None = None) -> d
              "forfeit_risk": best.forfeit_risk}
             if best and best.net_savings_usd > 0 else None
         ),
+        "provisioned": provisioned,
     }
 
 

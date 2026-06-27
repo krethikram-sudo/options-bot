@@ -634,6 +634,11 @@ def test_commitment_page_recommends_with_history(env, client):
     assert r.status_code == 200
     assert "Committed-spend options" in r.text
     assert "Recommended" in r.text
+    # Provisioned-throughput directional card present.
+    assert "Provisioned throughput" in r.text
+    assert "tokens/sec" in r.text
+    # Negotiation-pack export link present.
+    assert "/app/outlay/commitment-pack.csv" in r.text
     # Nav entry present for the business persona.
     assert "/app/outlay/commitment" in r.text
 
