@@ -1,6 +1,6 @@
 # ModelPilot — Running TODO (founder)
 
-Living checklist. Claude keeps this current as we work. Last updated: **2026-06-23**.
+Living checklist. Claude keeps this current as we work. Last updated: **2026-06-27**.
 (Detailed legal/terms analysis lives in `modelpilot/LAUNCH_CHECKLIST.md`; this is the
 short, prioritized running list.)
 
@@ -13,7 +13,24 @@ Live URLs:
 
 > **▶️ RESUME HERE next session:** Product is **Outlay** (spend attribution + forecasting + budget
 > enforcement); routing/ModelPilot engine is parked. The full product is built and the marketing site +
-> console are on the brand domains. **Latest shipped (2026-06-23, this session — all merged + deployed):
+> console are on the brand domains.
+>
+> **Latest shipped (2026-06-27 — all merged to `main`, PRs #255–262): the COMMITMENT &
+> PROCUREMENT OPTIMIZATION feature, end-to-end, + a GTM kit.** (1) Spec `docs/spec-commitment-optimization.md`
+> + board/investor strategy deck `docs/outlay-strategy-deck.pptx` (#255). (2) Engine `outlay/commitment.py`
+> (#256): rate-card model, baseline-vs-spike decomposition, committed-spend sizing at 3 risk levels,
+> provisioned break-even `U* = provisioned $/hr ÷ (on_demand $/tok × tok/s × 3600)`, and commitment
+> pacing — 21 tests. (3) CLI `--commitment` flag (#257). (4) Console **Commitments** page
+> `/app/outlay/commitment` (#258) — spend profile + committed-spend scenarios w/ forfeit-risk + recommend
+> banner; in the business persona nav. (5) GTM: competitive battlecards (#259), outbound playbook for the
+> eng-consumption ICP (#260), interactive savings calculator at `/savings` on the marketing site (#261),
+> concrete pricing proposal — Team $15k / Growth $36k / Scale $90k tiers on AI-spend-under-management +
+> opt-in savings-share add-on, no clawback (#262). All claims kept measured/honest. Reusable
+> `scripts/md_to_pdf_weasy.py` green-branded md→PDF renderer added.
+> **Next on the commitment feature:** renewal/negotiation-pack export (spec §5.3), provisioned break-even
+> console card, advisory cheaper-equivalents (batch/cache/cheaper-model flags, spec §3e).
+>
+> **Earlier shipped (2026-06-23 — all merged + deployed):
 > (1) GOV-READINESS — adversarial security audit + full remediation (#218: security webhook now fires
 > on auth events, recursive secret-value ingest guard, fail-safe secret_box key, 3 secondary secrets
 > encrypted, budget/lockout auditing, automated a11y CI gate); member MFA (#219, require_mfa gates every
