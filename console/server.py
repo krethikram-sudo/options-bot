@@ -1612,6 +1612,18 @@ def app_outlay_governance(request: Request):
     return _html(web.governance_page(acct, report, budgets, programs, projects))
 
 
+@app.get("/app/outlay/commitment", response_class=HTMLResponse)
+def app_outlay_commitment(request: Request):
+    """Commitment & procurement optimization — should the customer commit, and how much."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    report = store.get_outlay_report(acct["id"])
+    history = store.outlay_history(acct["id"]) if report else []
+    view = outlay_app.commitment_view(report, history)
+    return _html(web.commitment_page(acct, view))
+
+
 @app.post("/app/outlay/programs")
 async def app_outlay_programs_add(request: Request):
     acct, redir = _require(request)

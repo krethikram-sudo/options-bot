@@ -602,6 +602,78 @@ def program_spends(report: dict, programs: list[dict]) -> dict:
     return {p["id"]: round(program_spend(report, p), 4) for p in programs if p.get("id") is not None}
 
 
+def commitment_view(report: dict | None, history: list[dict] | None = None) -> dict | None:
+    """Commitment & procurement optimization read for the console (advisory).
+
+    Uses the per-sync spend snapshots (`outlay_history`) as a monthly run-rate
+    series: each snapshot's window total is normalized to a month, decomposed into
+    a steady floor vs spike, and run through the committed-spend recommender. With
+    too few snapshots we fall back to the latest report's run-rate as a single
+    point and say so — the estimate sharpens as sync history accumulates.
+    """
+    from outlay.commitment import (decompose, default_ratecard, recommend_commitment)
+
+    if not report:
+        return None
+    spend = report.get("spend", {}) or {}
+    total = float(spend.get("total_usd", 0.0) or 0.0)
+    window = report.get("window_days") or 30
+    if total <= 0:
+        return None
+    to_month = 30.0 / float(window)
+
+    # Monthly run-rate series from the snapshots (oldest→newest), normalized to a month.
+    hist = history or []
+    series = [float(h.get("total_usd", 0.0) or 0.0) * to_month for h in hist if (h.get("total_usd") or 0) > 0]
+    enough = len(series) >= 4
+    if enough:
+        profile = decompose(series)
+        forecast_month = profile.median_usd
+    else:
+        # Single-point fallback: treat the current run-rate as the floor with a
+        # conservative steadiness so we never over-recommend on thin data.
+        run_rate = total * to_month
+        profile = decompose([run_rate])
+        forecast_month = run_rate
+
+    # Blended realized $/Mtok from the report when token counts are present; else
+    # leave the rate-card default and flag tiers as illustrative either way.
+    blended = None
+    toks = spend.get("total_tokens") or report.get("total_tokens")
+    if toks:
+        blended = total / (float(toks) / 1_000_000.0)
+    card = default_ratecard(on_demand_usd_per_mtok=blended or 9.0)
+
+    scenarios = recommend_commitment(profile, forecast_month, card, floor_periods=1)
+    best = max(scenarios, key=lambda s: s.net_savings_usd) if scenarios else None
+    return {
+        "monthly_on_demand_usd": round(forecast_month, 2),
+        "floor_usd": round(profile.floor_usd, 2),
+        "median_usd": round(profile.median_usd, 2),
+        "peak_usd": round(profile.peak_usd, 2),
+        "steadiness": round(profile.steadiness, 4),
+        "cov": round(profile.cov, 4),
+        "n_snapshots": len(series),
+        "enough_history": enough,
+        "blended_rate": round(blended, 2) if blended else None,
+        "tiers": [{"threshold_usd": t.threshold_usd, "discount": t.discount} for t in card.tiers],
+        "scenarios": [
+            {"label": s.label, "commit_usd": s.commit_usd, "discount": s.discount,
+             "billed_usd": s.billed_usd, "forfeited_usd": s.forfeited_usd,
+             "net_savings_usd": s.net_savings_usd, "effective_savings_rate": s.effective_savings_rate,
+             "forfeit_risk": s.forfeit_risk}
+            for s in scenarios
+        ],
+        "recommended": (
+            {"label": best.label, "commit_usd": best.commit_usd,
+             "net_savings_usd": best.net_savings_usd,
+             "effective_savings_rate": best.effective_savings_rate,
+             "forfeit_risk": best.forfeit_risk}
+            if best and best.net_savings_usd > 0 else None
+        ),
+    }
+
+
 def program_statuses(report: dict, programs: list[dict], histories: dict | None = None) -> list[dict]:
     """Spend-vs-budget for *programs* — named budgets spanning several teams /
     projects / work types. Attaches real-time **pacing** (actual-to-date vs the budget's

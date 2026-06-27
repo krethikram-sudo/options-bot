@@ -455,10 +455,12 @@ def _sidenav(account: dict, active: str) -> str:
     estimate = ("/app/outlay/estimate", "Estimate")
     programs = ("/app/outlay/programs", "Programs")
     governance = ("/app/outlay/governance", "Governance")
+    commitments = ("/app/outlay/commitment", "Commitments")
     if persona == "business":
         # Consolidated business IA: the Overview (Home) is the consolidated default;
-        # Spend is the attribution detail; Governance merges budgets + programs.
-        analyze = [spend, governance]
+        # Spend is the attribution detail; Governance merges budgets + programs;
+        # Commitments sizes how to *pay* for the spend.
+        analyze = [spend, governance, commitments]
     elif persona == "eng":
         # Ship efficiently: measure forecast accuracy + price the backlog.
         analyze = [spend, accuracy, estimate, budgets]
@@ -3151,6 +3153,90 @@ def governance_page(account: dict, report: dict | None, budget_statuses: list[di
                f'{_budgets_section(account, report, budget_statuses, projects)}')
     return page("Governance", head + attention + variance + programs + budgets,
                 account, active="/app/outlay/governance")
+
+
+def _chip(label: str, value: str) -> str:
+    return (f'<span style="border:1px solid var(--line);border-radius:999px;padding:5px 12px;'
+            f'font-size:12.5px"><span class=muted>{_e(label)}</span> <b>{value}</b></span>')
+
+
+def commitment_page(account: dict, view: dict | None) -> str:
+    """Commitment & procurement optimization recommender (advisory, read-only).
+
+    From the customer's own spend run-rate: should they stay on-demand, or take a
+    committed-spend discount — and at what level, given forfeit risk."""
+    head = ('<div class=ohead><h1>Commitments</h1>'
+            '<p>The cheapest <b>way to pay</b> for your AI compute. From your own spend '
+            'run-rate we size an optional <b>committed-spend discount</b> and weigh it against '
+            '<b>forfeit risk</b>. Advisory — you commit with the vendor; we never sit in the path.</p></div>')
+
+    if not view:
+        body = ('<div class=ocard><div class=dh>Not enough data yet</div>'
+                '<p class=muted>Connect a usage source and sync so we can read your spend '
+                'run-rate, then this page sizes a commitment for you.</p>'
+                '<a class="btn sec sm" href="/app/outlay/connect">Connect a source →</a></div>')
+        return page("Commitments", head + body, account, active="/app/outlay/commitment")
+
+    rate = (f' · blended <b>{money(view["blended_rate"])}/Mtok</b>'
+            if view.get("blended_rate") else '')
+    profile = (
+        f'<div class=ocard><div class=dh>Your spend profile</div>'
+        f'<p class=muted style="font-size:12.5px;margin:2px 0 10px">'
+        f'Monthly run-rate <b>{money(view["monthly_on_demand_usd"])}</b>{rate}. '
+        f'Steady floor <b>{money(view["floor_usd"])}/mo</b>, '
+        f'steadiness <b>{view["steadiness"] * 100:.0f}%</b> '
+        f'(higher ⇒ more of your bill is safely committable).</p>'
+        f'<div style="display:flex;gap:10px;flex-wrap:wrap">'
+        f'{_chip("floor", money(view["floor_usd"]))}'
+        f'{_chip("median", money(view["median_usd"]))}'
+        f'{_chip("peak", money(view["peak_usd"]))}</div></div>')
+
+    tone = {"none": "var(--grn-d)", "low": "var(--amber)", "elevated": "var(--red)"}
+    rws = ""
+    for s in view["scenarios"]:
+        risk = s["forfeit_risk"]
+        rws += (
+            f'<tr><td><b>{_e(s["label"].title())}</b></td>'
+            f'<td>{money(s["commit_usd"])}</td>'
+            f'<td>{s["discount"] * 100:.0f}%</td>'
+            f'<td>{money(s["billed_usd"])}</td>'
+            f'<td>{money(s["net_savings_usd"])}</td>'
+            f'<td>{s["effective_savings_rate"] * 100:.1f}%</td>'
+            f'<td style="color:{tone.get(risk, "var(--muted)")};font-weight:600">{_e(risk)}</td></tr>')
+    table = (
+        '<div class=ocard style="margin-top:16px"><div class=dh>Committed-spend options (per month)</div>'
+        '<table><thead><tr><th>Scenario</th><th>Commit</th><th>Discount</th><th>Billed</th>'
+        '<th>Net savings</th><th>Eff. rate</th><th>Forfeit risk</th></tr></thead>'
+        f'<tbody>{rws}</tbody></table>'
+        '<p class=muted style="font-size:12px;margin-top:8px">Discount tiers are illustrative — '
+        'replace with your negotiated terms. Net savings is vs. paying on-demand; forfeit risk rises '
+        'as the commit approaches your peak rather than your floor.</p></div>')
+
+    rec = view.get("recommended")
+    if rec:
+        banner = (
+            f'<div class=ocard style="margin-top:16px;border-left:4px solid var(--grn-d)">'
+            f'<div class=dh>Recommended</div>'
+            f'<p>Commit <b>{money(rec["commit_usd"])}/mo</b> ({_e(rec["label"])}) → '
+            f'~<b>{money(rec["net_savings_usd"])}/mo</b> net '
+            f'(<b>{rec["effective_savings_rate"] * 100:.0f}%</b>), forfeit risk '
+            f'<b>{_e(rec["forfeit_risk"])}</b>. Take this run-rate to your vendor as the basis '
+            f'for the commit.</p></div>')
+    else:
+        banner = (
+            '<div class=ocard style="margin-top:16px"><div class=dh>Stay on-demand</div>'
+            '<p class=muted>At your current run-rate a committed-spend discount doesn\'t beat '
+            'on-demand (spend is below the discount tiers, or too spiky to commit without forfeit). '
+            'We\'ll flag it the moment that changes.</p></div>')
+
+    note = ""
+    if not view.get("enough_history"):
+        note = ('<p class=muted style="font-size:12px;margin-top:14px">Based on your latest run-rate '
+                f'({view["n_snapshots"]} sync snapshot(s)). The floor/steadiness estimate sharpens as '
+                'more sync history accumulates.</p>')
+
+    return page("Commitments", head + profile + table + banner + note,
+                account, active="/app/outlay/commitment")
 
 
 def _quarter_label(ts: float | None = None) -> str:
