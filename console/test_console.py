@@ -610,6 +610,34 @@ def test_expired_trial_does_not_gate_pilots(env, client):
     assert "/app/billing" not in r.text or True  # not redirected to billing
 
 
+def test_commitment_page_empty_without_report(env, client):
+    _, store = env
+    _signup(client, email="commit0@b.com")
+    r = client.get("/app/outlay/commitment")
+    assert r.status_code == 200
+    assert "Commitments" in r.text and "Not enough data yet" in r.text
+
+
+def test_commitment_page_recommends_with_history(env, client):
+    _, store = env
+    _signup(client, email="commit1@b.com")
+    acct = store.get_account_by_email("commit1@b.com")
+    store.set_persona(acct["id"], "business", member_id=0)
+    # A steady ~$90k/mo run-rate over several syncs → a real commit recommendation.
+    report = {"spend": {"total_usd": 90000.0, "total_tokens": 10_000_000_000},
+              "window_days": 30, "forecast": {"expected_usd": 90000.0}}
+    store.save_outlay_report(acct["id"], report)
+    for i, total in enumerate([80000, 85000, 88000, 92000, 95000, 90000]):
+        store.record_outlay_snapshot(acct["id"], {"spend": {"total_usd": total}},
+                                     now=1_700_000_000 + i * 86400)
+    r = client.get("/app/outlay/commitment")
+    assert r.status_code == 200
+    assert "Committed-spend options" in r.text
+    assert "Recommended" in r.text
+    # Nav entry present for the business persona.
+    assert "/app/outlay/commitment" in r.text
+
+
 # --- admin ---------------------------------------------------------------- #
 
 def test_status_page_public(client):
