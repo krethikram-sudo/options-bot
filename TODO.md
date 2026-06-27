@@ -38,9 +38,19 @@ Live URLs:
 > one-page leave-behind (#267) + demo runbook (#271) — completing the sales kit (outbound → demo →
 > leave-behind). **Full suite green: 413 passed, 2 skipped.** The commitment-optimization spec is now
 > fully implemented (§3, §3e, §4, §5) across engine + CLI + console.
-> **Next ideas (not yet built):** customer-`commitment` store table + form so commitment *pacing*
-> (`pace_commitment`, already in the engine) runs on real active commitments; a "FinOps for AI"
-> SEO/thought-leadership post; refresh the strategy deck now that "the prize" is shipped.
+> **(10) Commitment pacing on active commitments (#273, spec §4) — DONE:** `outlay_commitment`
+> store table + add/list/delete + an "Active commitments — pacing" section on the Commitments page
+> (forfeit/overage status, add form). **(11) FinOps-for-AI article (#274)** at `/finops-for-ai`
+> (linked from home footer). **(12) Strategy deck refresh (#275)** — "the prize" reframed from
+> next-build to shipped/ahead-of-Flexera. **Full suite green: 414 passed, 2 skipped.** The
+> commitment-optimization feature is 100% built and surfaced (engine + CLI + console); the GTM/sales
+> kit is complete (strategy deck, battlecards, outbound, demo runbook, leave-behind, savings
+> calculator, /pricing, pricing proposal, FinOps article).
+> **Next-tier ideas (need founder steer on priority):** multi-provider *portfolio* commitment
+> optimization (v3 — how to split a commit across providers); a Slack/digest hook for commitment
+> forfeit/overage alerts (reuses the budget-alert rails); deploy the new marketing pages
+> (`/savings`, `/pricing`, `/finops-for-ai`) + console Commitments page to prod (Cloudflare Pages +
+> `fly deploy`). The earlier ops items below (console `fly deploy`, SMTP) still stand.
 >
 > **Earlier shipped (2026-06-23 — all merged + deployed):
 > (1) GOV-READINESS — adversarial security audit + full remediation (#218: security webhook now fires
