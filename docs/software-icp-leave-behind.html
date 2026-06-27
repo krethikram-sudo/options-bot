@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Outlay — for software & AI-native teams</title>
+<style>
+  @page{size:Letter;margin:0.55in 0.6in}
+  :root{--ink:#1f2430;--mut:#5c6470;--line:#e1ddd2;--grn:#0f6b4f;--grn-d:#0b513c;--grn-l:#e7f1ec;--amber:#9a5a18;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Helvetica Neue",Arial,sans-serif;color:var(--ink);font-size:10.5pt;line-height:1.4}
+  .serif{font-family:Georgia,"Times New Roman",serif}
+  h1{font-family:Georgia,serif;font-size:21pt;font-weight:700;letter-spacing:-.3px;line-height:1.05}
+  .tag{color:var(--mut);font-size:11pt;margin-top:3px}
+  .top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--grn);padding-bottom:9px;margin-bottom:13px}
+  .brand{font-family:Georgia,serif;font-size:15pt;font-weight:700}
+  .brand .d{color:var(--grn)}
+  h2{font-size:8.5pt;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--grn);margin:13px 0 6px}
+  ul{list-style:none}
+  li{position:relative;padding-left:15px;margin:4px 0}
+  li:before{content:"";position:absolute;left:0;top:5px;width:6px;height:6px;border-radius:2px;background:var(--grn)}
+  .arch{background:var(--grn-l);border:1px solid #cfe6dc;border-radius:9px;padding:12px 14px;margin:4px 0}
+  .arch b{color:var(--grn-d)}
+  .cols{display:flex;gap:18px}
+  .cols>div{flex:1}
+  .two{display:flex;gap:18px;margin-top:2px}
+  .two>div{flex:1}
+  table{width:100%;border-collapse:collapse}
+  td{padding:3px 0;border-bottom:1px solid var(--line);font-size:9.5pt;vertical-align:top}
+  td.s{text-align:right;white-space:nowrap;font-weight:700}
+  .ok{color:var(--grn)} .road{color:var(--amber)}
+  .pilot{border:1.5px solid var(--grn);border-radius:9px;padding:12px 14px;margin-top:5px}
+  .pilot h2{margin-top:0}
+  .foot{margin-top:14px;padding-top:8px;border-top:1px solid var(--line);color:var(--mut);font-size:9pt;display:flex;justify-content:space-between}
+  .lead{font-size:10.5pt;color:var(--mut);margin:2px 0 0}
+  .quote{font-style:italic;color:var(--grn-d)}
+</style></head>
+<body>
+  <div class="top">
+    <div>
+      <h1>Know what your AI spend<br>is actually buying.</h1>
+      <div class="tag">Map every AI dollar to the ticket, feature &amp; engineer · forecast it · hold it to budget.</div>
+    </div>
+    <div class="brand">Outlay<span class="d">.ai</span></div>
+  </div>
+
+  <p class="lead">Your model bill is the fastest-growing line in engineering — and the one nobody can
+    break down. Provider invoices aggregate at the account level, so <span class="quote">"what did
+    shipping that feature cost, and which team drove it?"</span> has no answer. Outlay gives you that
+    answer, forecasts the next quarter, and governs the budget — <b>read-only, metadata-only</b>.</p>
+
+  <div class="cols">
+    <div>
+      <h2>What it does</h2>
+      <ul>
+        <li><b>Attribute</b> — AI spend mapped to the ticket, feature, engineer &amp; program via the work-tracker join.</li>
+        <li><b>Forecast</b> — price the backlog, back-tested on your <i>own</i> delivered work (measured error, not a guess).</li>
+        <li><b>Govern</b> — per-program budgets, real-time pacing, projected-breach dates, on-/off-track ratings.</li>
+        <li><b>Commit smart</b> — size on-demand vs. committed-spend vs. provisioned, with forfeit risk quantified.</li>
+      </ul>
+      <h2>How it connects</h2>
+      <ul>
+        <li><b>Trackers</b> — Jira, Linear, GitHub Issues (read-only).</li>
+        <li><b>AI usage</b> — Anthropic, OpenAI, Bedrock, Azure OpenAI, Cursor, Copilot.</li>
+        <li><b>BYOK</b> — your keys stay yours; we read usage metadata only.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Why it's different</h2>
+      <div class="arch">
+        <ul style="margin:0">
+          <li><b>The work-item join</b> — token → ticket → engineer → feature. Dashboards stop at team/project.</li>
+          <li><b>Your-data forecast</b> — leave-one-out error on your history, not a vendor benchmark.</li>
+          <li><b>Read-only &amp; metadata-only</b> — prompts, outputs &amp; keys never leave your box. Nothing for security to clear.</li>
+          <li><b>Commitment sizing</b> — the model-API layer the cloud optimizers don't cover.</li>
+        </ul>
+      </div>
+      <h2>Who it's for</h2>
+      <ul>
+        <li>Eng-heavy software / AI-native teams, ~250–5,000 people.</li>
+        <li>$250k+/yr model spend, multi-provider, growing fast.</li>
+        <li>Buyer: platform/eng lead + VP Finance / FinOps.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>What you walk away with — measured on your own data</h2>
+  <table>
+    <tr><td><b>Attribution coverage</b> — % of spend joined to a ticket/feature, with a fidelity tier on every dollar</td><td class="s ok">your number</td></tr>
+    <tr><td><b>Forecast accuracy</b> — leave-one-out back-test error on your delivered work</td><td class="s ok">your number</td></tr>
+    <tr><td><b>One program budget</b> — a body of work capped, paced, with a projected-breach date</td><td class="s ok">live</td></tr>
+    <tr><td><b>Commitment read</b> — recommended on-demand vs. committed-spend posture + estimated savings</td><td class="s ok">advisory</td></tr>
+  </table>
+  <p style="font-size:9pt;color:var(--mut);margin-top:5px">We measure these on your traffic — we don't
+    assert a benchmark. If the attribution gap isn't real for you, we'll say so.</p>
+
+  <div class="pilot">
+    <h2>The pilot</h2>
+    <div class="two">
+      <div>
+        <ul style="margin:0">
+          <li>Read-only / metadata-only connect — no app rewrite, nothing in your request path.</li>
+          <li>~2 weeks to a measured attribution-coverage % and a forecast back-test.</li>
+        </ul>
+      </div>
+      <div>
+        <ul style="margin:0">
+          <li>Free; converts to an annual scoped to your AI spend under management.</li>
+          <li>Optional savings-share later — measured, no clawback. We only bill on proven savings.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>Outlay · See AI spend mapped to your work, forecast it, and hold it to budget.</span>
+    <span>outlay-ai.com · hello@outlay-ai.com</span>
+  </div>
+</body></html>
