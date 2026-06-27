@@ -1624,6 +1624,20 @@ def app_outlay_commitment(request: Request):
     return _html(web.commitment_page(acct, view))
 
 
+@app.get("/app/outlay/commitment-pack.csv")
+def app_outlay_commitment_pack(request: Request):
+    """Renewal / negotiation pack (spec §5.3) — the artifact the customer takes to the vendor."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    report = store.get_outlay_report(acct["id"])
+    history = store.outlay_history(acct["id"]) if report else []
+    view = outlay_app.commitment_view(report, history)
+    csv_text = outlay_app.negotiation_pack_csv(report, history, view, company=acct.get("company"))
+    return PlainTextResponse(csv_text, media_type="text/csv",
+                             headers={"content-disposition": 'attachment; filename="outlay-commitment-pack.csv"'})
+
+
 @app.post("/app/outlay/programs")
 async def app_outlay_programs_add(request: Request):
     acct, redir = _require(request)

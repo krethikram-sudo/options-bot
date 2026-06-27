@@ -674,6 +674,77 @@ def commitment_view(report: dict | None, history: list[dict] | None = None) -> d
     }
 
 
+def negotiation_pack_csv(report: dict | None, history: list[dict] | None,
+                        view: dict | None, company: str | None = None) -> str:
+    """The renewal/negotiation pack as CSV (spec §5.3) — the artifact the customer
+    takes to the vendor: spend run-rate history, the forecast, and the recommended
+    commit for the next term. Numbers only; metadata-only posture preserved."""
+    import csv
+    import io
+    from datetime import datetime, timezone
+
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["Outlay — commitment negotiation pack"])
+    if company:
+        w.writerow(["account", company])
+    w.writerow(["generated_utc", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")])
+    w.writerow(["note", "Advisory / illustrative tiers — replace with vendor's quoted terms. Metadata only."])
+    w.writerow([])
+
+    if not view:
+        w.writerow(["(no spend data yet — connect a usage source and sync)"])
+        return buf.getvalue()
+
+    # 1) Spend run-rate history (normalized monthly), the basis for the ask.
+    w.writerow(["Section", "Monthly spend run-rate history"])
+    w.writerow(["sync_ts_utc", "monthly_run_rate_usd"])
+    window = (report or {}).get("window_days") or 30
+    to_month = 30.0 / float(window)
+    from datetime import datetime as _dt
+    for h in (history or []):
+        ts = h.get("ts")
+        try:
+            stamp = _dt.utcfromtimestamp(float(ts)).strftime("%Y-%m-%d") if ts else ""
+        except (ValueError, TypeError, OverflowError):
+            stamp = ""
+        w.writerow([stamp, round(float(h.get("total_usd", 0.0) or 0.0) * to_month, 2)])
+    w.writerow([])
+
+    # 2) Profile + forecast — the steadiness story that justifies the commit size.
+    w.writerow(["Section", "Spend profile (monthly)"])
+    w.writerow(["monthly_run_rate_usd", view["monthly_on_demand_usd"]])
+    w.writerow(["steady_floor_usd", view["floor_usd"]])
+    w.writerow(["median_usd", view["median_usd"]])
+    w.writerow(["peak_usd", view["peak_usd"]])
+    w.writerow(["steadiness_pct", round(view["steadiness"] * 100, 1)])
+    if view.get("blended_rate"):
+        w.writerow(["blended_on_demand_usd_per_mtok", view["blended_rate"]])
+    w.writerow([])
+
+    # 3) The commitment options (the ask, with downside quantified).
+    w.writerow(["Section", "Committed-spend options (per month)"])
+    w.writerow(["scenario", "commit_usd", "discount_pct", "billed_usd", "forfeited_usd",
+                "net_savings_usd", "effective_savings_rate_pct", "forfeit_risk"])
+    for s in view["scenarios"]:
+        w.writerow([s["label"], s["commit_usd"], round(s["discount"] * 100, 1),
+                    s["billed_usd"], s["forfeited_usd"], s["net_savings_usd"],
+                    round(s["effective_savings_rate"] * 100, 1), s["forfeit_risk"]])
+    w.writerow([])
+
+    rec = view.get("recommended")
+    w.writerow(["Section", "Recommended posture"])
+    if rec:
+        w.writerow(["recommended_monthly_commit_usd", rec["commit_usd"]])
+        w.writerow(["recommended_annual_commit_usd", round(rec["commit_usd"] * 12, 2)])
+        w.writerow(["projected_net_savings_usd_per_year", round(rec["net_savings_usd"] * 12, 2)])
+        w.writerow(["effective_savings_rate_pct", round(rec["effective_savings_rate"] * 100, 1)])
+        w.writerow(["forfeit_risk", rec["forfeit_risk"]])
+    else:
+        w.writerow(["recommendation", "stay on-demand (no commitment beats on-demand at this profile)"])
+    return buf.getvalue()
+
+
 def program_statuses(report: dict, programs: list[dict], histories: dict | None = None) -> list[dict]:
     """Spend-vs-budget for *programs* — named budgets spanning several teams /
     projects / work types. Attaches real-time **pacing** (actual-to-date vs the budget's

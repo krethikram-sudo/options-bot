@@ -638,6 +638,26 @@ def test_commitment_page_recommends_with_history(env, client):
     assert "/app/outlay/commitment" in r.text
 
 
+def test_commitment_negotiation_pack_csv(env, client):
+    _, store = env
+    _signup(client, email="commit2@b.com")
+    acct = store.get_account_by_email("commit2@b.com")
+    report = {"spend": {"total_usd": 90000.0, "total_tokens": 10_000_000_000},
+              "window_days": 30, "forecast": {"expected_usd": 90000.0}}
+    store.save_outlay_report(acct["id"], report)
+    for i, total in enumerate([80000, 85000, 88000, 92000, 95000, 90000]):
+        store.record_outlay_snapshot(acct["id"], {"spend": {"total_usd": total}},
+                                     now=1_700_000_000 + i * 86400)
+    r = client.get("/app/outlay/commitment-pack.csv")
+    assert r.status_code == 200
+    assert "text/csv" in r.headers["content-type"]
+    assert "commitment-pack.csv" in r.headers.get("content-disposition", "")
+    body = r.text
+    assert "Monthly spend run-rate history" in body
+    assert "Recommended posture" in body
+    assert "recommended_annual_commit_usd" in body
+
+
 # --- admin ---------------------------------------------------------------- #
 
 def test_status_page_public(client):

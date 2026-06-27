@@ -3204,7 +3204,8 @@ def commitment_page(account: dict, view: dict | None) -> str:
             f'<td>{s["effective_savings_rate"] * 100:.1f}%</td>'
             f'<td style="color:{tone.get(risk, "var(--muted)")};font-weight:600">{_e(risk)}</td></tr>')
     table = (
-        '<div class=ocard style="margin-top:16px"><div class=dh>Committed-spend options (per month)</div>'
+        '<div class=ocard style="margin-top:16px"><div class=dh>Committed-spend options (per month)'
+        '<a class=sub href="/app/outlay/commitment-pack.csv">Export negotiation pack →</a></div>'
         '<table><thead><tr><th>Scenario</th><th>Commit</th><th>Discount</th><th>Billed</th>'
         '<th>Net savings</th><th>Eff. rate</th><th>Forfeit risk</th></tr></thead>'
         f'<tbody>{rws}</tbody></table>'
