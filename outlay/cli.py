@@ -95,6 +95,7 @@ def run(
     as_html: bool = False,
     company: str | None = None,
     commitment: bool = False,
+    opportunities: bool = False,
 ) -> str:
     events = gather_events(
         usage=usage_path,
@@ -181,6 +182,17 @@ def run(
         scenarios = recommend_commitment(profile, forecast_month, card, floor_periods=30)
         out += "\n\n" + format_commitment(profile, scenarios, card)
 
+    if opportunities:
+        from .opportunities import (
+            batch_opportunities,
+            caching_opportunities,
+            format_opportunities,
+        )
+
+        caching = caching_opportunities(events)
+        batch = batch_opportunities(result)
+        out += "\n\n" + format_opportunities(caching, batch)
+
     return out
 
 
@@ -216,6 +228,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--commitment", action="store_true",
                    help="append a commitment & procurement optimization recommendation "
                         "(on-demand vs committed-spend discount) from the usage series")
+    p.add_argument("--opportunities", action="store_true",
+                   help="append advisory optimization opportunities (prompt-caching + "
+                        "batch-API candidates) — upper-bound potential, not realized savings")
     args = p.parse_args(argv)
 
     # Default to the bundled demo when no usage source is given.
@@ -236,6 +251,7 @@ def main(argv: list[str] | None = None) -> int:
         as_html=args.as_html,
         company=args.company,
         commitment=args.commitment,
+        opportunities=args.opportunities,
     ))
     return 0
 
