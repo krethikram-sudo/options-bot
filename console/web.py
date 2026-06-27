@@ -3185,7 +3185,47 @@ def _opportunities_html(opps: dict | None) -> str:
         'work that can tolerate latency — confirm both before acting.</p></div>')
 
 
-def commitment_page(account: dict, view: dict | None, opps: dict | None = None) -> str:
+def _commitment_pacing_html(pacing: list[dict] | None) -> str:
+    """Active-commitment pacing (forfeit/overage) + an add form."""
+    tone = {"on_track": "var(--grn-d)", "forfeit_risk": "var(--amber)", "overage_risk": "var(--red)"}
+    label = {"on_track": "On track", "forfeit_risk": "Forfeit risk", "overage_risk": "Overage risk"}
+    rows = ""
+    for p in (pacing or []):
+        col = tone.get(p["status"], "var(--muted)")
+        rows += (
+            f'<tr><td><b>{_e(p["provider"])}</b> · {money(p["amount_usd"])}'
+            f'<div class=muted style="font-size:12px">{_e(p["kind"].replace("_", " "))}</div></td>'
+            f'<td>{p["elapsed_pct"]:.0f}% elapsed · {money(p["used_to_date_usd"])} used</td>'
+            f'<td>{p["utilization_at_end"]:.0f}%</td>'
+            f'<td style="color:{col};font-weight:600">{_e(label.get(p["status"], p["status"]))}</td>'
+            f'<td><form method=post action="/app/outlay/commitment/delete" style="margin:0">'
+            f'<input type=hidden name=id value="{p["id"]}">'
+            f'<button class="btn sec sm" type=submit>Remove</button></form></td></tr>')
+    table = (f'<table><thead><tr><th>Commitment</th><th>Pace</th><th>Proj. use</th>'
+             f'<th>Status</th><th></th></tr></thead><tbody>{rows}</tbody></table>') if rows else \
+        '<p class=muted>No active commitments tracked yet. Add one to project forfeit / overage risk.</p>'
+    form = (
+        '<form method=post action="/app/outlay/commitment/add" '
+        'style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:12px">'
+        '<label style="font-size:12px;color:var(--muted)">Provider<br>'
+        '<input name=provider placeholder="anthropic" style="padding:6px 8px"></label>'
+        '<label style="font-size:12px;color:var(--muted)">Commit $<br>'
+        '<input name=amount_usd type=number step=1000 required style="padding:6px 8px;width:120px"></label>'
+        '<label style="font-size:12px;color:var(--muted)">Used to date $<br>'
+        '<input name=used_to_date_usd type=number step=1000 value=0 style="padding:6px 8px;width:120px"></label>'
+        '<label style="font-size:12px;color:var(--muted)">Start<br>'
+        '<input name=start type=date required style="padding:6px 8px"></label>'
+        '<label style="font-size:12px;color:var(--muted)">End<br>'
+        '<input name=end type=date required style="padding:6px 8px"></label>'
+        '<button class="btn primary sm" type=submit>Track</button></form>')
+    return (f'<div class=ocard style="margin-top:16px"><div class=dh>Active commitments — pacing</div>'
+            f'<p class=muted style="font-size:12.5px;margin:2px 0 10px">Track a vendor commitment '
+            f'(metadata only — the numbers, not the contract) to project end-of-term forfeit or '
+            f'overage before it bites.</p>{table}{form}</div>')
+
+
+def commitment_page(account: dict, view: dict | None, opps: dict | None = None,
+                    pacing: list[dict] | None = None) -> str:
     """Commitment & procurement optimization recommender (advisory, read-only).
 
     From the customer's own spend run-rate: should they stay on-demand, or take a
@@ -3200,7 +3240,8 @@ def commitment_page(account: dict, view: dict | None, opps: dict | None = None) 
                 '<p class=muted>Connect a usage source and sync so we can read your spend '
                 'run-rate, then this page sizes a commitment for you.</p>'
                 '<a class="btn sec sm" href="/app/outlay/connect">Connect a source →</a></div>')
-        return page("Commitments", head + body, account, active="/app/outlay/commitment")
+        return page("Commitments", head + body + _commitment_pacing_html(pacing),
+                    account, active="/app/outlay/commitment")
 
     rate = (f' · blended <b>{money(view["blended_rate"])}/Mtok</b>'
             if view.get("blended_rate") else '')
@@ -3280,7 +3321,9 @@ def commitment_page(account: dict, view: dict | None, opps: dict | None = None) 
                 f'({view["n_snapshots"]} sync snapshot(s)). The floor/steadiness estimate sharpens as '
                 'more sync history accumulates.</p>')
 
-    return page("Commitments", head + profile + table + prov_html + _opportunities_html(opps) + banner + note,
+    return page("Commitments",
+                head + profile + table + prov_html + _opportunities_html(opps)
+                + _commitment_pacing_html(pacing) + banner + note,
                 account, active="/app/outlay/commitment")
 
 

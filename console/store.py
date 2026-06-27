@@ -385,6 +385,18 @@ CREATE TABLE IF NOT EXISTS outlay_programs (
     last_status TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_program_acct ON outlay_programs(account_id);
+CREATE TABLE IF NOT EXISTS outlay_commitment (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL,
+    provider TEXT NOT NULL DEFAULT '',           -- 'anthropic' | 'openai' | ...
+    kind TEXT NOT NULL DEFAULT 'committed_spend', -- 'committed_spend' | 'provisioned'
+    amount_usd REAL NOT NULL,                    -- the committed amount over the term
+    used_to_date_usd REAL NOT NULL DEFAULT 0,    -- consumption to date (customer-input metadata)
+    start_ts REAL NOT NULL,
+    end_ts REAL NOT NULL,
+    created_at REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_commitment_acct ON outlay_commitment(account_id);
 CREATE TABLE IF NOT EXISTS outlay_program_enforcement (
     program_id INTEGER NOT NULL,
     account_id INTEGER NOT NULL,
@@ -2086,6 +2098,52 @@ def delete_outlay_program(account_id: int, program_id: int, path: str | None = N
                      (int(program_id), account_id))
         conn.execute("DELETE FROM outlay_program_enforcement WHERE program_id=? AND account_id=?",
                      (int(program_id), account_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+COMMITMENT_KINDS = ("committed_spend", "provisioned")
+
+
+def add_commitment(account_id: int, amount_usd: float, start_ts: float, end_ts: float, *,
+                   provider: str = "", kind: str = "committed_spend",
+                   used_to_date_usd: float = 0.0, now: float | None = None,
+                   path: str | None = None) -> int:
+    """Record an active vendor commitment (metadata only — the numbers, not the
+    contract). Powers commitment pacing (forfeit/overage projection). Returns id."""
+    kind = kind if kind in COMMITMENT_KINDS else "committed_spend"
+    start_ts, end_ts = float(start_ts), float(end_ts)
+    if end_ts <= start_ts:
+        end_ts = start_ts + 86400  # guard: a term must be at least a day
+    conn = connect(path)
+    try:
+        cur = conn.execute(
+            "INSERT INTO outlay_commitment(account_id, provider, kind, amount_usd,"
+            " used_to_date_usd, start_ts, end_ts, created_at) VALUES(?,?,?,?,?,?,?,?)",
+            (account_id, (provider or "").strip()[:40], kind, max(0.0, float(amount_usd)),
+             max(0.0, float(used_to_date_usd)), start_ts, end_ts, now or time.time()))
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
+
+
+def list_commitments(account_id: int, path: str | None = None) -> list[dict]:
+    conn = connect(path)
+    try:
+        rows = conn.execute("SELECT * FROM outlay_commitment WHERE account_id=? ORDER BY id",
+                            (account_id,)).fetchall()
+    finally:
+        conn.close()
+    return [dict(r) for r in rows]
+
+
+def delete_commitment(account_id: int, commitment_id: int, path: str | None = None) -> None:
+    conn = connect(path)
+    try:
+        conn.execute("DELETE FROM outlay_commitment WHERE id=? AND account_id=?",
+                     (int(commitment_id), account_id))
         conn.commit()
     finally:
         conn.close()
