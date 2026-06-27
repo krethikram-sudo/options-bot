@@ -663,6 +663,24 @@ def test_commitment_negotiation_pack_csv(env, client):
     assert "recommended_annual_commit_usd" in body
 
 
+def test_csv_exports_neutralize_formula_injection(env):
+    _, store = env
+    from console import outlay_app
+    # Negotiation pack: malicious company name must be quote-prefixed.
+    report = {"spend": {"total_usd": 90000.0, "total_tokens": 10_000_000_000}, "window_days": 30}
+    hist = [{"total_usd": v, "ts": 1_700_000_000 + i * 86400}
+            for i, v in enumerate([80000, 85000, 88000, 92000, 95000, 90000])]
+    view = outlay_app.commitment_view(report, hist)
+    pack = outlay_app.negotiation_pack_csv(report, hist, view, company="=cmd|calc!A1")
+    assert "account,'=cmd" in pack
+    # report_csv teams view: a tracker-derived team name with a formula trigger.
+    rep = {"team_spend": [{"team": "@SUM(1)", "spent_usd": 5, "share": 0.5, "events": 3}]}
+    assert "'@SUM(1)" in outlay_app.report_csv(rep, view="teams")
+    # Plain values are untouched.
+    assert outlay_app._csv_safe("growth") == "growth"
+    assert outlay_app._csv_safe(1234.5) == "1234.5"
+
+
 # --- admin ---------------------------------------------------------------- #
 
 def test_status_page_public(client):
