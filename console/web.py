@@ -3160,7 +3160,32 @@ def _chip(label: str, value: str) -> str:
             f'font-size:12.5px"><span class=muted>{_e(label)}</span> <b>{value}</b></span>')
 
 
-def commitment_page(account: dict, view: dict | None) -> str:
+def _opportunities_html(opps: dict | None) -> str:
+    """Advisory caching + batch candidate card (spec §3e)."""
+    if not opps:
+        return ""
+    rows = ""
+    for o in opps.get("caching", []):
+        rows += (f'<tr><td>Prompt caching · <b>{_e(o["model"])}</b></td>'
+                 f'<td>{money(o["uncached_input_usd"])} full-price input · '
+                 f'{o["cache_utilization"] * 100:.0f}% cached</td>'
+                 f'<td>up to {money(o["potential_savings_usd"])}</td></tr>')
+    for o in opps.get("batch", []):
+        rows += (f'<tr><td>Batch API · <b>{_e(o["task_class"])}</b></td>'
+                 f'<td>{money(o["spend_usd"])} in a latency-tolerant class · '
+                 f'{o["batch_discount"] * 100:.0f}% off</td>'
+                 f'<td>up to {money(o["potential_savings_usd"])}</td></tr>')
+    return (
+        '<div class=ocard style="margin-top:16px"><div class=dh>Optimization opportunities '
+        '<span class=muted style="font-weight:400;font-size:12px">(advisory — candidates to review)</span></div>'
+        '<table><thead><tr><th>Opportunity</th><th>Why</th><th>Potential</th></tr></thead>'
+        f'<tbody>{rows}</tbody></table>'
+        '<p class=muted style="font-size:12px;margin-top:8px">Upper-bound potential, not realized '
+        'savings. Caching only helps the <i>repeated-context</i> portion of input; batch only suits '
+        'work that can tolerate latency — confirm both before acting.</p></div>')
+
+
+def commitment_page(account: dict, view: dict | None, opps: dict | None = None) -> str:
     """Commitment & procurement optimization recommender (advisory, read-only).
 
     From the customer's own spend run-rate: should they stay on-demand, or take a
@@ -3255,7 +3280,7 @@ def commitment_page(account: dict, view: dict | None) -> str:
                 f'({view["n_snapshots"]} sync snapshot(s)). The floor/steadiness estimate sharpens as '
                 'more sync history accumulates.</p>')
 
-    return page("Commitments", head + profile + table + prov_html + banner + note,
+    return page("Commitments", head + profile + table + prov_html + _opportunities_html(opps) + banner + note,
                 account, active="/app/outlay/commitment")
 
 
