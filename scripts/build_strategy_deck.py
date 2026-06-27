@@ -142,17 +142,17 @@ card(s,8.8,2.35,3.93,4.3,"C · More segments",[("Software → enterprise",),("�
 band(s,"Every step reuses the attributed data, adds a buyer or spend layer, raises ACV, deepens lock-in",6.75,0.6,13.5)
 notes(s,"Expand the DATA before the features — own the attributed spend so the high-$ commitment optimizer launches from a defensible data advantage.")
 
-# 10 — the prize
-s=slide(); pill(s,"The prize · incremental TAM",w=4.6)
+# 10 — the prize (now shipped)
+s=slide(); pill(s,"The prize · already shipped",w=4.9)
 title(s,"Commitment & procurement optimization.",1.35)
 bullets(s,LM,2.55,7.0,3.5,[
  "AI is priced like cloud: on-demand vs committed-discount vs provisioned. Most companies over- or under-commit.",
- "Getting it right needs forecasting + attribution — exactly our core data.",
- "Cloud analog (ProsperOps/Zesty/nOps) is the single highest-$ FinOps lever — 30–60% savings cited.",
- "Open at the model-API layer; our work-attributed steadiness signal beats an infra-only optimizer.",
+ "Getting it right needs forecasting + attribution — exactly our core data. The highest-$ FinOps lever (cloud analog: 30–60% savings).",
+ "Built it: recommend the commit, size it against forfeit risk, pace it, export a vendor negotiation pack — live in-product.",
+ "Our work-attributed steadiness signal beats an infra-only optimizer — the moat applied to procurement.",
 ],sz=15,gap=13)
-band(s,"Race Flexera (now owns ProsperOps + FinOps-for-AI) to stitch this — from a better-data position",6.4,0.75,14,fill=RGBColor(0xF6,0xEC,0xDC),col=AMBER)
-notes(s,"This is the high-$ expansion and the reason to own the core data first. Spec'd in docs/spec-commitment-optimization.md.")
+band(s,"Built before Flexera (ProsperOps + FinOps-for-AI) stitched the model-API layer — from data they don't have",6.4,0.75,14,fill=RGBColor(0xE7,0xF1,0xEC),col=GRND)
+notes(s,"The high-$ expansion is no longer a plan — it's shipped (engine + CLI + console: recommender, provisioned break-even, pacing, negotiation pack, advisory caching/batch). Spec: docs/spec-commitment-optimization.md.")
 
 # 11 — TAM
 s=slide(); kicker(s,"Market size (US, modeled)")
@@ -170,10 +170,10 @@ para(box(s,LM,2.75,CW,0.8),"The category just inflected, the spend is exploding,
 card(s,LM,3.95,CW,2.75,"The plan",[
  "Now — win the eng-consumption wedge (reposition off 'visibility'); run gov as the compliance-moat lighthouse",
  "Next — expand the account: chargeback + the seat layer (new buyer: Finance)",
- "Then — capture the prize: commitment & procurement optimization, before Flexera",
+ "Done early — the prize is shipped: commitment & procurement optimization, ahead of Flexera; deepen to multi-provider portfolio",
  "Later — broaden segments (enterprise → fin-services → gov-scale) as SOC 2 / StateRAMP land",
 ],border=KICKM,fill=RGBColor(0x0B,0x51,0x3C),bsz=14,gap=9,tcol=MINT)
-notes(s,"Close: the data asset compounds — more spend under management = more lock-in. Ask / next step per the audience.")
+notes(s,"Close: the data asset compounds — more spend under management = more lock-in. The high-$ expansion is already built, ahead of schedule. Ask / next step per the audience.")
 
 out=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),"docs","outlay-strategy-deck.pptx")
 prs.save(out); print(f"wrote {out} ({len(prs.slides._sldIdLst)} slides)")
