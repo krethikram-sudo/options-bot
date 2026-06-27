@@ -718,6 +718,38 @@ def commitment_view(report: dict | None, history: list[dict] | None = None) -> d
     }
 
 
+def opportunities_view(report: dict | None) -> dict | None:
+    """Advisory optimization opportunities (spec §3e) from the stored report — prompt-
+    caching candidates (from per-model token splits) and batch-API candidates (from
+    per-class spend). Upper-bound potential, clearly advisory; not realized savings."""
+    from outlay.opportunities import (batch_opportunities_from_class_spend,
+                                      caching_opportunities_from_tokens)
+
+    if not report:
+        return None
+    by_model = ((report.get("cost_fidelity") or {}).get("by_model") or {})
+    model_tokens = {}
+    for model, m in by_model.items():
+        tok = m.get("tokens") or {}
+        model_tokens[model] = (int(tok.get("input") or 0), int(tok.get("cache_read") or 0))
+    caching = caching_opportunities_from_tokens(model_tokens)
+
+    class_spend = {c.get("task_class"): float(c.get("spent_usd") or 0.0)
+                   for c in (report.get("class_spend") or [])}
+    batch = batch_opportunities_from_class_spend(class_spend)
+
+    if not caching and not batch:
+        return None
+    return {
+        "caching": [{"model": o.model, "uncached_input_usd": o.uncached_input_usd,
+                     "cache_utilization": o.cache_utilization,
+                     "potential_savings_usd": o.potential_savings_usd} for o in caching],
+        "batch": [{"task_class": o.task_class, "spend_usd": o.spend_usd,
+                   "batch_discount": o.batch_discount,
+                   "potential_savings_usd": o.potential_savings_usd} for o in batch],
+    }
+
+
 def negotiation_pack_csv(report: dict | None, history: list[dict] | None,
                         view: dict | None, company: str | None = None) -> str:
     """The renewal/negotiation pack as CSV (spec §5.3) — the artifact the customer

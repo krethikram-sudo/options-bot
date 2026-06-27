@@ -643,6 +643,26 @@ def test_commitment_page_recommends_with_history(env, client):
     assert "/app/outlay/commitment" in r.text
 
 
+def test_commitment_page_shows_opportunities(env, client):
+    _, store = env
+    _signup(client, email="commit3@b.com")
+    acct = store.get_account_by_email("commit3@b.com")
+    store.set_persona(acct["id"], "business", member_id=0)
+    report = {
+        "spend": {"total_usd": 90000.0, "total_tokens": 10_000_000_000}, "window_days": 30,
+        "forecast": {"expected_usd": 90000.0},
+        "cost_fidelity": {"by_model": {"claude-sonnet-4-6": {
+            "tokens": {"input": 5_000_000_000, "output": 100_000_000, "cache_read": 0, "cache_write": 0}}}},
+        "class_spend": [{"task_class": "test", "spent_usd": 8000, "tickets": 12},
+                        {"task_class": "feature", "spent_usd": 50000, "tickets": 40}],
+    }
+    store.save_outlay_report(acct["id"], report)
+    r = client.get("/app/outlay/commitment")
+    assert r.status_code == 200
+    assert "Optimization opportunities" in r.text
+    assert "Prompt caching" in r.text and "Batch API" in r.text
+
+
 def test_commitment_negotiation_pack_csv(env, client):
     _, store = env
     _signup(client, email="commit2@b.com")

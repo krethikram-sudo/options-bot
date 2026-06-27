@@ -1621,7 +1621,8 @@ def app_outlay_commitment(request: Request):
     report = store.get_outlay_report(acct["id"])
     history = store.outlay_history(acct["id"]) if report else []
     view = outlay_app.commitment_view(report, history)
-    return _html(web.commitment_page(acct, view))
+    opps = outlay_app.opportunities_view(report)
+    return _html(web.commitment_page(acct, view, opps))
 
 
 @app.get("/app/outlay/commitment-pack.csv")

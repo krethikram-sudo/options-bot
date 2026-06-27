@@ -56,26 +56,18 @@ class BatchOpportunity:
     potential_savings_usd: float    # UPPER BOUND: spend × discount, if it can move to batch
 
 
-def caching_opportunities(events: "list[UsageEvent]", *,
-                          min_usd: float = 1.0,
-                          max_utilization: float = 0.5) -> list[CachingOpportunity]:
-    """Flag models paying full price for input that may be cacheable.
+def caching_opportunities_from_tokens(model_tokens: dict[str, tuple[int, int]], *,
+                                      min_usd: float = 1.0,
+                                      max_utilization: float = 0.5) -> list[CachingOpportunity]:
+    """Core caching detector over per-model `(uncached_input_tok, cache_read_tok)`.
 
-    For each model we sum uncached input vs. cache-read tokens. A *low* cache
-    utilization with a *material* uncached-input bill is the candidate signal. The
-    potential is an explicit upper bound (all uncached input treated as cacheable
-    repeated context); realistically only the repeated portion is — surfaced as a
-    flag to investigate, not a promise.
+    Shared by the event-based path and the console's report-aggregate path so both
+    apply identical thresholds and economics.
     """
-    by_model_in: dict[str, int] = defaultdict(int)
-    by_model_cache: dict[str, int] = defaultdict(int)
-    for e in events:
-        by_model_in[e.model] += max(0, e.input_tokens)
-        by_model_cache[e.model] += max(0, e.cache_read_tokens)
-
     out: list[CachingOpportunity] = []
-    for model, uncached_tok in by_model_in.items():
-        cache_tok = by_model_cache[model]
+    for model, (uncached_tok, cache_tok) in model_tokens.items():
+        uncached_tok = max(0, uncached_tok)
+        cache_tok = max(0, cache_tok)
         denom = uncached_tok + cache_tok
         util = (cache_tok / denom) if denom > 0 else 0.0
         r = rate_for(model)
@@ -93,27 +85,57 @@ def caching_opportunities(events: "list[UsageEvent]", *,
     return sorted(out, key=lambda o: o.potential_savings_usd, reverse=True)
 
 
-def batch_opportunities(result: "AttributionResult", *,
-                        async_classes: tuple[TaskClass, ...] = _DEFAULT_ASYNC_CLASSES,
-                        batch_discount: float = _BATCH_DISCOUNT,
-                        min_usd: float = 1.0) -> list[BatchOpportunity]:
-    """Flag spend in latency-tolerant work classes as batch-API candidates."""
-    by_class: dict[TaskClass, float] = defaultdict(float)
-    for row in result.rows:
-        by_class[row.task_class] += row.cost_usd
+def caching_opportunities(events: "list[UsageEvent]", *,
+                          min_usd: float = 1.0,
+                          max_utilization: float = 0.5) -> list[CachingOpportunity]:
+    """Flag models paying full price for input that may be cacheable.
 
+    For each model we sum uncached input vs. cache-read tokens. A *low* cache
+    utilization with a *material* uncached-input bill is the candidate signal. The
+    potential is an explicit upper bound (all uncached input treated as cacheable
+    repeated context); realistically only the repeated portion is — surfaced as a
+    flag to investigate, not a promise.
+    """
+    by_model_in: dict[str, int] = defaultdict(int)
+    by_model_cache: dict[str, int] = defaultdict(int)
+    for e in events:
+        by_model_in[e.model] += max(0, e.input_tokens)
+        by_model_cache[e.model] += max(0, e.cache_read_tokens)
+    model_tokens = {m: (by_model_in[m], by_model_cache[m]) for m in by_model_in}
+    return caching_opportunities_from_tokens(
+        model_tokens, min_usd=min_usd, max_utilization=max_utilization)
+
+
+def batch_opportunities_from_class_spend(class_spend: dict[str, float], *,
+                                         async_classes: tuple[TaskClass, ...] = _DEFAULT_ASYNC_CLASSES,
+                                         batch_discount: float = _BATCH_DISCOUNT,
+                                         min_usd: float = 1.0) -> list[BatchOpportunity]:
+    """Core batch detector over a `{task_class_value: spend_usd}` map."""
+    async_values = {tc.value for tc in async_classes}
     out: list[BatchOpportunity] = []
-    for tc in async_classes:
-        spend = by_class.get(tc, 0.0)
-        if spend < min_usd:
+    for tc_value, spend in class_spend.items():
+        if tc_value not in async_values or spend < min_usd:
             continue
         out.append(BatchOpportunity(
-            task_class=tc.value,
+            task_class=tc_value,
             spend_usd=round(spend, 2),
             batch_discount=batch_discount,
             potential_savings_usd=round(spend * batch_discount, 2),
         ))
     return sorted(out, key=lambda o: o.potential_savings_usd, reverse=True)
+
+
+def batch_opportunities(result: "AttributionResult", *,
+                        async_classes: tuple[TaskClass, ...] = _DEFAULT_ASYNC_CLASSES,
+                        batch_discount: float = _BATCH_DISCOUNT,
+                        min_usd: float = 1.0) -> list[BatchOpportunity]:
+    """Flag spend in latency-tolerant work classes as batch-API candidates."""
+    by_class: dict[str, float] = defaultdict(float)
+    for row in result.rows:
+        by_class[row.task_class.value] += row.cost_usd
+    return batch_opportunities_from_class_spend(
+        dict(by_class), async_classes=async_classes,
+        batch_discount=batch_discount, min_usd=min_usd)
 
 
 def format_opportunities(caching: list[CachingOpportunity],
