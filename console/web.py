@@ -3213,6 +3213,25 @@ def commitment_page(account: dict, view: dict | None) -> str:
         'replace with your negotiated terms. Net savings is vs. paying on-demand; forfeit risk rises '
         'as the commit approaches your peak rather than your floor.</p></div>')
 
+    prov = view.get("provisioned")
+    prov_html = ""
+    if prov:
+        verdict = ("Worth pricing with your vendor" if prov.get("recommend")
+                   else "Likely stay on-demand for now")
+        vcol = "var(--grn-d)" if prov.get("recommend") else "var(--muted)"
+        prov_html = (
+            '<div class=ocard style="margin-top:16px"><div class=dh>Provisioned throughput '
+            '<span class=muted style="font-weight:400;font-size:12px">(directional)</span></div>'
+            f'<p style="margin:2px 0 10px">Your steady floor sustains about '
+            f'<b>{prov["steady_tokens_per_sec"]:,.0f} tokens/sec</b> at '
+            f'<b>{prov["steadiness"] * 100:.0f}%</b> steadiness. Dedicated capacity (Azure OpenAI PTUs, '
+            f'Bedrock provisioned, reserved GPUs) is priced to beat on-demand once a unit stays busy — '
+            f'a large, steady base is exactly that case. '
+            f'<span style="color:{vcol};font-weight:600">{verdict}.</span></p>'
+            '<p class=muted style="font-size:12px">Break-even = provisioned $/hr ÷ '
+            '(on-demand $/token × tokens/sec × 3600). Bring your vendor\'s actual unit price and '
+            'throughput to size how many units to reserve for the steady base; keep spikes on-demand.</p></div>')
+
     rec = view.get("recommended")
     if rec:
         banner = (
@@ -3236,7 +3255,7 @@ def commitment_page(account: dict, view: dict | None) -> str:
                 f'({view["n_snapshots"]} sync snapshot(s)). The floor/steadiness estimate sharpens as '
                 'more sync history accumulates.</p>')
 
-    return page("Commitments", head + profile + table + banner + note,
+    return page("Commitments", head + profile + table + prov_html + banner + note,
                 account, active="/app/outlay/commitment")
 
 

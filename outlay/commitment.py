@@ -108,6 +108,17 @@ def default_ratecard(provider: str = "anthropic",
                     tiers=_ILLUSTRATIVE_TIERS)
 
 
+def default_provisioned(unit: str = "PTU", usd_per_hour: float = 1.0,
+                        tokens_per_sec: float = 50.0) -> ProvisionedUnit:
+    """An *illustrative* provisioned-throughput unit for directional break-even math.
+
+    Real PTU/reserved-GPU pricing and per-model throughput are negotiated and
+    model-specific — the customer replaces these with their actual quote before
+    treating the recommendation as anything but directional.
+    """
+    return ProvisionedUnit(unit=unit, usd_per_hour=usd_per_hour, tokens_per_sec=tokens_per_sec)
+
+
 def daily_spend_series(events: "list[UsageEvent]") -> list[float]:
     """Collapse usage events into a per-calendar-day spend series (USD), date-sorted.
 
