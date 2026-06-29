@@ -397,6 +397,12 @@ CREATE TABLE IF NOT EXISTS outlay_commitment (
     created_at REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_commitment_acct ON outlay_commitment(account_id);
+CREATE TABLE IF NOT EXISTS outlay_work_key (
+    account_id INTEGER NOT NULL,
+    api_key_id TEXT NOT NULL,
+    classification TEXT NOT NULL,        -- 'work' | 'non_work'
+    PRIMARY KEY (account_id, api_key_id)
+);
 CREATE TABLE IF NOT EXISTS outlay_program_enforcement (
     program_id INTEGER NOT NULL,
     account_id INTEGER NOT NULL,
@@ -2147,6 +2153,39 @@ def delete_commitment(account_id: int, commitment_id: int, path: str | None = No
         conn.commit()
     finally:
         conn.close()
+
+
+def set_work_key_class(account_id: int, api_key_id: str, classification: str,
+                       path: str | None = None) -> None:
+    """Tag an API key as 'work' or 'non_work' (or clear with '' / None). Drives the
+    work-vs-non-work split — metadata only, no prompt content involved."""
+    api_key_id = (api_key_id or "").strip()
+    if not api_key_id:
+        return
+    conn = connect(path)
+    try:
+        if classification in ("work", "non_work"):
+            conn.execute(
+                "INSERT INTO outlay_work_key(account_id, api_key_id, classification) VALUES(?,?,?)"
+                " ON CONFLICT(account_id, api_key_id) DO UPDATE SET classification=excluded.classification",
+                (account_id, api_key_id, classification))
+        else:
+            conn.execute("DELETE FROM outlay_work_key WHERE account_id=? AND api_key_id=?",
+                         (account_id, api_key_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_work_key_classes(account_id: int, path: str | None = None) -> dict:
+    """{api_key_id: 'work'|'non_work'} for the account."""
+    conn = connect(path)
+    try:
+        rows = conn.execute("SELECT api_key_id, classification FROM outlay_work_key WHERE account_id=?",
+                            (account_id,)).fetchall()
+    finally:
+        conn.close()
+    return {r["api_key_id"]: r["classification"] for r in rows}
 
 
 def set_outlay_program_status(program_id: int, status: str, path: str | None = None) -> None:
