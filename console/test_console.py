@@ -2092,7 +2092,7 @@ def test_outlay_class_spend_and_dashboard(env, client):
     assert all(0 <= c["share"] <= 1 and c["tickets"] >= 1 for c in cs)
 
     page = client.get("/app/outlay").text
-    assert "Spend by work type" in page
+    assert "By work type" in page    # consolidated breakdown tabs
     # CSV export for work types
     r = client.get("/app/outlay/export.csv?view=classes")
     assert r.status_code == 200 and r.text.splitlines()[0] == "work_type,tickets,spend_usd,share_pct"
@@ -2507,7 +2507,7 @@ def test_outlay_people_spend_rollup_and_dashboard(env, client):
     assert people[0]["top_model"] and 0 < people[0]["share"] <= 1  # model + share present
 
     page = client.get("/app/outlay").text
-    assert "Spend by engineer" in page and "bob@acme.dev" in page
+    assert "By engineer" in page and "bob@acme.dev" in page    # consolidated breakdown tabs
     # the unattributed bucket is excluded from the engineer card
     assert "(unattributed)" not in page
 
