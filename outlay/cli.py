@@ -96,6 +96,7 @@ def run(
     company: str | None = None,
     commitment: bool = False,
     opportunities: bool = False,
+    worktype: bool = False,
 ) -> str:
     events = gather_events(
         usage=usage_path,
@@ -193,6 +194,13 @@ def run(
         batch = batch_opportunities(result)
         out += "\n\n" + format_opportunities(caching, batch)
 
+    if worktype:
+        from .worktype import classify_usage, format_worktype
+
+        joined_ids = {r.usage_event_id for r in result.rows if r.ticket_id}
+        split = classify_usage(events, joined_ids=joined_ids)
+        out += "\n\n" + format_worktype(split)
+
     return out
 
 
@@ -231,6 +239,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--opportunities", action="store_true",
                    help="append advisory optimization opportunities (prompt-caching + "
                         "batch-API candidates) — upper-bound potential, not realized savings")
+    p.add_argument("--worktype", action="store_true",
+                   help="append the work vs non-work spend split (metadata-only; "
+                        "non-work needs a client-side label or a flagged key)")
     args = p.parse_args(argv)
 
     # Default to the bundled demo when no usage source is given.
@@ -252,6 +263,7 @@ def main(argv: list[str] | None = None) -> int:
         company=args.company,
         commitment=args.commitment,
         opportunities=args.opportunities,
+        worktype=args.worktype,
     ))
     return 0
 
