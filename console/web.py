@@ -3067,9 +3067,47 @@ def _variance_section(program_statuses: list[dict]) -> str:
         f'<tbody>{rws}{total}</tbody></table></div>')
 
 
-def worktype_card(view: dict | None) -> str:
-    """Work vs non-work spend split + per-key tagging. Metadata-only: a key flagged
-    personal makes its spend non-work without ever reading a prompt."""
+def _worktype_enforce_section(teams: list | None, enforce: dict | None) -> str:
+    """Per-team opt-in enforcement controls — customers pick what each team blocks
+    (non-work and/or unknown). In-path enforcement runs in the customer's gateway."""
+    teams = [t for t in (teams or []) if t]
+    if not teams:
+        return ""
+    enforce = enforce or {}
+    rows = ""
+    for team in teams:
+        e = enforce.get(team, {})
+        bnw, bun = bool(e.get("block_non_work")), bool(e.get("block_unknown"))
+        def toggle(field, on, other_field, other_on, label):
+            # posting flips `field`; carries the other field's current state
+            new = "0" if on else "1"
+            style = ("background:var(--red-l);border-color:#f0cfca;color:var(--red)" if on
+                     else "background:var(--bg);color:var(--mut)")
+            carry = f'<input type=hidden name="{other_field}" value="{"1" if other_on else "0"}">'
+            return (f'<form method=post action="/app/outlay/worktype/enforce" style="display:inline;margin:0">'
+                    f'<input type=hidden name=team value="{_e(team)}">'
+                    f'<input type=hidden name="{field}" value="{new}">{carry}'
+                    f'<button class="btn sm" style="padding:3px 9px;font-size:12px;{style}" type=submit>'
+                    f'{"✓ " if on else ""}{label}</button></form>')
+        status = ("blocks non-work" + (" + unknown" if bun else "")) if bnw or bun else "read-only"
+        rows += (f'<tr><td><b>{_e(team)}</b></td>'
+                 f'<td>{toggle("block_non_work", bnw, "block_unknown", bun, "Block non-work")} '
+                 f'{toggle("block_unknown", bun, "block_non_work", bnw, "Block unknown")}</td>'
+                 f'<td class=muted style="font-size:12px">{status}</td></tr>')
+    return (
+        '<div class=ocard style="margin-top:14px"><div class=dh>Stop non-work usage — per team '
+        '<span class=muted style="font-weight:400;font-size:12px">(opt-in, in-path)</span></div>'
+        '<p class=muted style="font-size:12.5px;margin:2px 0 10px">Pick what each team blocks. '
+        'Enforcement runs in <b>your</b> opt-in gateway — Outlay records the rule and never blocks on its '
+        'own. "Block unknown" is stricter: it also stops untracked usage (can catch real work).</p>'
+        '<table><thead><tr><th>Team</th><th>Block policy</th><th>Status</th></tr></thead>'
+        f'<tbody>{rows}</tbody></table></div>')
+
+
+def worktype_card(view: dict | None, teams: list | None = None, enforce: dict | None = None) -> str:
+    """Work vs non-work spend split + per-key tagging + per-team opt-in enforcement.
+    Metadata-only: a key flagged personal makes its spend non-work without ever
+    reading a prompt."""
     if not view:
         return ""
     bar = ""
@@ -3116,12 +3154,14 @@ def worktype_card(view: dict | None) -> str:
         f'<div class=ebar style="height:10px;margin-bottom:6px">{bar}</div>'
         f'{nonwork_banner}'
         '<table style="margin-top:12px"><thead><tr><th>API key</th><th>Spend</th><th>Classify</th></tr></thead>'
-        f'<tbody>{rows}</tbody></table>{note}</div>')
+        f'<tbody>{rows}</tbody></table>{note}</div>'
+        + _worktype_enforce_section(teams, enforce))
 
 
 def governance_page(account: dict, report: dict | None, budget_statuses: list[dict],
                     program_statuses: list[dict], projects: list[dict] | None = None,
-                    worktype: dict | None = None) -> str:
+                    worktype: dict | None = None, teams: list | None = None,
+                    enforce: dict | None = None) -> str:
     """The consolidated business governance deep-view — budgets + programs + the
     work-vs-non-work split in one place. Programs lead (cross-team caps with
     timelines), then single-scope budgets, then work-relatedness."""
@@ -3136,7 +3176,7 @@ def governance_page(account: dict, report: dict | None, budget_statuses: list[di
     budgets = (f'<h2 style="font-size:16px;margin:24px 0 6px">Budgets</h2>'
                f'{_budgets_section(account, report, budget_statuses, projects)}')
     wt = (f'<h2 style="font-size:16px;margin:24px 0 6px">Work vs non-work</h2>'
-          f'{worktype_card(worktype)}') if worktype else ""
+          f'{worktype_card(worktype, teams, enforce)}') if worktype else ""
     return page("Governance", head + attention + variance + programs + budgets + wt,
                 account, active="/app/outlay/governance")
 

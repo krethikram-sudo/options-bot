@@ -403,6 +403,13 @@ CREATE TABLE IF NOT EXISTS outlay_work_key (
     classification TEXT NOT NULL,        -- 'work' | 'non_work'
     PRIMARY KEY (account_id, api_key_id)
 );
+CREATE TABLE IF NOT EXISTS outlay_work_enforce (
+    account_id INTEGER NOT NULL,
+    team_id TEXT NOT NULL,
+    block_non_work INTEGER NOT NULL DEFAULT 0,  -- opt-in: block flagged/labeled non-work for this team
+    block_unknown INTEGER NOT NULL DEFAULT 0,   -- opt-in (stricter): also block untracked/unknown
+    PRIMARY KEY (account_id, team_id)
+);
 CREATE TABLE IF NOT EXISTS outlay_program_enforcement (
     program_id INTEGER NOT NULL,
     account_id INTEGER NOT NULL,
@@ -2186,6 +2193,41 @@ def get_work_key_classes(account_id: int, path: str | None = None) -> dict:
     finally:
         conn.close()
     return {r["api_key_id"]: r["classification"] for r in rows}
+
+
+def set_work_enforce(account_id: int, team_id: str, *, block_non_work: bool,
+                     block_unknown: bool, path: str | None = None) -> None:
+    """Per-team opt-in enforcement: what this team's gateway should block. Cleared
+    (row removed) when both are off."""
+    team_id = (team_id or "").strip()
+    if not team_id:
+        return
+    conn = connect(path)
+    try:
+        if block_non_work or block_unknown:
+            conn.execute(
+                "INSERT INTO outlay_work_enforce(account_id, team_id, block_non_work, block_unknown)"
+                " VALUES(?,?,?,?) ON CONFLICT(account_id, team_id) DO UPDATE SET"
+                " block_non_work=excluded.block_non_work, block_unknown=excluded.block_unknown",
+                (account_id, team_id, int(bool(block_non_work)), int(bool(block_unknown))))
+        else:
+            conn.execute("DELETE FROM outlay_work_enforce WHERE account_id=? AND team_id=?",
+                         (account_id, team_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_work_enforce(account_id: int, path: str | None = None) -> dict:
+    """{team_id: {'block_non_work': bool, 'block_unknown': bool}} for the account."""
+    conn = connect(path)
+    try:
+        rows = conn.execute("SELECT team_id, block_non_work, block_unknown FROM outlay_work_enforce"
+                            " WHERE account_id=?", (account_id,)).fetchall()
+    finally:
+        conn.close()
+    return {r["team_id"]: {"block_non_work": bool(r["block_non_work"]),
+                           "block_unknown": bool(r["block_unknown"])} for r in rows}
 
 
 def set_outlay_program_status(program_id: int, status: str, path: str | None = None) -> None:

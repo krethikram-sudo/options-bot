@@ -779,6 +779,37 @@ def worktype_view(report: dict | None, key_classes: dict | None = None) -> dict 
     }
 
 
+def worktype_team_policy(key_classes: dict, team_enforce: dict | None):
+    """Build the engine WorkPolicy for one team from the account's key registry +
+    that team's opt-in block flags."""
+    from outlay.worktype import WorkPolicy
+    te = team_enforce or {}
+    return WorkPolicy(
+        work_api_keys=frozenset(k for k, c in (key_classes or {}).items() if c == "work"),
+        non_work_api_keys=frozenset(k for k, c in (key_classes or {}).items() if c == "non_work"),
+        block_non_work=bool(te.get("block_non_work")),
+        block_unknown=bool(te.get("block_unknown")),
+    )
+
+
+def worktype_decision(key_classes: dict, team_enforce: dict | None, *,
+                      api_key_id: str | None = None, work_label: str | None = None,
+                      joined_to_work: bool = False) -> dict:
+    """Allow/deny for ONE request, per the team's block policy — the verdict the
+    customer's opt-in gateway consults. Outlay never blocks on its own; this just
+    returns the rule. Metadata only (api key + optional client-side label)."""
+    from datetime import datetime, timezone
+
+    from outlay.models import UsageEvent
+    from outlay.worktype import gateway_decision
+
+    pol = worktype_team_policy(key_classes, team_enforce)
+    ev = UsageEvent(id="_", provider="", model="", ts=datetime.now(timezone.utc), api_key_id=api_key_id)
+    d = gateway_decision(ev, joined_to_work=joined_to_work, work_label=work_label, policy=pol)
+    return {"decision": "allow" if d.allow else "block",
+            "work_type": d.work_type.value, "reason": d.reason}
+
+
 def commitment_pacing_rows(commitments: list[dict], now: float | None = None) -> list[dict]:
     """Map stored active commitments to forfeit/overage pacing via the engine's
     pace_commitment(). elapsed_fraction comes from the commitment's own term."""
