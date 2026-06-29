@@ -3067,11 +3067,64 @@ def _variance_section(program_statuses: list[dict]) -> str:
         f'<tbody>{rws}{total}</tbody></table></div>')
 
 
+def worktype_card(view: dict | None) -> str:
+    """Work vs non-work spend split + per-key tagging. Metadata-only: a key flagged
+    personal makes its spend non-work without ever reading a prompt."""
+    if not view:
+        return ""
+    bar = ""
+    for label, pct, col in (("work", view["work_pct"], "var(--grn)"),
+                            ("non-work", view["non_work_pct"], "var(--red)"),
+                            ("unknown", view["unknown_pct"], "#cfcabb")):
+        if pct > 0:
+            bar += f'<span title="{label} {pct:.0f}%" style="width:{pct}%;background:{col}"></span>'
+    rows = ""
+    for k in view["by_key"][:12]:
+        cur = k["tag"]
+        who = f' · {_e(k["user"])}' if k.get("user") else ""
+        def b(val, lbl):
+            on = (cur == val) or (val == "" and cur == "unflagged")
+            style = ("background:var(--grn-l);border-color:#bfe3d4;color:var(--grn-d)" if on
+                     else "background:var(--bg);color:var(--mut)")
+            return (f'<form method=post action="/app/outlay/worktype/key-class" style="display:inline;margin:0">'
+                    f'<input type=hidden name=key value="{_e(k["key"])}">'
+                    f'<input type=hidden name=cls value="{val}">'
+                    f'<button class="btn sm" style="padding:3px 9px;font-size:12px;{style}" type=submit>{lbl}</button></form>')
+        rows += (f'<tr><td><b>{_e(k["key"])}</b><span class=muted style="font-size:12px">{who}</span></td>'
+                 f'<td>{money(k["total_usd"])}</td>'
+                 f'<td style="white-space:nowrap">{b("work","Work")} {b("non_work","Personal")} {b("","Clear")}</td></tr>')
+    nonwork_banner = ""
+    if view["non_work_usd"] > 0:
+        nonwork_banner = (
+            f'<div class=okbox style="background:var(--red-l);border-color:#f0cfca;margin-top:10px">'
+            f'<b>{money(view["non_work_usd"])} ({view["non_work_pct"]:.0f}%) flagged non-work.</b> '
+            f'To <b>stop</b> non-work usage, turn on the opt-in gateway (in-path enforcement) — '
+            f'Outlay stays read-only and never blocks on its own.</div>')
+    note = ('<p class=muted style="font-size:12px;margin-top:8px">Metadata-only — we never read prompts. '
+            'Work = joined to a ticket/branch or a key you mark Work; flag a key <b>Personal</b> to count '
+            'its spend as non-work. Unflagged, unjoined spend stays <b>unknown</b> (not guessed as non-work). '
+            'For prompt-level labels, run the client-side classifier — it emits labels only, on your box.')
+    return (
+        '<div class=ocard style="margin-top:16px"><div class=dh>Work vs non-work AI spend</div>'
+        f'<div style="display:flex;gap:18px;flex-wrap:wrap;margin:2px 0 10px">'
+        f'<span><b style="color:var(--grn-d);font-size:18px">{money(view["work_usd"])}</b> '
+        f'<span class=muted style="font-size:12.5px">work ({view["work_pct"]:.0f}%)</span></span>'
+        f'<span><b style="color:var(--red);font-size:18px">{money(view["non_work_usd"])}</b> '
+        f'<span class=muted style="font-size:12.5px">non-work ({view["non_work_pct"]:.0f}%)</span></span>'
+        f'<span><b style="color:#8a8270;font-size:18px">{money(view["unknown_usd"])}</b> '
+        f'<span class=muted style="font-size:12.5px">unknown ({view["unknown_pct"]:.0f}%)</span></span></div>'
+        f'<div class=ebar style="height:10px;margin-bottom:6px">{bar}</div>'
+        f'{nonwork_banner}'
+        '<table style="margin-top:12px"><thead><tr><th>API key</th><th>Spend</th><th>Classify</th></tr></thead>'
+        f'<tbody>{rows}</tbody></table>{note}</div>')
+
+
 def governance_page(account: dict, report: dict | None, budget_statuses: list[dict],
-                    program_statuses: list[dict], projects: list[dict] | None = None) -> str:
-    """The consolidated business governance deep-view — budgets + programs in one place
-    (the merged 'Governance' nav destination). Programs lead (cross-team caps with
-    timelines), then single-scope budgets."""
+                    program_statuses: list[dict], projects: list[dict] | None = None,
+                    worktype: dict | None = None) -> str:
+    """The consolidated business governance deep-view — budgets + programs + the
+    work-vs-non-work split in one place. Programs lead (cross-team caps with
+    timelines), then single-scope budgets, then work-relatedness."""
     head = ('<div class=ohead><h1>Governance</h1>'
             '<p>Hold spend to budget. <b>Programs</b> cap a body of work across several teams or '
             'projects with a timeline; <b>budgets</b> cap a single scope. Both project your pace and '
@@ -3082,7 +3135,9 @@ def governance_page(account: dict, report: dict | None, budget_statuses: list[di
                 f'{_programs_section(account, report, program_statuses)}')
     budgets = (f'<h2 style="font-size:16px;margin:24px 0 6px">Budgets</h2>'
                f'{_budgets_section(account, report, budget_statuses, projects)}')
-    return page("Governance", head + attention + variance + programs + budgets,
+    wt = (f'<h2 style="font-size:16px;margin:24px 0 6px">Work vs non-work</h2>'
+          f'{worktype_card(worktype)}') if worktype else ""
+    return page("Governance", head + attention + variance + programs + budgets + wt,
                 account, active="/app/outlay/governance")
 
 

@@ -1609,7 +1609,19 @@ def app_outlay_governance(request: Request):
     programs = outlay_app.program_statuses(report, store.list_outlay_programs(acct["id"]),
                                            store.program_histories(acct["id"])) if report else []
     projects = outlay_app.project_spend(report) if report else []
-    return _html(web.governance_page(acct, report, budgets, programs, projects))
+    worktype = outlay_app.worktype_view(report, store.get_work_key_classes(acct["id"])) if report else None
+    return _html(web.governance_page(acct, report, budgets, programs, projects, worktype))
+
+
+@app.post("/app/outlay/worktype/key-class")
+async def app_outlay_worktype_key_class(request: Request):
+    """Tag an API key work/non-work (metadata only) — drives the work-vs-non-work split."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    form = await _form(request)
+    store.set_work_key_class(acct["id"], form.get("key") or "", (form.get("cls") or "").strip())
+    return _redirect("/app/outlay/governance")
 
 
 @app.get("/app/outlay/commitment", response_class=HTMLResponse)

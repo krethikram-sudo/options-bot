@@ -701,6 +701,36 @@ def test_commitment_pacing_add_and_delete(env, client):
     assert store.list_commitments(acct["id"]) == []
 
 
+def test_worktype_split_and_key_tagging(env, client):
+    _, store = env
+    _signup(client, email="wt@b.com")
+    acct = store.get_account_by_email("wt@b.com")
+    store.set_persona(acct["id"], "business", member_id=0)
+    report = {"spend": {"total_usd": 7670.0}, "window_days": 30,
+              "worktype": {"by_key": [
+                  {"key": "key_ci", "user": "ci@acme.dev", "joined_usd": 4200.0, "unjoined_usd": 120.0, "events": 80},
+                  {"key": "key_personal", "user": "bob@acme.dev", "joined_usd": 0.0, "unjoined_usd": 650.0, "events": 22}]}}
+    store.save_outlay_report(acct["id"], report)
+    # Before tagging: personal key spend is 'unknown', not non-work.
+    gov = client.get("/app/outlay/governance").text
+    assert "Work vs non-work" in gov
+    v = outlay_app_mod().worktype_view(report, store.get_work_key_classes(acct["id"]))
+    assert v["non_work_usd"] == 0.0
+    # Tag the personal key → its spend becomes non-work.
+    r = client.post("/app/outlay/worktype/key-class", data={"key": "key_personal", "cls": "non_work"})
+    assert r.status_code in (302, 303)
+    assert store.get_work_key_classes(acct["id"]) == {"key_personal": "non_work"}
+    v2 = outlay_app_mod().worktype_view(report, store.get_work_key_classes(acct["id"]))
+    assert v2["non_work_usd"] == 650.0 and v2["non_work_pct"] > 0
+    gov2 = client.get("/app/outlay/governance").text
+    assert "flagged non-work" in gov2
+
+
+def outlay_app_mod():
+    from console import outlay_app
+    return outlay_app
+
+
 def test_commitment_negotiation_pack_csv(env, client):
     _, store = env
     _signup(client, email="commit2@b.com")

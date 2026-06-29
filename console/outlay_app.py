@@ -467,6 +467,7 @@ def _report(work, result, stats, size_models, planned_items=None, window_days: i
         pf = _pricing_fidelity(events)
         if pf:
             data["pricing_fidelity"] = pf  # unrecognized models priced by nearest tier
+        data["worktype"] = {"by_key": _worktype_keys(events, result)}
     if planned_items:
         data["estimate"] = _serialize_plan(estimate_plan(planned_items, stats, size_models))
     else:
@@ -715,6 +716,66 @@ def commitment_view(report: dict | None, history: list[dict] | None = None) -> d
             if best and best.net_savings_usd > 0 else None
         ),
         "provisioned": provisioned,
+    }
+
+
+def _worktype_keys(events, result) -> list[dict]:
+    """Per-API-key work-joined vs unjoined spend — account-agnostic metadata (the
+    attribution join only; no prompt content). The customer's key flags (work /
+    non-work) are applied at render time in worktype_view."""
+    from outlay.pricing import cost_usd
+
+    joined = {r.usage_event_id for r in result.rows if r.ticket_id}
+    agg: dict[str, dict] = {}
+    for e in (events or []):
+        key = e.api_key_id or "(no key)"
+        d = agg.setdefault(key, {"key": key, "user": None, "joined_usd": 0.0,
+                                 "unjoined_usd": 0.0, "events": 0})
+        c = cost_usd(e)
+        d["joined_usd" if e.id in joined else "unjoined_usd"] += c
+        d["events"] += 1
+        if e.user and not d["user"]:
+            d["user"] = e.user
+    rows = sorted(agg.values(), key=lambda r: r["joined_usd"] + r["unjoined_usd"], reverse=True)
+    for r in rows:
+        r["joined_usd"] = round(r["joined_usd"], 4)
+        r["unjoined_usd"] = round(r["unjoined_usd"], 4)
+    return rows
+
+
+def worktype_view(report: dict | None, key_classes: dict | None = None) -> dict | None:
+    """Work vs non-work spend split, applying the customer's key flags. Posture:
+    metadata only. A flagged-non-work key's whole spend is non-work; an unflagged
+    key's joined spend is work and its unjoined spend is unknown (never *guessed* as
+    non-work). `key_classes` = {api_key_id: 'work'|'non_work'}."""
+    wt = (report or {}).get("worktype") or {}
+    by_key = wt.get("by_key") or []
+    if not by_key:
+        return None
+    key_classes = key_classes or {}
+    work_usd = non_work_usd = unknown_usd = 0.0
+    rows = []
+    for k in by_key:
+        total = (k.get("joined_usd", 0.0) or 0.0) + (k.get("unjoined_usd", 0.0) or 0.0)
+        cls = key_classes.get(k["key"])
+        if cls == "non_work":
+            non_work_usd += total; tag = "non_work"
+        elif cls == "work":
+            work_usd += total; tag = "work"
+        else:
+            work_usd += k.get("joined_usd", 0.0) or 0.0
+            unknown_usd += k.get("unjoined_usd", 0.0) or 0.0
+            tag = "unflagged"
+        rows.append({"key": k["key"], "user": k.get("user"), "total_usd": round(total, 2),
+                     "events": k.get("events", 0), "tag": tag})
+    total = work_usd + non_work_usd + unknown_usd or 1.0
+    return {
+        "work_usd": round(work_usd, 2), "non_work_usd": round(non_work_usd, 2),
+        "unknown_usd": round(unknown_usd, 2),
+        "non_work_pct": round(non_work_usd / total * 100, 1),
+        "work_pct": round(work_usd / total * 100, 1),
+        "unknown_pct": round(unknown_usd / total * 100, 1),
+        "by_key": rows, "has_flags": any(r["tag"] in ("work", "non_work") for r in rows),
     }
 
 
