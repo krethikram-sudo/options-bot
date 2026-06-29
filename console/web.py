@@ -1242,10 +1242,14 @@ def _hero_unit_cost(report: dict) -> str:
     u = cost_per_unit(report)
     if not u["units_shipped"]:
         return ""
+    # Chips drill into that work type's tickets — fluid drill-down from the anchor
+    # metric (total → class → the tickets behind it).
     chips = "".join(
-        f'<span style="border:1px solid #cfe6dc;border-radius:999px;padding:4px 11px;'
-        f'font-size:12.5px;color:var(--grn-d)"><b>{money(c["cost_per_unit_usd"])}</b> '
-        f'<span style="color:var(--mut)">/ {_e(c["task_class"])}</span></span>'
+        f'<a href="/app/outlay/scope?type=class&id={quote(str(c["task_class"] or ""))}" '
+        f'style="border:1px solid #cfe6dc;border-radius:999px;padding:4px 11px;'
+        f'font-size:12.5px;color:var(--grn-d);text-decoration:none">'
+        f'<b>{money(c["cost_per_unit_usd"])}</b> '
+        f'<span style="color:var(--mut)">/ {_e(c["task_class"])} →</span></a>'
         for c in u["by_class"][:5])
     return (
         '<div class=ocard style="background:var(--grn-l);border-color:#bfe3d4;margin-bottom:14px">'
