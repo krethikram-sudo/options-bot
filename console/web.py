@@ -1313,6 +1313,31 @@ def _trust_panel(report: dict, conn: dict | None = None) -> str:
         f'{details}</div>')
 
 
+def _spend_dim_panel(dims: list, sub_html: str = "") -> str:
+    """One 'Where your AI spend went' card with a CSS-only dimension toggle (no JS) —
+    replaces the four stacked breakdown cards (ticket / work type / team / engineer).
+    `dims` = [(id, label, rows_html), ...]; the first is shown by default. Mirrors the
+    lens switcher the Overview already uses."""
+    dims = [d for d in dims if d]
+    if not dims:
+        return ""
+    radios = "".join('<input type=radio name=spdim id=sp-%s class=sptab%s>'
+                     % (d[0], " checked" if i == 0 else "") for i, d in enumerate(dims))
+    tabs = "".join('<label for=sp-%s>%s</label>' % (d[0], _e(d[1])) for d in dims)
+    panes = "".join('<div class="sppane sp-%s">%s</div>' % (d[0], d[2]) for d in dims)
+    show = "".join(
+        ("#sp-%s:checked~.sptabs label[for=sp-%s]{background:var(--grn-l);border-color:#bfe3d4;"
+         "color:var(--grn-d);font-weight:600}#sp-%s:checked~.sp-%s{display:block}")
+        % (d[0], d[0], d[0], d[0]) for d in dims)
+    css = ("<style>.sptab{position:absolute;opacity:0;width:0;height:0}"
+           ".sptabs{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 12px}"
+           ".sptabs label{font-size:12.5px;padding:5px 11px;border:1px solid var(--line);"
+           "border-radius:999px;cursor:pointer;color:var(--muted)}"
+           ".sppane{display:none}" + show + "</style>")
+    return ('<div class=ocard>%s%s<div class=dh>Where your AI spend went%s</div>'
+            '<div class=sptabs>%s</div>%s</div>') % (css, radios, sub_html, tabs, panes)
+
+
 def _kpis_row(report: dict, history: list[dict] | None, persona: str) -> str:
     """The four headline KPIs — shared by Overview and Spend. The *set* is
     role-aware, not just the order: business leads with money + allocation
@@ -2386,58 +2411,59 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
         return (f'<div class=erow>{nm}<span class=amt>{amount}</span>'
                 f'<div class=ebar><span style="width:{max(2,min(100,bar_pct)):.0f}%;background:{color}"></span></div></div>')
 
-    # Spend by ticket
+    _no = lambda lbl: f'<p class=muted style="font-size:13px">No {lbl} spend yet.</p>'
+
+    # Rows per dimension (built once, shown via the tabbed panel below).
     tickets = report.get("tickets", [])[:8]
     maxc = max((t.get("cost_usd", 0) for t in tickets), default=1) or 1
-    trows = "".join(
+    ticket_rows = "".join(
         _erow(t.get("ticket_id"), t.get("task_class"), money(t.get("cost_usd", 0)),
               t.get("cost_usd", 0) / maxc * 100, "var(--amber)" if i == 0 else "var(--grn)")
-        for i, t in enumerate(tickets)) or '<p class=muted style="font-size:13px">No ticket-attributed spend yet.</p>'
-    spark = _sparkline([h.get("total_usd", 0) for h in (history or [])])
-    sub = f'<span class=sub title="Spend over your last {len(history or [])} refreshes">{spark}</span>' if spark else ""
-    spend_card = (f'<div class=ocard><div class=dh>Where your AI spend went{sub}</div>{trows}</div>')
+        for i, t in enumerate(tickets)) or _no("ticket-attributed")
 
-    # Spend by work type
     cls = report.get("class_spend") or []
     clsmax = max((c.get("spent_usd", 0) for c in cls), default=1) or 1
-    crows = "".join(
+    class_rows = "".join(
         _erow(c.get("task_class"), f'{c.get("tickets",0)} tickets · {c.get("share",0)*100:.0f}%',
               money(c.get("spent_usd", 0)), c.get("spent_usd", 0) / clsmax * 100,
               href=f'/app/outlay/scope?type=class&id={quote(str(c.get("task_class") or ""))}')
-        for c in cls) or '<p class=muted style="font-size:13px">No work-type spend yet.</p>'
-    class_card = f'<div class=ocard><div class=dh>Spend by work type</div>{crows}</div>'
+        for c in cls) or _no("work-type")
 
-    # Spend by engineer — show the person's name (from the uploaded org) when known,
-    # not just a bare email/key id.
     names = store.get_outlay_identity_names(account["id"]) if account and account.get("id") else {}
     people = [p for p in (report.get("people") or []) if p.get("user") != "(unattributed)"][:8]
-    people_card = ""
-    if people:
-        def _who(u: str) -> str:
-            nm = names.get((u or "").strip().lower())
-            return f"{nm} · {u}" if nm else (u or "")
-        pmax = max((p.get("spent_usd", 0) for p in people), default=1) or 1
-        prows = "".join(
-            _erow(_who(p.get("user")), f'{p.get("top_model")} · {p.get("share",0)*100:.0f}%',
-                  money(p.get("spent_usd", 0)), p.get("spent_usd", 0) / pmax * 100)
-            for p in people)
-        people_card = (f'<div class=ocard><div class=dh>Spend by engineer'
-                       f'<span class=sub>team-fidelity · user→cost</span></div>{prows}</div>')
+    def _who(u: str) -> str:
+        nm = names.get((u or "").strip().lower())
+        return f"{nm} · {u}" if nm else (u or "")
+    pmax = max((p.get("spent_usd", 0) for p in people), default=1) or 1
+    people_rows = "".join(
+        _erow(_who(p.get("user")), f'{p.get("top_model")} · {p.get("share",0)*100:.0f}%',
+              money(p.get("spent_usd", 0)), p.get("spent_usd", 0) / pmax * 100)
+        for p in people)
 
-    # Spend by team / cost-center (business allocation view)
     teams = report.get("team_spend") or []
-    team_card = ""
-    if any(t.get("team") != "(unassigned)" for t in teams):
-        tmax = max((t.get("spent_usd", 0) for t in teams), default=1) or 1
-        trows = "".join(
-            _erow(("Unassigned" if t.get("team") == "(unassigned)" else t.get("team")),
-                  f'{t.get("share",0)*100:.0f}% of attributed',
-                  money(t.get("spent_usd", 0)), t.get("spent_usd", 0) / tmax * 100,
-                  "#cfcabb" if t.get("team") == "(unassigned)" else "var(--grn)",
-                  href=f'/app/outlay/scope?type=team&id={quote(str(t.get("team") or ""))}')
-            for t in teams)
-        team_card = (f'<div class=ocard><div class=dh>Spend by team / cost-center'
-                     f'<span class=sub>allocation</span></div>{trows}</div>')
+    has_team = any(t.get("team") != "(unassigned)" for t in teams)
+    tmax = max((t.get("spent_usd", 0) for t in teams), default=1) or 1
+    team_rows = "".join(
+        _erow(("Unassigned" if t.get("team") == "(unassigned)" else t.get("team")),
+              f'{t.get("share",0)*100:.0f}% of attributed',
+              money(t.get("spent_usd", 0)), t.get("spent_usd", 0) / tmax * 100,
+              "#cfcabb" if t.get("team") == "(unassigned)" else "var(--grn)",
+              href=f'/app/outlay/scope?type=team&id={quote(str(t.get("team") or ""))}')
+        for t in teams)
+
+    # One tabbed panel instead of four stacked cards. Dimension order is persona-aware:
+    # business leads with allocation (team → work type → ticket); engineering with the
+    # work detail (ticket → work type → engineer).
+    if persona == "business":
+        dims = ([("team", "By team", team_rows)] if has_team else []) + \
+               [("class", "By work type", class_rows), ("ticket", "By ticket", ticket_rows)]
+    else:
+        dims = [("ticket", "By ticket", ticket_rows), ("class", "By work type", class_rows)] + \
+               ([("eng", "By engineer", people_rows)] if people else [])
+
+    spark = _sparkline([h.get("total_usd", 0) for h in (history or [])])
+    sub = f'<span class=sub title="Spend over your last {len(history or [])} refreshes">{spark}</span>' if spark else ""
+    breakdown = _spend_dim_panel(dims, sub)
 
     _athr, _amuted = _anomaly_prefs(conn)
     anomaly_card = _anomaly_card(report, _athr, _amuted, controls=True)
@@ -2445,18 +2471,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     model_card = _model_card(report)
     model_row = f'<div style="margin-top:16px">{model_card}</div>' if model_card else ""
 
-    # Attribution-only grid — forecast/estimate now live on Overview and their
-    # own pages, so Spend stays focused on "where every dollar went".
-    if persona == "business":
-        # Business leads with team/cost-center allocation, then work-type, then ticket
-        # detail; per-engineer (individual-name) detail is an engineering concern.
-        g1 = f'<div class=ogrid>{team_card or class_card}{spend_card}</div>'
-        extra = f'<div style="margin-top:16px">{class_card}</div>' if team_card else ""
-        grid = g1 + extra + model_row + anomaly_row
-    else:
-        g1 = f'<div class=ogrid>{spend_card}{class_card}</div>'
-        g2 = (f'<div style="margin-top:16px">{people_card}</div>' if people_card else "")
-        grid = g1 + g2 + model_row + anomaly_row
+    grid = breakdown + model_row + anomaly_row
 
     if persona == "business":
         olinks = ('<div class=olinks>'
