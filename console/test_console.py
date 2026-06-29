@@ -2960,11 +2960,11 @@ def test_outlay_sync_reconciles_to_cost_report(env, client):
     assert rec and rec["source"] == "anthropic_cost_report"
     assert rec["invoice_usd"] == 999.0
     assert "computed_usd" in rec and "delta_pct" in rec
-    # the dashboard renders the reconciliation strip
+    # the dashboard surfaces reconciliation in the consolidated trust panel's checks
     from console import web
     html = web.outlay_page({"email": "u@x.com", "role": "customer", "team_role": "owner",
                             "display_email": "u@x.com"}, report, persona="business")
-    assert "reconciled" in html and "Anthropic Cost Report" in html
+    assert "Invoice reconciliation" in html and "anthropic_cost_report" in html
 
 
 def test_reconcile_is_generic_across_providers(env):
