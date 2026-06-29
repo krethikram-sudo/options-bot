@@ -1233,6 +1233,31 @@ def _kpicard(label, value, sub, grn=False, href=None) -> str:
     return f'<div class=kpi>{inner}</div>'
 
 
+def _hero_unit_cost(report: dict) -> str:
+    """The anchor metric — cost per *delivered* unit of work — as a hero band.
+
+    Not 'we spent $X' but 'each shipped feature/bugfix cost $Y' — the single number
+    finance and eng both understand. Per-class chips show where the cost concentrates."""
+    from outlay.units import cost_per_unit
+    u = cost_per_unit(report)
+    if not u["units_shipped"]:
+        return ""
+    chips = "".join(
+        f'<span style="border:1px solid #cfe6dc;border-radius:999px;padding:4px 11px;'
+        f'font-size:12.5px;color:var(--grn-d)"><b>{money(c["cost_per_unit_usd"])}</b> '
+        f'<span style="color:var(--mut)">/ {_e(c["task_class"])}</span></span>'
+        for c in u["by_class"][:5])
+    return (
+        '<div class=ocard style="background:var(--grn-l);border-color:#bfe3d4;margin-bottom:14px">'
+        '<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">'
+        f'<span style="font-size:30px;font-weight:700;letter-spacing:-.01em;color:var(--grn-d)">'
+        f'{money(u["cost_per_unit_usd"])}</span>'
+        '<span style="font-size:14px;color:var(--grn-d);font-weight:600">AI cost per shipped unit of work</span>'
+        f'<span style="font-size:12.5px;color:var(--mut)">across {u["units_shipped"]} delivered items '
+        f'· {money(u["total_attributed_usd"])} attributed</span></div>'
+        f'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">{chips}</div></div>')
+
+
 def _kpis_row(report: dict, history: list[dict] | None, persona: str) -> str:
     """The four headline KPIs — shared by Overview and Spend. The *set* is
     role-aware, not just the order: business leads with money + allocation
@@ -2413,7 +2438,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     body = (chooser + ohead + _persona_switch(persona) + _staleness_banner(report, conn)
             + _sample_strip(report, account) + checklist
             + _budget_strip(statuses) + _data_quality_badge(report, conn)
-            + kpis + _recon_strip(report) + _pricing_warn(report)
+            + _hero_unit_cost(report) + kpis + _recon_strip(report) + _pricing_warn(report)
             + cov_diag + _sync_line(report, conn) + olinks + grid)
     return page("Spend", body, account, active="/app/outlay")
 

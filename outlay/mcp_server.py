@@ -26,6 +26,8 @@ import sys
 from collections import defaultdict
 from typing import Any, Callable
 
+from .units import cost_per_unit
+
 SERVER_NAME = "outlay"
 SERVER_VERSION = "0.1.0"
 DEFAULT_PROTOCOL = "2024-11-05"
@@ -70,32 +72,6 @@ def tool_cost_drilldown(report: dict, args: dict) -> dict:
             for k, v in agg.items()]
     rows.sort(key=lambda r: r["cost_usd"], reverse=True)
     return {"by": by, "rows": rows}
-
-
-def cost_per_unit(report: dict) -> dict:
-    """The hero metric: realized AI cost per *delivered* unit of work.
-
-    Anchors the whole product to one intuitive number — overall and per work class —
-    using only completed (status == 'done') tickets so it's cost per *shipped* item.
-    """
-    done = [t for t in _tickets(report) if (t.get("status") == "done")]
-    total = sum(t.get("cost_usd", 0.0) for t in done)
-    overall = (total / len(done)) if done else 0.0
-    per_class: dict[str, dict] = defaultdict(lambda: {"cost_usd": 0.0, "count": 0})
-    for t in done:
-        c = per_class[t.get("task_class") or "unknown"]
-        c["cost_usd"] += t.get("cost_usd", 0.0)
-        c["count"] += 1
-    by_class = [{"task_class": k, "cost_per_unit_usd": round(v["cost_usd"] / v["count"], 4),
-                 "units": v["count"]}
-                for k, v in per_class.items() if v["count"]]
-    by_class.sort(key=lambda r: r["cost_per_unit_usd"], reverse=True)
-    return {
-        "cost_per_unit_usd": round(overall, 4),
-        "units_shipped": len(done),
-        "total_attributed_usd": round(total, 4),
-        "by_class": by_class,
-    }
 
 
 def tool_cost_per_unit(report: dict, args: dict) -> dict:
