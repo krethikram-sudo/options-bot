@@ -3138,6 +3138,28 @@ def test_sample_report_is_a_realistic_demo(env):
     assert rep["anomalies"]                       # at least one flag to show
 
 
+def test_sample_report_exercises_work_vs_non_work(env):
+    """The sample must let a prospect actually see the work/non-work feature: usage
+    carries real per-key metadata (several keys, not one bucket), and a distinct
+    side-project key reads as unknown until tagged Personal — then a visible,
+    believable non-work share appears (never *guessed*; metadata only)."""
+    from console import outlay_app
+    rep = outlay_app.sample_report()
+    by_key = (rep.get("worktype") or {}).get("by_key") or []
+    keys = {r["key"] for r in by_key}
+    assert len(keys) >= 4                                  # per-team keys, not one bucket
+    assert "(no key)" not in keys                          # every event is attributed to a key
+    assert "key_personal_sandbox" in keys                  # a taggable side-project key exists
+    # Untagged: honest — the sandbox key's spend is unknown, never auto-non-work.
+    untagged = outlay_app.worktype_view(rep, {})
+    assert untagged["non_work_usd"] == 0.0 and not untagged["has_flags"]
+    # Tagged Personal: a real, visible (but believable) non-work share appears.
+    tagged = outlay_app.worktype_view(rep, {"key_personal_sandbox": "non_work"})
+    assert tagged["non_work_usd"] > 1000
+    assert 2.0 <= tagged["non_work_pct"] <= 12.0
+    assert tagged["work_usd"] == untagged["work_usd"]      # tagging never reclassifies work
+
+
 def test_slack_alerts_for_budget_and_anomaly(env, client, monkeypatch):
     """A configured Slack webhook receives budget + runaway-ticket alerts."""
     from console import notify, store
@@ -4244,6 +4266,12 @@ def test_demo_mode_enter_seeds_full_account_then_exit_clears(env, client):
     conn = store.get_outlay_connection(acct["id"])
     assert conn and conn.get("synced_at")
     assert store.get_persona(acct["id"], 0) == "business"
+    # work vs non-work is pre-wired: the side-project key tagged Personal + one team
+    # set to stop it, so the Governance card tells the whole track→stop story.
+    assert store.get_work_key_classes(acct["id"]).get("key_personal_sandbox") == "non_work"
+    assert store.get_work_enforce(acct["id"]).get("growth", {}).get("block_non_work") is True
+    gov = client.get("/app/outlay/governance").text
+    assert "non-work" in gov.lower()
     # the global banner shows demo controls + the guide; guide renders both flows
     page = client.get("/app/outlay").text
     assert "Demo mode" in page and "/app/demo/guide" in page and "Exit demo" in page
@@ -4256,6 +4284,9 @@ def test_demo_mode_enter_seeds_full_account_then_exit_clears(env, client):
     assert store.get_outlay_report(acct["id"]) is None
     assert store.list_outlay_budgets(acct["id"]) == []
     assert store.list_outlay_programs(acct["id"]) == []
+    # exiting wipes the work-classification flags too
+    assert store.get_work_key_classes(acct["id"]) == {}
+    assert store.get_work_enforce(acct["id"]) == {}
 
 
 def test_demo_mode_is_gated_to_demo_accounts(env, client, monkeypatch):
