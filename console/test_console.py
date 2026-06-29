@@ -1803,13 +1803,14 @@ def test_overview_is_role_aware_home(env, client):
     assert r.status_code == 200
     assert "Connect your sources" in r.text and "Overview" in r.text
 
-    # populate via sample data, then Overview shows the glance (KPIs + forecast + Explore)
+    # populate via sample data, then the unified Overview shows the glance
+    # (KPIs + forecast + the deep-views hub)
     client.post("/app/outlay/sample", follow_redirects=True)
     home = client.get("/app").text
-    assert "AI spend · window" in home          # a headline KPI
-    assert "Forecast · open work" in home        # the forecast card
-    assert "Explore" in home                      # the hub into deeper areas
-    assert "/app/outlay/budgets" in home          # jump-offs present
+    assert "AI spend · window" in home              # a headline KPI
+    assert "Forecast · open work" in home            # the forecast KPI
+    assert "Reports &amp; deep views" in home         # the hub into deeper areas
+    assert "/app/outlay/budgets" in home              # jump-offs present
 
     # the forecast band card and backlog estimate moved OFF the slimmed Spend page
     # (the headline forecast KPI stays; the p10–p90 band card does not)
@@ -4084,9 +4085,9 @@ def test_eng_attention_and_project_burn(env, client):
     client.post("/app/outlay/sample", follow_redirects=True)
     ov = client.get("/app").text
     assert "Needs your attention" in ov
-    assert "Runaway ticket" in ov and "Investigate" in ov         # eng anomaly framing
-    assert "is projected to overspend" not in ov                  # not business governance copy
-    assert "Project burn" in ov                                   # project-timeline card on Home
+    assert "Runaway ticket" in ov and "Investigate" in ov         # anomaly framing on the unified Home
+    # (post-persona-unification) program status is in the Home governance module +
+    # the Governance page; the project-burn timeline card lives on the Budgets page.
     # a program with a timeline renders on the eng Budgets page (project burn)
     client.post("/app/outlay/programs", data={
         "name": "Proj X", "limit_usd": "50000", "members": "team search",

@@ -712,9 +712,11 @@ def app_dashboard(request: Request):
     hist = store.outlay_history(acct["id"]) if report else []
     member_id = acct.get("member_id", 0) or 0
     persona = store.get_persona(acct["id"], member_id)
+    # Unified Home for every persona — the lens / saved-views / customizable layout
+    # are available to everyone (no longer business-only).
     lens, views, active_view_id = _resolve_home_lens(request, acct["id"], member_id, persona)
-    layout = store.get_dashboard_layout(acct["id"], member_id) if persona == "business" else {}
-    customize = persona == "business" and request.query_params.get("customize") == "1"
+    layout = store.get_dashboard_layout(acct["id"], member_id)
+    customize = request.query_params.get("customize") == "1"
     return _html(web.overview_page(acct, report, statuses, hist,
                                    store.get_outlay_connection(acct["id"]),
                                    has_budget=bool(budgets), persona=persona,
@@ -724,11 +726,9 @@ def app_dashboard(request: Request):
 
 
 def _resolve_home_lens(request: Request, account_id: int, member_id: int, persona: str):
-    """Resolve the business Home lens from query params + saved views.
+    """Resolve the Home lens from query params + saved views.
     Precedence: explicit ?group/?top (ad-hoc) > ?view=ID > the person's default saved
     view > the opinionated default (group by team, top 5)."""
-    if persona != "business":
-        return {}, [], 0
     views = store.list_dashboard_views(account_id, member_id)
     q = request.query_params
     valid_groups = set(web.HOME_GROUPINGS)
