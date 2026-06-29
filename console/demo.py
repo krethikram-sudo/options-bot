@@ -47,6 +47,8 @@ SCRIPT = {
         ("Spend", "/app/outlay", "Drill into the per-team / cost-center allocation — the chargeback view."),
         ("Budgets", "/app/outlay/budgets", "Show guardrails: one team over, one warning, one healthy."),
         ("Programs", "/app/outlay/programs", "A program budget spanning teams with a hard cap the gateway enforces."),
+        ("Work split", "/app/outlay/governance", "Work vs non-work: a side-project key tagged 'Personal' surfaces "
+         "~7% non-work spend; growth is set to stop it per team — all metadata, prompts never leave their box."),
         ("Security", "/app/security", "Close on the compliance posture: metadata-only, BYOK, AI transparency, VPAT."),
     ],
     "eng": [
@@ -129,12 +131,16 @@ def _seed_report(account_id: int, now: float | None = None) -> dict:
 
 def clear(account_id: int) -> None:
     """Reset to a clean standard-customer state: drop the report/history, every
-    budget and program, and the connector config."""
+    budget and program, the work-classification flags, and the connector config."""
     store.delete_outlay_report(account_id)
     for b in store.list_outlay_budgets(account_id):
         store.delete_outlay_budget(account_id, b["id"])
     for p in store.list_outlay_programs(account_id):
         store.delete_outlay_program(account_id, p["id"])
+    for k in store.get_work_key_classes(account_id):
+        store.set_work_key_class(account_id, k, "")
+    for team in store.get_work_enforce(account_id):
+        store.set_work_enforce(account_id, team, block_non_work=False, block_unknown=False)
     store.delete_outlay_connection(account_id)
 
 
@@ -151,6 +157,12 @@ def enter(account_id: int, member_id: int = 0, now: float | None = None) -> None
     store.save_outlay_connection(account_id, tracker="github",
                                  github_owner="acme", github_repo="platform")
     store.mark_outlay_synced(account_id, now=now)
+    # Work vs non-work, pre-wired so the Governance card tells the whole story out of
+    # the box: the shared side-project key is tagged Personal (so non-work spend is
+    # visible, not 0), and one team is set to stop it — the customer's opt-in gateway
+    # enforces; Outlay only records the rule.
+    store.set_work_key_class(account_id, "key_personal_sandbox", "non_work")
+    store.set_work_enforce(account_id, "growth", block_non_work=True, block_unknown=False)
     store.set_persona(account_id, "business", member_id=member_id)
     store.set_demo_mode(account_id, True)
 

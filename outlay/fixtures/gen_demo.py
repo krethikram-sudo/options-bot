@@ -41,6 +41,20 @@ EPIC = {"platform": "Q3 Stability", "growth": "Billing v2",
         "data": "Warehouse migration", "infra": "Cluster autoscaling",
         "search": "Relevance v3", "checkout": "One-click checkout"}
 
+# API keys the org's spend is billed under, stamped on every usage event so the
+# work-vs-non-work surface has real per-key metadata to group and tag. One prod
+# key per team carries that team's ticketed work; a shared off-hours
+# `personal_sandbox` key carries only unattributed, late-night, no-ticket
+# sessions — the natural key a customer tags "Personal" to see (and stop) non-work
+# spend. A `batch_jobs` key holds the unattended/eval spend. Metadata only — no
+# prompt content is ever involved in the split.
+PERSONAL_KEY = "key_personal_sandbox"
+BATCH_KEY = "key_batch_jobs"
+
+
+def _team_key(team: str) -> str:
+    return f"key_{team}_prod"
+
 # Token volume multiplier on every agentic turn. Real coding-agent sessions on a
 # large monorepo carry very large cached context (millions of cache-read tokens per
 # turn); this knob scales the worked demo to a believable mid-size-org quarter
@@ -149,7 +163,7 @@ def main() -> None:
                 ev = {
                     "id": f"e{num}_{k}", "model": model, "timestamp": _ts(max(0.1, day), 9 + (k % 8)),
                     "usage": _turn(rng, model),
-                    "metadata": {"user": user, "session_id": sess},
+                    "metadata": {"user": user, "session_id": sess, "api_key_id": _team_key(team)},
                 }
                 # Coverage realism: most turns carry the branch; ~1/4 of later turns
                 # drop it (session propagation recovers them); the very first turn of
@@ -171,14 +185,35 @@ def main() -> None:
             model = rng.choice(MODELS_W)
             records.append({
                 "id": f"e_team{i}_{k}", "model": model, "timestamp": _ts(rng.uniform(1, 20), 20 + k % 3),
-                "usage": _turn(rng, model), "metadata": {"user": user, "session_id": f"sx{i}"},
+                "usage": _turn(rng, model),
+                "metadata": {"user": user, "session_id": f"sx{i}", "api_key_id": _team_key(team)},
             })
+
+    # ---- personal / side-project spend on a shared off-hours key ----
+    # Late-night, no-ticket sessions a few engineers ran on a shared sandbox key —
+    # the believable non-work spend a customer tags "Personal" and then stops per
+    # team. Resolves to the engineer's team (so per-team enforcement has something
+    # to act on) but never to a ticket, so it reads as unknown until the key is
+    # tagged. ~6-7% of spend — visible enough to tell the story, small enough to be
+    # honest. Metadata only; the split never inspects a prompt.
+    personal_users = ["bob@acme.dev", "karl@acme.dev", "yuki@acme.dev", "luca@acme.dev", "grace@acme.dev"]
+    for i in range(40):
+        user = personal_users[i % len(personal_users)]
+        for k in range(rng.randint(4, 7)):
+            model = rng.choice(MODELS_W)
+            records.append({
+                "id": f"e_personal{i}_{k}", "model": model, "timestamp": _ts(rng.uniform(1, 20), 21 + k % 3),
+                "usage": _turn(rng, model),
+                "metadata": {"user": user, "session_id": f"sp{i}", "api_key_id": PERSONAL_KEY},
+            })
+
     for i in range(40):
         records.append({
             "id": f"e_inv{i}", "model": "claude-sonnet-4-6", "timestamp": _ts(rng.uniform(1, 20), 23),
             "usage": {"input_tokens": int(40_000 * TOKEN_SCALE), "output_tokens": int(9_000 * TOKEN_SCALE),
                       "cache_read_input_tokens": int(600_000 * TOKEN_SCALE),
                       "cache_creation_input_tokens": int(60_000 * TOKEN_SCALE)},
+            "metadata": {"api_key_id": BATCH_KEY},
         })
 
     # ---- open tickets (forecast / backlog-estimate targets) ----
