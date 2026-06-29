@@ -2142,16 +2142,16 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     """The role-aware home — the first screen after sign-in. A concise glance
     (KPIs, budget status, forecast) with jump-offs into the deeper areas; the
     attribution detail lives on the Spend page."""
-    chooser = _persona_chooser() if persona not in ("business", "eng") else ""
     checklist = _onboarding(conn, report, has_budget, persona, demo_mode=bool(account.get("demo_mode")))
     # The trial banner lives on Overview only (the home screen) — the sidebar pill
     # persists trial status on every other page, so it isn't repeated app-wide.
     tb = _account_trial_banner(account)
     if not report:
+        # Business does no setup — show the 'data on its way' + invite-engineering
+        # state rather than a connect CTA. (This is a functional role difference, not
+        # a cosmetic one: finance consumes the data, engineering wires it up.)
         if persona == "business":
-            # Business does no setup — show the 'data on its way' + invite-engineering
-            # state instead of a connect CTA and form.
-            return page("Home", tb + chooser + _finance_waiting(account), account, active="/app")
+            return page("Home", tb + _finance_waiting(account), account, active="/app")
         intro = (
             '<div class=ohead><h1>Your AI spend, on your roadmap.</h1>'
             '<p>Connect your tracker and AI usage — read-only — and Outlay maps every dollar to the work '
@@ -2164,17 +2164,13 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
                '<a class="btn" href="/app/outlay/connect?tour=connect">Connect your sources →</a>'
                + sample_btn +
                '<a class="btn sec" href="/app/outlay/connect?tour=connect">Show me how</a></div>')
-        return page("Home", tb + chooser + intro + cta + checklist + _outlay_connect(),
+        return page("Home", tb + intro + cta + checklist + _outlay_connect(),
                     account, active="/app")
 
     greet = _home_greeting(account)
-    if persona == "business":
-        head = (f'<div class=ohead>{greet}<h1>{_quarter_label()} at a glance</h1>'
-                '<p>What needs action, the headline numbers, and where your spend landed — '
-                'drill into any card for the detail.</p></div>')
-    else:
-        head = (f'<div class=ohead>{greet}<h1>AI spend at a glance</h1>'
-                '<p>The headline numbers, your budget status, and where to dig in.</p></div>')
+    head = (f'<div class=ohead>{greet}<h1>{_quarter_label()} at a glance</h1>'
+            '<p>What needs action, the headline numbers, and where your spend landed — '
+            'drill into any card for the detail.</p></div>')
 
     # Trend + movers row — lay out as a pair when both are present, else a single
     # full-width card (the trend card is empty until there are two refreshes).
@@ -2192,58 +2188,33 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     unit = _unit_econ_card(report)
     unit = f'<div style="margin-top:16px">{unit}</div>' if unit else ""
 
-    if persona == "business":
-        # Consolidated business Home, F-pattern: act-first attention panel → KPI
-        # scorecard → trust callout → trend band → consolidated drill-in cards
-        # (where it landed · governance · forecast). The deep detail lives one click
-        # away on Spend / Governance / Estimate, so Home stays a glance, not a scroll.
-        attention = _finance_attention(report, statuses, program_statuses)
-        lens = lens or {}
-        group_by = lens.get("group_by", "team")
-        top_n = int(lens.get("top_n", 5))
-        lens_bar = _lens_bar(group_by, top_n, views or [], active_view_id)
-        cards = {
-            "breakdown": _home_breakdown_card(report, group_by, top_n),
-            "governance": _home_governance_card(program_statuses, statuses),
-            "forecast": _forecast_card(report),
-            "actions": _home_actions_card(),
-        }
-        modules = _home_modules(cards, layout or {}, customize)
-        body = (tb + head + _persona_switch(persona) + _staleness_banner(report, conn)
-                + _sample_strip(report, account) + checklist
-                + attention
-                + _kpis_row(report, history, persona)
-                + _recon_strip(report) + _pricing_warn(report) + fidelity + tm_row
-                + lens_bar + modules + _sync_line(report, conn))
-        return page("Home", body, account, active="/app")
-
-    # Engineering: operate-focused. Lead with the 'go fix this' attention panel
-    # (runaway tickets, coverage leaks, spend spikes, stale sync, pricing gaps) and a
-    # 'project burn' card with each program's timeline. The attention panel folds in the
-    # staleness / pricing / anomaly signals, so they aren't repeated as separate strips.
-    if persona == "eng":
-        eng_attn = _eng_attention(report, conn, history, statuses)
-        grid = ('<div class=ogrid style="margin-top:16px">' + _forecast_card(report)
-                + _eng_project_card(program_statuses) + '</div>'
-                + '<div style="margin-top:16px">' + _explore_card(persona) + '</div>')
-        body = (tb + head + _persona_switch(persona)
-                + _sample_strip(report, account) + checklist
-                + eng_attn
-                + _kpis_row(report, history, persona)
-                + _recon_strip(report) + fidelity + unit + tm_row
-                + grid + _sync_line(report, conn))
-        return page("Home", body, account, active="/app")
-
-    # Pre-persona (no role chosen yet) keeps the legacy strips + chooser.
-    attention = _budget_strip(statuses) + _anomaly_strip(report, *_anomaly_prefs(conn))
-    body = (tb + chooser + head + _persona_switch(persona) + _staleness_banner(report, conn)
+    # One unified Home for every persona, F-pattern: act-first attention panel → KPI
+    # scorecard → consolidated trust panel → trend band → the lens-based drill-in
+    # cards (where it landed · governance · forecast · reports). The lens tabs let
+    # anyone group by team / work type / project / engineer — no persona toggle. Deep
+    # detail lives one click away on Spend / Governance / Estimate.
+    # "Needs your attention" for everyone — budget/program off-track (finance) AND
+    # the operational signals (runaway tickets, coverage leaks, spend spikes, stale
+    # sync, pricing gaps). Each panel renders only what it has to flag.
+    attention = (_finance_attention(report, statuses, program_statuses)
+                 + _eng_attention(report, conn, history, statuses))
+    lens = lens or {}
+    group_by = lens.get("group_by", "team")
+    top_n = int(lens.get("top_n", 5))
+    lens_bar = _lens_bar(group_by, top_n, views or [], active_view_id)
+    cards = {
+        "breakdown": _home_breakdown_card(report, group_by, top_n),
+        "governance": _home_governance_card(program_statuses, statuses),
+        "forecast": _forecast_card(report),
+        "actions": _home_actions_card(),
+    }
+    modules = _home_modules(cards, layout or {}, customize)
+    body = (tb + head + _staleness_banner(report, conn)
             + _sample_strip(report, account) + checklist
             + attention
-            + _kpis_row(report, history, persona)
-            + _recon_strip(report) + _pricing_warn(report)
-            + fidelity + unit + tm_row
-            + '<div class=ogrid style="margin-top:16px">' + _forecast_card(report)
-            + _explore_card(persona) + '</div>' + _sync_line(report, conn))
+            + _kpis_row(report, history)
+            + _trust_panel(report, conn) + _pricing_warn(report) + fidelity + unit + tm_row
+            + lens_bar + modules + _sync_line(report, conn))
     return page("Home", body, account, active="/app")
 
 
