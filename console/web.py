@@ -2185,17 +2185,19 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
 
     fidelity = _fidelity_callout(report, persona)
     fidelity = f'<div style="margin-top:16px">{fidelity}</div>' if fidelity else ""
+    unit = _unit_econ_card(report)
+    unit = f'<div style="margin-top:16px">{unit}</div>' if unit else ""
 
     # One unified Home for every persona, F-pattern: act-first attention panel → KPI
     # scorecard → consolidated trust panel → trend band → the lens-based drill-in
     # cards (where it landed · governance · forecast · reports). The lens tabs let
     # anyone group by team / work type / project / engineer — no persona toggle. Deep
     # detail lives one click away on Spend / Governance / Estimate.
-    # One "Needs your attention" panel for everyone — the comprehensive operate view
-    # (runaway tickets, coverage leaks, spend spikes, stale sync, pricing gaps); it
-    # folds in the staleness/pricing/anomaly signals so they aren't repeated as
-    # strips. Budget/program off-track status lives in the governance module below.
-    attention = _eng_attention(report, conn, history, statuses)
+    # "Needs your attention" for everyone — budget/program off-track (finance) AND
+    # the operational signals (runaway tickets, coverage leaks, spend spikes, stale
+    # sync, pricing gaps). Each panel renders only what it has to flag.
+    attention = (_finance_attention(report, statuses, program_statuses)
+                 + _eng_attention(report, conn, history, statuses))
     lens = lens or {}
     group_by = lens.get("group_by", "team")
     top_n = int(lens.get("top_n", 5))
@@ -2211,7 +2213,7 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
             + _sample_strip(report, account) + checklist
             + attention
             + _kpis_row(report, history)
-            + _trust_panel(report, conn) + _pricing_warn(report) + fidelity + tm_row
+            + _trust_panel(report, conn) + _pricing_warn(report) + fidelity + unit + tm_row
             + lens_bar + modules + _sync_line(report, conn))
     return page("Home", body, account, active="/app")
 

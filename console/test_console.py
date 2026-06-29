@@ -4677,8 +4677,9 @@ def test_run_with_cost_export_reconciles(env, client):
     rep = store.get_outlay_report(store.get_account_by_email("rec@x.com")["id"])
     rec = rep.get("reconciliation")
     assert rec and rec["source"] == "aws_cost_explorer" and rec["invoice_usd"] == 500.0
-    # the Overview strip names AWS, not Anthropic
-    assert "AWS Cost Explorer" in client.get("/app").text
+    # the Overview surfaces reconciliation in the trust panel's checks, naming the AWS source
+    home = client.get("/app").text
+    assert "Invoice reconciliation" in home and "aws_cost_explorer" in home
 
 
 def test_audit_log_records_and_renders(env, client):
