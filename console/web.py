@@ -1338,38 +1338,16 @@ def _spend_dim_panel(dims: list, sub_html: str = "") -> str:
             '<div class=sptabs>%s</div>%s</div>') % (css, radios, sub_html, tabs, panes)
 
 
-def _kpis_row(report: dict, history: list[dict] | None, persona: str) -> str:
-    """The four headline KPIs — shared by Overview and Spend. The *set* is
-    role-aware, not just the order: business leads with money + allocation
-    (cost-center / showback) + the budget forecast; engineering leads with
-    attribution coverage + the runaway tickets to go fix."""
+def _kpis_row(report: dict, history: list[dict] | None, persona: str = "") -> str:
+    """The four headline KPIs — one unified set for everyone (no persona split):
+    money · attribution coverage · runaway tickets · forecast. Team/cost-center
+    allocation now lives one click away in the breakdown panel's "By team" tab, so
+    finance and engineering share the same headline. Each KPI drills into the
+    surface that explains it."""
     sp = report.get("spend", {})
     fc = report.get("forecast", {})
     cov = sp.get("ticket_coverage", 0.0)
-    open_items = fc.get("items_costed", 0) + fc.get("items_unclassified", 0)
-    # Each headline KPI drills into the surface that explains it: the forecast →
-    # the estimator, open work → the estimator, team allocation → that team's
-    # tickets, runaway tickets → the offending work type (runaways flagged there).
     spend_kpi = _kpicard("AI spend · window", money(sp.get("total_usd", 0)), _trend_delta(history or []))
-    fc_kpi = _kpicard("Forecast · open work", money(fc.get("expected_usd", 0)),
-                      f"likely {money(fc.get('low_usd', 0))}–{money(fc.get('high_usd', 0))}",
-                      href="/app/outlay/estimate")
-    open_kpi = _kpicard("Open work items", str(open_items),
-                        f"{fc.get('items_costed', 0)} costed from history",
-                        href="/app/outlay/estimate")
-    if persona == "business":
-        teams = [t for t in (report.get("team_spend") or []) if t.get("team")]
-        top = teams[0] if teams else None
-        # No connect link in the fallback — mapping people to teams is engineering's
-        # setup step, not business's.
-        alloc_kpi = _kpicard(
-            "Allocated to teams", str(len(teams)),
-            (f"top: {_e(str(top['team']))} · {money(top['spent_usd'])}" if top
-             else "engineering maps people to teams"),
-            grn=bool(teams),
-            href=(f'/app/outlay/scope?type=team&id={quote(str(top["team"]))}' if top else None))
-        return '<div class=kpis>' + spend_kpi + fc_kpi + alloc_kpi + open_kpi + '</div>'
-    # engineering (and the default, pre-persona view)
     cov_kpi = _kpicard("Mapped to a ticket", f"{cov*100:.0f}%",
                        money(sp.get("attributed_to_ticket_usd", 0)) + " attributed", grn=cov >= 0.6)
     anoms = report.get("anomalies") or []
@@ -1380,6 +1358,9 @@ def _kpis_row(report: dict, history: list[dict] | None, persona: str) -> str:
         grn=not anoms,
         href=(f'/app/outlay/scope?type=class&id={quote(str(top.get("task_class") or ""))}'
               if top and top.get("task_class") else None))
+    fc_kpi = _kpicard("Forecast · open work", money(fc.get("expected_usd", 0)),
+                      f"likely {money(fc.get('low_usd', 0))}–{money(fc.get('high_usd', 0))}",
+                      href="/app/outlay/estimate")
     return '<div class=kpis>' + spend_kpi + cov_kpi + anom_kpi + fc_kpi + '</div>'
 
 
@@ -2370,11 +2351,9 @@ def _unit_econ_card(report: dict) -> str:
 def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None = None,
                 history: list[dict] | None = None, conn: dict | None = None,
                 has_budget: bool = False, persona: str = "") -> str:
-    chooser = _persona_chooser() if persona not in ("business", "eng") else ""
+    chooser = ""  # unified view — no persona chooser
     checklist = _onboarding(conn, report, has_budget, persona, demo_mode=bool(account.get("demo_mode")))
     if not report:
-        if persona == "business":
-            return page("Spend", chooser + _finance_waiting(account), account, active="/app/outlay")
         intro = (
             '<div class=ohead><h1>Your AI spend, on your roadmap.</h1>'
             '<p>Connect your tracker and AI usage — read-only — and Outlay maps every dollar to the work '
@@ -2393,16 +2372,13 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     sp = report.get("spend", {})
     cov = sp.get("ticket_coverage", 0.0)
 
-    if persona == "business":
-        ohead = ('<div class=ohead><h1>Where your AI spend goes</h1>'
-                 '<p>Every dollar attributed — by team and cost-center, work type, and ticket. '
-                 'Forecast and budget live on <a href="/app">Overview</a>.</p></div>')
-    else:
-        ohead = ('<div class=ohead><h1>Where your AI spend goes</h1>'
-                 '<p>Every dollar mapped to the work that drove it — by ticket, work type, and engineer. '
-                 'Forecast and estimates live on <a href="/app">Overview</a>.</p></div>')
+    # One unified header for every role — switch the breakdown lens (ticket / work
+    # type / team / engineer) right on the page instead of switching personas.
+    ohead = ('<div class=ohead><h1>Where your AI spend goes</h1>'
+             '<p>Every dollar mapped to the work that drove it — by ticket, work type, team, and '
+             'engineer. Forecast and budget live on <a href="/app">Overview</a>.</p></div>')
 
-    kpis = _kpis_row(report, history, persona)
+    kpis = _kpis_row(report, history)
 
     def _erow(name, sub, amount, bar_pct, color="var(--grn)", href=None):
         sub_html = f' <small>· {_e(sub)}</small>' if sub else ""
@@ -2451,15 +2427,12 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
               href=f'/app/outlay/scope?type=team&id={quote(str(t.get("team") or ""))}')
         for t in teams)
 
-    # One tabbed panel instead of four stacked cards. Dimension order is persona-aware:
-    # business leads with allocation (team → work type → ticket); engineering with the
-    # work detail (ticket → work type → engineer).
-    if persona == "business":
-        dims = ([("team", "By team", team_rows)] if has_team else []) + \
-               [("class", "By work type", class_rows), ("ticket", "By ticket", ticket_rows)]
-    else:
-        dims = [("ticket", "By ticket", ticket_rows), ("class", "By work type", class_rows)] + \
-               ([("eng", "By engineer", people_rows)] if people else [])
+    # One tabbed panel, one set of lenses for everyone: ticket → work type → team →
+    # engineer (finance and engineering both switch the tab they care about, instead
+    # of switching personas).
+    dims = [("ticket", "By ticket", ticket_rows), ("class", "By work type", class_rows)] + \
+           ([("team", "By team", team_rows)] if has_team else []) + \
+           ([("eng", "By engineer", people_rows)] if people else [])
 
     spark = _sparkline([h.get("total_usd", 0) for h in (history or [])])
     sub = f'<span class=sub title="Spend over your last {len(history or [])} refreshes">{spark}</span>' if spark else ""
@@ -2473,44 +2446,32 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
 
     grid = breakdown + model_row + anomaly_row
 
-    if persona == "business":
-        olinks = ('<div class=olinks>'
-                  '<a href="/app/outlay/programs">Program budgets →</a>'
-                  '<a href="/app/outlay/budgets">Budgets &amp; guardrails →</a>'
-                  '<a href="/app/outlay/accuracy">How accurate is this? →</a>'
-                  '<a href="/app/outlay/estimate">Estimate planned work →</a>'
-                  '<a href="/app/outlay/close-report.html" target=_blank>Close report (print to PDF) →</a>'
-                  '<span class=sp></span>'
-                  '<span class=muted style="font-size:12.5px">Export CSV:</span>'
-                  '<a href="/app/outlay/export.csv?view=tickets">by ticket</a>'
-                  '<a href="/app/outlay/export.csv?view=teams" title="Per-team / cost-center allocation for showback / chargeback">by team</a>'
-                  '<a href="/app/outlay/export.csv?view=classes">by work type</a>'
-                  '<a href="/app/outlay/export.focus.csv" '
-                  'title="FinOps Open Cost &amp; Usage Spec column names — load into any FOCUS-aware BI tool">'
-                  'FOCUS</a></div>')
-    else:
-        olinks = ('<div class=olinks>'
-                  '<a href="/app/outlay/accuracy">How accurate is this? →</a>'
-                  '<a href="/app/outlay/estimate">Estimate your backlog →</a>'
-                  '<a href="/app/outlay/budgets">Budgets &amp; guardrails →</a>'
-                  '<a href="/app/outlay/close-report.html" target=_blank>Close report →</a>'
-                  '<span class=sp></span>'
-                  '<span class=muted style="font-size:12.5px">Export CSV:</span>'
-                  '<a href="/app/outlay/export.csv?view=tickets">tickets</a>'
-                  '<a href="/app/outlay/export.csv?view=classes">work types</a>'
-                  '<a href="/app/outlay/export.csv?view=people">engineers</a></div>')
+    # One unified link bar (the union of what business + engineering each had).
+    olinks = ('<div class=olinks>'
+              '<a href="/app/outlay/accuracy">How accurate is this? →</a>'
+              '<a href="/app/outlay/estimate">Estimate planned work →</a>'
+              '<a href="/app/outlay/budgets">Budgets &amp; guardrails →</a>'
+              '<a href="/app/outlay/programs">Program budgets →</a>'
+              '<a href="/app/outlay/close-report.html" target=_blank>Close report →</a>'
+              '<span class=sp></span>'
+              '<span class=muted style="font-size:12.5px">Export CSV:</span>'
+              '<a href="/app/outlay/export.csv?view=tickets">by ticket</a>'
+              '<a href="/app/outlay/export.csv?view=teams" title="Per-team / cost-center allocation for showback / chargeback">by team</a>'
+              '<a href="/app/outlay/export.csv?view=classes">by work type</a>'
+              '<a href="/app/outlay/export.csv?view=people">by engineer</a>'
+              '<a href="/app/outlay/export.focus.csv" '
+              'title="FinOps Open Cost &amp; Usage Spec column names — load into any FOCUS-aware BI tool">'
+              'FOCUS</a></div>')
 
-    # The coverage diagnostic is a conditional, actionable nudge — it appears only
-    # when ticket coverage is low (with the cheapest fix), so it's an alert, not
-    # always-on clutter. Kept for engineering.
-    cov_diag = "" if persona == "business" else _coverage_diag(report)
+    # The coverage diagnostic is a conditional, actionable nudge — shown to everyone,
+    # but only when ticket coverage is low (with the cheapest fix). An alert, not
+    # always-on clutter.
+    cov_diag = _coverage_diag(report)
     cov_diag = f'<div style="margin:16px 0">{cov_diag}</div>' if cov_diag else ""
 
-    # One consolidated trust panel (verdict + measured facts + collapsible
-    # reconciliation/pricing/sync checks) replaces the THREE always-on trust strips
-    # that used to stack here: the data-quality badge, the measured-not-asserted
-    # strip, and the reconciliation strip.
-    body = (chooser + ohead + _persona_switch(persona) + _staleness_banner(report, conn)
+    # One unified Spend view — no persona toggle. The breakdown panel's lens tabs
+    # (ticket / work type / team / engineer) replace switching personas.
+    body = (chooser + ohead + _staleness_banner(report, conn)
             + _sample_strip(report, account) + checklist + _budget_strip(statuses)
             + _hero_unit_cost(report) + _trust_panel(report, conn) + kpis + _pricing_warn(report)
             + cov_diag + _sync_line(report, conn) + olinks + grid)
