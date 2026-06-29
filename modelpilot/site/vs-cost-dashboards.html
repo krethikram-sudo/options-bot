@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Outlay vs. AI cost dashboards — work-attributed AI spend</title>
+<meta name="description" content="AI cost dashboards (Vantage, CloudZero, Finout, Datadog) attribute spend to teams and projects. Outlay attributes it to the work item — the ticket, feature, and engineer — forecasts it on your own delivered work, and governs it. An honest comparison.">
+<link rel="canonical" href="https://outlay-ai.com/vs-cost-dashboards">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:title" content="Outlay vs. AI cost dashboards">
+<meta property="og:description" content="Dashboards attribute AI spend to teams and projects. Outlay attributes it to the ticket, feature, and engineer — and forecasts and governs it.">
+<meta property="og:image" content="https://outlay-ai.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://outlay-ai.com/og-image.png">
+<link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/outlay.css?v=20260621-5">
+<script src="/auth-nav.js?v=3" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Outlay<span class="dot">.ai</span></a>
+  <input type="checkbox" id="nav-t" class="nav-toggle" hidden>
+  <div class="navlinks" id="nav-menu">
+    <a href="/#how">How it works</a>
+    <a href="/#owners">For eng &amp; business</a>
+    <a href="/#proof">Attribution</a>
+    <a href="/platform#estimate">Estimate</a>
+    <a href="/compare">Compare</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/tour">Product Tour</a>
+    <a href="/pilot">Pilot</a>
+  </div>
+  <div class="navsp"></div>
+  <div class="navcta">
+    <a class="btn primary" href="https://app.outlay-ai.com/login">Sign in</a>
+    <label for="nav-t" class="hamburger" role="button" tabindex="0" aria-label="Open menu" aria-controls="nav-menu" aria-expanded="false"><span></span><span></span><span></span></label>
+  </div>
+</div></nav>
+
+<main id="main">
+
+<div class="page"><div class="wrap">
+  <div class="eyebrow">Compare · AI cost dashboards</div>
+  <h1>Work-attributed AI cost vs. a cost dashboard.</h1>
+  <p class="lede">AI cost dashboards — Vantage, CloudZero, Finout, Datadog Cloud Cost — connect your
+    provider bills and show spend by <b>team and project</b>. Outlay goes one level deeper: it attributes
+    spend to the <b>work item</b> — the ticket, feature, and engineer — forecasts it on your own delivered
+    work, and governs it to budget. Here's the honest comparison.</p>
+</div></div>
+
+<section style="padding-top:18px"><div class="wrap">
+  <div class="note" style="max-width:760px;margin:0 auto 32px">
+    <b>The short answer:</b> a dashboard answers "what did this <i>team</i> spend?" Outlay answers
+    "what did this <i>feature</i> cost, what will the next one cost, and are we on budget?" — read-only,
+    metadata-only, so prompts and keys never leave your environment.
+  </div>
+
+  <p class="cmp-scrollhint">Outlay is the last column — scroll to compare →</p>
+  <div class="cmp-wrap">
+    <table class="cmp">
+      <thead><tr>
+        <th class="feat"></th>
+        <th>AI cost dashboard</th>
+        <th class="us">Outlay</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="feat">Attribution granularity</td>
+            <td>Team / project / cost-center</td>
+            <td class="us">The <b>work item</b> — ticket, feature, engineer (via the tracker join)</td></tr>
+        <tr><td class="feat">"What did this feature cost?"</td>
+            <td>Not directly — no work-item join</td>
+            <td class="us">Yes — token → ticket → feature</td></tr>
+        <tr><td class="feat">Forecasting</td>
+            <td>History + a trend line</td>
+            <td class="us">Backlog forecast <b>back-tested on your own delivered work</b> (measured error)</td></tr>
+        <tr><td class="feat">Confidence on each number</td>
+            <td>Not surfaced</td>
+            <td class="us">A <b>fidelity tier</b> on every dollar (call / branch / session / team)</td></tr>
+        <tr><td class="feat">Budget governance</td>
+            <td>Alerts / anomaly detection</td>
+            <td class="us">Program budgets with a <b>projected-breach date</b> + on-/off-track ratings</td></tr>
+        <tr><td class="feat">Commitment optimization</td>
+            <td>Generally no (model-API layer)</td>
+            <td class="us">On-demand vs committed-spend vs provisioned, sized against forfeit risk</td></tr>
+        <tr><td class="feat">Data posture</td>
+            <td>Cloud-billing integration (ingests more)</td>
+            <td class="us"><b>Metadata-only / BYOK / read-only</b> — prompts &amp; keys never leave your box</td></tr>
+        <tr><td class="feat">Best for</td>
+            <td>Broad <b>cloud</b> cost across infra, AI as one line</td>
+            <td class="us">The <b>AI line</b>, attributed to work, forecast, and governed</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>When a cost dashboard is the better fit</h2>
+  <p>If your pain is 90% cloud infrastructure (EC2/S3/Kubernetes) and 10% LLM, a FinOps suite with broad
+    cloud coverage will serve you better — keep it. Outlay isn't a general cloud-cost tool; it's built for
+    one job: the AI/LLM line, attributed to the work that drove it. Many teams run both — the dashboard for
+    cloud and team rollups, Outlay for ticket/feature attribution and the forecast finance can defend.</p>
+
+  <h2>Where Outlay wins</h2>
+  <ul>
+    <li><b>Depth of attribution.</b> "What did shipping the checkout refactor cost?" has an answer in
+      Outlay and not in a team-level dashboard.</li>
+    <li><b>Forecast you can defend.</b> We forecast the backlog and prove the error on your own completed
+      work (leave-one-out) — a measured number, not a trend line.</li>
+    <li><b>Governance, not just visibility.</b> Program budgets, real-time pacing, and a breach date
+      <i>before</i> month-end — a system you act on, not a report you read.</li>
+    <li><b>A posture security signs off on.</b> Metadata-only and read-only by design.</li>
+  </ul>
+
+  <p class="backlink" style="margin-top:28px"><a href="/compare">See the full comparison →</a> ·
+    <a href="/finops-for-ai">FinOps for AI: the playbook</a> · <a href="/savings">Estimate your savings</a></p>
+</div></div>
+
+<section class="final"><div class="wrap">
+  <h2>See it on your own numbers.</h2>
+  <p>A read-only, metadata-only pilot maps your real AI spend to the work, back-tests a forecast, and
+    shows what a dashboard can't — what each feature actually cost.</p>
+  <div class="center">
+    <a class="btn onnavy lg" href="https://app.outlay-ai.com/pilot-request">Become a customer →</a>
+  </div>
+</div></section>
+
+</main>
+
+<footer><div class="wrap">
+  <a class="brand" href="/" style="text-decoration:none">Outlay<span class="dot">.ai</span></a>
+  <span class="sep"></span>
+  <a href="/pilot">Book a pilot</a>
+  <a href="/tour">Product Tour</a>
+  <a href="/compare">Compare</a>
+  <a href="/pricing">Pricing</a>
+  <a href="/security">Security</a>
+  <a href="mailto:hello@outlay-ai.com">Contact</a>
+</div>
+<div class="wrap" style="margin-top:14px;font-size:12.5px;color:#6c7790">© 2026 Outlay · See AI spend mapped to your work, forecast it, and hold it to budget.</div>
+</footer>
+
+<script>
+(function(){var t=document.getElementById('nav-t'),h=document.querySelector('.hamburger'),m=document.getElementById('nav-menu');if(!t||!h)return;function sync(){var o=t.checked;h.setAttribute('aria-expanded',o?'true':'false');h.setAttribute('aria-label',o?'Close menu':'Open menu');}t.addEventListener('change',sync);h.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();t.checked=!t.checked;sync();}});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&t.checked){t.checked=false;sync();}});if(m)m.addEventListener('click',function(e){if(e.target.closest('a')){t.checked=false;sync();}});})();
+</script>
+</body></html>
