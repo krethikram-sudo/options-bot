@@ -897,29 +897,6 @@ def _coverage_diag(report: dict) -> str:
             f'<ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.6">{recs}</ul>{headroom}</div>')
 
 
-def _persona_card(value: str, title: str, desc: str) -> str:
-    return (f'<form method=post action="/app/persona" style="margin:0">'
-            f'<input type=hidden name=persona value="{value}">'
-            f'<button class=bcard style="width:100%;text-align:left;cursor:pointer">'
-            f'<b style="font-size:15px;color:var(--ink)">{_e(title)}</b>'
-            f'<div class=muted style="font-size:13px;margin-top:6px;line-height:1.5">{_e(desc)}</div>'
-            f'<div style="margin-top:12px;color:var(--grn-d);font-weight:600;font-size:13px">Use this view →</div>'
-            f'</button></form>')
-
-
-def _persona_switch(persona: str) -> str:
-    """Small affordance to flip between the business and engineering views."""
-    if persona not in ("business", "eng"):
-        return ""
-    cur = "Business" if persona == "business" else "Engineering"
-    other, label = ("eng", "Engineering") if persona == "business" else ("business", "Business")
-    return (f'<div class=syncline style="margin:-4px 0 16px">Viewing as <b>{cur}</b> · '
-            f'<form method=post action="/app/persona" style="display:inline;margin:0">'
-            f'<input type=hidden name=persona value="{other}">'
-            f'<button class="btn sec sm" style="padding:2px 9px;font-size:12px">Switch to {label} view</button>'
-            f'</form></div>')
-
-
 def _demo_banner(account: dict) -> str:
     """Global demo-mode strip. ON → persona toggle + guide + exit. For a gated demo
     account NOT in demo mode → a single 'Enter demo mode' affordance. Hidden for
@@ -981,27 +958,11 @@ def demo_guide_page(account: dict) -> str:
     return page("Demo guide", body, account, active="/app/outlay")
 
 
-def _persona_chooser() -> str:
-    """First-run fallback: let a person pick the experience tailored to their role.
-    Owners are routed to the full-screen /app/welcome gate; this stays as a safety
-    net for a member who somehow has no persona yet."""
-    return (
-        '<div class=ocard style="margin-bottom:18px">'
-        '<div class=dh>How will you use Outlay? '
-        '<span class=sub>Pick the view that fits your role — you can switch anytime in Settings.</span></div>'
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class=cols-2>'
-        + _persona_card("business", "Business / FinOps",
-                        "Total AI spend, the quarter forecast vs budget, spend by team and project, "
-                        "and alerts before you overspend.")
-        + _persona_card("eng", "Engineering leader",
-                        "Spend by epic, sprint, and engineer, anomaly flags on runaway tickets, and "
-                        "estimates for planned work before you build it.")
-        + '</div></div>')
-
-
 def _role_gate(next_to: str = "welcome") -> str:
-    """The first-run role question — two side-by-side tiles. The owner identifies
-    themselves; their pick sets the persona (business/eng) and unlocks the product."""
+    """The first-run question. Everyone gets the same unified dashboard — this only
+    sets who connects the data (the setup path): 'eng' gets the connect/Sources
+    setup surfaces; 'business' gets the attributed dashboard once a counterpart
+    wires up the sources."""
     def tile(value: str, title: str, blurb: str) -> str:
         return (f'<form method=post action="/app/persona" style="margin:0;display:flex">'
                 f'<input type=hidden name=persona value="{value}">'
@@ -1013,13 +974,15 @@ def _role_gate(next_to: str = "welcome") -> str:
                 f'<div style="margin-top:16px;color:var(--grn-d);font-weight:600;font-size:13px">Continue →</div>'
                 f'</button></form>')
     tiles = (
-        tile("business", "I’m a business leader running this for my company",
-             "You’ll lead with total AI spend, the quarter forecast vs budget, allocation to teams and "
-             "cost centers, and guardrails that flag before you overspend.")
-        + tile("eng", "I’m an engineering leader using this for my company",
-               "You’ll lead with spend by ticket, epic and engineer, runaway-ticket flags, and estimates "
-               "for planned work before you build it."))
-    return f'<div class=cols-2 style="display:grid;gap:16px">{tiles}</div>'
+        tile("eng", "I’ll connect our data",
+             "You’ll wire up your work tracker and AI usage (read-only, a few minutes). Outlay then "
+             "attributes every dollar to the work, and your whole team sees the same dashboard.")
+        + tile("business", "Someone else connects our data",
+               "Your engineering counterpart wires up the sources. You’ll get the attributed spend, "
+               "the forecast vs budget, and the guardrails — with no setup on your side."))
+    return ('<p class=muted style="font-size:13.5px;margin:0 0 14px">This just sets who connects the '
+            'data — everyone sees the same dashboard.</p>'
+            f'<div class=cols-2 style="display:grid;gap:16px">{tiles}</div>')
 
 
 def _org_upload_form(next_to: str = "", kind: str = "title") -> str:
@@ -1141,8 +1104,6 @@ def _org_directory(account: dict, members: list[dict], next_to: str = "") -> str
             f'style="display:flex;justify-content:space-between;align-items:center;gap:10px">'
             f'<span>Your org <span class=sub>{count} {"person" if count == 1 else "people"}</span></span>'
             f'{invite_all}</div><div class=pgrid>{tiles}</div></div>')
-
-
 
 
 def welcome_page(account: dict, conn: dict | None, idmap: str = "",
@@ -1721,30 +1682,6 @@ def _fidelity_callout(report: dict, persona: str = "") -> str:
         '</div>')
 
 
-def _explore_card(persona: str) -> str:
-    """Overview's hub: short, role-ordered jump-offs into the deeper product areas."""
-    dest = {
-        "spend": ("/app/outlay", "Spend attribution",
-                  "Where every dollar went — by ticket, work type, team, and engineer."),
-        "accuracy": ("/app/outlay/accuracy", "Forecast accuracy",
-                     "How close the forecast lands on your own closed tickets."),
-        "budgets": ("/app/outlay/budgets", "Budgets & guardrails",
-                    "Set limits by scope and get warned before you overspend."),
-        "estimate": ("/app/outlay/estimate", "Estimate planned work",
-                     "Price a backlog before you build it, from your learned cost model."),
-        "programs": ("/app/outlay/programs", "Program budgets",
-                     "Budget a program across teams and enforce a hard cap."),
-    }
-    order = (["spend", "budgets", "programs", "accuracy"] if persona == "business"
-             else ["spend", "estimate", "accuracy", "budgets"])
-    rows = ""
-    for key in order:
-        href, title, desc = dest[key]
-        rows += (f'<a class=exrow href="{href}"><span class=nm>{_e(title)}</span>'
-                 f'<span class=exd>{_e(desc)}</span><span class=exarr>→</span></a>')
-    return f'<div class=ocard><div class=dh>Explore</div>{rows}</div>'
-
-
 def _finance_waiting(account: dict) -> str:
     """The business empty-state. Business never connects anything — engineering does
     all the setup. So instead of a 'Connect your sources' CTA, business sees a calm
@@ -1964,38 +1901,6 @@ def _eng_attention(report: dict | None, conn: dict | None, history: list[dict] |
             f'<div class=dh style="display:flex;align-items:center;gap:8px">Needs your attention '
             f'<span class="otag {"over" if n_fix else "warn"}">{headline}</span></div>'
             f'<div class=fa-list>{rows}</div></div>')
-
-
-def _eng_project_card(program_statuses: list[dict] | None) -> str:
-    """Engineering 'project burn' card — each program/initiative's timeline status and
-    when it's set to breach, so eng can optimize *before* it does. Drills to the full
-    month-by-month projection on the Budgets page."""
-    progs = program_statuses or []
-    if not progs:
-        return ('<div class=ocard><div class=dh>Project burn<a class=sub href="/app/outlay/budgets">set up →</a></div>'
-                '<p class=muted style="margin:0;font-size:13px">Track a project\'s compute over its timeline — '
-                '<a href="/app/outlay/budgets">define a program</a> with start/end dates.</p></div>')
-    rows = ""
-    for s in progs[:5]:
-        st = s.get("status", "ok")
-        col = {"ok": "var(--grn-d)", "warn": "var(--amber)", "over": "var(--red)"}.get(st)
-        tl = s.get("timeline") or {}
-        pc = s.get("pacing") or {}
-        days = tl.get("days_left")
-        # prefer the date-precise pacing read; fall back to the month-bucket timeline
-        if pc.get("ready") and pc.get("projected_breach_date") and pc["projected_breach_date"] != "now":
-            when = f'exceeds budget {_e(pc["projected_breach_date"])}'
-        elif tl.get("breach_month"):
-            when = f'breach {_e(tl["breach_month"])}'
-        elif pc.get("ready") and pc.get("pace") == "over_pace":
-            when = f'{abs(pc.get("variance_pct",0))*100:.0f}% over plan'
-        else:
-            when = (f'{days}d left' if days is not None else "on track")
-        rows += (f'<div class=erow><a class=nm href="/app/outlay/budgets">{_e(s.get("name"))} '
-                 f'<small style="color:{col}">· {st} · {when}</small> <span class=drill>→</span></a>'
-                 f'<span class=amt>{money(s.get("spent_usd",0))}<small class=muted> / {money(s.get("limit_usd",0))}</small></span></div>')
-    return (f'<div class=ocard><div class=dh>Project burn'
-            f'<a class=sub href="/app/outlay/budgets">timelines →</a></div>{rows}</div>')
 
 
 HOME_GROUPINGS = {
@@ -3357,7 +3262,6 @@ def _quarter_label(ts: float | None = None) -> str:
     from datetime import datetime, timezone
     d = datetime.fromtimestamp(ts, timezone.utc) if ts else datetime.now(timezone.utc)
     return f"Q{(d.month - 1) // 3 + 1} {d.year}"
-
 
 
 def pilot_request_page(error: str = "", values: dict | None = None) -> str:
