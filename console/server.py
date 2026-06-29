@@ -165,12 +165,18 @@ _rate_state: dict = {}
 _rate_lock = _threading.Lock()
 
 
+def _rate_now() -> float:
+    """The limiter's clock — a seam so tests can pin time and not flake when a
+    fixed-window boundary happens to roll over mid-test."""
+    import time
+    return time.time()
+
+
 def _rate_ok(key_id, now: float | None = None) -> tuple[bool, int]:
     """Fixed-window counter for one API key. Returns (allowed, retry_after_secs)."""
     if _API_RATE_LIMIT <= 0:
         return True, 0
-    import time
-    now = now or time.time()
+    now = _rate_now() if now is None else now
     win = int(now // _API_RATE_WINDOW)
     with _rate_lock:
         slot = _rate_state.get(key_id)
