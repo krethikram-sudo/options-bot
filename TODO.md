@@ -15,6 +15,21 @@ Live URLs:
 > enforcement); routing/ModelPilot engine is parked. The full product is built and the marketing site +
 > console are on the brand domains.
 >
+> **Newest (2026-06-29 — PRs #283–289, merged): PRODUCT-UX CONSOLIDATION + PERSONA UNIFICATION.**
+> (a) Consolidation (#283–286): analyze nav 8→**3** (Spend · Governance · Commitments); Spend page from
+> ~17 stacked elements → **hero → one trust panel → KPIs → one tabbed breakdown panel** (three trust
+> strips collapsed into `_trust_panel`; four breakdown cards → one `_spend_dim_panel` with a CSS-only
+> lens toggle). (b) **Persona unification (#287–289):** collapsed the business/eng split into **one
+> adaptive view** — unified `_kpis_row`, the Spend view, and the Overview (`overview_page` three layouts
+> → one; lens/customize/saved-views now for everyone); removed the in-app persona toggle, the persona
+> chooser, and the demo-bar Business/Eng toggle. **Kept** the one functional role difference: business
+> sees the "data on its way / invite engineering" empty state + no Sources nav; engineering sees the
+> connect setup surfaces. The first-run role choice is retained but now drives only that setup path, not
+> two dashboards. Full suite green (432). **Not yet deployed** — needs `make deploy` (console) +
+> Cloudflare Pages (marketing). **Optional next:** reframe the first-run role question (it still says
+> "business vs eng" though it only picks the setup path now); dead-code sweep of now-unused persona
+> helpers (`_persona_switch`, `_persona_chooser`).
+>
 > **Newest (2026-06-29 — PRs #283–285, merged): PRODUCT-UX CONSOLIDATION.** Simplified the console UX
 > (prompted by the Weave UX comparison). **(1)** Analyze nav unified from up to 8 persona-split
 > destinations → **3 for everyone: Spend · Governance · Commitments** (Accuracy/Estimate are linked from
