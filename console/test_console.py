@@ -654,9 +654,11 @@ def test_spend_page_hero_and_trust(env, client):
     }
     hero = web._hero_unit_cost(report)
     assert "cost per shipped unit of work" in hero and "$30" in hero  # (40+20)/2
-    trust = web._trust_strip(report)
+    # One consolidated trust panel (verdict + measured facts + collapsible checks).
+    trust = web._trust_panel(report, {})
     assert "Measured, not asserted" in trust
-    assert "Forecast within" in trust and "ticket-level confidence" in trust
+    assert "Forecast within" in trust and "ticket-level fidelity" in trust
+    assert "Data quality:" in trust and "Data-quality checks" in trust
 
 
 def test_commitment_page_shows_opportunities(env, client):
@@ -2351,7 +2353,7 @@ def test_data_quality_api_and_badge(env, client):
     spend = client.get("/api/v1/spend", headers={"Authorization": f"Bearer {key}"}).json()
     assert "data_quality" in spend and spend["data_quality"]["score"] in ("good", "fair", "poor")
     # ...and the Spend page shows the at-a-glance confidence badge
-    assert "Data confidence:" in client.get("/app/outlay").text
+    assert "Data quality:" in client.get("/app/outlay").text   # rolled into the consolidated trust panel
     # API page documents the endpoint
     assert "GET /api/v1/data-quality" in client.get("/app/api").text
 
