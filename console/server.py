@@ -1610,7 +1610,10 @@ def app_outlay_governance(request: Request):
                                            store.program_histories(acct["id"])) if report else []
     projects = outlay_app.project_spend(report) if report else []
     worktype = outlay_app.worktype_view(report, store.get_work_key_classes(acct["id"])) if report else None
-    return _html(web.governance_page(acct, report, budgets, programs, projects, worktype))
+    teams = [t.get("team") for t in (report.get("team_spend") or [])
+             if t.get("team") and t.get("team") != "(unassigned)"] if report else []
+    enforce = store.get_work_enforce(acct["id"])
+    return _html(web.governance_page(acct, report, budgets, programs, projects, worktype, teams, enforce))
 
 
 @app.post("/app/outlay/worktype/key-class")
@@ -1621,6 +1624,23 @@ async def app_outlay_worktype_key_class(request: Request):
         return redir
     form = await _form(request)
     store.set_work_key_class(acct["id"], form.get("key") or "", (form.get("cls") or "").strip())
+    return _redirect("/app/outlay/governance")
+
+
+@app.post("/app/outlay/worktype/enforce")
+async def app_outlay_worktype_enforce(request: Request):
+    """Set a team's opt-in block policy (block non-work and/or unknown). In-path
+    enforcement runs in the customer's own gateway — this just records the rule."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    form = await _form(request)
+    store.set_work_enforce(acct["id"], form.get("team") or "",
+                           block_non_work=(form.get("block_non_work") == "1"),
+                           block_unknown=(form.get("block_unknown") == "1"))
+    _audit(acct["id"], "worktype.enforce", actor=acct.get("display_email", ""),
+           detail=f'team={form.get("team")} non_work={form.get("block_non_work") == "1"} '
+                  f'unknown={form.get("block_unknown") == "1"}')
     return _redirect("/app/outlay/governance")
 
 
@@ -1853,24 +1873,33 @@ def api_v1_data_quality(request: Request):
 
 
 @app.get("/api/v1/enforcement")
-def api_v1_enforcement(request: Request, ticket: str = "", team: str = "", work_type: str = ""):
-    """The hard-cap enforcement decision the opt-in gateway consults. Token-authed.
+def api_v1_enforcement(request: Request, ticket: str = "", team: str = "", work_type: str = "",
+                       api_key: str = "", work_label: str = ""):
+    """The enforcement decision the opt-in gateway consults. Token-authed.
 
-    Returns the programs currently over their *hard* cap (`enforced`) so the in-path
-    client can cache this and match each call's attribution tags to a member scope
-    locally. As a convenience it also resolves a single call when `ticket` / `team` /
-    `work_type` are supplied → `{decision: allow|block|downgrade, floor_model, …}`.
-    Read-only: Outlay returns the verdict; the gateway acts on the traffic."""
+    Returns the programs currently over their *hard* cap (`enforced`) and the
+    per-team **work/non-work** block config (`work_enforce`) so the in-path client
+    can cache both and decide locally. As a convenience it resolves a single call:
+    program `decision` when `ticket`/`team`/`work_type` are given, and a
+    work-relatedness `work_decision` when `team` (+ optional `api_key`/`work_label`)
+    is given. Read-only: Outlay returns the verdict; the gateway acts on the traffic."""
     resolved, err = _api_auth(request)
     if err:
         return err
-    report = store.get_outlay_report(resolved["account_id"])
-    programs = store.list_outlay_programs(resolved["account_id"])
+    aid = resolved["account_id"]
+    report = store.get_outlay_report(aid)
+    programs = store.list_outlay_programs(aid)
     enforced = outlay_app.enforced_programs(report or {}, programs)
     decision = (outlay_app.program_decision(enforced, ticket_id=ticket, team=team, task_class=work_type)
                 if (ticket or team or work_type) else None)
-    return JSONResponse({"account_id": resolved["account_id"], "enforced": enforced,
-                         "decision": decision})
+    key_classes = store.get_work_key_classes(aid)
+    teams_enforce = store.get_work_enforce(aid)
+    work_decision = (outlay_app.worktype_decision(
+        key_classes, teams_enforce.get(team), api_key_id=api_key or None,
+        work_label=work_label or None) if team else None)
+    return JSONResponse({"account_id": aid, "enforced": enforced, "decision": decision,
+                         "work_enforce": {"key_classes": key_classes, "teams": teams_enforce},
+                         "work_decision": work_decision})
 
 
 @app.post("/api/v1/enforcement/report")

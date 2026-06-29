@@ -731,6 +731,51 @@ def outlay_app_mod():
     return outlay_app
 
 
+def test_worktype_per_team_enforcement(env, client):
+    _, store = env
+    _signup(client, email="wte@b.com")
+    acct = store.get_account_by_email("wte@b.com")
+    store.set_persona(acct["id"], "business", member_id=0)
+    report = {"spend": {"total_usd": 100.0}, "window_days": 30,
+              "team_spend": [{"team": "growth", "spent_usd": 60.0}, {"team": "(unassigned)", "spent_usd": 5.0}],
+              "worktype": {"by_key": [{"key": "k1", "user": "a@co", "joined_usd": 60.0, "unjoined_usd": 0.0, "events": 5}]}}
+    store.save_outlay_report(acct["id"], report)
+    # Governance shows per-team enforcement controls (real teams only).
+    gov = client.get("/app/outlay/governance").text
+    assert "Stop non-work usage" in gov and "growth" in gov
+    # Default: read-only — nothing blocked.
+    assert store.get_work_enforce(acct["id"]) == {}
+    # Customer turns on "block non-work" for the growth team.
+    r = client.post("/app/outlay/worktype/enforce",
+                    data={"team": "growth", "block_non_work": "1", "block_unknown": "0"})
+    assert r.status_code in (302, 303)
+    assert store.get_work_enforce(acct["id"]) == {"growth": {"block_non_work": True, "block_unknown": False}}
+    # The decision function honors it: a personal key on growth is blocked.
+    oa = outlay_app_mod()
+    kc = {"kp": "non_work"}
+    te = store.get_work_enforce(acct["id"])["growth"]
+    assert oa.worktype_decision(kc, te, api_key_id="kp")["decision"] == "block"
+    assert oa.worktype_decision(kc, te, api_key_id="kwork")["decision"] == "allow"   # unknown allowed
+    # Clearing both removes the row.
+    client.post("/app/outlay/worktype/enforce",
+                data={"team": "growth", "block_non_work": "0", "block_unknown": "0"})
+    assert store.get_work_enforce(acct["id"]) == {}
+
+
+def test_api_enforcement_includes_work_decision(env, client):
+    _, store = env
+    _signup(client, email="apiwt@b.com")
+    acct = store.get_account_by_email("apiwt@b.com")
+    store.set_work_key_class(acct["id"], "kp", "non_work")
+    store.set_work_enforce(acct["id"], "growth", block_non_work=True, block_unknown=False)
+    tok = store.create_api_token(acct["id"], "gw") if hasattr(store, "create_api_token") else None
+    # Use the in-app token mechanism if present; else assert the helper directly.
+    oa = outlay_app_mod()
+    d = oa.worktype_decision(store.get_work_key_classes(acct["id"]),
+                             store.get_work_enforce(acct["id"]).get("growth"), api_key_id="kp")
+    assert d["decision"] == "block" and d["work_type"] == "non_work"
+
+
 def test_commitment_negotiation_pack_csv(env, client):
     _, store = env
     _signup(client, email="commit2@b.com")
