@@ -1254,37 +1254,63 @@ def _hero_unit_cost(report: dict) -> str:
         f'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">{chips}</div></div>')
 
 
-def _trust_strip(report: dict) -> str:
-    """Validation as a headline (not a footnote) — the trust unlock, surfaced.
-
-    Two credibility facts side by side: the forecast's *measured* error (back-tested
-    leave-one-out on the customer's own closed work) and the share of attributed
-    spend joined at ticket-level (high) fidelity. This is the Weave move — lead with
-    the validation number — applied to our honesty primitives."""
+def _trust_panel(report: dict, conn: dict | None = None) -> str:
+    """ONE consolidated trust/data-quality panel — replaces the four strips that used
+    to stack on Spend (data-quality badge + "measured, not asserted" strip +
+    reconciliation strip + coverage diagnostic). No information lost: the headline
+    measured facts lead, a Good/Fair/Poor verdict chip rolls it up, and the detailed
+    checks (coverage, reconciliation, pricing fidelity, sync) collapse under a
+    disclosure. The Weave move — lead with the validation — minus the clutter."""
     sp = report.get("spend", {}) or {}
+    if not sp.get("total_usd", 0):
+        return ""
     cal = report.get("calibration") or {}
     bf = sp.get("by_fidelity_usd", {}) or {}
     attributed = sp.get("attributed_to_ticket_usd", 0.0) or 0.0
+
     facts = []
     if cal.get("n_evaluated", 0) > 0:
         facts.append(
-            f'<b>Forecast within ~{cal.get("mdape", 0) * 100:.0f}%</b> of actual on your closed '
-            f'tickets <span class=muted>(leave-one-out back-test, n={cal.get("n_evaluated")})</span>')
+            f'<b>Forecast within ~{cal.get("mdape", 0) * 100:.0f}%</b> of actual '
+            f'<span class=muted>(back-test, n={cal.get("n_evaluated")})</span>')
     high = (bf.get("call", 0.0) or 0.0) + (bf.get("branch", 0.0) or 0.0) + (bf.get("session", 0.0) or 0.0)
     if attributed > 0:
-        facts.append(
-            f'<b>{high / attributed * 100:.0f}% of attributed spend</b> joined at ticket-level '
-            f'confidence <span class=muted>(every $ carries its fidelity)</span>')
-    if not facts:
+        facts.append(f'<b>{high / attributed * 100:.0f}%</b> joined at ticket-level fidelity')
+
+    # Rolled-up verdict + the per-signal checks (coverage / reconciliation / pricing / sync).
+    from . import outlay_app  # lazy: outlay_app never imports web
+    dq = outlay_app.data_quality(report, conn or {})
+    vmap = {"good": ("Good", "var(--grn-d)", "var(--grn-l)"),
+            "fair": ("Fair", "var(--amber)", "var(--amber-l)"),
+            "poor": ("Poor", "var(--red)", "var(--red-l)")}
+    chip = ""
+    if dq.get("score") in vmap:
+        lab, col, bg = vmap[dq["score"]]
+        chip = (f'<span style="font-size:11.5px;font-weight:700;color:{col};background:{bg};'
+                f'border-radius:999px;padding:3px 10px">Data quality: {lab}</span>')
+    rows = ""
+    for c in dq.get("checks", []):
+        st = c.get("status", "na")
+        if st == "na":
+            continue
+        dot = {"good": "var(--grn-d)", "fair": "var(--amber)", "poor": "var(--red)"}.get(st, "var(--mut)")
+        rows += (f'<li style="margin:4px 0"><span style="color:{dot}">●</span> '
+                 f'<b>{_e(c.get("label",""))}</b> — <span class=muted>{_e(c.get("detail",""))}</span></li>')
+    details = (f'<details style="margin-top:10px"><summary class=muted '
+               f'style="font-size:12.5px;cursor:pointer">Data-quality checks</summary>'
+               f'<ul style="list-style:none;padding:8px 0 0;font-size:13px">{rows}</ul></details>') if rows else ""
+
+    if not facts and not chip:
         return ""
-    items = ' &nbsp;·&nbsp; '.join(facts)
+    items = ' &nbsp;·&nbsp; '.join(facts) or '<span class=muted>Coverage, reconciliation and pricing checks below.</span>'
     return (
-        '<div class=ocard style="border-color:#bfe3d4;margin-bottom:14px;'
-        'display:flex;align-items:center;gap:12px;flex-wrap:wrap">'
+        '<div class=ocard style="border-color:#bfe3d4;margin-bottom:14px">'
+        '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">'
         '<span style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;'
         'color:var(--grn-d)">✓ Measured, not asserted</span>'
-        f'<span style="font-size:13.5px;color:var(--body)">{items}</span>'
-        '<a class=sub href="/app/outlay/accuracy" style="margin-left:auto">How we measure →</a></div>')
+        f'{chip}<a class=sub href="/app/outlay/accuracy" style="margin-left:auto">How we measure →</a></div>'
+        f'<div style="font-size:13.5px;color:var(--body);margin-top:8px">{items}</div>'
+        f'{details}</div>')
 
 
 def _kpis_row(report: dict, history: list[dict] | None, persona: str) -> str:
@@ -2459,15 +2485,19 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
                   '<a href="/app/outlay/export.csv?view=classes">work types</a>'
                   '<a href="/app/outlay/export.csv?view=people">engineers</a></div>')
 
-    # The coverage diagnostic tells you to connect PRs / map teams — an engineering
-    # setup action. Business doesn't do setup, so it's hidden for that persona.
+    # The coverage diagnostic is a conditional, actionable nudge — it appears only
+    # when ticket coverage is low (with the cheapest fix), so it's an alert, not
+    # always-on clutter. Kept for engineering.
     cov_diag = "" if persona == "business" else _coverage_diag(report)
     cov_diag = f'<div style="margin:16px 0">{cov_diag}</div>' if cov_diag else ""
 
+    # One consolidated trust panel (verdict + measured facts + collapsible
+    # reconciliation/pricing/sync checks) replaces the THREE always-on trust strips
+    # that used to stack here: the data-quality badge, the measured-not-asserted
+    # strip, and the reconciliation strip.
     body = (chooser + ohead + _persona_switch(persona) + _staleness_banner(report, conn)
-            + _sample_strip(report, account) + checklist
-            + _budget_strip(statuses) + _data_quality_badge(report, conn)
-            + _hero_unit_cost(report) + _trust_strip(report) + kpis + _recon_strip(report) + _pricing_warn(report)
+            + _sample_strip(report, account) + checklist + _budget_strip(statuses)
+            + _hero_unit_cost(report) + _trust_panel(report, conn) + kpis + _pricing_warn(report)
             + cov_diag + _sync_line(report, conn) + olinks + grid)
     return page("Spend", body, account, active="/app/outlay")
 
