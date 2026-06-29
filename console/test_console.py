@@ -643,6 +643,22 @@ def test_commitment_page_recommends_with_history(env, client):
     assert "/app/outlay/commitment" in r.text
 
 
+def test_spend_page_hero_and_trust(env, client):
+    from console import web
+    report = {
+        "spend": {"total_usd": 100.0, "attributed_to_ticket_usd": 90.0, "ticket_coverage": 0.9,
+                  "by_fidelity_usd": {"call": 50.0, "branch": 20.0, "session": 5.0, "team": 10.0, "invoice": 5.0}},
+        "calibration": {"n_evaluated": 6, "mdape": 0.18},
+        "tickets": [{"ticket_id": "GH-1", "task_class": "feature", "status": "done", "cost_usd": 40.0},
+                    {"ticket_id": "GH-2", "task_class": "bugfix", "status": "done", "cost_usd": 20.0}],
+    }
+    hero = web._hero_unit_cost(report)
+    assert "cost per shipped unit of work" in hero and "$30" in hero  # (40+20)/2
+    trust = web._trust_strip(report)
+    assert "Measured, not asserted" in trust
+    assert "Forecast within" in trust and "ticket-level confidence" in trust
+
+
 def test_commitment_page_shows_opportunities(env, client):
     _, store = env
     _signup(client, email="commit3@b.com")

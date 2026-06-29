@@ -1258,6 +1258,39 @@ def _hero_unit_cost(report: dict) -> str:
         f'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">{chips}</div></div>')
 
 
+def _trust_strip(report: dict) -> str:
+    """Validation as a headline (not a footnote) — the trust unlock, surfaced.
+
+    Two credibility facts side by side: the forecast's *measured* error (back-tested
+    leave-one-out on the customer's own closed work) and the share of attributed
+    spend joined at ticket-level (high) fidelity. This is the Weave move — lead with
+    the validation number — applied to our honesty primitives."""
+    sp = report.get("spend", {}) or {}
+    cal = report.get("calibration") or {}
+    bf = sp.get("by_fidelity_usd", {}) or {}
+    attributed = sp.get("attributed_to_ticket_usd", 0.0) or 0.0
+    facts = []
+    if cal.get("n_evaluated", 0) > 0:
+        facts.append(
+            f'<b>Forecast within ~{cal.get("mdape", 0) * 100:.0f}%</b> of actual on your closed '
+            f'tickets <span class=muted>(leave-one-out back-test, n={cal.get("n_evaluated")})</span>')
+    high = (bf.get("call", 0.0) or 0.0) + (bf.get("branch", 0.0) or 0.0) + (bf.get("session", 0.0) or 0.0)
+    if attributed > 0:
+        facts.append(
+            f'<b>{high / attributed * 100:.0f}% of attributed spend</b> joined at ticket-level '
+            f'confidence <span class=muted>(every $ carries its fidelity)</span>')
+    if not facts:
+        return ""
+    items = ' &nbsp;·&nbsp; '.join(facts)
+    return (
+        '<div class=ocard style="border-color:#bfe3d4;margin-bottom:14px;'
+        'display:flex;align-items:center;gap:12px;flex-wrap:wrap">'
+        '<span style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;'
+        'color:var(--grn-d)">✓ Measured, not asserted</span>'
+        f'<span style="font-size:13.5px;color:var(--body)">{items}</span>'
+        '<a class=sub href="/app/outlay/accuracy" style="margin-left:auto">How we measure →</a></div>')
+
+
 def _kpis_row(report: dict, history: list[dict] | None, persona: str) -> str:
     """The four headline KPIs — shared by Overview and Spend. The *set* is
     role-aware, not just the order: business leads with money + allocation
@@ -2438,7 +2471,7 @@ def outlay_page(account: dict, report: dict | None, statuses: list[dict] | None 
     body = (chooser + ohead + _persona_switch(persona) + _staleness_banner(report, conn)
             + _sample_strip(report, account) + checklist
             + _budget_strip(statuses) + _data_quality_badge(report, conn)
-            + _hero_unit_cost(report) + kpis + _recon_strip(report) + _pricing_warn(report)
+            + _hero_unit_cost(report) + _trust_strip(report) + kpis + _recon_strip(report) + _pricing_warn(report)
             + cov_diag + _sync_line(report, conn) + olinks + grid)
     return page("Spend", body, account, active="/app/outlay")
 
