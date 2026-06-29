@@ -15,6 +15,18 @@ Live URLs:
 > enforcement); routing/ModelPilot engine is parked. The full product is built and the marketing site +
 > console are on the brand domains.
 >
+> **Newest (2026-06-29 — PRs #277–281, merged): WEAVE (workweave.dev) PRODUCT/UX LEARNINGS implemented.**
+> After researching Weave (YC W25 eng-analytics co — same data substrate, opposite metric: their
+> *output* vs our *cost*), shipped 6 of 7 learnings (`docs/weave-product-ux-learnings.md`):
+> **(1)** Outlay **MCP server** `outlay/mcp_server.py` (#277) — stdlib stdio JSON-RPC, read-only; tools:
+> spend_overview/cost_drilldown/cost_per_unit/forecast/recommendations/commitment_recommendation;
+> connect from Claude/Cursor (`docs/mcp-server.md`). This also delivers **"ask your spend"** (any MCP
+> client queries Outlay in NL). **(2)** Hero metric **cost per shipped unit of work** `outlay/units.py`
+> + Spend hero band (#278). **(3)** **"Measured, not asserted"** trust strip surfacing the back-test +
+> fidelity (#279). **(4)** Drillable hero chips → scope pages (#281). **(5)** Public deep comparison page
+> `/vs-cost-dashboards` (#280, reusable template). **Remaining learning #7** — time-to-value onboarding
+> ("first attributed dollar <24h") — flagged as a larger onboarding-flow + telemetry follow-up.
+>
 > **Latest shipped (2026-06-27 — all merged to `main`, PRs #255–262): the COMMITMENT &
 > PROCUREMENT OPTIMIZATION feature, end-to-end, + a GTM kit.** (1) Spec `docs/spec-commitment-optimization.md`
 > + board/investor strategy deck `docs/outlay-strategy-deck.pptx` (#255). (2) Engine `outlay/commitment.py`
