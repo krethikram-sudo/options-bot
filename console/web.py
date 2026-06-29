@@ -450,22 +450,14 @@ def _sidenav(account: dict, active: str) -> str:
     is_admin = account.get("team_role") in ("owner", "admin")
 
     spend = ("/app/outlay", "Spend")
-    accuracy = ("/app/outlay/accuracy", "Accuracy")
-    budgets = ("/app/outlay/budgets", "Budgets")
-    estimate = ("/app/outlay/estimate", "Estimate")
-    programs = ("/app/outlay/programs", "Programs")
     governance = ("/app/outlay/governance", "Governance")
     commitments = ("/app/outlay/commitment", "Commitments")
-    if persona == "business":
-        # Consolidated business IA: the Overview (Home) is the consolidated default;
-        # Spend is the attribution detail; Governance merges budgets + programs;
-        # Commitments sizes how to *pay* for the spend.
-        analyze = [spend, governance, commitments]
-    elif persona == "eng":
-        # Ship efficiently: measure forecast accuracy + price the backlog.
-        analyze = [spend, accuracy, estimate, budgets]
-    else:
-        analyze = [spend, accuracy, budgets, estimate]
+    # Unified, consolidated analyze nav for every persona — three destinations:
+    #   Spend (attribution detail) · Governance (budgets + programs) · Commitments
+    #   (how to pay). Overview (Home) is the consolidated default landing.
+    # Accuracy, Estimate, and Budgets are reachable from the Spend page's links
+    # (and Budgets lives inside Governance), so they no longer need top-level slots.
+    analyze = [spend, governance, commitments]
 
     # Sources is the *setup* surface — connecting trackers + AI usage and the
     # machine API. That's engineering's job. Business consumes the spend after
