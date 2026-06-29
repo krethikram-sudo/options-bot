@@ -15,6 +15,18 @@ Live URLs:
 > enforcement); routing/ModelPilot engine is parked. The full product is built and the marketing site +
 > console are on the brand domains.
 >
+> **Newest (2026-06-29 — PRs #283–285, merged): PRODUCT-UX CONSOLIDATION.** Simplified the console UX
+> (prompted by the Weave UX comparison). **(1)** Analyze nav unified from up to 8 persona-split
+> destinations → **3 for everyone: Spend · Governance · Commitments** (Accuracy/Estimate are linked from
+> Spend; Budgets lives in Governance) (#283). **(2)** Spend page's three always-on trust strips
+> (data-quality badge + measured-not-asserted + reconciliation) → **one `_trust_panel`** with verdict
+> chip + measured facts + collapsible checks (#284). **(3)** Four stacked breakdown cards
+> (ticket/work-type/team/engineer) → **one `_spend_dim_panel`** with a CSS-only dimension toggle (#285).
+> Net: the Spend page went from ~17 stacked elements to **hero → one trust panel → KPIs → one breakdown
+> panel**. No information lost (folded into tabs/collapsibles). Full suite green (432). The persona split
+> (page content) was kept — collapsing it into one adaptive nav is the next option if wanted; Governance
+> /Commitments/Overview pages are the next consolidation candidates.
+>
 > **Newest (2026-06-29 — PRs #277–281, merged): WEAVE (workweave.dev) PRODUCT/UX LEARNINGS implemented.**
 > After researching Weave (YC W25 eng-analytics co — same data substrate, opposite metric: their
 > *output* vs our *cost*), shipped 6 of 7 learnings (`docs/weave-product-ux-learnings.md`):
