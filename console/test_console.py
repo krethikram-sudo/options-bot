@@ -2364,6 +2364,9 @@ def test_api_rate_limiting_per_key(env, client, monkeypatch):
     h = {"Authorization": f"Bearer {key}"}
 
     monkeypatch.setattr(server, "_API_RATE_LIMIT", 3)
+    # Pin the limiter's clock so the fixed window can't roll over mid-test (slow CI
+    # otherwise straddles a 60s boundary and the 4th request gets a fresh window).
+    monkeypatch.setattr(server, "_rate_now", lambda: 1_000_000.0)
     server._rate_state.clear()
     # first 3 within the window succeed
     for _ in range(3):
