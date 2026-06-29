@@ -4214,8 +4214,9 @@ def test_onboarding_owner_hits_role_gate_then_advances(env, client):
     assert r.status_code == 303 and r.headers["location"] == "/app/welcome"
     assert client.get("/app/outlay", follow_redirects=False).headers["location"] == "/app/welcome"
     w = client.get("/app/welcome").text
-    assert "I’m a business leader running this for my company" in w
-    assert "I’m an engineering leader using this for my company" in w
+    # the gate now frames the choice as the data-setup path (everyone gets one dashboard)
+    assert "I’ll connect our data" in w
+    assert "Someone else connects our data" in w
     # picking a role from the gate sets the persona and advances to onboarding step 2
     r = client.post("/app/persona", data={"persona": "business", "next": "welcome"},
                     follow_redirects=False)
