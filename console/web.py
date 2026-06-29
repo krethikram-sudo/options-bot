@@ -941,17 +941,12 @@ def _demo_banner(account: dict) -> str:
                 '<span class=sp></span>' + reset +
                 '<form method=post action="/app/demo/enter" style="margin:0">'
                 '<button class="btn sec sm">Enter demo mode →</button></form></div>')
-    persona = (account.get("persona") or "business").lower()
-
-    def pbtn(val: str, label: str) -> str:
-        sel = persona == val or (val == "business" and persona not in ("business", "eng"))
-        return (f'<form method=post action="/app/persona" style="display:inline;margin:0">'
-                f'<input type=hidden name=persona value="{val}">'
-                f'<button class="seg{" on" if sel else ""}" type=submit>{label}</button></form>')
+    # The Business/Engineering persona toggle is gone — the dashboard is now one
+    # unified adaptive view, so there are no separate "personas" to switch between
+    # in a demo.
     return ('<div class="demobar"><span class=dl>● Demo mode</span>'
             '<span class=dt>Sample data — for live demos.</span>'
             '<span class=sp></span>'
-            '<span class=segwrap>' + pbtn("business", "Business") + pbtn("eng", "Engineering") + '</span>'
             '<a class="btn sec sm" href="/app/demo/guide">Demo guide</a>'
             '<form method=post action="/app/demo/exit" style="margin:0">'
             '<button class="btn sec sm">Exit demo</button></form></div>')
