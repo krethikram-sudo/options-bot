@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Outlay — the control plane for AI compute spend</title>
-<meta name="description" content="Outlay attributes every dollar of LLM and coding-agent spend — across Anthropic, OpenAI, Cursor, AWS Bedrock, and Google Vertex — to the Jira/Linear/GitHub tickets, epics, and roadmap that drove it. Forecast by scope, then govern it: set a budget per program and enforce a hard cap that blocks or routes down over-budget work, reallocating compute to the programs that matter most. Reconcile to the invoice, export FOCUS-aligned data, SSO/SCIM, passkeys + MFA. Prompts never leave your environment.">
+<meta name="description" content="Outlay attributes every dollar of LLM and coding-agent spend — across Anthropic, OpenAI, Cursor, AWS Bedrock, and Google Vertex — to the Jira/Linear/GitHub tickets, epics, and roadmap that drove it. Forecast by scope, then govern it: set a budget per program and enforce a hard cap that blocks or routes down over-budget work, reallocating compute to the programs that matter most. Split spend into work vs non-work from metadata and stop non-work usage per team. Reconcile to the invoice, export FOCUS-aligned data, SSO/SCIM, passkeys + MFA. Prompts never leave your environment.">
 <link rel="canonical" href="https://outlay-ai.com/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -230,6 +230,36 @@ epic Q3-stability <span class="w">on pace $22k · over</span></code>
   </div>
 </div></section>
 
+<!-- WORK vs NON-WORK -->
+<section id="worktype"><div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">Work vs. non-work</div>
+    <h2>Know what's actually work — and stop what isn't.</h2>
+    <p>Some of your AI budget is delivering the roadmap. Some is side projects, experiments, and
+       personal use on the company key. Outlay separates the two <b>from metadata</b> — the same
+       attribution join, a per-key work registry, and an optional on-box prompt label — and lets you
+       <b>stop non-work usage, per team</b>. The prompt never leaves your environment to do it.</p>
+  </div>
+  <div class="proofgrid">
+    <div class="pcard">
+      <div class="ph"><span class="t">Compute by type · this month</span><span class="tag ex">metadata only</span></div>
+      <div class="pbody">
+        <div class="srow"><span class="nm">Work <small>joined to a ticket, epic, or a work-tagged key</small></span><span class="amt num">$72k</span><span class="track"><span style="width:87%;background:var(--grn)"></span></span></div>
+        <div class="srow"><span class="nm">Non-work <small>side-project / personal key · tagged by you</small></span><span class="amt num">$4k</span><span class="track"><span style="width:5%;background:var(--red)"></span></span></div>
+        <div class="srow"><span class="nm">Unknown <small>untracked — never guessed as non-work</small></span><span class="amt num">$7k</span><span class="track"><span style="width:8%;background:#9aa3b3"></span></span></div>
+        <p class="muted" style="font-size:12.5px;margin:14px 0 0">Illustrative. Growth is set to stop non-work
+          calls; the opt-in gateway enforces, and <b>work is never blocked</b>.</p>
+      </div>
+    </div>
+    <div class="statlist">
+      <div class="s"><div class="v">Metadata, not prompts</div><div class="d">The split runs on the attribution join and a work-key registry. An optional classifier can label a call work or non-work <b>on your own box</b> — only the one-word label leaves, never the prompt.</div></div>
+      <div class="s"><div class="v">Honest by default</div><div class="d">Spend with no work signal is <b>unknown</b>, never quietly counted as non-work. You decide whether unknown is treated as work or stopped.</div></div>
+      <div class="s"><div class="v">Stop it per team</div><div class="d">Choose what to block — <b>non-work, unknown, or both — per team</b>. Enforcement runs in the same opt-in gateway as program caps; work is never blocked.</div></div>
+      <div class="s"><div class="v">Read-only by default</div><div class="d">Tracking the split touches no traffic. Stopping non-work is an explicit opt-in, and the gateway <b>fails open</b> — it never blocks on our uptime.</div></div>
+    </div>
+  </div>
+</div></section>
+
 <!-- PLATFORM TEASER -->
 <section class="paper"><div class="wrap">
   <div class="sec-head">
@@ -353,6 +383,14 @@ epic Q3-stability <span class="w">on pace $22k · over</span></code>
         <b>blocked</b> or <b>routed down</b> to a cheaper model. That gateway is the one mode where we're in your
         path, it's entirely opt-in, and it <b>fails open</b> — a control-plane blip never blocks your traffic,
         only a budget you set being exceeded.</p></details>
+    <details><summary>Can you tell work from personal use — and stop personal use?</summary>
+      <p>Yes. Outlay splits spend into <b>work</b>, <b>non-work</b>, and <b>unknown</b> from metadata: the
+        attribution join (spend tied to a ticket/epic is work), a per-key registry you control (tag a
+        side-project or personal key as non-work), and an optional classifier that labels a call on
+        <b>your own box</b> — only the one-word label leaves, never the prompt. Spend with no signal stays
+        <b>unknown</b>, never guessed as non-work. To <b>stop</b> non-work, you pick what to block — non-work,
+        unknown, or both — <b>per team</b>, enforced by the same opt-in gateway as program caps. Work is
+        never blocked, and the gateway fails open. <a href="/#worktype">See how it works →</a></p></details>
     <details><summary>How accurate is the forecast?</summary>
       <p>We don't ask you to trust a vendor benchmark. Outlay back-tests its forecast on your <b>own</b>
         closed tickets, leave-one-out — hide a ticket, predict it from the rest, compare to what it actually
@@ -394,6 +432,7 @@ epic Q3-stability <span class="w">on pace $22k · over</span></code>
   <a href="/pilot">Design-partner pilot</a>
   <a href="#proof">Attribution</a>
   <a href="#govern">Govern</a>
+  <a href="#worktype">Work vs non-work</a>
   <a href="/platform">Platform</a>
   <a href="#compare">Compare</a>
   <a href="/tour">Product Tour</a>
