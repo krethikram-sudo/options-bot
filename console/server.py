@@ -1661,7 +1661,8 @@ def app_outlay_commitment(request: Request):
     view = outlay_app.commitment_view(report, history)
     opps = outlay_app.opportunities_view(report)
     pacing = outlay_app.commitment_pacing_rows(store.list_commitments(acct["id"]))
-    return _html(web.commitment_page(acct, view, opps, pacing))
+    planmix = outlay_app.planmix_view(report)
+    return _html(web.commitment_page(acct, view, opps, pacing, planmix))
 
 
 @app.post("/app/outlay/commitment/add")

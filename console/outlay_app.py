@@ -628,6 +628,49 @@ def program_spends(report: dict, programs: list[dict]) -> dict:
     return {p["id"]: round(program_spend(report, p), 4) for p in programs if p.get("id") is not None}
 
 
+def planmix_view(report: dict | None) -> dict | None:
+    """Procurement-mix read for the console (advisory): from per-employee attributed
+    spend, the cheapest split of flat-fee seat plans vs. API credits.
+
+    Per-person window spend is normalized to a month and run through the optimizer.
+    Returns None when there's no attributed per-person spend to optimize yet (so the
+    card only appears once attribution has resolved real people)."""
+    from outlay.planmix import optimize_mix
+
+    if not report:
+        return None
+    people = report.get("people") or []
+    window = float(report.get("window_days") or 30)
+    to_month = 30.0 / window if window else 1.0
+    monthly = [{"user": p.get("user"),
+                "usage_usd": float(p.get("spent_usd", 0.0) or 0.0) * to_month}
+               for p in people]
+    if not any(m["user"] and m["user"] != "(unattributed)" and m["usage_usd"] > 0 for m in monthly):
+        return None
+
+    res = optimize_mix(monthly)
+    return {
+        "status_quo_usd": res.status_quo_usd,
+        "optimized_usd": res.optimized_usd,
+        "total_savings_usd": res.total_savings_usd,
+        "savings_rate": res.savings_rate,
+        "n_on_plan": res.n_on_plan,
+        "n_on_api": res.n_on_api,
+        "seats_by_plan": res.seats_by_plan,
+        "savings_low_usd": res.savings_low_usd,
+        "savings_high_usd": res.savings_high_usd,
+        "capacity_sensitivity": res.capacity_sensitivity,
+        "unattributed_usd": res.unattributed_usd,
+        "note": res.note,
+        "people": [
+            {"user": r.user, "usage_usd": r.usage_usd, "mode": r.mode,
+             "plan_name": r.plan_name, "cost_usd": r.cost_usd,
+             "savings_usd": r.savings_usd, "saturated": r.saturated}
+            for r in res.people
+        ],
+    }
+
+
 def commitment_view(report: dict | None, history: list[dict] | None = None) -> dict | None:
     """Commitment & procurement optimization read for the console (advisory).
 
