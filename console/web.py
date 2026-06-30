@@ -241,8 +241,15 @@ a.kpi:hover .kdrill{opacity:1;color:var(--grn-d)}
 .fa-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--line2);font-size:13.5px;line-height:1.45}
 .fa-row:first-child{border-top:none}
 .fa-txt{flex:1;color:var(--body)}
+a.fa-txt{text-decoration:none}
+a.fa-txt:hover{text-decoration:underline}
+.fa-row{border-radius:8px}
+.fa-row:hover{background:var(--paper)}
 .fa-dot{width:9px;height:9px;border-radius:999px;flex:none;display:inline-block}
 .fa-row .btn{flex:none}
+/* When an alert deep-links here, briefly ring the exact card that needs fixing. */
+.bcard:target{border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-l);scroll-margin-top:80px;animation:fa-flag 2s ease-out 1}
+@keyframes fa-flag{0%{box-shadow:0 0 0 7px var(--amber-l)}100%{box-shadow:0 0 0 3px var(--amber-l)}}
 .ptl-track{position:relative;height:8px;border-radius:999px;background:var(--paper2);overflow:hidden;margin:6px 0}
 .ptl-fill{position:absolute;left:0;top:0;bottom:0;background:var(--grn)}
 .ptl-now{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink)}
@@ -1720,6 +1727,16 @@ def _finance_waiting(account: dict) -> str:
     return intro + preview + steps + invite
 
 
+def _fa_item(sev: int, color: str, text_html: str, href: str, label: str) -> tuple:
+    """One 'Needs your attention' row: a colored dot, the alert text (itself clickable
+    and deep-linked to the exact item that needs fixing — not a generic list), and an
+    action button to the same place. So the customer can click the flag and act on it."""
+    return (sev,
+            f'<span class=fa-dot style="background:{color}"></span>'
+            f'<a class=fa-txt href="{href}">{text_html}</a>'
+            f'<a class="btn sec sm" href="{href}">{label}</a>')
+
+
 def _finance_attention(report: dict | None, budget_statuses: list[dict] | None,
                        program_statuses: list[dict] | None) -> str:
     """Business's 'review these' panel — auto-flags what's off track so business can act
@@ -1757,52 +1774,54 @@ def _finance_attention(report: dict | None, budget_statuses: list[dict] | None,
         else:
             when = ""
         over = (proj or 0) - (s.get("limit_usd", 0) or 0)
+        phref = f'/app/outlay/programs#prog-{s.get("id")}'
         if s.get("status") == "over":
             already = (s.get("spent_usd", 0) or 0) >= (s.get("limit_usd", 0) or 0)
             verb = ("is off track on forecast" if (ev and ev["status"] == "over"
                                                    and not (already or over > 0))
                     else ("is already over budget" if already else "is projected to overspend"))
-            items.append((2, f'<span class=fa-dot style="background:var(--red)"></span>'
-                          f'<span class=fa-txt>Program <b>{nm}</b> {verb} — projected '
+            items.append(_fa_item(2, "var(--red)",
+                          f'Program <b>{nm}</b> {verb} — projected '
                           f'<b>{money(proj)}</b> vs {money(s.get("limit_usd",0))} cap '
-                          f'({money(abs(over))} over){ev_bit}{when}.</span>'
-                          f'<a class="btn sec sm" href="/app/outlay/programs">Review →</a>'))
+                          f'({money(abs(over))} over){ev_bit}{when}.',
+                          phref, "Raise cap or enforce →"))
         elif s.get("status") == "warn":
-            items.append((1, f'<span class=fa-dot style="background:var(--amber)"></span>'
-                          f'<span class=fa-txt>Program <b>{nm}</b> is tracking hot — projected '
+            items.append(_fa_item(1, "var(--amber)",
+                          f'Program <b>{nm}</b> is tracking hot — projected '
                           f'<b>{money(proj)}</b> of {money(s.get("limit_usd",0))} '
-                          f'({s.get("pct_used",0)*100:.0f}% used){ev_bit}{when}.</span>'
-                          f'<a class="btn sec sm" href="/app/outlay/programs">Review →</a>'))
+                          f'({s.get("pct_used",0)*100:.0f}% used){ev_bit}{when}.',
+                          phref, "Reallocate →"))
 
     for s in (budget_statuses or []):
         if not s.get("limit_usd"):
             continue
         scope = _e(s.get("scope_type") or "") + (f' {_e(s.get("scope_id"))}' if s.get("scope_id") else "")
         scope = scope.strip() or "overall"
+        bhref = f'/app/outlay/budgets#budget-{s.get("id")}'
         if s.get("status") == "over":
             already = (s.get("spent_usd", 0) or 0) >= (s.get("limit_usd", 0) or 0)
             verb = "is already over budget" if already else "is projected to overspend"
-            items.append((2, f'<span class=fa-dot style="background:var(--red)"></span>'
-                          f'<span class=fa-txt>Budget <b>{scope}</b> {verb} — projected '
+            items.append(_fa_item(2, "var(--red)",
+                          f'Budget <b>{scope}</b> {verb} — projected '
                           f'<b>{money(s.get("projected_usd",0))}</b> vs {money(s.get("limit_usd",0))} '
-                          f'({money(abs(over_amt(s)))} over).</span>'
-                          f'<a class="btn sec sm" href="/app/outlay/budgets">Review →</a>'))
+                          f'({money(abs(over_amt(s)))} over).',
+                          bhref, "Adjust limit →"))
         elif s.get("status") == "warn":
-            items.append((1, f'<span class=fa-dot style="background:var(--amber)"></span>'
-                          f'<span class=fa-txt>Budget <b>{scope}</b> is tracking hot — projected '
+            items.append(_fa_item(1, "var(--amber)",
+                          f'Budget <b>{scope}</b> is tracking hot — projected '
                           f'<b>{money(s.get("projected_usd",0))}</b> of {money(s.get("limit_usd",0))} '
-                          f'({s.get("pct_used",0)*100:.0f}% used).</span>'
-                          f'<a class="btn sec sm" href="/app/outlay/budgets">Review →</a>'))
+                          f'({s.get("pct_used",0)*100:.0f}% used).',
+                          bhref, "Adjust limit →"))
 
     for a in (report or {}).get("anomalies", [])[:3]:
         tid = _e(str(a.get("ticket_id")))
         cls = a.get("task_class")
         href = (f'/app/outlay/scope?type=class&id={quote(str(cls))}' if cls else "/app/outlay")
-        items.append((1, f'<span class=fa-dot style="background:var(--amber)"></span>'
-                      f'<span class=fa-txt>Runaway ticket <b>{tid}</b> cost '
+        items.append(_fa_item(1, "var(--amber)",
+                      f'Runaway ticket <b>{tid}</b> cost '
                       f'<b>{money(a.get("cost_usd",0))}</b> — {a.get("ratio",0):.1f}× its '
-                      f'{_e(str(cls or "work-type"))} median.</span>'
-                      f'<a class="btn sec sm" href="{href}">Review →</a>'))
+                      f'{_e(str(cls or "work-type"))} median.',
+                      href, "Investigate →"))
 
     items.sort(key=lambda x: x[0], reverse=True)
     n_over = sum(1 for sev, _ in items if sev == 2)
@@ -1836,54 +1855,54 @@ def _eng_attention(report: dict | None, conn: dict | None, history: list[dict] |
     items = []  # (severity, html); 2 = fix now, 1 = keep an eye
 
     if conn.get("last_sync_error"):
-        items.append((2, '<span class=fa-dot style="background:var(--red)"></span>'
-                      '<span class=fa-txt><b>Last sync failed</b> — your numbers may be stale until it '
-                      'succeeds.</span><a class="btn sec sm" href="/app/outlay/connect">Check connection →</a>'))
+        items.append(_fa_item(2, "var(--red)",
+                      '<b>Last sync failed</b> — your numbers may be stale until it succeeds.',
+                      "/app/outlay/connect", "Check connection →"))
 
     for a in report.get("anomalies", [])[:3]:
         tid = _e(str(a.get("ticket_id")))
         cls = a.get("task_class")
         href = (f'/app/outlay/scope?type=class&id={quote(str(cls))}' if cls else "/app/outlay")
-        items.append((2, '<span class=fa-dot style="background:var(--red)"></span>'
-                      f'<span class=fa-txt>Runaway ticket <b>{tid}</b> burned '
+        items.append(_fa_item(2, "var(--red)",
+                      f'Runaway ticket <b>{tid}</b> burned '
                       f'<b>{money(a.get("cost_usd",0))}</b> — <b>{a.get("ratio",0):.1f}×</b> its '
-                      f'{_e(str(cls or "work-type"))} median. Worth a look before it repeats.</span>'
-                      f'<a class="btn sec sm" href="{href}">Investigate →</a>'))
+                      f'{_e(str(cls or "work-type"))} median. Worth a look before it repeats.',
+                      href, "Investigate →"))
 
     total = sp.get("total_usd", 0.0)
     cov = sp.get("ticket_coverage", 0.0)
     if total > 0 and 0 < cov < 0.7:
         unmapped = max(0.0, total - sp.get("attributed_to_ticket_usd", 0.0))
-        items.append((1, '<span class=fa-dot style="background:var(--amber)"></span>'
-                      f'<span class=fa-txt><b>{money(unmapped)}</b> ({(1-cov)*100:.0f}%) of spend isn\'t '
-                      f'mapped to a ticket yet — connect PRs or map team identities to recover it.</span>'
-                      '<a class="btn sec sm" href="/app/outlay/connect#teams">Lift coverage →</a>'))
+        items.append(_fa_item(1, "var(--amber)",
+                      f'<b>{money(unmapped)}</b> ({(1-cov)*100:.0f}%) of spend isn\'t '
+                      'mapped to a ticket yet — connect PRs or map team identities to recover it.',
+                      "/app/outlay/connect#teams", "Lift coverage →"))
 
     hist = history or []
     if len(hist) >= 2:
         cur, prev = hist[-1].get("total_usd", 0), hist[-2].get("total_usd", 0)
         if prev > 0 and (cur - prev) / prev >= 0.25:
-            items.append((1, '<span class=fa-dot style="background:var(--amber)"></span>'
-                          f'<span class=fa-txt>AI spend <b>jumped {((cur-prev)/prev)*100:.0f}%</b> vs last '
-                          f'sync ({money(prev)} → {money(cur)}). See what moved.</span>'
-                          '<a class="btn sec sm" href="/app/outlay">See movers →</a>'))
+            items.append(_fa_item(1, "var(--amber)",
+                          f'AI spend <b>jumped {((cur-prev)/prev)*100:.0f}%</b> vs last '
+                          f'sync ({money(prev)} → {money(cur)}). See what moved.',
+                          "/app/outlay", "See movers →"))
 
     pf = report.get("pricing_fidelity") or {}
     if pf.get("fallback_usd", 0) and pf.get("fallback_share", 0) >= 0.005:
         models = ", ".join(pf.get("models", [])[:3]) or "unrecognized model(s)"
-        items.append((1, '<span class=fa-dot style="background:var(--amber)"></span>'
-                      f'<span class=fa-txt><b>{money(pf["fallback_usd"])}</b> '
+        items.append(_fa_item(1, "var(--amber)",
+                      f'<b>{money(pf["fallback_usd"])}</b> '
                       f'({pf["fallback_share"]*100:.0f}%) was priced at the nearest tier — '
-                      f'<b>{_e(models)}</b> aren\'t in the price book yet.</span>'
-                      '<a class="btn sec sm" href="/app/outlay">Details →</a>'))
+                      f'<b>{_e(models)}</b> aren\'t in the price book yet.',
+                      "/app/outlay", "Details →"))
 
     for s in (budget_statuses or []):
         if s.get("limit_usd") and s.get("status") == "over":
             scope = (_e(s.get("scope_type") or "") + (f' {_e(s.get("scope_id"))}' if s.get("scope_id") else "")).strip() or "overall"
-            items.append((2, '<span class=fa-dot style="background:var(--red)"></span>'
-                          f'<span class=fa-txt>Budget <b>{scope}</b> is over — projected '
-                          f'<b>{money(s.get("projected_usd",0))}</b> vs {money(s.get("limit_usd",0))}.</span>'
-                          '<a class="btn sec sm" href="/app/outlay/budgets">Review →</a>'))
+            items.append(_fa_item(2, "var(--red)",
+                          f'Budget <b>{scope}</b> is over — projected '
+                          f'<b>{money(s.get("projected_usd",0))}</b> vs {money(s.get("limit_usd",0))}.',
+                          f'/app/outlay/budgets#budget-{s.get("id")}', "Adjust limit →"))
 
     items.sort(key=lambda x: x[0], reverse=True)
     n_fix = sum(1 for sev, _ in items if sev == 2)
@@ -2743,7 +2762,8 @@ def _budgets_section(account: dict, report: dict | None, statuses: list[dict],
         bar, txt = tones.get(s["status"], tones["ok"])
         name = _e(s["scope_type"]) + (f': {_e(s["scope_id"])}' if s.get("scope_id") else "")
         w = min(max(s.get("pct_used", 0), 0), 1) * 100
-        rows += (f'<div class=bcard><div style="display:flex;justify-content:space-between;align-items:center;gap:10px">'
+        rows += (f'<div class=bcard id="budget-{s["id"]}">'
+                 f'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">'
                  f'<b style="font-size:14px">{name}</b>'
                  f'<span class="otag {s["status"]}">{_e(s["status"])}</span></div>'
                  f'<div class=dual style="margin-top:10px"><div class=track>'
@@ -2753,7 +2773,18 @@ def _budgets_section(account: dict, report: dict | None, statuses: list[dict],
                  f'projected <b style="color:{txt}">{money(s.get("projected_usd",0))}</b> / {int(s.get("period_days") or 30)}d</span>'
                  f'<form method=post action="/app/outlay/budgets/delete" style="margin:0">'
                  f'<input type=hidden name=id value="{s["id"]}">'
-                 f'<button class="btn sec sm">Remove</button></form></div></div>')
+                 f'<button class="btn sec sm">Remove</button></form></div>'
+                 # Address an over/at-risk budget in place: raise (or lower) the limit.
+                 f'<form method=post action="/app/outlay/budgets/update" '
+                 f'style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;'
+                 f'border-top:1px solid var(--line);padding-top:10px">'
+                 f'<input type=hidden name=id value="{s["id"]}">'
+                 f'<span class=muted style="font-size:12px">Adjust limit</span>'
+                 f'<input name=limit_usd type=number step=any placeholder="{int(s.get("limit_usd") or 0)}" '
+                 f'style="width:120px;padding:6px 9px;border:1px solid var(--line);border-radius:8px">'
+                 f'<input name=period_days type=number placeholder="{int(s.get("period_days") or 30)}" '
+                 f'title="period (days)" style="width:90px;padding:6px 9px;border:1px solid var(--line);border-radius:8px">'
+                 f'<button class="btn sec sm">Save</button></form></div>')
     rows = (f'<div class=ocard><div class=dh>Your budgets</div>{rows}</div>' if statuses
             else '<div class=ocard><p class=muted style="margin:0">No budgets yet — add one below.</p></div>')
     # Project/epic pick-list so users know which keys they can budget against.
@@ -2941,7 +2972,8 @@ def _programs_section(account: dict, report: dict | None, statuses: list[dict]) 
                 spark_row = (f'<div style="display:flex;align-items:center;gap:10px;margin-top:8px">{sv}'
                              f'<span class=muted style="font-size:11.5px">enforcement · last 14 days '
                              f'({tot:,} action{"s" if tot != 1 else ""})</span></div>')
-        rows += (f'<div class=bcard><div style="display:flex;justify-content:space-between;align-items:center;gap:10px">'
+        rows += (f'<div class=bcard id="prog-{s.get("id")}">'
+                 f'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">'
                  f'<b style="font-size:14.5px">{_e(s.get("name"))}</b>'
                  f'<span style="display:flex;gap:6px;align-items:center">{enf}'
                  f'<span class="otag {s["status"]}">{_e(s["status"])}</span></span></div>'

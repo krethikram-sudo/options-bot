@@ -3638,6 +3638,40 @@ def test_finance_attention_panel_and_summary_view(env, client):
     assert "on track" in clear and "Needs your attention" not in clear
 
 
+def test_alerts_deeplink_to_the_specific_item(env):
+    """Each over/at-risk alert is clickable and deep-links to the exact program/budget
+    /ticket that needs fixing — not a generic list — with an action-specific label."""
+    from console import web
+    report = {"spend": {"total_usd": 1000.0}, "window_days": 30,
+              "anomalies": [{"ticket_id": "GH-42", "task_class": "bug", "cost_usd": 900.0, "ratio": 11.0}]}
+    budgets = [{"id": 7, "scope_type": "team", "scope_id": "growth", "limit_usd": 500.0,
+                "spent_usd": 600.0, "projected_usd": 600.0, "pct_used": 1.2, "status": "over", "period_days": 30}]
+    programs = [{"id": 3, "name": "Platform", "limit_usd": 1000.0, "spent_usd": 1200.0,
+                 "projected_usd": 1200.0, "pct_used": 1.2, "status": "over"}]
+    html = web._finance_attention(report, budgets, programs)
+    assert "/app/outlay/programs#prog-3" in html          # exact program, not the list
+    assert "/app/outlay/budgets#budget-7" in html         # exact budget
+    assert "/app/outlay/scope?type=class&id=bug" in html  # the runaway ticket's class
+    assert "Raise cap or enforce" in html and "Adjust limit" in html  # action labels
+    assert 'class=fa-txt href=' in html                   # the alert text itself is a link
+
+
+def test_budget_inline_update_addresses_an_over_budget(env, client):
+    from console import store
+    _signup(client, email="badj@x.com")
+    acct = store.get_account_by_email("badj@x.com")
+    store.add_outlay_budget(acct["id"], "team", "growth", 500.0, 30)
+    bid = store.list_outlay_budgets(acct["id"])[0]["id"]
+    # The budgets page carries the anchor + an inline "Adjust limit" form.
+    page = client.get("/app/outlay/budgets").text
+    assert f'id="budget-{bid}"' in page and "Adjust limit" in page
+    # Raising the limit is the 'address it' action; redirects back to the anchored item.
+    r = client.post("/app/outlay/budgets/update",
+                    data={"id": str(bid), "limit_usd": "900"}, follow_redirects=False)
+    assert r.status_code in (302, 303) and r.headers["location"].endswith(f"#budget-{bid}")
+    assert store.list_outlay_budgets(acct["id"])[0]["limit_usd"] == 900.0
+
+
 def test_finance_home_lens_and_saved_views(env, client):
     """Phase 2: the business Home has a group-by lens (team/work-type/project/engineer)
     and per-person saved views with a default-landing picker."""
