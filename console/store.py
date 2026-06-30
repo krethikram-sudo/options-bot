@@ -2000,6 +2000,29 @@ def list_outlay_budgets(account_id: int, path: str | None = None) -> list[dict]:
         conn.close()
 
 
+def update_outlay_budget(account_id: int, budget_id: int, *, limit_usd: float | None = None,
+                         period_days: int | None = None, path: str | None = None) -> None:
+    """Adjust a budget's limit and/or period in place — the 'address it' action behind
+    an over/at-risk budget alert. Only the fields supplied are changed; scoped to the
+    account so one customer can't touch another's budget."""
+    sets, params = [], []
+    if limit_usd is not None:
+        sets.append("limit_usd=?")
+        params.append(float(limit_usd))
+    if period_days is not None:
+        sets.append("period_days=?")
+        params.append(int(period_days))
+    if not sets:
+        return
+    params += [int(budget_id), account_id]
+    conn = connect(path)
+    try:
+        conn.execute(f"UPDATE outlay_budgets SET {', '.join(sets)} WHERE id=? AND account_id=?", params)
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def delete_outlay_budget(account_id: int, budget_id: int, path: str | None = None) -> None:
     conn = connect(path)
     try:

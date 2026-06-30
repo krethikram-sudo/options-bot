@@ -1581,6 +1581,38 @@ async def app_outlay_budgets_delete(request: Request):
     return _redirect("/app/outlay/budgets")
 
 
+@app.post("/app/outlay/budgets/update")
+async def app_outlay_budgets_update(request: Request):
+    """Adjust a budget's limit/period in place — the 'address it' action behind an
+    over/at-risk budget alert. Redirects back to the budget, anchored + highlighted."""
+    acct, redir = _require(request)
+    if redir:
+        return redir
+    f = await _form(request)
+    bid = int(f.get("id") or 0)
+    limit = None
+    if (f.get("limit_usd") or "").strip():
+        try:
+            limit = float(f["limit_usd"])
+        except ValueError:
+            limit = None
+    period = None
+    if (f.get("period_days") or "").strip():
+        try:
+            period = int(f["period_days"])
+        except ValueError:
+            period = None
+    if bid and (limit is not None and limit > 0 or period is not None and period > 0):
+        store.update_outlay_budget(acct["id"], bid,
+                                   limit_usd=(limit if limit and limit > 0 else None),
+                                   period_days=(period if period and period > 0 else None))
+        bits = ([f"${limit:,.0f}"] if limit and limit > 0 else []) + \
+               ([f"{period}d"] if period and period > 0 else [])
+        _audit(acct["id"], "budget.update", actor=acct.get("display_email") or acct["email"],
+               detail=f"budget #{bid} → {' / '.join(bits)}")
+    return _redirect(f"/app/outlay/budgets#budget-{bid}")
+
+
 @app.get("/app/outlay/programs", response_class=HTMLResponse)
 def app_outlay_programs(request: Request):
     """Program budgets — named budgets spanning several teams / projects / work types,
