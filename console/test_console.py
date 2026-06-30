@@ -643,6 +643,46 @@ def test_commitment_page_recommends_with_history(env, client):
     assert "/app/outlay/commitment" in r.text
 
 
+def test_planmix_view_and_card_on_commitment_page(env, client):
+    from console import outlay_app, web
+    # A report with a per-person rollup: one heavy engineer, one light HR user.
+    report = {
+        "spend": {"total_usd": 608.0}, "window_days": 30,
+        "people": [
+            {"user": "eng@acme.dev", "spent_usd": 600.0},
+            {"user": "hr@acme.dev", "spent_usd": 8.0},
+        ],
+    }
+    pm = outlay_app.planmix_view(report)
+    assert pm is not None
+    # The engineer moves to a seat; the light user stays on API → a real mix + savings.
+    by_user = {p["user"]: p for p in pm["people"]}
+    assert by_user["eng@acme.dev"]["plan_name"]            # on a seat
+    assert by_user["hr@acme.dev"]["mode"] == "api"          # below breakeven → API
+    assert pm["total_savings_usd"] > 0 and pm["n_on_api"] == 1 and pm["n_on_plan"] == 1
+
+    card = web._planmix_card(pm)
+    assert "Seat plans vs. API credits" in card
+    assert "save" in card.lower() and "vendor" in card.lower()   # honest, advisory framing
+
+    # And it renders on the Commitments page end-to-end.
+    _signup(client, email="pmix@b.com")
+    _, store = env
+    acct = store.get_account_by_email("pmix@b.com")
+    store.save_outlay_report(acct["id"], report)
+    r = client.get("/app/outlay/commitment")
+    assert r.status_code == 200
+    assert "Seat plans vs. API credits" in r.text
+
+
+def test_planmix_view_none_without_attributed_people(env):
+    from console import outlay_app
+    # No per-person attribution yet → no card (we don't fabricate a mix).
+    assert outlay_app.planmix_view({"spend": {"total_usd": 100.0}, "window_days": 30}) is None
+    assert outlay_app.planmix_view({"people": [{"user": "(unattributed)", "spent_usd": 500.0}],
+                                    "window_days": 30}) is None
+
+
 def test_spend_page_hero_and_trust(env, client):
     from console import web
     report = {

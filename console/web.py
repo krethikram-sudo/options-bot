@@ -3250,8 +3250,63 @@ def _commitment_pacing_html(pacing: list[dict] | None) -> str:
             f'overage before it bites.</p>{table}{form}</div>')
 
 
+def _planmix_card(pm: dict | None) -> str:
+    """Procurement-mix card (seat plans vs. API credits) for the Commitments page.
+
+    Compute is uneven across people, so the cheapest buy is a mix: seats for the
+    heavy users, API for the light ones. Advisory, metadata-only — from per-person
+    attributed spend; the customer buys the seats with the vendor."""
+    if not pm:
+        return ""
+    head = ('<div class=dh>Seat plans vs. API credits '
+            '<span class=muted style="font-weight:400;font-size:12px">(per employee)</span></div>')
+    if pm.get("total_savings_usd", 0) <= 0 or not pm.get("seats_by_plan"):
+        return (
+            '<div class=ocard style="margin-top:16px">' + head +
+            '<p class=muted style="margin:2px 0 0">At current per-person usage, flat-fee seat plans '
+            'don\'t beat buying API credits for everyone — your users are below the seat breakeven. '
+            'We\'ll flag it the moment a heavier-usage cohort makes a seat cheaper.</p></div>')
+
+    seatbits = ", ".join(f"<b>{n}× {_e(name)}</b>" for name, n in pm["seats_by_plan"].items())
+    band = ""
+    if pm.get("capacity_sensitivity"):
+        band = (f' If a seat\'s effective capacity is ±{pm["capacity_sensitivity"] * 100:.0f}%, '
+                f'savings range <b>{money(pm["savings_low_usd"])}</b>–<b>{money(pm["savings_high_usd"])}</b>/mo.')
+    movers = [r for r in pm.get("people", []) if r.get("plan_name")][:8]
+    rws = ""
+    for r in movers:
+        sat = (' <span class=muted style="font-size:11px">(saturated → overflow on API)</span>'
+               if r.get("saturated") else "")
+        rws += (
+            f'<tr><td>{_e(r["user"])}</td>'
+            f'<td>{money(r["usage_usd"])}</td>'
+            f'<td>{_e(r["plan_name"])}{sat}</td>'
+            f'<td>{money(r["cost_usd"])}</td>'
+            f'<td style="color:var(--grn-d);font-weight:600">{money(r["savings_usd"])}</td></tr>')
+    table = (
+        '<table style="margin-top:10px"><thead><tr><th>Heaviest users</th><th>On API</th>'
+        '<th>Best plan</th><th>On plan</th><th>Saves</th></tr></thead>'
+        f'<tbody>{rws}</tbody></table>') if rws else ""
+    unattr = ""
+    if pm.get("unattributed_usd", 0) > 0:
+        unattr = (f'<p class=muted style="font-size:12px;margin-top:8px">'
+                  f'{money(pm["unattributed_usd"])}/mo isn\'t attributed to a person yet — it stays on '
+                  'API. Improve attribution coverage to optimize it too.</p>')
+    return (
+        '<div class=ocard style="margin-top:16px;border-left:4px solid var(--grn-d)">' + head +
+        f'<p style="margin:2px 0 10px">Buying API credits for everyone costs '
+        f'<b>{money(pm["status_quo_usd"])}/mo</b>. The cheapest mix — {seatbits}, with the other '
+        f'<b>{pm["n_on_api"]}</b> on API — costs <b>{money(pm["optimized_usd"])}/mo</b>: '
+        f'save <b style="color:var(--grn-d)">{money(pm["total_savings_usd"])}/mo</b> '
+        f'(<b>{pm["savings_rate"] * 100:.0f}%</b>).{band}</p>'
+        + table + unattr +
+        '<p class=muted style="font-size:12px;margin-top:8px">Seat fees/capacities are illustrative — '
+        'replace with your real plan terms. Advisory and metadata-only: we recommend the mix from '
+        'per-person spend; you buy the seats with the vendor.</p></div>')
+
+
 def commitment_page(account: dict, view: dict | None, opps: dict | None = None,
-                    pacing: list[dict] | None = None) -> str:
+                    pacing: list[dict] | None = None, planmix: dict | None = None) -> str:
     """Commitment & procurement optimization recommender (advisory, read-only).
 
     From the customer's own spend run-rate: should they stay on-demand, or take a
@@ -3266,7 +3321,8 @@ def commitment_page(account: dict, view: dict | None, opps: dict | None = None,
                 '<p class=muted>Connect a usage source and sync so we can read your spend '
                 'run-rate, then this page sizes a commitment for you.</p>'
                 '<a class="btn sec sm" href="/app/outlay/connect">Connect a source →</a></div>')
-        return page("Commitments", head + body + _commitment_pacing_html(pacing),
+        return page("Commitments",
+                    head + body + _planmix_card(planmix) + _commitment_pacing_html(pacing),
                     account, active="/app/outlay/commitment")
 
     rate = (f' · blended <b>{money(view["blended_rate"])}/Mtok</b>'
@@ -3348,7 +3404,8 @@ def commitment_page(account: dict, view: dict | None, opps: dict | None = None,
                 'more sync history accumulates.</p>')
 
     return page("Commitments",
-                head + profile + table + prov_html + _opportunities_html(opps)
+                head + profile + table + prov_html + _planmix_card(planmix)
+                + _opportunities_html(opps)
                 + _commitment_pacing_html(pacing) + banner + note,
                 account, active="/app/outlay/commitment")
 
