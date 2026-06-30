@@ -27,6 +27,17 @@ def _r(x: float, places: int = 6) -> float:
     return round(float(x), places)
 
 
+def _people_rollup(result: "AttributionResult") -> list[dict]:
+    """Spend per person (user → cost) from the attributed rows, biggest first.
+    Unresolved users roll up under '(unattributed)'. Powers per-employee views
+    (the procurement-mix optimizer) over the machine API / MCP."""
+    agg: dict[str, float] = {}
+    for r in result.rows:
+        agg[r.user or "(unattributed)"] = agg.get(r.user or "(unattributed)", 0.0) + r.cost_usd
+    return [{"user": u, "spent_usd": _r(c)}
+            for u, c in sorted(agg.items(), key=lambda kv: kv[1], reverse=True)]
+
+
 def to_dict(
     result: AttributionResult,
     stats: dict[TaskClass, ClassStats],
@@ -67,6 +78,7 @@ def to_dict(
             }
             for ru in sorted(result.rollups.values(), key=lambda r: r.cost_usd, reverse=True)
         ],
+        "people": _people_rollup(result),
         "class_stats": [
             {
                 "task_class": st.task_class.value,
