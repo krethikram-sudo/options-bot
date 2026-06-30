@@ -97,6 +97,7 @@ def run(
     commitment: bool = False,
     opportunities: bool = False,
     worktype: bool = False,
+    planmix: bool = False,
 ) -> str:
     events = gather_events(
         usage=usage_path,
@@ -201,6 +202,19 @@ def run(
         split = classify_usage(events, joined_ids=joined_ids)
         out += "\n\n" + format_worktype(split)
 
+    if planmix:
+        from collections import defaultdict
+
+        from .planmix import format_planmix, optimize_mix
+
+        # Per-person spend from the attribution result, normalized to a month.
+        by_user: dict[str, float] = defaultdict(float)
+        for r in result.rows:
+            by_user[r.user or "(unattributed)"] += r.cost_usd
+        to_month = (30.0 / window_days) if window_days else 1.0
+        people = [{"user": u, "usage_usd": c * to_month} for u, c in by_user.items()]
+        out += "\n\n" + format_planmix(optimize_mix(people))
+
     return out
 
 
@@ -242,6 +256,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--worktype", action="store_true",
                    help="append the work vs non-work spend split (metadata-only; "
                         "non-work needs a client-side label or a flagged key)")
+    p.add_argument("--planmix", action="store_true",
+                   help="append the procurement-mix recommendation (seat plans vs. API "
+                        "credits) from per-employee spend — illustrative seat terms")
     args = p.parse_args(argv)
 
     # Default to the bundled demo when no usage source is given.
@@ -264,6 +281,7 @@ def main(argv: list[str] | None = None) -> int:
         commitment=args.commitment,
         opportunities=args.opportunities,
         worktype=args.worktype,
+        planmix=args.planmix,
     ))
     return 0
 

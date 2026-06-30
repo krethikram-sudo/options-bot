@@ -150,3 +150,21 @@ def test_empty_input_is_handled():
     assert isinstance(res, MixResult)
     assert res.total_savings_usd == 0.0
     assert "no per-person spend" in format_planmix(res)
+
+
+def test_cli_planmix_flag_appends_recommendation():
+    from outlay import cli
+    out = cli.run(cli._FIXTURES / "anthropic_usage.json",
+                  cli._FIXTURES / "github_issues.json", 30, planmix=True)
+    assert "Procurement mix" in out
+
+
+def test_serialize_includes_people_rollup():
+    # The JSON report (machine API / MCP) carries per-person spend, biggest first.
+    from outlay import cli
+    import json as _json
+    rep = _json.loads(cli.run(cli._FIXTURES / "anthropic_usage.json",
+                              cli._FIXTURES / "github_issues.json", 30, as_json=True))
+    assert "people" in rep and isinstance(rep["people"], list)
+    if len(rep["people"]) >= 2:
+        assert rep["people"][0]["spent_usd"] >= rep["people"][1]["spent_usd"]

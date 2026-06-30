@@ -134,6 +134,32 @@ def tool_commitment_recommendation(report: dict, args: dict) -> dict:
     }
 
 
+def tool_procurement_mix(report: dict, args: dict) -> dict:
+    """The cheapest split of flat-fee seat plans vs. API credits, from per-employee
+    spend — seats for the heavy users, API for the light ones."""
+    from .planmix import optimize_mix
+
+    people = report.get("people") or []
+    window = report.get("window_days") or 30
+    to_month = 30.0 / float(window)
+    monthly = [{"user": p.get("user"),
+                "usage_usd": float(p.get("spent_usd", 0.0) or 0.0) * to_month}
+               for p in people]
+    if not any(m["user"] and m["user"] != "(unattributed)" and m["usage_usd"] > 0 for m in monthly):
+        return {"recommendation": "no per-person spend to optimize (improve attribution coverage)"}
+    res = optimize_mix(monthly)
+    return {
+        "status_quo_all_api_usd": res.status_quo_usd,
+        "optimized_usd": res.optimized_usd,
+        "total_savings_usd": res.total_savings_usd,
+        "savings_rate": res.savings_rate,
+        "seats_to_buy": res.seats_by_plan,
+        "n_on_api": res.n_on_api,
+        "savings_range_usd": [res.savings_low_usd, res.savings_high_usd],
+        "note": res.note,
+    }
+
+
 # name -> (handler, description, inputSchema)
 TOOLS: dict[str, tuple[Callable[[dict, dict], Any], str, dict]] = {
     "spend_overview": (
@@ -166,6 +192,12 @@ TOOLS: dict[str, tuple[Callable[[dict, dict], Any], str, dict]] = {
     "commitment_recommendation": (
         tool_commitment_recommendation,
         "Whether to take a committed-spend discount vs stay on-demand, sized from the run-rate.",
+        {"type": "object", "properties": {}},
+    ),
+    "procurement_mix": (
+        tool_procurement_mix,
+        "Cheapest split of flat-fee seat plans vs. API credits from per-employee spend "
+        "(seats for heavy users, API for light ones). Illustrative seat terms; advisory.",
         {"type": "object", "properties": {}},
     ),
 }

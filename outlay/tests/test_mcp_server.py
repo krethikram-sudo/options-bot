@@ -110,6 +110,22 @@ def test_commitment_recommendation_runs():
     assert "scenarios" in d
 
 
+def test_procurement_mix_tool():
+    # A report with per-person spend → the tool recommends seats for the heavy user.
+    rep = dict(REPORT, people=[{"user": "eng@acme.dev", "spent_usd": 600.0},
+                               {"user": "hr@acme.dev", "spent_usd": 8.0}])
+    d = _payload(handle(_req("tools/call", {"name": "procurement_mix", "arguments": {}}), rep))
+    assert d["total_savings_usd"] > 0
+    assert d["seats_to_buy"]                       # at least one seat recommended
+    assert d["n_on_api"] == 1                      # the light user stays on API
+    assert "procurement_mix" in TOOLS
+
+
+def test_procurement_mix_without_people_is_honest():
+    d = _payload(handle(_req("tools/call", {"name": "procurement_mix", "arguments": {}}), REPORT))
+    assert "no per-person spend" in d["recommendation"]
+
+
 def test_unknown_tool_errors():
     resp = _call("teleport")
     assert resp["error"]["code"] == -32602
