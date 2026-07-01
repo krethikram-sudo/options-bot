@@ -20,7 +20,7 @@
 <meta name="twitter:image" content="https://outlay-ai.com/og-image.png">
 <meta name="twitter:title" content="Outlay — put AI compute on a budget">
 <meta name="twitter:description" content="Every AI dollar mapped to the ticket, team, and person that drove it. Budget it, forecast it, stop what isn't work.">
-<link rel="stylesheet" href="/landing.css?v=20260701-7">
+<link rel="stylesheet" href="/landing.css?v=20260701-8">
 <script src="/auth-nav.js?v=3" defer></script>
 </head>
 <body>
@@ -98,6 +98,37 @@
     <span class="pv"><svg class="pvico" aria-hidden="true"><use href="#lg-github"/></svg>GitHub</span>
   </div>
 </div></header>
+
+<!-- THE WIRE — attribution happening now (decorative) -->
+<div class="ticker" aria-hidden="true">
+  <span class="tk-label"><i></i>Live · attribution</span>
+  <div class="tk-track">
+    <div class="tk-seq">
+      <span><b>GH-241</b> checkout refactor · sara@ <span class="g">+$0.84</span></span>
+      <span><b>PROJ-812</b> rate-limit backoff · dev@ <span class="g">+$1.12</span></span>
+      <span>invoice line matched <span class="g">✓ reconciled</span></span>
+      <span><b>LIN-77</b> onboarding emails · mei@ <span class="g">+$0.31</span></span>
+      <span>budget check · Launch Q3 <span class="g">on track</span></span>
+      <span><b>GH-198</b> payments retries · james@ <span class="g">+$2.06</span></span>
+      <span>personal key flagged <span class="r">stopped</span></span>
+      <span>forecast refresh · Q3 <b>$48k ±$9k</b></span>
+      <span><b>GH-267</b> search reindex · ana@ <span class="g">+$0.47</span></span>
+      <span>epic rollup · Q3 Stability <span class="g">on budget</span></span>
+    </div>
+    <div class="tk-seq">
+      <span><b>GH-241</b> checkout refactor · sara@ <span class="g">+$0.84</span></span>
+      <span><b>PROJ-812</b> rate-limit backoff · dev@ <span class="g">+$1.12</span></span>
+      <span>invoice line matched <span class="g">✓ reconciled</span></span>
+      <span><b>LIN-77</b> onboarding emails · mei@ <span class="g">+$0.31</span></span>
+      <span>budget check · Launch Q3 <span class="g">on track</span></span>
+      <span><b>GH-198</b> payments retries · james@ <span class="g">+$2.06</span></span>
+      <span>personal key flagged <span class="r">stopped</span></span>
+      <span>forecast refresh · Q3 <b>$48k ±$9k</b></span>
+      <span><b>GH-267</b> search reindex · ana@ <span class="g">+$0.47</span></span>
+      <span>epic rollup · Q3 Stability <span class="g">on budget</span></span>
+    </div>
+  </div>
+</div>
 
 <!-- 01 — METHOD -->
 <section class="section" id="how"><div class="wrap">
@@ -408,6 +439,37 @@
       var r = band.getBoundingClientRect(), h = nav.offsetHeight;
       nav.classList.toggle('overband', r.top < h && r.bottom > 0);
     }, {passive:true});
+  }
+
+  // 5. The live ledger: the statement writes itself. Every few seconds one
+  //    line posts a small entry — its amount rolls up (never jumps), flashes
+  //    green as it lands, and the total (and its watermark) re-reconcile.
+  //    Mono tabular figures mean zero layout shift.
+  var amts = Array.prototype.slice.call(
+        d.querySelectorAll('.ledger .lg-row:not(.flag):not(.dim) .amt')),
+      totalA = d.querySelector('.lg-total .amt'),
+      wmA = d.querySelector('.wm.a');
+  function parse$(el){ return parseFloat(el.textContent.replace(/[$,]/g,'')) || 0; }
+  function fmt$(v){ return '$' + v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function post(el, from, to){
+    var t1 = null, dur = 700;
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+    function roll(ts){ if(!t1) t1 = ts;
+      var p = Math.min((ts-t1)/dur,1), ease = 1-Math.pow(1-p,3);
+      el.textContent = fmt$(from + (to-from)*ease);
+      if(p<1) requestAnimationFrame(roll); }
+    requestAnimationFrame(roll);
+  }
+  if (amts.length && totalA){
+    var li = 0;
+    setInterval(function(){
+      if (d.hidden) return;                       // don't churn in background tabs
+      var el = amts[li++ % amts.length],
+          inc = Math.round((20 + Math.random()*280))/100,   // $0.20–$3.00
+          v = parse$(el), t = parse$(totalA);
+      post(el, v, v+inc); post(totalA, t, t+inc);
+      if (wmA) wmA.textContent = fmt$(t+inc);
+    }, 2600);
   }
 })();
 </script>

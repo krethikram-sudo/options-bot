@@ -150,6 +150,36 @@ nav .wrap{display:flex;align-items:center;gap:28px;height:60px}
   @keyframes land{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 }
 
+/* ---------- the wire (live attribution ticker) ----------
+   The statement is being written now: a slow, continuous feed of entries
+   crossing the page like a wire service. Pauses on hover; static under
+   reduced motion. Purely decorative (aria-hidden). */
+.ticker{border-top:1px solid var(--hair);border-bottom:1px solid var(--hair-soft);
+  background:#fff;display:flex;align-items:stretch;overflow:hidden}
+.tk-label{flex:none;display:flex;align-items:center;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--paper);background:var(--ink);
+  padding:0 16px;position:relative;z-index:1}
+.tk-label i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#7ec9a4;
+  margin-right:9px;font-style:normal}
+.tk-track{display:flex;min-width:0;flex:1}
+.tk-seq{display:inline-flex;gap:56px;padding:10px 28px 10px 56px;flex:none;
+  font-family:var(--mono);font-size:12px;color:var(--body-c);font-variant-numeric:tabular-nums;
+  white-space:nowrap}
+.tk-seq b{color:var(--ink);font-weight:600}
+.tk-seq .g{color:var(--green);font-weight:600}
+.tk-seq .r{color:var(--red);font-weight:600}
+@media (prefers-reduced-motion: no-preference){
+  .tk-seq{animation:tickmove 64s linear infinite}
+  .ticker:hover .tk-seq{animation-play-state:paused}
+  @keyframes tickmove{to{transform:translateX(-100%)}}
+  .tk-label i{animation:okpulse 2.4s ease-in-out infinite}
+  /* the live ledger: entries flash green as they post, then settle to ink */
+  .lg-row .amt.flash,.lg-total .amt.flash{animation:amtflash 1.5s ease-out}
+  @keyframes amtflash{0%,55%{color:var(--green)}}
+  .lg-total .t .ok{animation:okpulse 4.5s ease-in-out infinite}
+  @keyframes okpulse{0%,100%{opacity:1}50%{opacity:.5}}
+}
+
 /* ---------- numbered report sections ---------- */
 .section{padding:96px 0}
 .sec-no{display:flex;align-items:baseline;gap:18px;border-top:3px solid var(--hair);padding-top:14px;
