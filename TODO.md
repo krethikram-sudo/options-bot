@@ -15,6 +15,23 @@ Live URLs:
 > enforcement); routing/ModelPilot engine is parked. The full product is built and the marketing site +
 > console are on the brand domains.
 >
+> **Newest (2026-07-01 — PRs #294–#312, merged + DEPLOYED, founder-verified live): the big day.**
+> (a) **Work/non-work feature completed** (#294 per-team stop, #295 client-side label-only classifier,
+> #296 sample data exercises it, #299 publish-manifest fix). (b) **Procurement-mix optimizer** — seats
+> vs API credits from per-person spend (#301 engine · #302 Commitments card · #303 CLI/MCP/JSON `people`
+> rollup · #304 spec). (c) **Actionable alerts** — every flag deep-links to the exact item + inline
+> budget Adjust-limit (#305); Home's duplicate attention panels merged/deduped (#309). (d) **Time-to-value
+> funnel** on /admin — signup→connected→synced→first-attributed-dollar milestones, <24h target, stalled
+> nudge list (#306). (e) **FULL REDESIGN — "The Document"**: landing = a financial statement (masthead,
+> full-width ledger hero, counting figures, numbered sections, ink band melting on scroll) (#308);
+> inner pages rethemed + ONE canonical nav + css cache-bust (#310, #311); console + sign-in matched to
+> the brand (#309, #312). (f) **Maryland/state-gov readiness evaluated** — product READY; blockers are
+> business items queued behind the **Delaware C-corp** (see 🏛️ section; 83(b) 30-day clock if Atlas
+> completed ~6/18!). (g) Partner test account live (`partner@outlay-ai.com`, runbook in chat; #300
+> create_test_account script). (h) CI deflaked (#297). Suite ~476 green. **Next candidates:** partner
+> eval data through the pipeline (the real coverage number!), send outreach, backups/DR build,
+> plan-catalog input for procurement-mix, runaway→route-cheaper one-click remediation.
+>
 > **Newest (2026-06-29 — PRs #283–289, merged): PRODUCT-UX CONSOLIDATION + PERSONA UNIFICATION.**
 > (a) Consolidation (#283–286): analyze nav 8→**3** (Spend · Governance · Commitments); Spend page from
 > ~17 stacked elements → **hero → one trust panel → KPIs → one tabbed breakdown panel** (three trust
