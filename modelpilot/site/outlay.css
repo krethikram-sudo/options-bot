@@ -52,32 +52,38 @@
   .btn.onnavy:hover{background:#f1efe8;text-decoration:none}
   .btn.lg{padding:15px 28px;font-size:16.5px}
 
-  /* nav */
-  nav{position:sticky;top:0;z-index:60;background:rgba(11,16,26,.82);backdrop-filter:blur(12px) saturate(1.1);
-      border-bottom:1px solid rgba(255,255,255,.08)}
-  nav .brand{color:#fff} nav .brand .dot{color:#6ee7b7}
+  /* nav — harmonized with the landing's paper-and-ink brand (2026-07 redesign) */
+  nav{position:sticky;top:0;z-index:60;background:rgba(250,248,242,.88);backdrop-filter:blur(10px);
+      border-bottom:1px solid #e8e3d5}
+  nav .brand{color:var(--ink)} nav .brand .dot{color:var(--grn)}
   nav .wrap{display:flex;align-items:center;gap:30px;height:var(--nav-h)}
-  .brand{font-family:var(--disp);font-weight:700;font-size:22px;color:var(--ink);letter-spacing:-.02em}
+  .brand{font-family:var(--disp);font-weight:650;font-size:20px;color:var(--ink);letter-spacing:-.02em}
   .brand .dot{color:var(--grn)}
   .navlinks{display:flex;gap:22px;margin-left:8px}
-  .navlinks a{color:#c4cddb;font-size:14.5px;font-weight:500;white-space:nowrap}
-  .navlinks a:hover{color:#fff;text-decoration:none}
+  .navlinks a{color:var(--body);font-size:14.5px;font-weight:500;white-space:nowrap}
+  .navlinks a:hover{color:var(--ink);text-decoration:none}
   .navsp{flex:1}
   .navcta{display:flex;gap:14px;align-items:center}
   .navcta .signin{color:var(--body);font-size:14.5px;font-weight:600}
+  nav .btn.primary{background:var(--ink);border-radius:999px;padding:10px 22px;font-size:15px}
+  nav .btn.primary:hover{background:var(--grn-d)}
+  /* auth-nav.js injects a white-on-dark account menu; re-ink it for the paper nav */
+  .navcta .acctname{color:var(--ink)!important}
+  .navcta .acctburger{border-color:#dcd6c6!important}
+  .navcta .acctburger span{background:var(--ink)!important}
   /* mobile menu: checkbox-driven (works without JS); hamburger hidden on desktop */
   .hamburger{display:none;flex-direction:column;justify-content:center;gap:4px;width:40px;height:40px;
-    padding:0 9px;border:1px solid rgba(255,255,255,.2);border-radius:8px;background:transparent;cursor:pointer}
-  .hamburger span{display:block;height:2px;border-radius:2px;background:#fff;transition:.2s var(--ease)}
+    padding:0 9px;border:1px solid #dcd6c6;border-radius:8px;background:transparent;cursor:pointer}
+  .hamburger span{display:block;height:2px;border-radius:2px;background:var(--ink);transition:.2s var(--ease)}
   @media(max-width:860px){
     nav .wrap{position:relative;gap:14px}
     .hamburger{display:inline-flex}
     .navlinks{position:absolute;top:var(--nav-h);left:0;right:0;flex-direction:column;gap:0;margin:0;
-      background:rgba(11,16,26,.97);backdrop-filter:blur(12px) saturate(1.1);
-      border-bottom:1px solid rgba(255,255,255,.08);
+      background:rgba(250,248,242,.98);backdrop-filter:blur(10px);
+      border-bottom:1px solid #e8e3d5;
       max-height:0;overflow:hidden;opacity:0;pointer-events:none;
       transition:max-height .26s var(--ease),opacity .2s var(--ease)}
-    .navlinks a{padding:14px 24px;font-size:16px;border-top:1px solid rgba(255,255,255,.06)}
+    .navlinks a{padding:14px 24px;font-size:16px;border-top:1px solid #eee9dc}
     .nav-toggle:checked~.navlinks{max-height:80vh;opacity:1;pointer-events:auto}
     .nav-toggle:checked~.navcta .hamburger span:nth-child(1){transform:translateY(6px) rotate(45deg)}
     .nav-toggle:checked~.navcta .hamburger span:nth-child(2){opacity:0}
