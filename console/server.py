@@ -1023,6 +1023,20 @@ def _parse_date_ts(raw) -> float | None:
         return None
 
 
+def _track_value(account_id: int, report: dict | None = None, *,
+                 connected: bool = False, synced: bool = False) -> None:
+    """Stamp first-time value milestones on the REAL customer path (connect a source →
+    sync → first attributed dollar). Called from routes, not store functions, so demo
+    seeding never fakes the funnel; sample reports (`_sample`) never count as value."""
+    if connected:
+        store.record_outlay_milestone(account_id, "connected")
+    if synced:
+        store.record_outlay_milestone(account_id, "synced")
+    if report and not report.get("_sample"):
+        if ((report.get("spend") or {}).get("attributed_to_ticket_usd") or 0) > 0:
+            store.record_outlay_milestone(account_id, "attributed")
+
+
 def _run_due_syncs(now: float | None = None, transport=None) -> dict:
     """Re-sync every connection whose auto-sync interval has elapsed. Resilient:
     one account's failure (bad token, network) never blocks the rest. Returns a
@@ -1043,6 +1057,7 @@ def _run_due_syncs(now: float | None = None, transport=None) -> dict:
         store.save_outlay_report(account_id, report)
         store.record_outlay_snapshot(account_id, report, now=now)
         store.mark_outlay_synced(account_id, now=now)
+        _track_value(account_id, report, synced=True)
         _check_budgets(account_id, report)
         _check_programs(account_id, report)
         _check_anomalies(account_id, report)
@@ -1288,6 +1303,7 @@ async def app_outlay_run(request: Request):
             pass
     store.save_outlay_report(acct["id"], report)
     store.record_outlay_snapshot(acct["id"], report)
+    _track_value(acct["id"], report)  # pasted real data can be the first attributed dollar
     _check_budgets(acct["id"], report)
     _check_programs(acct["id"], report)
     _check_anomalies(acct["id"], report)
@@ -1504,6 +1520,7 @@ async def app_outlay_connect_save(request: Request):
     _audit(acct["id"], "connection.save",
            actor=acct.get("display_email") or acct.get("email", ""),
            detail=f"tracker={f.get('tracker') or 'github'}")
+    _track_value(acct["id"], connected=True)
     return _redirect("/app/outlay/connect")
 
 
@@ -1527,6 +1544,7 @@ async def app_outlay_sync(request: Request):
     store.save_outlay_report(acct["id"], report)
     store.record_outlay_snapshot(acct["id"], report)
     store.mark_outlay_synced(acct["id"])
+    _track_value(acct["id"], report, synced=True)
     _check_budgets(acct["id"], report)
     _check_programs(acct["id"], report)
     _check_anomalies(acct["id"], report)
@@ -2925,7 +2943,8 @@ def admin_overview(request: Request):
         })
     return _html(web.admin_overview(acct, rev, rows, store.count_pending_proposals(),
                                     funnel=store.activation_funnel(), feedback=store.list_feedback(30),
-                                    fleet_cost=store.fleet_cost_to_serve()))
+                                    fleet_cost=store.fleet_cost_to_serve(),
+                                    value_funnel=store.outlay_value_funnel()))
 
 
 @app.get("/admin/proposals", response_class=HTMLResponse)

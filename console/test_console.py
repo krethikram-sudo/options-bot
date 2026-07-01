@@ -960,6 +960,64 @@ def test_admin_can_view_and_manage(env, client):
     assert store.get_plan(cust["id"])["rate"] == pytest.approx(0.30)
 
 
+def test_value_milestones_insert_once_and_funnel_math(env):
+    _, store = env
+    a = store.create_account("ttv@x.com", "k7-otter-ledger")
+    # first stamp wins; a later re-stamp never moves the time
+    store.record_outlay_milestone(a["id"], "connected", now=1000.0)
+    store.record_outlay_milestone(a["id"], "connected", now=9999.0)
+    store.record_outlay_milestone(a["id"], "attributed", now=5000.0)
+    ms = store.get_outlay_milestones(a["id"])
+    assert ms["connected"] == 1000.0 and ms["attributed"] == 5000.0
+    vf = store.outlay_value_funnel()
+    row = next(r for r in vf["rows"] if r["email"] == "ttv@x.com")
+    assert row["connected_at"] == 1000.0 and row["synced_at"] is None
+    s = vf["summary"]
+    assert s["signed_up"] >= 1 and s["connected"] >= 1 and s["attributed"] >= 1
+    # attributed within 24h of signup counts toward the <24h target
+    assert s["within_24h"] >= 1 and s["median_ttv_hours"] is not None
+
+
+def test_value_milestones_stamped_on_real_path_not_demo(env, client):
+    _, store = env
+    fix = _fixtures()
+    _signup(client, email="real@x.com")
+    acct = store.get_account_by_email("real@x.com")
+    # connecting a source stamps 'connected'
+    client.post("/app/outlay/connect", data={"tracker": "github", "github_owner": "acme",
+                                             "github_repo": "app"}, follow_redirects=True)
+    assert "connected" in store.get_outlay_milestones(acct["id"])
+    # pasting real data with attributed spend stamps 'attributed'
+    client.post("/app/outlay/run", json={"issues": (fix / "github_issues.json").read_text(),
+                                         "usage": (fix / "anthropic_usage.json").read_text()})
+    assert "attributed" in store.get_outlay_milestones(acct["id"])
+
+    # demo/sample never fakes the funnel: a fresh demo account stays unstamped
+    server, _ = env
+    demo_client = TestClient(server.app, follow_redirects=False)
+    _signup(demo_client, email="demo-ttv@x.com")
+    dacct = store.get_account_by_email("demo-ttv@x.com")
+    demo_client.post("/app/outlay/sample", follow_redirects=True)
+    demo_client.post("/app/demo/enter", follow_redirects=False)
+    assert store.get_outlay_milestones(dacct["id"]) == {}
+
+
+def test_admin_shows_time_to_value_funnel(env, client):
+    _, store = env
+    store.create_account("boss2@b.com", "k7-otter-ledger", role="admin")
+    stalled = store.create_account("stalled@x.com", "k7-otter-ledger")
+    # signed up long ago, never connected → shows in the nudge list
+    import sqlite3  # backdate created_at directly (no public setter, test-only)
+    conn = store.connect()
+    conn.execute("UPDATE accounts SET created_at=? WHERE id=?", (1000.0, stalled["id"]))
+    conn.commit(); conn.close()
+    client.post("/login", data={"email": "boss2@b.com", "password": "k7-otter-ledger"})
+    page = client.get("/admin").text
+    assert "Time to value (Outlay)" in page
+    assert "First attributed $" in page and "24h" in page
+    assert "stalled@x.com" in page and "never connected a source" in page
+
+
 def test_cost_to_serve_estimator_economics():
     """The KTLO model: no LLM cost → marginal cost-to-serve is tiny even for a heavy
     account; the fixed always-on machine dominates."""
