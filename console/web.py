@@ -36,10 +36,11 @@ body{margin:0;font:16px/1.6 var(--sans);color:var(--body);-webkit-font-smoothing
   background:var(--bg)}
 a{color:var(--grn-d);text-decoration:none}a:hover{text-decoration:underline}
 p a,li a,td a,.note a,.dh a,.muted a,.ostrip a,.hintbox a,.sub a,small a,.ohead a,.dq a{text-decoration:underline}
-.top{background:rgba(16,16,16,.94);backdrop-filter:blur(10px);border-bottom:1px solid #3a3a34;position:sticky;top:0;z-index:10}
+.top{background:rgba(252,252,250,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--ink);position:sticky;top:0;z-index:10}
 .top .wrap{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:18px}
-.top .brand{color:#fff}.top .brand .dot{color:#7ec9a4}
-.top .nav a{color:#b9b9af}.top .nav a:hover{color:#fff}
+.top .brand{color:var(--ink)}.top .brand .dot{color:var(--grn)}
+.top .nav a{color:var(--body)}.top .nav a:hover{color:var(--ink)}
+.top .nav a.btn{color:var(--bg)}.top .nav a.btn:hover{color:#fff}
 /* left sidebar shell (signed-in) */
 .shell{display:flex;min-height:100vh;align-items:stretch}
 /* first-run takeover: blur the whole app behind a centered, undismissable modal */
@@ -96,10 +97,10 @@ h1{font-size:27px;margin:0 0 4px}h2{font-size:18px;margin:24px 0 12px}
 .stat{font-family:var(--disp);font-size:30px;font-weight:700;letter-spacing:-.02em;color:var(--ink)}
 .stat.green{color:var(--grn-d)}
 .label{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:500}
-.btn{display:inline-block;background:var(--accent);color:#fff;border:0;border-radius:6px;
+.btn{display:inline-block;background:var(--ink);color:var(--bg);border:0;border-radius:6px;
   padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;
   transition:transform .15s var(--ease),background .15s,box-shadow .2s}
-.btn:hover{background:var(--accent-d);text-decoration:none;box-shadow:0 6px 16px -10px rgba(11,79,58,.5)}
+.btn:hover{background:var(--grn);text-decoration:none;box-shadow:0 6px 16px -10px rgba(11,79,58,.5)}
 .btn.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
 .btn.sec:hover{background:var(--paper);box-shadow:none;transform:none;border-color:#d8d5cc}
 .btn.bad{background:var(--bad);color:#fff}.btn.bad:hover{background:#8f1e17}.btn.sm{padding:6px 10px;font-size:13px}
