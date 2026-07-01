@@ -188,33 +188,43 @@ nav .wrap{display:flex;align-items:center;gap:28px;height:60px}
 .sec-no h2{font-size:clamp(30px,3.6vw,50px);line-height:1.04;font-weight:620;letter-spacing:-.035em}
 .sec-intro{max-width:44em;font-size:17.5px;margin:0 0 52px}
 
-/* method rows (01) */
-.mrow{display:grid;grid-template-columns:120px 1.1fr 1fr;gap:36px;align-items:baseline;
-  padding:38px 0;border-top:1px solid var(--hair-soft)}
-.mrow:first-of-type{border-top:none}
-.mrow .n{font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.14em}
-.mrow h3{font-size:clamp(21px,2.2vw,28px);font-weight:600;letter-spacing:-.02em}
-.mrow p{margin:10px 0 0;max-width:30em;font-size:15.5px}
-.sample{font-family:var(--mono);font-size:12.5px;line-height:1.85;color:var(--ink);
-  border-left:2px solid var(--hair);padding-left:18px;font-variant-numeric:tabular-nums}
-.sample .c{color:var(--faint)}
-.sample .g{color:var(--green);font-weight:600}
-.sample .r{color:var(--red);font-weight:600}
-
-/* control rows (02) — wide ledger rows, not cards */
-.crow{display:grid;grid-template-columns:1.15fr 1fr;gap:56px;align-items:center;
-  padding:44px 0;border-top:1px solid var(--hair-soft)}
-.crow:first-of-type{border-top:none}
-.crow h3{font-size:clamp(22px,2.4vw,30px);font-weight:600;letter-spacing:-.022em}
-.crow p{margin:12px 0 18px;max-width:32em;font-size:15.5px}
-.crow .go{font-size:14px;font-weight:560}
-.cfig{font-family:var(--mono);font-size:13px;line-height:2.05;color:var(--ink);
-  font-variant-numeric:tabular-nums;border-top:2px solid var(--hair);padding-top:14px}
-.cfig .row{display:flex;justify-content:space-between;gap:14px}
-.cfig .row span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cfig .g{color:var(--green);font-weight:600}
-.cfig .r{color:var(--red);font-weight:600}
-.cfig .f{color:var(--faint)}
+/* ---------- the suite (01) — four products, one interactive index ----------
+   Radio-driven CSS tabs styled like a document's index dividers: work without
+   JS, arrow keys come free with the radio group. One pane is always open. */
+.suite{position:relative}
+.suite>input{position:absolute;opacity:0;pointer-events:none}
+.stabs{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:2px solid var(--hair)}
+.stabs label{cursor:pointer;padding:18px 18px 16px 0;border-bottom:1px solid var(--hair-soft);
+  position:relative;user-select:none}
+.stabs .pn{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--faint)}
+.stabs .pt{display:block;font-weight:620;font-size:clamp(16px,1.7vw,21px);color:var(--faint);
+  letter-spacing:-.015em;margin-top:6px;transition:color .15s ease}
+.stabs .ps{display:block;font-size:12.5px;color:var(--faint);margin-top:3px}
+.stabs label::after{content:"";position:absolute;left:0;right:18px;bottom:-1px;height:3px;
+  background:transparent;transition:background .15s ease}
+.stabs label:hover .pt{color:var(--ink)}
+#s1:checked~.stabs [for=s1] .pt,#s2:checked~.stabs [for=s2] .pt,
+#s3:checked~.stabs [for=s3] .pt,#s4:checked~.stabs [for=s4] .pt{color:var(--ink)}
+#s1:checked~.stabs [for=s1]::after,#s2:checked~.stabs [for=s2]::after,
+#s3:checked~.stabs [for=s3]::after,#s4:checked~.stabs [for=s4]::after{background:var(--ink)}
+#s1:focus-visible~.stabs [for=s1],#s2:focus-visible~.stabs [for=s2],
+#s3:focus-visible~.stabs [for=s3],#s4:focus-visible~.stabs [for=s4]{outline:2px solid var(--green);outline-offset:2px}
+.spane{display:none;grid-template-columns:1.05fr 1fr;gap:56px;align-items:center;padding:46px 0 10px}
+#s1:checked~.spanes #p1,#s2:checked~.spanes #p2,
+#s3:checked~.spanes #p3,#s4:checked~.spanes #p4{display:grid}
+.spane h3{font-size:clamp(22px,2.4vw,30px);font-weight:600;letter-spacing:-.022em}
+.spane p{margin:12px 0 18px;max-width:32em;font-size:15.5px}
+.spane .go{font-size:14px;font-weight:560}
+@media (prefers-reduced-motion: no-preference){
+  .spane{animation:land .35s ease-out}
+}
+/* the mixer — drag a team size, the procurement mix reprices live */
+.mixer{border-top:2px solid var(--hair);padding-top:16px;display:grid;gap:14px;
+  font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.mixer .mixlab{display:flex;justify-content:space-between;gap:12px}
+.mixer .mixlab b{font-weight:700}
+.mixer input[type=range]{width:100%;accent-color:var(--green);margin:0;cursor:ew-resize}
+.mixer .note{font-size:11px;color:var(--faint);line-height:1.6;font-family:var(--mono)}
 
 /* ---------- the band (03 — security divider page) ----------
    The ink melts in and out of the paper (no hard section edge) — the seamless
@@ -333,8 +343,10 @@ nav,nav .brand,nav .navlinks a,nav .btn.primary{transition:background .45s ease,
   .lg-cols,.lg-row{grid-template-columns:minmax(0,2.2fr) 1fr minmax(0,1.1fr)}
   .lg-cols .oc,.lg-row .who,.lg-cols .tc,.lg-row .team{display:none}
   .figures{grid-template-columns:1fr;gap:26px}
-  .mrow{grid-template-columns:1fr;gap:14px;padding:32px 0}
-  .crow{grid-template-columns:1fr;gap:26px;padding:36px 0}
+  .stabs{grid-template-columns:1fr 1fr}
+  .stabs label{border-bottom:none;padding:14px 14px 12px 0}
+  .stabs{border-bottom:1px solid var(--hair-soft)}
+  .spane{grid-template-columns:1fr;gap:26px;padding:36px 0 6px}
   .specs{grid-template-columns:1fr}
   .spec{border-left:none;padding-left:0;border-top:1px solid #3a3a34;padding-top:22px}
   .spec:first-child{border-top:none}
