@@ -836,11 +836,36 @@ forecast it, budget it) and add routing back later. Marketing site rebranded to 
 
 ## 🏛️ Legal / corporate
 - [ ] **Form the entity — DECISION: Delaware C-corp via Stripe Atlas** ("might raise later" → C-corp
-      avoids a costly conversion). **Scheduled for Thu 2026-06-18.** Full step-by-step in
-      `modelpilot/ENTITY_FORMATION.md`. Atlas bundles C-corp + EIN + business bank + live Stripe in one
-      flow (clears most of launch #2). ⏰ **Watch the 83(b) election — hard 30-day deadline after stock
-      issuance.** Confirm equity/tax specifics with a CPA. **Trademark "ModelPilot" already checked —
-      clear/not taken.**
+      avoids a costly conversion). **Scheduled for Thu 2026-06-18 — CONFIRM whether Atlas completed;
+      still unchecked as of 2026-07-01 and it now also gates the ENTIRE Maryland/state-gov track below.**
+      Full step-by-step in `modelpilot/ENTITY_FORMATION.md`. Atlas bundles C-corp + EIN + business bank
+      + live Stripe in one flow (clears most of launch #2). ⏰ **Watch the 83(b) election — hard 30-day
+      deadline after stock issuance.** Confirm equity/tax specifics with a CPA. **Trademark "ModelPilot"
+      already checked — clear/not taken.**
+
+### 🏛️ Maryland / state-gov readiness (evaluated 2026-07-01; full report in chat +
+### `docs/maryland-gov-compliance.md`, `docs/gov-readiness-build-plan.md`)
+**Verdict: product & evidence pack READY (all 10 build items shipped + adversarially audited;
+weekly pip-audit + SBOMs in CI; VPAT/ACR, IR plan w/ 1-hour MD-SOC + PIPA 10-day, NIST CSF
+self-assessment all drafted; US region pinned). Blockers are business items, in strict order:**
+- [ ] **1. C-corp first — everything below queues behind it** (SDAT wants an entity; eMMA wants
+      EIN/W-9; insurance is issued to the entity; the SOC 2 engagement is signed by the entity;
+      Maryland signs contracts with an entity).
+- [ ] 2. **Foreign-qualify the DE C-corp in Maryland (SDAT)** + MD registered agent + good standing.
+      (Do NOT form a Maryland corp — DE C-corp + MD foreign qualification is the standard shape.)
+- [ ] 3. **eMMA vendor registration** (mandatory MD e-procurement portal) + W-9.
+- [ ] 4. **Cyber + tech-E&O insurance, $1–5M** (also listed under Finance/ops — same item).
+- [ ] 5. **SOC 2 Type II — start the clock immediately after formation** (pick Vanta/Drata/
+      Secureframe + auditor; 3–6 mo observation window = the long pole; our evidence pack makes
+      onboarding fast).
+- [ ] 6. **Backups/DR — the one code-adjacent gap:** automated off-machine SQLite backups + tested
+      restore + DR runbook with RTO/RPO (Claude can build; feeds SOC 2 CP evidence).
+- [ ] 7. Annual third-party pen test (~$5–15k; schedule once SOC 2 starts so one test feeds both).
+- [ ] 8. Small paper: background-check process statement; independent VPAT validation (self-ACR OK to open).
+- **Deferred until a vehicle demands it:** GovRAMP Ready/Authorized, FedRAMP-Moderate re-host off
+  Fly (+ FIPS/KMS crypto ships with that move). No MD public mandate names GovRAMP as a hard gate.
+- **Not gated on any of this:** informal pilot conversations/demos (sell now, sign after paperwork).
+  Small-dollar/pilot path below formal-bid thresholds (CATS+/relationship) is the recommended entry.
 - [ ] Counsel review of legal templates (Terms / Privacy / AUP / MSA / DPA); set governing law + venue.
 - [x] Trademark knockout "ModelPilot" — checked, clear/not taken (2026-06-16). Optional next: file the
       USPTO word mark to lock it in (https://www.uspto.gov/trademarks).
