@@ -20,7 +20,7 @@
 <meta name="twitter:image" content="https://outlay-ai.com/og-image.png">
 <meta name="twitter:title" content="Outlay — your AI bill, itemized">
 <meta name="twitter:description" content="Every AI dollar mapped to the ticket, team, and person that drove it. Budget it, forecast it, stop what isn't work.">
-<link rel="stylesheet" href="/landing.css?v=20260701-1">
+<link rel="stylesheet" href="/landing.css?v=20260701-3">
 <script src="/auth-nav.js?v=3" defer></script>
 </head>
 <body>
@@ -44,120 +44,134 @@
 
 <main id="main">
 
-<!-- HERO — the itemized bill -->
-<header class="hero" id="proof"><div class="wrap">
-  <div class="herogrid">
-    <div>
-      <div class="eyebrow" style="color:var(--green-bright)">AI spend, attributed</div>
-      <h1 class="display">Your AI bill,<br><span class="acc">itemized.</span></h1>
-      <p class="lede">Outlay maps every AI dollar to the <b>ticket, team, and person</b> that drove it —
-        so you can forecast it, budget it, and stop the spend that isn't work.
-        Prompts and keys never leave your environment.</p>
-      <div class="ctarow">
-        <a class="btn primary lg" href="https://app.outlay-ai.com/pilot-request">See it on your spend →</a>
-        <a class="textlink" href="/tour">Take the product tour</a>
-      </div>
-      <p class="providers"><b>Works with</b> &nbsp;Anthropic · OpenAI · Azure OpenAI · AWS Bedrock ·
-        Google Vertex · Claude Code · Cursor · Jira · Linear · GitHub</p>
-    </div>
-
-    <div class="statement" role="img" aria-label="An AI spend statement: every line attributed to a ticket, epic, or team; non-work flagged; the unknown remainder never guessed; total reconciled to the provider invoice; 94% attributed.">
-      <div class="s-head"><span class="t">AI SPEND STATEMENT</span><span class="d">JUN 2026 · ACME ENG</span></div>
-      <div class="s-cols"><span>ITEM</span><span>AMOUNT</span></div>
-      <div class="s-row"><span class="nm">GH-241 · checkout refactor</span><span class="sp"></span><span class="amt">$1,204.33</span></div>
-      <div class="s-row"><span class="nm">GH-198 · payments retries</span><span class="sp"></span><span class="amt">$842.10</span></div>
-      <div class="s-row"><span class="nm">Q3 Stability <small>· epic · 34 tickets</small></span><span class="sp"></span><span class="amt">$18,913.02</span></div>
-      <div class="s-row"><span class="nm">Billing v2 <small>· epic · 21 tickets</small></span><span class="sp"></span><span class="amt">$11,406.55</span></div>
-      <div class="s-row"><span class="nm">By team <small>· platform / growth / 6 more</small></span><span class="sp"></span><span class="amt">$71,889.11</span></div>
-      <div class="s-row flag"><span class="nm">Non-work · flagged personal key</span><span class="sp"></span><span class="amt">$3,979.03</span></div>
-      <div class="s-row dim"><span class="nm">Unknown · never guessed</span><span class="sp"></span><span class="amt">$6,753.00</span></div>
-      <div class="s-total"><span>TOTAL</span><span>$84,604.77</span></div>
-      <div class="s-verify"><span class="ok">✓ RECONCILED TO PROVIDER INVOICE</span><span class="s-badge">94% ATTRIBUTED</span></div>
-      <div class="s-note">FORECAST NEXT QTR $92K ± $11K · BACK-TESTED ON YOUR OWN CLOSED TICKETS</div>
+<!-- MASTHEAD — the document opens -->
+<header class="masthead" id="proof"><div class="wrap">
+  <div class="mast-rule"></div>
+  <div class="mast-meta">
+    <span class="micro">AI spend statement · prepared by Outlay</span>
+    <span class="micro">Period JUN 2026 · All figures reconciled</span>
+  </div>
+  <h1 class="display">Your AI bill,<br><span class="acc">itemized.</span></h1>
+  <div class="mast-sub">
+    <p class="lede">Outlay maps every AI dollar to the <b>ticket, team, and person</b> that drove it —
+      so you can forecast it, budget it, and stop the spend that isn't work.
+      Prompts and keys never leave your environment.</p>
+    <div class="ctarow">
+      <a class="btn primary lg" href="https://app.outlay-ai.com/pilot-request">See it on your spend →</a>
+      <a class="btn lg" href="/tour">Product tour</a>
     </div>
   </div>
+
+  <!-- THE LEDGER — the hero is the table -->
+  <div class="ledger" role="img" aria-label="An AI spend ledger: every line attributed to a ticket, epic, owner, and team; non-work flagged and stopped; the unknown remainder never guessed; total reconciled to the provider invoice.">
+    <div class="lg-cols"><span>Item</span><span class="oc">Owner</span><span class="tc">Team</span><span>Status</span><span style="text-align:right">Amount</span></div>
+    <div class="lg-row"><span class="it">GH-241 · checkout refactor</span><span class="who">sara@</span><span class="team">growth</span><span class="st ok">SHIPPED</span><span class="amt">$1,204.33</span></div>
+    <div class="lg-row"><span class="it">GH-198 · payments retries</span><span class="who">omar@</span><span class="team">payments</span><span class="st ok">SHIPPED</span><span class="amt">$842.10</span></div>
+    <div class="lg-row"><span class="it">Q3 Stability <small>· epic · 34 tickets</small></span><span class="who">—</span><span class="team">platform</span><span class="st ok">ON BUDGET</span><span class="amt">$18,913.02</span></div>
+    <div class="lg-row"><span class="it">Billing v2 <small>· epic · 21 tickets</small></span><span class="who">—</span><span class="team">growth</span><span class="st bad">OVER PACE</span><span class="amt">$11,406.55</span></div>
+    <div class="lg-row flag"><span class="it">Personal key · flagged non-work</span><span class="who">bob@</span><span class="team">growth</span><span class="st bad">STOPPED</span><span class="amt">$3,979.03</span></div>
+    <div class="lg-row dim"><span class="it">Unknown · never guessed</span><span class="who">—</span><span class="team">—</span><span class="st dim">UNTRACKED</span><span class="amt">$6,753.00</span></div>
+    <div class="lg-total"><span class="t">TOTAL <span class="ok">· ✓ RECONCILED TO PROVIDER INVOICE</span></span><span class="amt">$84,604.77</span></div>
+  </div>
+
+  <!-- the three figures that are the pitch -->
+  <div class="figures">
+    <div class="fig"><div class="v">94<span class="u">%</span></div>
+      <div class="k">of spend attributed to a ticket, epic, or person — measured on your data, not asserted.</div></div>
+    <div class="fig"><div class="v">±14<span class="u">%</span></div>
+      <div class="k">forecast error, back-tested on your own closed tickets. Error and sample size always shown.</div></div>
+    <div class="fig"><div class="v">$21k<span class="u">/mo</span></div>
+      <div class="k">typical procurement saving — the cheapest mix of seats and API credits, from per-person spend.</div></div>
+  </div>
+
+  <p class="providers"><b>Works with</b> &nbsp;Anthropic · OpenAI · Azure OpenAI · AWS Bedrock ·
+    Google Vertex · Claude Code · Cursor · Jira · Linear · GitHub</p>
 </div></header>
 
-<!-- HOW — the loop -->
+<!-- 01 — METHOD -->
 <section class="section" id="how"><div class="wrap">
-  <div class="sec-head">
-    <div class="eyebrow">The loop</div>
-    <h2>Attribute. Forecast. Govern.</h2>
-    <p>Connect the tracker and AI tools you already use — read-only, no app rewrite.
-       Every other tool stops at an infrastructure tag. Outlay meters the <b>work</b>.</p>
+  <div class="sec-no"><span class="no">01 — METHOD</span><h2>Attribute. Forecast. Govern.</h2></div>
+  <p class="sec-intro">Connect the tracker and AI tools you already use — read-only, no app rewrite.
+     Every other tool stops at an infrastructure tag. Outlay meters the <b>work</b>.</p>
+  <div class="mrow">
+    <span class="n">1.1 — ATTRIBUTE</span>
+    <div><h3>Every dollar finds its ticket.</h3>
+      <p>Each AI call resolves to the ticket, epic, and person behind it — from branch, PR,
+         and session metadata. Prompt content is never read.</p></div>
+    <div class="sample"><span class="c"># branch → ticket → epic</span><br>
+      fix/PROJ-123 → <span class="g">PROJ-123 → Q3 Stability</span><br>
+      <span class="c">fidelity: call · branch · session · team</span></div>
   </div>
-  <div class="steps">
-    <div class="step">
-      <span class="n">01 — ATTRIBUTE</span>
-      <div><h3>Every dollar finds its ticket.</h3>
-        <p>Each AI call resolves to the ticket, epic, and person behind it — from branch, PR,
-           and session metadata. Prompt content is never read.</p></div>
-      <div class="chip"><span class="c"># branch → ticket → epic</span><br>
-        fix/PROJ-123 → <span class="g">PROJ-123 → Q3 Stability</span><br>
-        <span class="c">fidelity: call · branch · session · team</span></div>
-    </div>
-    <div class="step">
-      <span class="n">02 — FORECAST</span>
-      <div><h3>Price the quarter before you build it.</h3>
-        <p>Forecast from your open backlog, the way you estimate effort — back-tested on your own
-           closed tickets, with the error shown. Never a vendor benchmark.</p></div>
-      <div class="chip"><span class="c"># open scope × learned cost/work-type</span><br>
-        Q3 forecast <span class="g">$48k ± $9k</span><br>
-        <span class="c">back-test on 188 closed tickets · error shown</span></div>
-    </div>
-    <div class="step">
-      <span class="n">03 — GOVERN</span>
-      <div><h3>Budgets that act, not just alert.</h3>
-        <p>Set budgets per team, program, or epic. Pace-based alerts flag overspend before it lands —
-           or set a hard cap the opt-in gateway enforces, blocking or routing down.</p></div>
-      <div class="chip"><span class="c"># program · hard cap · gateway-enforced</span><br>
-        Platform <span class="r">$61k / $50k · over</span> → route-down ×1,240<br>
-        Launch Q3 <span class="g">$28k / $40k · on track</span></div>
-    </div>
+  <div class="mrow">
+    <span class="n">1.2 — FORECAST</span>
+    <div><h3>Price the quarter before you build it.</h3>
+      <p>Forecast from your open backlog, the way you estimate effort — back-tested on your own
+         closed tickets, with the error shown. Never a vendor benchmark.</p></div>
+    <div class="sample"><span class="c"># open scope × learned cost/work-type</span><br>
+      Q3 forecast <span class="g">$48k ± $9k</span><br>
+      <span class="c">back-test on 188 closed tickets · error shown</span></div>
+  </div>
+  <div class="mrow">
+    <span class="n">1.3 — GOVERN</span>
+    <div><h3>Budgets that act, not just alert.</h3>
+      <p>Set budgets per team, program, or epic. Pace-based alerts flag overspend before it lands —
+         or set a hard cap the opt-in gateway enforces, blocking or routing down.</p></div>
+    <div class="sample"><span class="c"># program · hard cap · gateway-enforced</span><br>
+      Platform <span class="r">$61k / $50k · over</span> → route-down ×1,240<br>
+      Launch Q3 <span class="g">$28k / $40k · on track</span></div>
   </div>
 </div></section>
 
-<!-- WHAT IT UNLOCKS -->
-<section class="section tight alt"><div class="wrap">
-  <div class="sec-head">
-    <div class="eyebrow">What an itemized bill unlocks</div>
-    <h2>Decisions no dashboard can make.</h2>
-  </div>
-  <div class="caps">
-    <div class="cap" id="govern">
-      <div class="mini">Platform<span class="lead"></span><b style="color:var(--red)">$61k/$50k</b> · capped<br>
-        Launch — Q3<span class="lead"></span><b style="color:var(--green)">$28k/$40k</b> · on track</div>
-      <h3>Budget by what matters</h3>
+<!-- 02 — CONTROLS -->
+<section class="section" style="padding-top:0"><div class="wrap">
+  <div class="sec-no"><span class="no">02 — CONTROLS</span><h2>Decisions no dashboard can make.</h2></div>
+  <div class="crow" id="govern">
+    <div>
+      <h3>Budget by what matters.</h3>
       <p>Group teams and projects into programs with one budget. Over the cap? New calls block or
          route down automatically — and budget moves where priorities move.</p>
-      <a href="/tour">See governance →</a>
+      <a class="go" href="/tour">See governance →</a>
     </div>
-    <div class="cap" id="worktype">
-      <div class="mini">work<span class="lead"></span><b>$71,889</b> · 87%<br>
-        <span style="color:var(--red)">non-work · stopped for growth</span><span class="lead"></span><b style="color:var(--red)">$3,979</b></div>
-      <h3>Work vs. non-work</h3>
+    <div class="cfig">
+      <div class="row"><span>Platform · hard cap</span><span class="r">$61k / $50k · enforced ×1,240</span></div>
+      <div class="row"><span>Launch — Q3 · hard cap</span><span class="g">$28k / $40k · on track</span></div>
+      <div class="row"><span>Growth experiments · alert-only</span><span class="f">$12k / $30k</span></div>
+    </div>
+  </div>
+  <div class="crow" id="worktype">
+    <div>
+      <h3>Work vs. non-work.</h3>
       <p>Tag a side-project key once and see what the company key is really buying. Stop non-work
          usage per team — without reading a single prompt.</p>
-      <a href="/platform">How the split works →</a>
+      <a class="go" href="/platform">How the split works →</a>
     </div>
-    <div class="cap">
-      <div class="mini">19 seats + 4 API<span class="lead"></span><b style="color:var(--green)">save $21k/mo</b><br>
-        <span style="color:var(--faint)">seats for heavy users · API for the rest</span></div>
-      <h3>Buy compute the cheap way</h3>
+    <div class="cfig">
+      <div class="row"><span>Work · joined to tickets</span><span>$71,889 · 87%</span></div>
+      <div class="row"><span>Non-work · flagged key, stopped for growth</span><span class="r">$3,979</span></div>
+      <div class="row"><span>Unknown · never guessed</span><span class="f">$6,753</span></div>
+    </div>
+  </div>
+  <div class="crow">
+    <div>
+      <h3>Buy compute the cheap way.</h3>
       <p>Per-person spend shows who belongs on a flat seat and who belongs on API credits.
          Outlay computes the cheapest mix — analysis nobody buying blind can run.</p>
-      <a href="/pricing">Procurement mix →</a>
+      <a class="go" href="/pricing">Procurement mix →</a>
+    </div>
+    <div class="cfig">
+      <div class="row"><span>All-API status quo</span><span>$27.5k /mo</span></div>
+      <div class="row"><span>Optimal · 19 seats + 4 on API</span><span>$6.0k /mo</span></div>
+      <div class="row"><span>Saving</span><span class="g">$21.5k /mo · shown with assumptions</span></div>
     </div>
   </div>
 </div></section>
 
-<!-- TRUST -->
-<section class="trust" id="security"><div class="wrap">
-  <div class="eyebrow">Privacy by architecture</div>
-  <h2>Built to pass your security review.</h2>
-  <p class="lede" style="margin-top:24px">Most spend tools see everything you send. Outlay is built so
-    sensitive data <b>physically can't reach us</b> — attribution runs on metadata:
-    task categories, token counts, ticket IDs, dollar figures.</p>
+<!-- 03 — SECURITY REVIEW (the divider band) -->
+<section class="band" id="security"><div class="wrap">
+  <div class="sec-no"><span class="no">03 — SECURITY REVIEW</span><h2>Built to pass yours.</h2></div>
+  <p class="lede">Most spend tools see everything you send. Outlay is built so sensitive data
+    <b>physically can't reach us</b> — attribution runs on metadata: task categories, token counts,
+    ticket IDs, dollar figures.</p>
   <div class="specs">
     <div class="spec"><div class="k">Metadata only</div>
       <div class="v">Prompt content, model outputs, and your API keys never reach our servers. An architecture, not a policy.</div></div>
@@ -171,22 +185,22 @@
     <a href="/security">read the security overview</a></p>
 </div></section>
 
-<!-- CLOSING -->
+<!-- 04 — ENGAGE -->
 <section class="closing"><div class="wrap">
-  <div class="eyebrow">Read-only to start · no app rewrite</div>
-  <h2>Put AI compute<br>on a budget.</h2>
-  <p class="lede" style="max-width:32em">Start with a free read-only pilot: connect one tracker and your
-    AI usage, and see your real spend itemized in days.</p>
+  <div class="sec-no"><span class="no">04 — ENGAGE</span><h2 style="font-size:clamp(30px,3.6vw,50px)">Read-only to start. No app rewrite.</h2></div>
+  <p class="display2">Put AI compute<br>on a budget.</p>
+  <p class="lede">Start with a free read-only pilot: connect one tracker and your AI usage,
+    and see your real spend itemized in days.</p>
   <a class="btn primary lg" href="https://app.outlay-ai.com/pilot-request">Become a customer →</a>
   <div class="morelinks">
-    <a class="textlink" id="compare" href="/compare">How we compare</a>
-    <a class="textlink" id="pricing" href="/pricing">How pricing works</a>
-    <a class="textlink" href="/finops-for-ai">FinOps for AI</a>
+    <a id="compare" href="/compare">How we compare</a>
+    <a id="pricing" href="/pricing">How pricing works</a>
+    <a href="/finops-for-ai">FinOps for AI</a>
   </div>
 </div></section>
 
 <!-- FAQ -->
-<section class="section tight" style="padding-top:0"><div class="wrap">
+<section class="section" style="padding-top:0"><div class="wrap">
   <div class="faq">
     <details>
       <summary>How does Outlay attribute spend to a ticket?</summary>
@@ -232,7 +246,7 @@
   <a href="/legal/terms">Terms</a>
   <a href="mailto:hello@outlay-ai.com">hello@outlay-ai.com</a>
 </div>
-<div class="wrap" style="margin-top:12px"><span class="small">© 2026 Outlay · Every AI dollar, mapped to the work that drove it.</span></div>
+<div class="wrap" style="margin-top:10px"><span class="micro">© 2026 OUTLAY · EVERY AI DOLLAR, MAPPED TO THE WORK THAT DROVE IT</span></div>
 </footer>
 
 <script>
@@ -245,6 +259,60 @@
   h.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();t.checked=!t.checked;sync();}});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&t.checked){t.checked=false;sync();}});
   if(m)m.addEventListener('click',function(e){if(e.target.closest('a')){t.checked=false;sync();}});
+})();
+
+// Seamless scroll experience — staggered rise-on-scroll, count-up figures, a
+// slow masthead drift, and the nav re-inking itself over the dark band. All
+// no-ops under prefers-reduced-motion; the page is complete without JS.
+(function(){
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || !('IntersectionObserver' in window)) return;
+  var d = document;
+
+  // 1. Reveal: every section's direct blocks rise once, staggered.
+  var groups = ['.mrow','.crow','.spec','.figures .fig','.faq details','.sec-no','.sec-intro',
+                '.closing .display2','.closing .lede','.closing .btn','.morelinks','.band .lede','.band .row2'];
+  var els = [];
+  groups.forEach(function(sel){ d.querySelectorAll(sel).forEach(function(el){ els.push(el); }); });
+  els.forEach(function(el){ el.classList.add('rv'); });
+  // stagger siblings that share a parent
+  d.querySelectorAll('.figures,.specs,.faq,.morelinks').forEach(function(grp){
+    Array.prototype.forEach.call(grp.children,function(ch,i){ ch.style.setProperty('--d',(i*90)+'ms'); });
+  });
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  },{threshold:.12,rootMargin:'0px 0px -6% 0px'});
+  els.forEach(function(el){ io.observe(el); });
+
+  // 2. Count-up on the three ledger figures, once, when visible.
+  function countUp(el){
+    var txt = el.textContent, m = txt.match(/[\d.]+/); if(!m) return;
+    var target = parseFloat(m[0]), t0 = null, dur = 1100;
+    function step(ts){ if(!t0) t0 = ts;
+      var p = Math.min((ts-t0)/dur,1), ease = 1-Math.pow(1-p,3), v = target*ease;
+      el.childNodes[0].nodeValue = (target%1? v.toFixed(1) : Math.round(v)).toString();
+      if(p<1) requestAnimationFrame(step); }
+    requestAnimationFrame(step);
+  }
+  var fio = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ countUp(e.target); fio.unobserve(e.target); } });
+  },{threshold:.6});
+  d.querySelectorAll('.fig .v').forEach(function(el){ fio.observe(el); });
+
+  // 3. Masthead drift: headline scrolls at ~92% speed (a whisper of depth).
+  var head = d.querySelector('.display'), ticking = false;
+  function drift(){ ticking = false;
+    var y = scrollY; if (y < innerHeight && head) head.style.transform = 'translateY(' + (y*0.08) + 'px)'; }
+  addEventListener('scroll', function(){ if(!ticking){ ticking = true; requestAnimationFrame(drift); } }, {passive:true});
+
+  // 4. Nav re-inks itself while the dark band is beneath it.
+  var band = d.querySelector('.band'), nav = d.querySelector('nav');
+  if (band && nav){
+    addEventListener('scroll', function(){
+      var r = band.getBoundingClientRect(), h = nav.offsetHeight;
+      nav.classList.toggle('overband', r.top < h && r.bottom > 0);
+    }, {passive:true});
+  }
 })();
 </script>
 </body></html>
