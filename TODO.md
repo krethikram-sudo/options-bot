@@ -25,7 +25,10 @@ Live URLs:
 > nudge list (#306). (e) **FULL REDESIGN — "The Document"**: landing = a financial statement (masthead,
 > full-width ledger hero, counting figures, numbered sections, ink band melting on scroll) (#308);
 > inner pages rethemed + ONE canonical nav + css cache-bust (#310, #311); console + sign-in matched to
-> the brand (#309, #312). (f) **Maryland/state-gov readiness evaluated** — product READY; blockers are
+> the brand (#309, #312); bespoke SVG diagrams/charts + provider logos + hero headline "Put AI compute
+> on a budget." (#314, #315, #317); ambient living-document layer on BOTH site and console — drifting
+> ledger grid, audit scan, self-drawing charts, watermarks, bar fills, KPI count-ups (#316, #318).
+> ALL DEPLOYED + founder-verified. (f) **Maryland/state-gov readiness evaluated** — product READY; blockers are
 > business items queued behind the **Delaware C-corp** (see 🏛️ section; 83(b) 30-day clock if Atlas
 > completed ~6/18!). (g) Partner test account live (`partner@outlay-ai.com`, runbook in chat; #300
 > create_test_account script). (h) CI deflaked (#297). Suite ~476 green. **Next candidates:** partner
