@@ -3,37 +3,76 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pricing — Outlay</title>
-<meta name="description" content="How Outlay is priced: a platform fee on the AI spend we attribute and govern (not per-seat), plus an optional savings-share where we only bill on measured savings — no clawback. Pilot first; the number is scoped to your spend.">
+<meta name="description" content="Simple per-person pricing. Start free with a read-only pilot; Team is a flat price per tracked person with every product included; Enterprise adds SCIM, the hard-cap gateway, and compliance evidence. Optional outcome add-on: 20% of measured savings, no clawback.">
 <link rel="canonical" href="https://outlay-ai.com/pricing">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta property="og:title" content="Pricing — Outlay">
-<meta property="og:description" content="Priced on the AI spend we attribute and govern, not per-seat. Optional savings-share with no clawback — we only bill on measured savings.">
+<meta property="og:description" content="Simple per-person pricing. Free pilot, a flat price per tracked person with everything included, and Enterprise for scale. Optional outcome add-on billed only on measured savings.">
 <meta property="og:image" content="https://outlay-ai.com/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://outlay-ai.com/og-image.png">
 <link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/outlay.css?v=20260701-3">
+<link rel="stylesheet" href="/outlay.css?v=20260701-4">
 <script src="/auth-nav.js?v=3" defer></script>
 <style>
-  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:8px 0 6px}
-  @media(max-width:820px){.tiers{grid-template-columns:1fr}}
-  .tier{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:22px}
-  .tier.feat{border-color:#bfe3d4;box-shadow:0 1px 0 var(--grn-l),0 8px 30px -18px rgba(15,107,79,.4)}
-  .tier h3{margin:0 0 2px;font-size:19px;color:var(--ink)}
-  .tier .band{font-size:13px;color:var(--grn-d);font-weight:600;margin-bottom:12px}
-  .tier .who{font-size:13.5px;color:var(--mut);min-height:38px;margin-bottom:12px}
-  .tier ul{list-style:none;padding:0;margin:0}
-  .tier li{font-size:13.5px;color:var(--body);padding:5px 0 5px 22px;position:relative}
+  /* ---- pricing, workweave-clean, in the Document system ---- */
+  .bill{display:inline-flex;align-items:center;gap:0;border:1px solid var(--ink);border-radius:999px;
+    padding:3px;margin:6px 0 4px;font-size:13.5px;font-weight:560}
+  .bill input{position:absolute;opacity:0;pointer-events:none}
+  .bill label{cursor:pointer;padding:7px 16px;border-radius:999px;color:var(--body);user-select:none;
+    transition:background .15s ease,color .15s ease}
+  .bill .save{font-family:var(--mono,ui-monospace);font-size:11px;color:var(--grn-d);margin-left:2px}
+  #bm:checked~label[for=bm],#by:checked~label[for=by]{background:var(--ink);color:#fff}
+  #bm:focus-visible~label[for=bm],#by:focus-visible~label[for=by]{outline:2px solid var(--grn);outline-offset:2px}
+
+  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:22px 0 6px;align-items:stretch}
+  @media(max-width:860px){.tiers{grid-template-columns:1fr}}
+  .tier{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:26px 24px;
+    display:flex;flex-direction:column}
+  .tier.feat{border-color:var(--ink);box-shadow:0 10px 34px -20px rgba(16,16,16,.55)}
+  .tier .flag{font-family:var(--mono,ui-monospace);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--grn-d);font-weight:700;margin-bottom:10px;min-height:14px}
+  .tier h3{margin:0 0 4px;font-size:20px;color:var(--ink);letter-spacing:-.01em}
+  .tier .who{font-size:13.5px;color:var(--mut);min-height:40px;margin:0 0 14px}
+  .tier .price{display:flex;align-items:baseline;gap:6px;margin:2px 0 2px}
+  .tier .amt{font-size:44px;font-weight:680;color:var(--ink);letter-spacing:-.03em;line-height:1;
+    font-variant-numeric:tabular-nums}
+  .tier .per{font-size:13.5px;color:var(--mut);line-height:1.3}
+  .tier .sub{font-size:12.5px;color:var(--mut);min-height:17px;margin:8px 0 16px}
+  .tier .cta{margin:2px 0 18px}
+  .tier .cta .btn{width:100%;text-align:center;box-sizing:border-box}
+  .tier ul{list-style:none;padding:0;margin:auto 0 0}
+  .tier li{font-size:13.5px;color:var(--body);padding:5px 0 5px 22px;position:relative;line-height:1.45}
   .tier li:before{content:"✓";position:absolute;left:0;color:var(--grn);font-weight:700}
-  .addon{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:18px}
-  .model3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:6px 0}
-  @media(max-width:760px){.model3{grid-template-columns:1fr}}
-  .m{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
-  .m b{color:var(--ink)}.m p{font-size:13.5px;color:var(--body);margin:6px 0 0}
-  .tag{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
-    color:var(--grn-d);background:var(--grn-l);border-radius:999px;padding:3px 10px;margin-bottom:10px}
+  .tier li b{color:var(--ink)}
+
+  .calc{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin-top:22px;
+    display:grid;grid-template-columns:1.1fr 1fr;gap:28px;align-items:center}
+  @media(max-width:760px){.calc{grid-template-columns:1fr;gap:16px}}
+  .calc .cl{font-size:14px;color:var(--body)}
+  .calc .cl b{color:var(--ink)}
+  .calc input[type=range]{width:100%;accent-color:var(--grn);cursor:ew-resize;margin:12px 0 4px}
+  .calc .rowb{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut)}
+  .calc .out{text-align:right}
+  .calc .big{font-size:40px;font-weight:680;color:var(--ink);letter-spacing:-.03em;line-height:1;
+    font-variant-numeric:tabular-nums}
+  .calc .oc{font-size:13px;color:var(--mut);margin-top:8px}
+  .calc .oc b{color:var(--grn-d)}
+
+  .addon{background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--grn);
+    border-radius:12px;padding:20px 24px;margin-top:22px}
+  .addon b{color:var(--ink)}
+  .plabel{font-family:var(--mono,ui-monospace);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--mut)}
+  .pfaq{max-width:820px;margin-top:10px}
+  .pfaq details{border-bottom:1px solid var(--line);padding:2px 0}
+  .pfaq summary{cursor:pointer;font-weight:560;color:var(--ink);font-size:15.5px;padding:16px 0;
+    list-style:none;display:flex;justify-content:space-between;gap:16px}
+  .pfaq summary::after{content:"+";color:var(--mut);flex:none}
+  .pfaq details[open] summary::after{content:"–"}
+  .pfaq p{margin:0 0 18px;font-size:14.5px;color:var(--body);max-width:64ch}
 </style>
 </head>
 <body>
@@ -58,92 +97,129 @@
 
 <div class="page"><div class="wrap">
   <div class="eyebrow">Pricing</div>
-  <h1>Priced on the spend we govern — not per seat.</h1>
-  <p class="lede">Your value from Outlay scales with your AI bill, so that's what we price on: a flat
-    platform fee on the <b>AI spend we attribute and govern</b>. Plus an optional <b>savings-share</b>
-    where we only bill on savings we can <b>measure</b> — and unlike the cloud optimizers,
-    <b>no clawback</b>. The exact number is scoped to your spend in a short consultation; here's exactly
-    how it works.</p>
+  <h1>Simple, per person.</h1>
+  <p class="lede">One flat price for every person whose AI spend we attribute — every product included.
+    Start free with a read-only pilot, and only pay once you've seen your own bill itemized. An optional
+    outcome add-on means we can bill purely on savings we <b>measure</b>.</p>
+
+  <div class="bill" role="radiogroup" aria-label="Billing period">
+    <input type="radio" name="bill" id="bm"><label for="bm">Monthly</label>
+    <input type="radio" name="bill" id="by" checked><label for="by">Annual <span class="save">−20%</span></label>
+  </div>
 </div></div>
 
-<section style="padding-top:14px"><div class="wrap">
-  <h2 style="font-size:22px;color:var(--ink)">How pricing works</h2>
-  <div class="model3">
-    <div class="m"><span class="tag">Primary</span><br><b>Platform fee on spend under management</b>
-      <p>A predictable flat band based on the annual AI spend Outlay watches. The % <b>falls as your
-        spend grows</b>, so you're never penalized for scaling. No per-seat fees — add as many viewers
-        as you want.</p></div>
-    <div class="m"><span class="tag">Optional add-on</span><br><b>Savings-share, measured</b>
-      <p>Turn on enforcement or take a commitment we sized, and we bill <b>20% of the savings we can
-        prove</b> against a held-out control arm. <b>No clawback, no lock-in</b> — cancel anytime and
-        keep the savings.</p></div>
-    <div class="m"><span class="tag">Always</span><br><b>Start with a pilot</b>
-      <p>A free, read-only, metadata-only pilot maps your real spend and back-tests the forecast on
-        your own data — so you see the value before a dollar changes hands.</p></div>
-  </div>
-</div></section>
-
-<section style="padding-top:20px"><div class="wrap">
-  <h2 style="font-size:22px;color:var(--ink)">Platform tiers</h2>
-  <p style="font-size:15px;color:var(--mut);max-width:680px;margin:6px 0 18px">Everything is included at
-    every tier — attribution, forecasting, program budgets &amp; pacing, and the commitment recommender.
-    Tiers scale with your AI spend and unlock provisioning, SSO/SCIM, and support depth.</p>
+<section style="padding-top:6px"><div class="wrap">
   <div class="tiers">
+
     <div class="tier">
-      <h3>Team</h3><div class="band">AI spend up to ~$500k / yr</div>
-      <div class="who">A first owner getting attribution and a defensible forecast in place.</div>
+      <div class="flag">&nbsp;</div>
+      <h3>Pilot</h3>
+      <div class="who">See your real spend itemized before a dollar changes hands.</div>
+      <div class="price"><span class="amt">$0</span><span class="per">free<br>forever</span></div>
+      <div class="sub">Up to 25 tracked people</div>
+      <div class="cta"><a class="btn" href="https://app.outlay-ai.com/pilot-request">Start free →</a></div>
       <ul>
-        <li>Work-item attribution (token → ticket → engineer → feature)</li>
-        <li>Own-data forecast + back-test</li>
-        <li>Program budgets, pacing &amp; variance</li>
-        <li>Commitment recommender</li>
-        <li>SSO/OIDC, 2FA/passkeys, audit log + SIEM export</li>
+        <li>Read-only, metadata-only connect</li>
+        <li>Ledger: attribution + itemized statement</li>
+        <li>One workspace · 30-day history</li>
+        <li>Prompts &amp; keys never leave your box</li>
       </ul>
     </div>
+
     <div class="tier feat">
-      <h3>Growth</h3><div class="band">~$500k – $2M / yr</div>
-      <div class="who">Multi-provider teams running governance and chargeback in anger.</div>
+      <div class="flag">Most teams start here</div>
+      <h3>Team</h3>
+      <div class="who">Every product, priced per person we attribute. No usage surprises.</div>
+      <div class="price"><span class="amt" id="team-amt">$15</span><span class="per">per tracked person<br>/ month</span></div>
+      <div class="sub" id="team-sub">billed annually · $19 month-to-month</div>
+      <div class="cta"><a class="btn primary" href="https://app.outlay-ai.com/pilot-request">Become a customer →</a></div>
+      <ul>
+        <li><b>Everything</b> — Ledger, Forecast, Controls, Procure</li>
+        <li>Unlimited history &amp; workspaces</li>
+        <li>Program budgets, pacing &amp; alerts</li>
+        <li>SSO/OIDC, passkeys + MFA</li>
+        <li>Audit log with SIEM export</li>
+      </ul>
+    </div>
+
+    <div class="tier">
+      <div class="flag">&nbsp;</div>
+      <h3>Enterprise</h3>
+      <div class="who">Scale, procurement, and regulated buyers — including US state government.</div>
+      <div class="price"><span class="amt">Custom</span></div>
+      <div class="sub">volume pricing · annual</div>
+      <div class="cta"><a class="btn" href="https://app.outlay-ai.com/pilot-request">Talk to us →</a></div>
       <ul>
         <li>Everything in Team</li>
         <li>SCIM provisioning + enforced MFA</li>
-        <li>Chargeback / showback exports</li>
-        <li>Commitment pacing &amp; negotiation pack</li>
-        <li>Priority support</li>
+        <li>Hard-cap gateway (opt-in, fails open)</li>
+        <li>Portfolio procurement optimization</li>
+        <li>SOC 2 / StateRAMP path, DPA, custom retention &amp; SLA</li>
       </ul>
     </div>
-    <div class="tier">
-      <h3>Scale</h3><div class="band">$2M+ / yr · Enterprise &amp; gov</div>
-      <div class="who">Finance-owned programs and regulated buyers at portfolio scale.</div>
-      <ul>
-        <li>Everything in Growth</li>
-        <li>Portfolio / multi-provider commitment optimization</li>
-        <li>Custom retention + premium support SLA</li>
-        <li>Compliance posture (SOC 2 / StateRAMP path), Trust Center evidence</li>
-        <li>Metadata-only / BYOK / read-only by design</li>
-      </ul>
+
+  </div>
+
+  <!-- interactive estimate -->
+  <div class="calc">
+    <div class="cl">
+      <span class="plabel">Estimate your price</span>
+      <div style="margin-top:10px">People whose AI spend you'd track: <b id="calc-n">25 people</b></div>
+      <input type="range" id="calc-r" min="5" max="500" value="25" step="1"
+        aria-label="People whose AI spend you'd track — drag to estimate the Team price">
+      <div class="rowb"><span>5</span><span>500+</span></div>
+    </div>
+    <div class="out">
+      <div class="big" id="calc-price">$375<span style="font-size:16px;color:var(--mut);font-weight:400">/mo</span></div>
+      <div class="oc"><b id="calc-vs">$4,500</b> per year, everything included · <span id="calc-band">Team</span></div>
     </div>
   </div>
 
   <div class="addon">
-    <b style="color:var(--ink)">The savings-share, in plain terms.</b>
-    <p style="font-size:14px;color:var(--body);margin:8px 0 0">If you enable the opt-in gateway or act on
-      a commitment we recommended, we measure the savings against a held-out control arm and bill
-      <b>20% of what we can prove</b> — billed in arrears, on realized savings only. <b>No early-termination
-      penalty and no clawback of unrealized share</b> (a friction the cloud optimizers charge for). If we
-      don't save you money, you don't pay the share. It's how we put our money where our mouth is.</p>
+    <b>Optional: pay on outcomes, not seats.</b>
+    <p style="font-size:14px;color:var(--body);margin:8px 0 0">Turn on the hard-cap gateway or act on a
+      procurement mix we sized, and you can swap the per-person fee for <b>20% of the savings we can
+      prove</b> against a held-out control arm — billed in arrears, on realized savings only.
+      <b>No clawback, no lock-in.</b> If we don't save you money, you don't pay the share. It's how we put
+      our money where our mouth is.</p>
   </div>
 
-  <p style="font-size:13px;color:var(--mut);max-width:760px;margin-top:18px">Spend bands are indicative —
-    your exact platform fee is set in a short consultation against your real AI spend under management.
-    <a href="/savings">Estimate your commitment savings →</a></p>
-</div></div>
+  <div class="pfaq">
+    <details>
+      <summary>What counts as a "tracked person"?</summary>
+      <p>Anyone whose AI usage Outlay attributes in a billing month — the people behind the tickets,
+        branches, and sessions we map spend to. Viewers, admins, and finance seats are free and unlimited;
+        you only pay for the people actually driving AI spend. Nobody's prompts are ever read.</p>
+    </details>
+    <details>
+      <summary>Is there really no per-usage or per-token fee?</summary>
+      <p>Correct. Team is a flat price per tracked person, full stop — attribution volume, forecast runs,
+        and budget checks don't meter. Your bill is predictable no matter how much your teams build.</p>
+    </details>
+    <details>
+      <summary>How does the outcome add-on get measured?</summary>
+      <p>When you enable enforcement or take a commitment we recommended, we hold out a control arm and
+        compare, so the savings figure is measured on your own traffic — not asserted. We bill 20% of what
+        we can prove, in arrears. There's no clawback of unrealized share and no early-termination penalty.</p>
+    </details>
+    <details>
+      <summary>Do you offer government / education pricing?</summary>
+      <p>Yes — Enterprise covers US state &amp; local government and education, with the compliance evidence
+        (SOC 2 / StateRAMP path), a DPA, and the metadata-only, BYOK, read-only architecture that keeps
+        citizen and customer data out of scope entirely. <a href="/security">See the security overview →</a></p>
+    </details>
+  </div>
+
+  <p style="font-size:13px;color:var(--mut);max-width:760px;margin-top:20px">Estimate is indicative;
+    annual pricing is confirmed in a short scoping call. <a href="/savings">Estimate your procurement savings →</a></p>
+</div></section>
 
 <section class="final"><div class="wrap">
   <h2>See your number on your own spend.</h2>
-  <p>Start with a read-only pilot. We map your real AI spend, back-test the forecast, and scope pricing
-    to what we'd actually govern — prompts and keys never leave your box.</p>
+  <p>Start with a free, read-only pilot. We map your real AI spend and itemize it in days —
+    then the price is just people × a flat rate. Prompts and keys never leave your box.</p>
   <div class="center">
-    <a class="btn onnavy lg" href="https://app.outlay-ai.com/pilot-request">Become a customer →</a>
+    <a class="btn onnavy lg" href="https://app.outlay-ai.com/pilot-request">Start free →</a>
   </div>
 </div></section>
 
@@ -164,5 +240,33 @@
 
 <script>
 (function(){var t=document.getElementById('nav-t'),h=document.querySelector('.hamburger'),m=document.getElementById('nav-menu');if(!t||!h)return;function sync(){var o=t.checked;h.setAttribute('aria-expanded',o?'true':'false');h.setAttribute('aria-label',o?'Close menu':'Open menu');}t.addEventListener('change',sync);h.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();t.checked=!t.checked;sync();}});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&t.checked){t.checked=false;sync();}});if(m)m.addEventListener('click',function(e){if(e.target.closest('a')){t.checked=false;sync();}});})();
+
+// Pricing interactivity — billing toggle drives the Team rate and the estimate.
+// Works as plain enhancement; the static defaults ($15 annual / 25 people) are
+// already correct with JS off.
+(function(){
+  var d=document, RATE={by:15, bm:19}, LABEL={by:'billed annually · $19 month-to-month', bm:'month-to-month · save 20% annually'};
+  var bm=d.getElementById('bm'), by=d.getElementById('by'),
+      teamAmt=d.getElementById('team-amt'), teamSub=d.getElementById('team-sub'),
+      rng=d.getElementById('calc-r'), nOut=d.getElementById('calc-n'),
+      price=d.getElementById('calc-price'), vs=d.getElementById('calc-vs'), band=d.getElementById('calc-band');
+  function rate(){ return (bm && bm.checked) ? RATE.bm : RATE.by; }
+  function $(n){ return '$' + Math.round(n).toLocaleString('en-US'); }
+  function draw(){
+    var r=rate();
+    if(teamAmt) teamAmt.textContent='$'+r;
+    if(teamSub) teamSub.textContent=(bm&&bm.checked)?LABEL.bm:LABEL.by;
+    if(rng){
+      var n=+rng.value, mo=n*r;
+      if(nOut) nOut.textContent=n+(n>=500?'+ people':' people');
+      if(price) price.innerHTML=$(mo)+'<span style="font-size:16px;color:var(--mut);font-weight:400">/mo</span>';
+      if(vs) vs.textContent=$(mo*12);
+      if(band) band.textContent = n>=200 ? 'Team → talk to us for volume' : 'Team';
+    }
+  }
+  [bm,by].forEach(function(el){ if(el) el.addEventListener('change',draw); });
+  if(rng) rng.addEventListener('input',draw);
+  draw();
+})();
 </script>
 </body></html>
