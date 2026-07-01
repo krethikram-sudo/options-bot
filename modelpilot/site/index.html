@@ -2,45 +2,38 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Outlay — the control plane for AI compute spend</title>
-<meta name="description" content="Outlay attributes every dollar of LLM and coding-agent spend — across Anthropic, OpenAI, Cursor, AWS Bedrock, and Google Vertex — to the Jira/Linear/GitHub tickets, epics, and roadmap that drove it. Forecast by scope, then govern it: set a budget per program and enforce a hard cap that blocks or routes down over-budget work, reallocating compute to the programs that matter most. Split spend into work vs non-work from metadata and stop non-work usage per team. Reconcile to the invoice, export FOCUS-aligned data, SSO/SCIM, passkeys + MFA. Prompts never leave your environment.">
+<title>Outlay — your AI bill, itemized</title>
+<meta name="description" content="Outlay maps every dollar of LLM and coding-agent spend — across Anthropic, OpenAI, Cursor, AWS Bedrock, and Google Vertex — to the Jira/Linear/GitHub tickets, epics, teams, and people that drove it. Forecast by scope, enforce budgets per program, split work from non-work and stop it per team, and buy compute the cheapest way. Prompts and keys never leave your environment.">
 <link rel="canonical" href="https://outlay-ai.com/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="robots" content="index, follow">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://outlay-ai.com/">
-<meta property="og:title" content="Outlay — the control plane for AI compute spend">
-<meta property="og:description" content="Attribute every dollar of LLM and coding-agent spend to the tickets, epics, and roadmap you already plan. Forecast by scope, hold to budget with pace-based guardrails, and capture savings automatically.">
+<meta property="og:title" content="Outlay — your AI bill, itemized">
+<meta property="og:description" content="Every AI dollar mapped to the ticket, team, and person that drove it. Forecast by scope, hold it to budget, stop what isn't work. Prompts never leave your environment.">
 <meta property="og:image" content="https://outlay-ai.com/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Outlay — put AI compute on a budget">
+<meta property="og:image:alt" content="Outlay — your AI bill, itemized">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://outlay-ai.com/og-image.png">
-<meta name="twitter:title" content="Outlay — the control plane for AI compute spend">
-<meta name="twitter:description" content="Budget and govern AI compute by scope of work. Attribute spend to tickets, forecast by scope, guardrails before overspend. Prompts never leave your environment.">
-<link rel="stylesheet" href="/outlay.css?v=20260621-5">
+<meta name="twitter:title" content="Outlay — your AI bill, itemized">
+<meta name="twitter:description" content="Every AI dollar mapped to the ticket, team, and person that drove it. Budget it, forecast it, stop what isn't work.">
+<link rel="stylesheet" href="/landing.css?v=20260701-3">
 <script src="/auth-nav.js?v=3" defer></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
-<!-- Provider/tool brand marks, self-hosted inline (no third-party CDN at runtime, so
-     visitor IPs never reach a logo host). Single-color paths from simple-icons (CC0);
-     each mark is the trademark of its respective owner, shown for compatibility. -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><symbol id="lg-anthropic" viewBox="0 0 24 24"><path d="M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z"/></symbol><symbol id="lg-openai" viewBox="0 0 24 24"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/></symbol><symbol id="lg-azure" viewBox="0 0 24 24"><path d="M22.379 23.343a1.62 1.62 0 0 0 1.536-2.14v.002L17.35 1.76A1.62 1.62 0 0 0 15.816.657H8.184A1.62 1.62 0 0 0 6.65 1.76L.086 21.204a1.62 1.62 0 0 0 1.536 2.139h4.741a1.62 1.62 0 0 0 1.535-1.103l.977-2.892 4.947 3.675c.28.208.618.32.966.32m-3.084-12.531 3.624 10.739a.54.54 0 0 1-.51.713v-.001h-.03a.54.54 0 0 1-.322-.106l-9.287-6.9h4.853m6.313 7.006c.116-.326.13-.694.007-1.058L9.79 1.76a1.722 1.722 0 0 0-.007-.02h6.034a.54.54 0 0 1 .512.366l6.562 19.445a.54.54 0 0 1-.338.684"/></symbol><symbol id="lg-aws" viewBox="0 0 24 24"><path d="M6.763 10.036c0 .296.032.535.088.71.064.176.144.368.256.576.04.063.056.127.056.183 0 .08-.048.16-.152.24l-.503.335a.383.383 0 0 1-.208.072c-.08 0-.16-.04-.239-.112a2.47 2.47 0 0 1-.287-.375 6.18 6.18 0 0 1-.248-.471c-.622.734-1.405 1.101-2.347 1.101-.67 0-1.205-.191-1.596-.574-.391-.384-.59-.894-.59-1.533 0-.678.239-1.23.726-1.644.487-.415 1.133-.623 1.955-.623.272 0 .551.024.846.064.296.04.6.104.918.176v-.583c0-.607-.127-1.03-.375-1.277-.255-.248-.686-.367-1.3-.367-.28 0-.568.031-.863.103-.295.072-.583.16-.862.272a2.287 2.287 0 0 1-.28.104.488.488 0 0 1-.127.023c-.112 0-.168-.08-.168-.247v-.391c0-.128.016-.224.056-.28a.597.597 0 0 1 .224-.167c.279-.144.614-.264 1.005-.36a4.84 4.84 0 0 1 1.246-.151c.95 0 1.644.216 2.091.647.439.43.662 1.085.662 1.963v2.586zm-3.24 1.214c.263 0 .534-.048.822-.144.287-.096.543-.271.758-.51.128-.152.224-.32.272-.512.047-.191.08-.423.08-.694v-.335a6.66 6.66 0 0 0-.735-.136 6.02 6.02 0 0 0-.75-.048c-.535 0-.926.104-1.19.32-.263.215-.39.518-.39.917 0 .375.095.655.295.846.191.2.47.296.838.296zm6.41.862c-.144 0-.24-.024-.304-.08-.064-.048-.12-.16-.168-.311L7.586 5.55a1.398 1.398 0 0 1-.072-.32c0-.128.064-.2.191-.2h.783c.151 0 .255.025.31.08.065.048.113.16.16.312l1.342 5.284 1.245-5.284c.04-.16.088-.264.151-.312a.549.549 0 0 1 .32-.08h.638c.152 0 .256.025.32.08.063.048.12.16.151.312l1.261 5.348 1.381-5.348c.048-.16.104-.264.16-.312a.52.52 0 0 1 .311-.08h.743c.127 0 .2.065.2.2 0 .04-.009.08-.017.128a1.137 1.137 0 0 1-.056.2l-1.923 6.17c-.048.16-.104.263-.168.311a.51.51 0 0 1-.303.08h-.687c-.151 0-.255-.024-.32-.08-.063-.056-.119-.16-.15-.32l-1.238-5.148-1.23 5.14c-.04.16-.087.264-.15.32-.065.056-.177.08-.32.08zm10.256.215c-.415 0-.83-.048-1.229-.143-.399-.096-.71-.2-.918-.32-.128-.071-.215-.151-.247-.223a.563.563 0 0 1-.048-.224v-.407c0-.167.064-.247.183-.247.048 0 .096.008.144.024.048.016.12.048.2.08.271.12.566.215.878.279.319.064.63.096.95.096.502 0 .894-.088 1.165-.264a.86.86 0 0 0 .415-.758.777.777 0 0 0-.215-.559c-.144-.151-.416-.287-.807-.415l-1.157-.36c-.583-.183-1.014-.454-1.277-.813a1.902 1.902 0 0 1-.4-1.158c0-.335.073-.63.216-.886.144-.255.335-.479.575-.654.24-.184.51-.32.83-.415.32-.096.655-.136 1.006-.136.175 0 .359.008.535.032.183.024.35.056.518.088.16.04.312.08.455.127.144.048.256.096.336.144a.69.69 0 0 1 .24.2.43.43 0 0 1 .071.263v.375c0 .168-.064.256-.184.256a.83.83 0 0 1-.303-.096 3.652 3.652 0 0 0-1.532-.311c-.455 0-.815.071-1.062.223-.248.152-.375.383-.375.71 0 .224.08.416.24.567.159.152.454.304.877.44l1.134.358c.574.184.99.44 1.237.767.247.327.367.702.367 1.117 0 .343-.072.655-.207.926-.144.272-.336.511-.583.703-.248.2-.543.343-.886.447-.36.111-.734.167-1.142.167zM21.698 16.207c-2.626 1.94-6.442 2.969-9.722 2.969-4.598 0-8.74-1.7-11.87-4.526-.247-.223-.024-.527.272-.351 3.384 1.963 7.559 3.153 11.877 3.153 2.914 0 6.114-.607 9.06-1.852.439-.2.814.287.383.607zM22.792 14.961c-.336-.43-2.22-.207-3.074-.103-.255.032-.295-.192-.063-.36 1.5-1.053 3.967-.75 4.254-.399.287.36-.08 2.826-1.485 4.007-.215.184-.423.088-.327-.151.32-.79 1.03-2.57.695-2.994z"/></symbol><symbol id="lg-gcloud" viewBox="0 0 24 24"><path d="M12.19 2.38a9.344 9.344 0 0 0-9.234 6.893c.053-.02-.055.013 0 0-3.875 2.551-3.922 8.11-.247 10.941l.006-.007-.007.03a6.717 6.717 0 0 0 4.077 1.356h5.173l.03.03h5.192c6.687.053 9.376-8.605 3.835-12.35a9.365 9.365 0 0 0-2.821-4.552l-.043.043.006-.05A9.344 9.344 0 0 0 12.19 2.38zm-.358 4.146c1.244-.04 2.518.368 3.486 1.15a5.186 5.186 0 0 1 1.862 4.078v.518c3.53-.07 3.53 5.262 0 5.193h-5.193l-.008.009v-.04H6.785a2.59 2.59 0 0 1-1.067-.23h.001a2.597 2.597 0 1 1 3.437-3.437l3.013-3.012A6.747 6.747 0 0 0 8.11 8.24c.018-.01.04-.026.054-.023a5.186 5.186 0 0 1 3.67-1.69z"/></symbol><symbol id="lg-claude" viewBox="0 0 24 24"><path d="m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z"/></symbol><symbol id="lg-cursor" viewBox="0 0 24 24"><path d="M11.503.131 1.891 5.678a.84.84 0 0 0-.42.726v11.188c0 .3.162.575.42.724l9.609 5.55a1 1 0 0 0 .998 0l9.61-5.55a.84.84 0 0 0 .42-.724V6.404a.84.84 0 0 0-.42-.726L12.497.131a1.01 1.01 0 0 0-.996 0M2.657 6.338h18.55c.263 0 .43.287.297.515L12.23 22.918c-.062.107-.229.064-.229-.06V12.335a.59.59 0 0 0-.295-.51l-9.11-5.257c-.109-.063-.064-.23.061-.23"/></symbol><symbol id="lg-jira" viewBox="0 0 24 24"><path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24 12.483V1.005A1.001 1.001 0 0 0 23.013 0Z"/></symbol><symbol id="lg-linear" viewBox="0 0 24 24"><path d="M2.886 4.18A11.982 11.982 0 0 1 11.99 0C18.624 0 24 5.376 24 12.009c0 3.64-1.62 6.903-4.18 9.105L2.887 4.18ZM1.817 5.626l16.556 16.556c-.524.33-1.075.62-1.65.866L.951 7.277c.247-.575.537-1.126.866-1.65ZM.322 9.163l14.515 14.515c-.71.172-1.443.282-2.195.322L0 11.358a12 12 0 0 1 .322-2.195Zm-.17 4.862 9.823 9.824a12.02 12.02 0 0 1-9.824-9.824Z"/></symbol><symbol id="lg-github" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></symbol></defs></svg>
 
 <nav><div class="wrap">
   <a class="brand" href="/">Outlay<span class="dot">.ai</span></a>
   <input type="checkbox" id="nav-t" class="nav-toggle" hidden>
   <div class="navlinks" id="nav-menu">
     <a href="/#how">How it works</a>
-    <a href="/#proof">Attribution</a>
-    <a href="/#govern">Govern</a>
     <a href="/platform">Platform</a>
-    <a href="/#security">Security</a>
-    <a href="/#compare">Compare</a>
-    <a href="/tour">Product Tour</a>
+    <a href="/security">Security</a>
+    <a href="/pricing">Pricing</a>
   </div>
   <div class="navsp"></div>
   <div class="navcta">
@@ -50,406 +43,214 @@
 </div></nav>
 
 <main id="main">
-<!-- HERO -->
-<header class="hero"><div class="wrap">
-  <div class="herogrid">
-    <div class="herotext">
-      <div class="eyebrow">The control plane for AI compute spend</div>
-      <h1>Put AI compute <em>on a budget.</em></h1>
-      <p class="sub">AI has become a runaway, unpredictable line item. Outlay attributes every dollar of
-        LLM and coding-agent spend to the work you already plan — tickets, epics, roadmap — forecasts cost by
-        scope, and lets you <b>enforce a budget per program</b>, reallocating compute to the work that matters
-        most.</p>
-      <div class="ctarow">
-        <a class="btn primary lg" href="https://app.outlay-ai.com/pilot-request">Become a customer →</a>
-        <a class="btn ghost lg" href="/tour">Take the Product Tour →</a>
-      </div>
-      <div class="trustline"><b>Every major provider</b> · read-only to start · prompts never leave your
-        environment · <a href="/security">built for security review →</a></div>
-    </div>
-    <div class="panel">
-      <div class="pcard">
-        <div class="ph"><span class="t">Budget burndown · this quarter</span><span class="tag over">over pace</span></div>
-        <div class="pbody">
-          <div class="bignum"><span class="v num" data-count="45" data-prefix="$" data-suffix="k">$45k</span><span class="of">of $50k budget · 71% of period elapsed</span></div>
-          <div class="proj">On pace to land ~$61k — 22% over budget · flagged with 6 weeks left to act</div>
-          <div class="dual">
-            <div class="r"><span>Budget</span><span class="num">$50k</span></div>
-            <div class="track"><span style="width:78%;background:#9aa3b3"></span></div>
-            <div class="r"><span>Projected at current pace</span><span class="num">$61k</span></div>
-            <div class="track"><span style="width:100%;background:var(--red)"></span></div>
-          </div>
-        </div>
-      </div>
+
+<!-- MASTHEAD — the document opens -->
+<header class="masthead" id="proof"><div class="wrap">
+  <div class="mast-rule"></div>
+  <div class="mast-meta">
+    <span class="micro">AI spend statement · prepared by Outlay</span>
+    <span class="micro">Period JUN 2026 · All figures reconciled</span>
+  </div>
+  <h1 class="display">Your AI bill,<br><span class="acc">itemized.</span></h1>
+  <div class="mast-sub">
+    <p class="lede">Outlay maps every AI dollar to the <b>ticket, team, and person</b> that drove it —
+      so you can forecast it, budget it, and stop the spend that isn't work.
+      Prompts and keys never leave your environment.</p>
+    <div class="ctarow">
+      <a class="btn primary lg" href="https://app.outlay-ai.com/pilot-request">See it on your spend →</a>
+      <a class="btn lg" href="/tour">Product tour</a>
     </div>
   </div>
-  <div class="heropills">
-    <span class="hp-label">Works with</span>
-    <div class="hp-pills"><span class="hpill"><svg class="hpico" aria-hidden="true"><use href="#lg-anthropic"/></svg>Anthropic</span><span class="hpill"><svg class="hpico" aria-hidden="true"><use href="#lg-openai"/></svg>OpenAI</span><span class="hpill"><svg class="hpico" aria-hidden="true"><use href="#lg-azure"/></svg>Azure OpenAI</span><span class="hpill"><svg class="hpico" aria-hidden="true"><use href="#lg-aws"/></svg>AWS Bedrock</span><span class="hpill"><svg class="hpico" aria-hidden="true"><use href="#lg-gcloud"/></svg>Google Vertex</span><span class="hpill"><svg class="hpico" aria-hidden="true"><use href="#lg-claude"/></svg>Claude Code</span><span class="hpill"><svg class="hpico" aria-hidden="true"><use href="#lg-cursor"/></svg>Cursor</span><span class="hpill"><svg class="hpico" aria-hidden="true"><use href="#lg-jira"/></svg>Jira</span><span class="hpill"><svg class="hpico" aria-hidden="true"><use href="#lg-linear"/></svg>Linear</span><span class="hpill"><svg class="hpico" aria-hidden="true"><use href="#lg-github"/></svg>GitHub</span></div>
+
+  <!-- THE LEDGER — the hero is the table -->
+  <div class="ledger" role="img" aria-label="An AI spend ledger: every line attributed to a ticket, epic, owner, and team; non-work flagged and stopped; the unknown remainder never guessed; total reconciled to the provider invoice.">
+    <div class="lg-cols"><span>Item</span><span class="oc">Owner</span><span class="tc">Team</span><span>Status</span><span style="text-align:right">Amount</span></div>
+    <div class="lg-row"><span class="it">GH-241 · checkout refactor</span><span class="who">sara@</span><span class="team">growth</span><span class="st ok">SHIPPED</span><span class="amt">$1,204.33</span></div>
+    <div class="lg-row"><span class="it">GH-198 · payments retries</span><span class="who">omar@</span><span class="team">payments</span><span class="st ok">SHIPPED</span><span class="amt">$842.10</span></div>
+    <div class="lg-row"><span class="it">Q3 Stability <small>· epic · 34 tickets</small></span><span class="who">—</span><span class="team">platform</span><span class="st ok">ON BUDGET</span><span class="amt">$18,913.02</span></div>
+    <div class="lg-row"><span class="it">Billing v2 <small>· epic · 21 tickets</small></span><span class="who">—</span><span class="team">growth</span><span class="st bad">OVER PACE</span><span class="amt">$11,406.55</span></div>
+    <div class="lg-row flag"><span class="it">Personal key · flagged non-work</span><span class="who">bob@</span><span class="team">growth</span><span class="st bad">STOPPED</span><span class="amt">$3,979.03</span></div>
+    <div class="lg-row dim"><span class="it">Unknown · never guessed</span><span class="who">—</span><span class="team">—</span><span class="st dim">UNTRACKED</span><span class="amt">$6,753.00</span></div>
+    <div class="lg-total"><span class="t">TOTAL <span class="ok">· ✓ RECONCILED TO PROVIDER INVOICE</span></span><span class="amt">$84,604.77</span></div>
   </div>
+
+  <!-- the three figures that are the pitch -->
+  <div class="figures">
+    <div class="fig"><div class="v">94<span class="u">%</span></div>
+      <div class="k">of spend attributed to a ticket, epic, or person — measured on your data, not asserted.</div></div>
+    <div class="fig"><div class="v">±14<span class="u">%</span></div>
+      <div class="k">forecast error, back-tested on your own closed tickets. Error and sample size always shown.</div></div>
+    <div class="fig"><div class="v">$21k<span class="u">/mo</span></div>
+      <div class="k">typical procurement saving — the cheapest mix of seats and API credits, from per-person spend.</div></div>
+  </div>
+
+  <p class="providers"><b>Works with</b> &nbsp;Anthropic · OpenAI · Azure OpenAI · AWS Bedrock ·
+    Google Vertex · Claude Code · Cursor · Jira · Linear · GitHub</p>
 </div></header>
 
-<!-- COMPATIBILITY / STANDARDS BAR -->
-<div class="compatbar"><div class="wrap">
-  <span class="lead">Built to your standards — open, portable, auditable</span>
-  <span class="cbadge is-claim"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Data never leaves your environment</span>
-  <span class="cbadge"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>FOCUS-aligned export</span>
-  <span class="cbadge"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/></svg>BI &amp; warehouse API</span>
-  <span class="cbadge"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 5-3.5 7.5-8.5 9C7.5 19.5 4 17 4 12V6l8-3 8 3z" fill="none"/></svg>SSO · SCIM · passkeys + MFA</span>
-  <span class="cbadge"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Audit-log export → SIEM</span>
-  <span class="cbadge">Configurable retention + self-serve erasure</span>
-  <span class="cbadge is-claim"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Enforce budgets by program</span>
-</div></div>
-
-<!-- TWO OWNERS -->
-<section id="owners"><div class="wrap">
-  <div class="sec-head">
-    <div class="eyebrow">One control plane, two owners</div>
-    <h2>The question leadership keeps asking — finally answerable.</h2>
-    <p>“What is this body of planned work costing us in AI, and are we on track?” Today's tools meter
-       infrastructure — API keys, models, dashboards. Outlay meters the <b>work</b>.</p>
+<!-- 01 — METHOD -->
+<section class="section" id="how"><div class="wrap">
+  <div class="sec-no"><span class="no">01 — METHOD</span><h2>Attribute. Forecast. Govern.</h2></div>
+  <p class="sec-intro">Connect the tracker and AI tools you already use — read-only, no app rewrite.
+     Every other tool stops at an infrastructure tag. Outlay meters the <b>work</b>.</p>
+  <div class="mrow">
+    <span class="n">1.1 — ATTRIBUTE</span>
+    <div><h3>Every dollar finds its ticket.</h3>
+      <p>Each AI call resolves to the ticket, epic, and person behind it — from branch, PR,
+         and session metadata. Prompt content is never read.</p></div>
+    <div class="sample"><span class="c"># branch → ticket → epic</span><br>
+      fix/PROJ-123 → <span class="g">PROJ-123 → Q3 Stability</span><br>
+      <span class="c">fidelity: call · branch · session · team</span></div>
   </div>
-  <div class="owners">
-    <div class="owner">
-      <div class="role">For engineering leaders</div>
-      <h3>Predictable delivery, by scope.</h3>
-      <p class="lead">See exactly what each ticket, epic, and sprint costs in AI — and which work is about
-        to blow its estimate — the way you already plan effort.</p>
-      <ul>
-        <li><span class="ck">→</span><div>Cost <b>per ticket, epic, sprint, and engineer</b>, reconciled to the real invoice.</div></li>
-        <li><span class="ck">→</span><div><b>Estimate planned work</b> from its requirements + design docs — budget an epic before you build it.</div></li>
-        <li><span class="ck">→</span><div><b>Forecast a quarter</b> from its open scope, not from last month's bill.</div></li>
-        <li><span class="ck">→</span><div><b>Anomaly flags</b> on the one ticket burning 10× its class — before it's a surprise.</div></li>
-      </ul>
+  <div class="mrow">
+    <span class="n">1.2 — FORECAST</span>
+    <div><h3>Price the quarter before you build it.</h3>
+      <p>Forecast from your open backlog, the way you estimate effort — back-tested on your own
+         closed tickets, with the error shown. Never a vendor benchmark.</p></div>
+    <div class="sample"><span class="c"># open scope × learned cost/work-type</span><br>
+      Q3 forecast <span class="g">$48k ± $9k</span><br>
+      <span class="c">back-test on 188 closed tickets · error shown</span></div>
+  </div>
+  <div class="mrow">
+    <span class="n">1.3 — GOVERN</span>
+    <div><h3>Budgets that act, not just alert.</h3>
+      <p>Set budgets per team, program, or epic. Pace-based alerts flag overspend before it lands —
+         or set a hard cap the opt-in gateway enforces, blocking or routing down.</p></div>
+    <div class="sample"><span class="c"># program · hard cap · gateway-enforced</span><br>
+      Platform <span class="r">$61k / $50k · over</span> → route-down ×1,240<br>
+      Launch Q3 <span class="g">$28k / $40k · on track</span></div>
+  </div>
+</div></section>
+
+<!-- 02 — CONTROLS -->
+<section class="section" style="padding-top:0"><div class="wrap">
+  <div class="sec-no"><span class="no">02 — CONTROLS</span><h2>Decisions no dashboard can make.</h2></div>
+  <div class="crow" id="govern">
+    <div>
+      <h3>Budget by what matters.</h3>
+      <p>Group teams and projects into programs with one budget. Over the cap? New calls block or
+         route down automatically — and budget moves where priorities move.</p>
+      <a class="go" href="/tour">See governance →</a>
     </div>
-    <div class="owner">
-      <div class="role">For business &amp; FinOps</div>
-      <h3>Govern the fastest-growing line item.</h3>
-      <p class="lead">Allocate AI spend to teams and cost centers, set budgets by scope, and get alerts
-        before overspend — not a surprise invoice at month-end.</p>
-      <ul>
-        <li><span class="ck">→</span><div><b>Allocation</b> of every dollar to a team, cost center, and roadmap item.</div></li>
-        <li><span class="ck">→</span><div><b>Budget vs. actual</b> with pace-based projection to end-of-period.</div></li>
-        <li><span class="ck">→</span><div><b>Pace-based guardrails</b> that flag a scope trending over <b>before</b> the invoice lands.</div></li>
-      </ul>
+    <div class="cfig">
+      <div class="row"><span>Platform · hard cap</span><span class="r">$61k / $50k · enforced ×1,240</span></div>
+      <div class="row"><span>Launch — Q3 · hard cap</span><span class="g">$28k / $40k · on track</span></div>
+      <div class="row"><span>Growth experiments · alert-only</span><span class="f">$12k / $30k</span></div>
+    </div>
+  </div>
+  <div class="crow" id="worktype">
+    <div>
+      <h3>Work vs. non-work.</h3>
+      <p>Tag a side-project key once and see what the company key is really buying. Stop non-work
+         usage per team — without reading a single prompt.</p>
+      <a class="go" href="/platform">How the split works →</a>
+    </div>
+    <div class="cfig">
+      <div class="row"><span>Work · joined to tickets</span><span>$71,889 · 87%</span></div>
+      <div class="row"><span>Non-work · flagged key, stopped for growth</span><span class="r">$3,979</span></div>
+      <div class="row"><span>Unknown · never guessed</span><span class="f">$6,753</span></div>
+    </div>
+  </div>
+  <div class="crow">
+    <div>
+      <h3>Buy compute the cheap way.</h3>
+      <p>Per-person spend shows who belongs on a flat seat and who belongs on API credits.
+         Outlay computes the cheapest mix — analysis nobody buying blind can run.</p>
+      <a class="go" href="/pricing">Procurement mix →</a>
+    </div>
+    <div class="cfig">
+      <div class="row"><span>All-API status quo</span><span>$27.5k /mo</span></div>
+      <div class="row"><span>Optimal · 19 seats + 4 on API</span><span>$6.0k /mo</span></div>
+      <div class="row"><span>Saving</span><span class="g">$21.5k /mo · shown with assumptions</span></div>
     </div>
   </div>
 </div></section>
 
-<!-- HOW IT WORKS / CONTROL LOOP -->
-<section id="how" class="paper"><div class="wrap">
-  <div class="sec-head">
-    <div class="eyebrow">How it works</div>
-    <h2>A closed loop: attribute, forecast, guardrail.</h2>
-    <p>Connect the tracker and AI tools you already use. Read-only to start — no app rewrite, no prompts
-       leaving your environment.</p>
+<!-- 03 — SECURITY REVIEW (the divider band) -->
+<section class="band" id="security"><div class="wrap">
+  <div class="sec-no"><span class="no">03 — SECURITY REVIEW</span><h2>Built to pass yours.</h2></div>
+  <p class="lede">Most spend tools see everything you send. Outlay is built so sensitive data
+    <b>physically can't reach us</b> — attribution runs on metadata: task categories, token counts,
+    ticket IDs, dollar figures.</p>
+  <div class="specs">
+    <div class="spec"><div class="k">Metadata only</div>
+      <div class="v">Prompt content, model outputs, and your API keys never reach our servers. An architecture, not a policy.</div></div>
+    <div class="spec"><div class="k">Read-only by default</div>
+      <div class="v">Read-only tokens; keys stay on your box. Enforcement is an explicit opt-in gateway that fails open.</div></div>
+    <div class="spec"><div class="k">Measured, not asserted</div>
+      <div class="v">Forecasts back-tested on your own tickets; every number shown with its error and sample size.</div></div>
   </div>
-  <div class="loop loop-3">
-    <div class="lstep">
-      <div class="n">1</div><h3>Attribute</h3>
-      <p>Every dollar of agent &amp; LLM spend mapped to the ticket, epic, and roadmap it belongs to.</p>
-      <code class="codeline"><span class="c"># tag / branch / PR → ticket</span>
-fix/PROJ-123 → <span class="g">PROJ-123 → Q3-stability</span></code>
-    </div>
-    <div class="lstep">
-      <div class="n">2</div><h3>Forecast</h3>
-      <p>Predict a quarter's cost from its open scope, the way you estimate engineering effort.</p>
-      <code class="codeline"><span class="c"># open roadmap × per-class cost</span>
-Q3 forecast: <span class="g">$48k ± $9k</span></code>
-    </div>
-    <div class="lstep">
-      <div class="n">3</div><h3>Guardrail</h3>
-      <p>Pace-based alerts flag a team trending over <b>before</b> it blows through — not after.</p>
-      <code class="codeline"><span class="c"># projected, not a hard cap</span>
-epic Q3-stability <span class="w">on pace $22k · over</span></code>
-    </div>
-  </div>
+  <p class="row2">SSO/SAML &amp; SCIM · phishing-resistant passkeys + MFA · full audit log with SIEM export ·
+    configurable retention &amp; self-serve erasure · WCAG&nbsp;2.1&nbsp;AA ·
+    <a href="/security">read the security overview</a></p>
 </div></section>
 
-<!-- PROOF / DIFFERENTIATOR -->
-<section id="proof"><div class="wrap">
-  <div class="sec-head">
-    <div class="eyebrow">Attribution nobody else has</div>
-    <h2>Spend mapped to the work — projected on pace.</h2>
-    <p>Every gateway, observability, and FinOps tool stops at an infrastructure tag. Outlay resolves
-       the git context of each AI call back to the ticket — and budgets it like real work.</p>
-  </div>
-  <div class="proofgrid">
-    <div class="pcard">
-      <div class="ph"><span class="t">Budget burndown · epic Q3 Stability</span><span class="tag over">over</span></div>
-      <div class="pbody">
-        <div class="dual">
-          <div class="r"><span>Budget (this quarter)</span><b class="num">$5,000</b></div>
-          <div class="track"><span style="width:62%;background:#9aa3b3"></span></div>
-          <div class="r"><span>Spent so far · 29% of period</span><b class="num">$6,430</b></div>
-          <div class="track"><span style="width:100%;background:var(--amber)"></span></div>
-          <div class="r"><span>Projected at current pace</span><b class="num">$22,000</b></div>
-          <div class="track"><span style="width:100%;background:var(--red)"></span></div>
-        </div>
-        <p class="muted" style="font-size:12.5px;margin:14px 0 0">Illustrative. Flagged <b>OVER</b> early — driven by one outlier ticket at 11× its class median.</p>
-      </div>
-    </div>
-    <div class="statlist">
-      <div class="s"><div class="v">By ticket</div><div class="d">Every dollar attributed to the work it belongs to — ticket, epic, team, sprint, roadmap — and reconciled to the provider invoice.</div></div>
-      <div class="s"><div class="v">On pace</div><div class="d">Guardrails project the end-of-period total at the current burn rate, so a lead acts <b>before</b> overspend — not after.</div></div>
-      <div class="s"><div class="v">Measured, not promised</div><div class="d">Every forecast is back-tested on your own closed tickets (leave-one-out), and we show the error and the sample size — never a vendor benchmark.</div></div>
-      <div class="s"><div class="v">Metadata only</div><div class="d">Attribution runs on categories, token counts, and ticket IDs. Prompt content, model outputs, and keys never leave your environment.</div></div>
-    </div>
-  </div>
-</div></section>
-
-<!-- GOVERN / ENFORCE BY PROGRAM -->
-<section id="govern" class="paper"><div class="wrap">
-  <div class="sec-head">
-    <div class="eyebrow">Govern, don't just observe</div>
-    <h2>Enforce a compute budget by program — and reallocate to what matters.</h2>
-    <p>Group the work that shares a goal — several teams, projects, or work types — into a <b>program</b>, and
-       give it a budget. Outlay alerts before it's blown. And with the opt-in gateway in front of your calls,
-       that budget becomes a <b>true hard cap</b>: an over-budget program is automatically <b>blocked</b> or
-       <b>routed down</b> to a cheaper model — so compute flows to the programs you care about most. As
-       priorities shift, move the budget; enforcement follows.</p>
-  </div>
-  <div class="proofgrid">
-    <div class="pcard">
-      <div class="ph"><span class="t">Programs · compute by priority</span><span class="tag over">enforcing</span></div>
-      <div class="pbody">
-        <div class="srow"><span class="nm">Platform <small>hard cap · over · enforced 1,240×</small></span><span class="amt num">$61k / $50k</span><span class="track"><span style="width:100%;background:var(--red)"></span></span></div>
-        <div class="srow"><span class="nm">Launch — Q3 GA <small>hard cap · on track</small></span><span class="amt num">$28k / $40k</span><span class="track"><span style="width:70%;background:var(--grn)"></span></span></div>
-        <div class="srow"><span class="nm">Growth experiments <small>alert only</small></span><span class="amt num">$12k / $30k</span><span class="track"><span style="width:40%;background:var(--grn)"></span></span></div>
-        <p class="muted" style="font-size:12.5px;margin:14px 0 0">Illustrative. Platform is over its cap, so new
-          Platform calls route down automatically — freeing budget for the launch. Raise a program's cap to
-          send compute back to it.</p>
-      </div>
-    </div>
-    <div class="statlist">
-      <div class="s"><div class="v">One budget, many teams</div><div class="d">A program spans the teams, projects, and work types that share an objective — budgeted and enforced as a single number, not scattered across scopes.</div></div>
-      <div class="s"><div class="v">A hard cap, your choice</div><div class="d">When a program goes over, <b>block</b> new calls or <b>route them down</b> to a floor model — automatically, at the gateway. Or stay <b>alert-only</b> and let your own automation act on a webhook.</div></div>
-      <div class="s"><div class="v">Reallocate as you go</div><div class="d">Priorities change mid-quarter. Move budget between programs and enforcement follows instantly — compute flows to the work that matters now, capped on the work that doesn't.</div></div>
-      <div class="s"><div class="v">Read-only by default</div><div class="d">Attribution and alerts never touch your traffic. Hard enforcement is an explicit opt-in: you run our gateway in front of your calls only if you want it to act — and it <b>fails open</b>, never blocking on our uptime.</div></div>
-    </div>
-  </div>
-</div></section>
-
-<!-- WORK vs NON-WORK -->
-<section id="worktype"><div class="wrap">
-  <div class="sec-head">
-    <div class="eyebrow">Work vs. non-work</div>
-    <h2>Know what's actually work — and stop what isn't.</h2>
-    <p>Some of your AI budget is delivering the roadmap. Some is side projects, experiments, and
-       personal use on the company key. Outlay separates the two <b>from metadata</b> — the same
-       attribution join, a per-key work registry, and an optional on-box prompt label — and lets you
-       <b>stop non-work usage, per team</b>. The prompt never leaves your environment to do it.</p>
-  </div>
-  <div class="proofgrid">
-    <div class="pcard">
-      <div class="ph"><span class="t">Compute by type · this month</span><span class="tag ex">metadata only</span></div>
-      <div class="pbody">
-        <div class="srow"><span class="nm">Work <small>joined to a ticket, epic, or a work-tagged key</small></span><span class="amt num">$72k</span><span class="track"><span style="width:87%;background:var(--grn)"></span></span></div>
-        <div class="srow"><span class="nm">Non-work <small>side-project / personal key · tagged by you</small></span><span class="amt num">$4k</span><span class="track"><span style="width:5%;background:var(--red)"></span></span></div>
-        <div class="srow"><span class="nm">Unknown <small>untracked — never guessed as non-work</small></span><span class="amt num">$7k</span><span class="track"><span style="width:8%;background:#9aa3b3"></span></span></div>
-        <p class="muted" style="font-size:12.5px;margin:14px 0 0">Illustrative. Growth is set to stop non-work
-          calls; the opt-in gateway enforces, and <b>work is never blocked</b>.</p>
-      </div>
-    </div>
-    <div class="statlist">
-      <div class="s"><div class="v">Metadata, not prompts</div><div class="d">The split runs on the attribution join and a work-key registry. An optional classifier can label a call work or non-work <b>on your own box</b> — only the one-word label leaves, never the prompt.</div></div>
-      <div class="s"><div class="v">Honest by default</div><div class="d">Spend with no work signal is <b>unknown</b>, never quietly counted as non-work. You decide whether unknown is treated as work or stopped.</div></div>
-      <div class="s"><div class="v">Stop it per team</div><div class="d">Choose what to block — <b>non-work, unknown, or both — per team</b>. Enforcement runs in the same opt-in gateway as program caps; work is never blocked.</div></div>
-      <div class="s"><div class="v">Read-only by default</div><div class="d">Tracking the split touches no traffic. Stopping non-work is an explicit opt-in, and the gateway <b>fails open</b> — it never blocks on our uptime.</div></div>
-    </div>
-  </div>
-</div></section>
-
-<!-- PLATFORM TEASER -->
-<section class="paper"><div class="wrap">
-  <div class="sec-head">
-    <div class="eyebrow">The platform</div>
-    <h2>Cost it right, plan it, take it anywhere.</h2>
-    <p>Under the dashboard: cache-aware costing that doesn't overstate agentic spend 5–10×, quarter
-       forecasting and backlog estimation, exports + a read-only API, and every integration — all
-       reconciled to your invoice.</p>
-  </div>
-  <div class="feat">
-    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></div><h3>Cost it right</h3><p>Cache-aware pricing across Anthropic, Bedrock, Vertex &amp; OpenAI — reconciled to the invoice, so the number is real, not a token estimate.</p></div>
-    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><h3>Plan it</h3><p>Forecast a quarter from open scope, and estimate planned epics from their requirements before you build — with measured accuracy on your own work.</p></div>
-    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/></svg></div><h3>Take it anywhere</h3><p>FOCUS-aligned export, a read-only BI/warehouse API, and SIEM audit-log streaming — plus webhooks and a month-end close pack. No lock-in.</p></div>
-  </div>
-  <p class="center" style="margin-top:26px"><a class="btn ghost lg" href="/platform">Explore the platform →</a></p>
-</div></section>
-
-<!-- PRIVACY + ENTERPRISE GOVERNANCE -->
-<section id="security"><div class="wrap">
-  <div class="sec-head">
-    <div class="eyebrow">Privacy &amp; enterprise governance</div>
-    <h2>Built to pass your security review.</h2>
-    <p>Most spend tools see everything you send. Outlay is built so the sensitive data physically
-       can't reach us — purpose-built for teams that <b style="color:var(--ink)">can't let prompts leave
-       their environment</b>: healthcare, legal, and financial services.</p>
-  </div>
-  <div class="guards">
-    <div class="guard"><span class="ck">✓</span><div>Connected with <b>read-only tokens</b> — Outlay reads usage metadata and ticket references, <b>never prompt text, model outputs, or your API key</b>.</div></div>
-    <div class="guard"><span class="ck">✓</span><div><b>SSO / SAML, SCIM</b>, and <b>phishing-resistant passkeys (WebAuthn/FIDO2)</b> + authenticator MFA — admin-enforced for everyone, with role-based access and a full audit log.</div></div>
-    <div class="guard"><span class="ck">✓</span><div><b>Configurable retention</b> + <b>self-serve erasure</b>, audit-log export to your SIEM, and scoped, expiring API keys.</div></div>
-    <div class="guard"><span class="ck">✓</span><div>Per-deployment isolation, and you can leave anytime. <a href="/security">See the security overview →</a></div></div>
-  </div>
-</div></section>
-
-<!-- COMPARE -->
-<section id="compare" class="paper"><div class="wrap">
-  <div class="sec-head">
-    <div class="eyebrow">How we compare</div>
-    <h2>A different category, on purpose.</h2>
-    <p>Every adjacent tool stops at the infrastructure layer — so <b style="color:var(--ink)">none of them
-       attribute AI spend to the work you plan, or budget it by scope</b>.</p>
-  </div>
-  <div class="feat">
-    <div class="card">
-      <div class="eyebrow" style="color:var(--grn-d)">FinOps suites</div>
-      <h3>Allocate the cloud bill</h3>
-      <p>Cloudability, Vantage, Kubecost — great for cloud cost, but blind to which <b>ticket or epic</b>
-        your AI spend belongs to.</p>
-    </div>
-    <div class="card">
-      <div class="eyebrow" style="color:var(--grn-d)">LLM observability</div>
-      <h3>Trace the API call</h3>
-      <p>Langfuse, Helicone, Datadog LLM — they debug quality and latency, then stop at an
-        <b>infrastructure tag</b>. No budget by scope.</p>
-    </div>
-    <div class="card">
-      <div class="eyebrow" style="color:var(--grn-d)">Native consoles</div>
-      <h3>Cap per seat</h3>
-      <p>Anthropic, OpenAI, Cursor admin — per-seat limits, and token math that can price cache reads
-        <a href="/platform#math">several times too high</a>.</p>
-    </div>
-  </div>
-  <p class="cmp-foot"><b>Where they fit:</b> keep a FinOps suite for cloud, and observability for debugging
-    quality. Outlay is the layer they can't be — AI spend attributed to the work you plan, forecast by
-    scope, and held to budget. <a href="/compare">See the full comparison →</a></p>
-</div></section>
-
-<!-- PRICING / PILOT -->
-<section id="pricing"><div class="wrap">
-  <div class="sec-head">
-    <div class="eyebrow">Pricing</div>
-    <h2>Pricing, scoped to your AI spend.</h2>
-    <p>What you pay depends on your AI spend, your team, and how much you want to govern — so we set it
-       with you. Start with a read-only pilot that maps your real spend, then we walk you through pricing
-       scoped to it in a short consultation.</p>
-  </div>
-  <div class="pilot">
-    <div class="l">
-      <h3>Your first weeks</h3>
-      <p class="muted" style="margin:0">A focused start: connect one tracker + your AI tools, get your real
-        spend mapped to tickets and a budget forecast in weeks — read-only, no app rewrite.</p>
-      <ul>
-        <li><span class="ck">✓</span> Spend attributed to your tickets, epics &amp; roadmap</li>
-        <li><span class="ck">✓</span> Budget-vs-actual with pace-based guardrails</li>
-        <li><span class="ck">✓</span> A real ticket-coverage &amp; forecast read on your data</li>
-        <li><span class="ck">✓</span> A team that ships the features you need, fast</li>
-      </ul>
-      <div style="margin-top:24px"><a class="btn primary lg" href="https://app.outlay-ai.com/pilot-request">Become a customer →</a></div>
-    </div>
-    <div class="r">
-      <div class="price">What getting started looks like<small>Read-only, no app rewrite. You see your real spend mapped to work in weeks — not a slide deck.</small></div>
-      <ul>
-        <li><span class="ck">✓</span> Connect one tracker + your AI tools with read-only tokens</li>
-        <li><span class="ck">✓</span> Spend mapped to tickets, a forecast, and a measured-accuracy read</li>
-        <li><span class="ck">✓</span> Prompts &amp; keys never leave your environment</li>
-      </ul>
-      <p class="muted" style="font-size:13.5px;margin:18px 0 0">Pricing for ongoing budgeting &amp; governance is scoped to your usage — <a href="/pricing">see how pricing works</a>, <a href="mailto:hello@outlay-ai.com?subject=Outlay%20pricing%20consultation">book a consultation</a>, or <a href="/savings">estimate your savings →</a>.</p>
-    </div>
+<!-- 04 — ENGAGE -->
+<section class="closing"><div class="wrap">
+  <div class="sec-no"><span class="no">04 — ENGAGE</span><h2 style="font-size:clamp(30px,3.6vw,50px)">Read-only to start. No app rewrite.</h2></div>
+  <p class="display2">Put AI compute<br>on a budget.</p>
+  <p class="lede">Start with a free read-only pilot: connect one tracker and your AI usage,
+    and see your real spend itemized in days.</p>
+  <a class="btn primary lg" href="https://app.outlay-ai.com/pilot-request">Become a customer →</a>
+  <div class="morelinks">
+    <a id="compare" href="/compare">How we compare</a>
+    <a id="pricing" href="/pricing">How pricing works</a>
+    <a href="/finops-for-ai">FinOps for AI</a>
   </div>
 </div></section>
 
 <!-- FAQ -->
-<section class="paper"><div class="wrap">
-  <div class="sec-head"><div class="eyebrow">FAQ</div><h2>Questions, answered.</h2></div>
+<section class="section" style="padding-top:0"><div class="wrap">
   <div class="faq">
-    <details open><summary>How does Outlay attribute spend to a ticket?</summary>
-      <p>It resolves the work context of each AI call from the most reliable signal available — an explicit
-        task tag from your agent launcher or CI, the git branch, the PR's closing-issue link, or a commit
-        trailer — and maps it to the ticket, epic, and roadmap in Jira/Linear/GitHub. Where a team already
-        links work to tickets it's automatic; where they don't, a one-line explicit tag makes it reliable —
-        even for remote/CI agents where the branch is detached.</p></details>
-    <details><summary>Do you see my prompts or my customers' data?</summary>
-      <p>No. Outlay connects with read-only tokens and reads metadata — task category, token counts, ticket
-        IDs, and your provider's usage data. Prompt text, model outputs, and your API key never reach our
-        servers.</p></details>
-    <details><summary>Are the guardrails hard caps, or just alerts?</summary>
-      <p><b>Both — your choice, per program.</b> By default they're pace-based projections: a scope on track to
-        exceed its budget is flagged <b>warn</b> (and <b>over</b> once it crosses), so a lead acts while there's
-        time — Outlay never touches your traffic. For a <b>true hard cap</b>, set a <a href="/#govern">program</a>
-        to enforce: with the opt-in gateway in front of your calls, an over-budget program is automatically
-        <b>blocked</b> or <b>routed down</b> to a cheaper model. That gateway is the one mode where we're in your
-        path, it's entirely opt-in, and it <b>fails open</b> — a control-plane blip never blocks your traffic,
-        only a budget you set being exceeded.</p></details>
-    <details><summary>Can you tell work from personal use — and stop personal use?</summary>
-      <p>Yes. Outlay splits spend into <b>work</b>, <b>non-work</b>, and <b>unknown</b> from metadata: the
-        attribution join (spend tied to a ticket/epic is work), a per-key registry you control (tag a
-        side-project or personal key as non-work), and an optional classifier that labels a call on
-        <b>your own box</b> — only the one-word label leaves, never the prompt. Spend with no signal stays
-        <b>unknown</b>, never guessed as non-work. To <b>stop</b> non-work, you pick what to block — non-work,
-        unknown, or both — <b>per team</b>, enforced by the same opt-in gateway as program caps. Work is
-        never blocked, and the gateway fails open. <a href="/#worktype">See how it works →</a></p></details>
-    <details><summary>How accurate is the forecast?</summary>
-      <p>We don't ask you to trust a vendor benchmark. Outlay back-tests its forecast on your <b>own</b>
-        closed tickets, leave-one-out — hide a ticket, predict it from the rest, compare to what it actually
-        cost — and shows the measured error and the sample size, by work type. As more work closes, the
-        number sharpens.</p></details>
-    <details><summary>Can it estimate work that hasn't been built yet?</summary>
-      <p>Yes — that's the forward estimator. Hand it a planned backlog (epics/tickets with their
-        requirements, design docs, and story points) and it prices each item against the cost-per-work-type
-        model learned from your own delivered work, returning a per-item and total estimate with a low–high
-        confidence band. Under-specified items are flagged to tighten rather than guessed, so you can budget
-        an epic or a sprint <b>before</b> committing to it.</p></details>
-    <details><summary>What does it work with?</summary>
-      <p>Trackers: Jira, Linear, GitHub Issues. AI tools: Claude Code, Cursor, and the Anthropic API
-        (per-call usage + the org admin API for reconciliation). Read-only to start — no app rewrite.</p></details>
-    <details><summary>How does pricing work?</summary>
-      <p>You pay a flat platform fee on the AI spend Outlay attributes and governs (not per-seat), plus an
-        optional savings-share where we only bill on measured savings — no clawback. <a href="/pricing">See
-        how pricing works</a>. Start with a free read-only pilot that maps your real spend, then we scope
-        the number in a short consultation. <a href="mailto:hello@outlay-ai.com?subject=Outlay%20pricing%20consultation">Book one</a>.</p></details>
+    <details>
+      <summary>How does Outlay attribute spend to a ticket?</summary>
+      <p>It resolves the work context of each AI call from the most reliable signal available — an
+        explicit task tag from your agent launcher or CI, the git branch, the PR's closing-issue link,
+        or a commit trailer — and maps it to the ticket, epic, and roadmap in Jira, Linear, or GitHub.
+        Where teams already link work to tickets it's automatic; where they don't, a one-line tag makes
+        it reliable, even for remote/CI agents.</p>
+    </details>
+    <details>
+      <summary>Do you see my prompts or my customers' data?</summary>
+      <p>No. Outlay connects with read-only tokens and reads metadata — task category, token counts,
+        ticket IDs, and your provider's usage data. Prompt content, model outputs, and your API keys
+        never reach our servers. That's an architecture, not a policy.</p>
+    </details>
+    <details>
+      <summary>Are budgets hard caps, or just alerts?</summary>
+      <p>Your choice, per program. By default they're pace-based projections that flag a scope trending
+        over — Outlay never touches your traffic. For a true hard cap, the opt-in gateway blocks or
+        routes over-budget calls down to a cheaper model. It fails open: our downtime can never block
+        your traffic, only a budget you set being exceeded can.</p>
+    </details>
+    <details>
+      <summary>How accurate is the forecast?</summary>
+      <p>We back-test it on your own closed tickets — hide one, predict it from the rest, compare to
+        what it actually cost — and show you the measured error and sample size by work type. As more
+        work closes, the number sharpens. We never quote a vendor benchmark.</p>
+    </details>
   </div>
-</div></section>
-
-<!-- FINAL CTA -->
-<section class="final"><div class="wrap">
-  <h2>Put your AI spend back on a budget.</h2>
-  <p>See what your AI compute costs per ticket, epic, and team — and where it's about to go over.
-     Start with a read-only pilot; we'll scope pricing with you.</p>
-  <div class="center" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-    <a class="btn onnavy lg" href="https://app.outlay-ai.com/pilot-request">Become a customer →</a>
-  </div>
-  <p style="font-size:13px;color:#8fa0bd;margin-top:18px">Read-only to start · prompts never leave your environment · no app rewrite</p>
 </div></section>
 </main>
 
 <footer><div class="wrap">
   <a class="brand" href="/">Outlay<span class="dot">.ai</span></a>
-  <span class="sep"></span>
   <a href="https://app.outlay-ai.com/login">Sign in</a>
-  <a href="/pilot">Design-partner pilot</a>
-  <a href="#proof">Attribution</a>
-  <a href="#govern">Govern</a>
-  <a href="#worktype">Work vs non-work</a>
   <a href="/platform">Platform</a>
-  <a href="#compare">Compare</a>
-  <a href="/tour">Product Tour</a>
+  <a href="/tour">Product tour</a>
   <a href="/accuracy">Accuracy</a>
-  <a href="/finops-for-ai">FinOps for AI</a>
   <a href="/security">Security</a>
   <a href="/docs/">Docs</a>
+  <span class="sep"></span>
   <a href="/legal/privacy">Privacy</a>
   <a href="/legal/terms">Terms</a>
-  <a href="mailto:hello@outlay-ai.com">Contact</a>
+  <a href="mailto:hello@outlay-ai.com">hello@outlay-ai.com</a>
 </div>
-<div class="wrap" style="margin-top:14px;font-size:12.5px;color:#6c7790">© 2026 Outlay · See AI spend mapped to your work, forecast it, and hold it to budget.</div>
+<div class="wrap" style="margin-top:10px"><span class="micro">© 2026 OUTLAY · EVERY AI DOLLAR, MAPPED TO THE WORK THAT DROVE IT</span></div>
 </footer>
 
 <script>
-// Mobile nav: checkbox drives open/close (works without JS); this adds keyboard
-// activation, aria-expanded sync, Esc-to-close, and close-on-navigate.
+// Mobile nav a11y: keyboard + aria sync + esc-to-close (checkbox works without JS).
 (function(){
   var t=document.getElementById('nav-t'), h=document.querySelector('.hamburger'), m=document.getElementById('nav-menu');
   if(!t||!h)return;
@@ -459,36 +260,59 @@ epic Q3-stability <span class="w">on pace $22k · over</span></code>
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&t.checked){t.checked=false;sync();}});
   if(m)m.addEventListener('click',function(e){if(e.target.closest('a')){t.checked=false;sync();}});
 })();
+
+// Seamless scroll experience — staggered rise-on-scroll, count-up figures, a
+// slow masthead drift, and the nav re-inking itself over the dark band. All
+// no-ops under prefers-reduced-motion; the page is complete without JS.
 (function(){
-  var d=document, reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(reduce||!('IntersectionObserver' in window))return;
-  // stagger within groups
-  [['.owners',90],['.loop',80],['.feat',70],['.statlist',90],['.guards',60],['.ways',70],['.integrid',60],['.compatbar .wrap',40]].forEach(function(g){
-    d.querySelectorAll(g[0]).forEach(function(grp){
-      Array.prototype.forEach.call(grp.children,function(ch,i){ch.style.setProperty('--rd',(i*g[1])+'ms');});
-    });
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || !('IntersectionObserver' in window)) return;
+  var d = document;
+
+  // 1. Reveal: every section's direct blocks rise once, staggered.
+  var groups = ['.mrow','.crow','.spec','.figures .fig','.faq details','.sec-no','.sec-intro',
+                '.closing .display2','.closing .lede','.closing .btn','.morelinks','.band .lede','.band .row2'];
+  var els = [];
+  groups.forEach(function(sel){ d.querySelectorAll(sel).forEach(function(el){ els.push(el); }); });
+  els.forEach(function(el){ el.classList.add('rv'); });
+  // stagger siblings that share a parent
+  d.querySelectorAll('.figures,.specs,.faq,.morelinks').forEach(function(grp){
+    Array.prototype.forEach.call(grp.children,function(ch,i){ ch.style.setProperty('--d',(i*90)+'ms'); });
   });
-  // hero entrance
-  var htext=d.querySelector('.hero .herogrid>div'), panel=d.querySelector('.hero .panel');
-  if(htext){Array.prototype.forEach.call(htext.children,function(ch,i){ch.classList.add('reveal');ch.style.setProperty('--rd',(i*80)+'ms');});}
-  if(panel){panel.classList.add('reveal');panel.style.setProperty('--rd','200ms');}
-  var sel='.integ .wrap,.compatbar .cbadge,.sec-head,.owner,.lstep,.card,.way,.igcol,.pcard,.statlist .s,.flow .node,.guards .guard,.tbl-wrap,.cmp-wrap,.pilot,.faq details,.final h2,.final p,.final .center';
-  d.querySelectorAll(sel).forEach(function(el){el.classList.add('reveal');});
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  },{threshold:.12,rootMargin:'0px 0px -6% 0px'});
+  els.forEach(function(el){ io.observe(el); });
+
+  // 2. Count-up on the three ledger figures, once, when visible.
   function countUp(el){
-    if(el._c)return; el._c=1;
-    var target=parseFloat(el.getAttribute('data-count'))||0, pre=el.getAttribute('data-prefix')||'',
-        suf=el.getAttribute('data-suffix')||'', dur=1300, t0=null;
-    function fmt(n){return pre+Math.round(n).toLocaleString('en-US')+suf;}
-    function step(ts){if(!t0)t0=ts;var p=Math.min((ts-t0)/dur,1),e=1-Math.pow(1-p,3);
-      el.textContent=fmt(target*e);if(p<1)requestAnimationFrame(step);}
+    var txt = el.textContent, m = txt.match(/[\d.]+/); if(!m) return;
+    var target = parseFloat(m[0]), t0 = null, dur = 1100;
+    function step(ts){ if(!t0) t0 = ts;
+      var p = Math.min((ts-t0)/dur,1), ease = 1-Math.pow(1-p,3), v = target*ease;
+      el.childNodes[0].nodeValue = (target%1? v.toFixed(1) : Math.round(v)).toString();
+      if(p<1) requestAnimationFrame(step); }
     requestAnimationFrame(step);
   }
-  var io=new IntersectionObserver(function(es){es.forEach(function(e){
-    var t=e.target;
-    if(e.isIntersecting){t.classList.add('in');t.querySelectorAll&&t.querySelectorAll('[data-count]').forEach(countUp);}
-    else{t.classList.remove('in');}
-  });},{threshold:.14,rootMargin:'0px 0px -7% 0px'});
-  d.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+  var fio = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ countUp(e.target); fio.unobserve(e.target); } });
+  },{threshold:.6});
+  d.querySelectorAll('.fig .v').forEach(function(el){ fio.observe(el); });
+
+  // 3. Masthead drift: headline scrolls at ~92% speed (a whisper of depth).
+  var head = d.querySelector('.display'), ticking = false;
+  function drift(){ ticking = false;
+    var y = scrollY; if (y < innerHeight && head) head.style.transform = 'translateY(' + (y*0.08) + 'px)'; }
+  addEventListener('scroll', function(){ if(!ticking){ ticking = true; requestAnimationFrame(drift); } }, {passive:true});
+
+  // 4. Nav re-inks itself while the dark band is beneath it.
+  var band = d.querySelector('.band'), nav = d.querySelector('nav');
+  if (band && nav){
+    addEventListener('scroll', function(){
+      var r = band.getBoundingClientRect(), h = nav.offsetHeight;
+      nav.classList.toggle('overband', r.top < h && r.bottom > 0);
+    }, {passive:true});
+  }
 })();
 </script>
 </body></html>
