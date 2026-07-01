@@ -20,24 +20,26 @@ BRAND = "Outlay"
 _CSS = """
 /* Outlay console — matches the marketing site theme (outlay.css): cool
    slate-white canvas, green accent, Inter, dark public header. */
-:root{--ink:#0b0f17;--body:#3a4252;--muted:#5f6672;--faint:#646b78;
-  --line:#e4e7ec;--line2:#eef1f5;--bg:#ffffff;--paper:#f6f8fa;--paper2:#eef1f5;--navy:#13203a;
-  --grn:#0f6b4f;--grn-d:#0a4f3a;--grn-l:#e7f1ec;--warn:#9a4708;--bad:#b3261e;
-  --mut:#5f6672;--amber:#9a4708;--amber-l:#fbf0df;--red:#b3261e;--red-l:#f8e7e4;
-  --accent:#0f6b4f;--accent-d:#0a4f3a;--grad:linear-gradient(135deg,#0f6b4f,#13203a);
+/* "The Document" brand (2026-07): bond paper + warm ink + one money-green,
+   ink hairlines, mono tabular figures — the console matches the marketing. */
+:root{--ink:#101010;--body:#41413d;--muted:#6b6b63;--faint:#84847c;
+  --line:#dededa;--line2:#ecece7;--bg:#fcfcfa;--paper:#f4f4f0;--paper2:#ecece7;--navy:#101010;
+  --grn:#0b6a4a;--grn-d:#085239;--grn-l:#e8f1ec;--warn:#9a4708;--bad:#b23a2c;
+  --mut:#6b6b63;--amber:#9a4708;--amber-l:#f9f0e0;--red:#b23a2c;--red-l:#f7e9e6;
+  --accent:#0b6a4a;--accent-d:#085239;--grad:linear-gradient(135deg,#0b6a4a,#101010);
   --disp:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --ease:cubic-bezier(.22,.61,.36,1);}
 *{box-sizing:border-box}
 body{margin:0;font:16px/1.6 var(--sans);color:var(--body);-webkit-font-smoothing:antialiased;
-  background:linear-gradient(180deg,var(--paper),var(--bg) 60%);background-attachment:fixed}
+  background:var(--bg)}
 a{color:var(--grn-d);text-decoration:none}a:hover{text-decoration:underline}
 p a,li a,td a,.note a,.dh a,.muted a,.ostrip a,.hintbox a,.sub a,small a,.ohead a,.dq a{text-decoration:underline}
-.top{background:rgba(11,16,26,.82);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;z-index:10}
+.top{background:rgba(16,16,16,.94);backdrop-filter:blur(10px);border-bottom:1px solid #3a3a34;position:sticky;top:0;z-index:10}
 .top .wrap{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:18px}
-.top .brand{color:#fff}.top .brand .dot{color:#6ee7b7}
-.top .nav a{color:#c4cddb}.top .nav a:hover{color:#fff}
+.top .brand{color:#fff}.top .brand .dot{color:#7ec9a4}
+.top .nav a{color:#b9b9af}.top .nav a:hover{color:#fff}
 /* left sidebar shell (signed-in) */
 .shell{display:flex;min-height:100vh;align-items:stretch}
 /* first-run takeover: blur the whole app behind a centered, undismissable modal */
@@ -1737,13 +1739,75 @@ def _fa_item(sev: int, color: str, text_html: str, href: str, label: str) -> tup
             f'<a class="btn sec sm" href="{href}">{label}</a>')
 
 
+def _attention_card(items: list, all_clear: str) -> str:
+    """Render ONE 'Needs your attention' card from (severity, html) items — or the
+    supplied all-clear when there's nothing to flag. Shared by the finance panel,
+    the eng panel, and the unified Home (which merges both)."""
+    items = sorted(items, key=lambda x: x[0], reverse=True)
+    if not items:
+        return all_clear
+    n_over = sum(1 for sev, _ in items if sev == 2)
+    rows = "".join(f'<div class=fa-row>{h}</div>' for _, h in items)
+    headline = (f'{n_over} need{"s" if n_over == 1 else ""} action' if n_over
+                else f'{len(items)} to keep an eye on')
+    accent = "var(--red)" if n_over else "var(--amber)"
+    return (f'<div class=ocard style="margin-bottom:16px;border-color:{accent}">'
+            f'<div class=dh style="display:flex;align-items:center;gap:8px">Needs your attention '
+            f'<span class="otag {"over" if n_over else "warn"}">{headline}</span></div>'
+            f'<div class=fa-list>{rows}</div></div>')
+
+
+def _attention_dedupe(items: list) -> list:
+    """Merge finance + eng attention items: the same target (deep-link href) about the
+    same subject (first bolded name) is the same problem stated twice — keep the first.
+    This is what stops the unified Home showing 'Needs your attention' twice with the
+    same runaway tickets and over-budgets in both."""
+    seen, out = set(), []
+    for sev, h in items:
+        mh = re.search(r'href="([^"]+)"', h)
+        mb = re.search(r"<b>(.*?)</b>", h)
+        key = (mh.group(1) if mh else "", mb.group(1) if mb else h[:60])
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append((sev, h))
+    return out
+
+
+_FIN_ALL_CLEAR = (
+    '<div class=ocard style="margin-bottom:16px;border-color:var(--grn);background:var(--grn-l)">'
+    '<div style="display:flex;align-items:center;gap:8px">'
+    '<span class=fa-dot style="background:var(--grn-d)"></span>'
+    '<b style="color:var(--grn-d)">All programs and budgets are on track.</b>'
+    '<span class=muted style="font-size:12.5px">No overspend projected and no runaway '
+    'tickets — nothing to action right now.</span></div></div>')
+
+
+def _attention_combined(report: dict | None, conn: dict | None, history: list[dict] | None,
+                        budget_statuses: list[dict] | None,
+                        program_statuses: list[dict] | None) -> str:
+    """The unified Home panel: business signals (budgets/programs/runaways) and
+    engineering signals (sync health, coverage, spikes, pricing fidelity) merged into
+    ONE deduped 'Needs your attention' card."""
+    items = _attention_dedupe(
+        _finance_attention_items(report, budget_statuses, program_statuses)
+        + _eng_attention_items(report, conn, history, budget_statuses))
+    return _attention_card(items, _FIN_ALL_CLEAR)
+
+
 def _finance_attention(report: dict | None, budget_statuses: list[dict] | None,
                        program_statuses: list[dict] | None) -> str:
-    """Business's 'review these' panel — auto-flags what's off track so business can act
+    """Business's 'review these' panel (card form) — see _finance_attention_items."""
+    return _attention_card(_finance_attention_items(report, budget_statuses, program_statuses),
+                           _FIN_ALL_CLEAR)
+
+
+def _finance_attention_items(report: dict | None, budget_statuses: list[dict] | None,
+                             program_statuses: list[dict] | None) -> list:
+    """Business's 'review these' signals — auto-flags what's off track so business can act
     without drilling into the data: programs/budgets already over or projected to
-    overspend, and runaway tickets. Ranked worst-first; each item is plain language
-    with the dollar figure and a one-click link to address it. When everything is on
-    track it says so (a calm all-clear), so the panel is always a trustworthy glance."""
+    overspend, and runaway tickets. Each item is plain language with the dollar figure
+    and a one-click deep link to address it."""
     items = []  # (severity, html) — severity 2 = over, 1 = warn/anomaly
 
     def over_amt(s):
@@ -1823,32 +1887,30 @@ def _finance_attention(report: dict | None, budget_statuses: list[dict] | None,
                       f'{_e(str(cls or "work-type"))} median.',
                       href, "Investigate →"))
 
-    items.sort(key=lambda x: x[0], reverse=True)
-    n_over = sum(1 for sev, _ in items if sev == 2)
-    if not items:
-        return ('<div class=ocard style="margin-bottom:16px;border-color:var(--grn);background:var(--grn-l)">'
-                '<div style="display:flex;align-items:center;gap:8px">'
-                '<span class=fa-dot style="background:var(--grn-d)"></span>'
-                '<b style="color:var(--grn-d)">All programs and budgets are on track.</b>'
-                '<span class=muted style="font-size:12.5px">No overspend projected and no runaway '
-                'tickets — nothing to action right now.</span></div></div>')
-    rows = "".join(f'<div class=fa-row>{html}</div>' for _, html in items)
-    headline = (f'{n_over} need{"s" if n_over == 1 else ""} action' if n_over
-                else f'{len(items)} to keep an eye on')
-    accent = "var(--red)" if n_over else "var(--amber)"
-    return (f'<div class=ocard style="margin-bottom:16px;border-color:{accent}">'
-            f'<div class=dh style="display:flex;align-items:center;gap:8px">Needs your attention '
-            f'<span class="otag {"over" if n_over else "warn"}">{headline}</span></div>'
-            f'<div class=fa-list>{rows}</div></div>')
+    return items
+
+
+_ENG_ALL_CLEAR = (
+    '<div class=ocard style="margin-bottom:16px;border-color:var(--grn);background:var(--grn-l)">'
+    '<div style="display:flex;align-items:center;gap:8px">'
+    '<span class=fa-dot style="background:var(--grn-d)"></span>'
+    '<b style="color:var(--grn-d)">Healthy — nothing to fix right now.</b>'
+    '<span class=muted style="font-size:12.5px">No runaway tickets, coverage is solid, '
+    'and the last sync succeeded.</span></div></div>')
 
 
 def _eng_attention(report: dict | None, conn: dict | None, history: list[dict] | None,
                    budget_statuses: list[dict] | None) -> str:
-    """Engineering's 'go fix this' panel — operational, not budget-governance. Auto-flags
-    the things an eng lead should act on without drilling: runaway tickets, attribution
-    leaks, a sudden spend jump, a stale/failed sync, and spend priced by a fallback tier.
-    Ranked worst-first, each one click to the fix. Calm all-clear when the pipeline's
-    healthy."""
+    """Engineering's 'go fix this' panel (card form) — see _eng_attention_items."""
+    return _attention_card(_eng_attention_items(report, conn, history, budget_statuses),
+                           _ENG_ALL_CLEAR)
+
+
+def _eng_attention_items(report: dict | None, conn: dict | None, history: list[dict] | None,
+                         budget_statuses: list[dict] | None) -> list:
+    """Engineering's 'go fix this' signals — operational, not budget-governance: runaway
+    tickets, attribution leaks, a sudden spend jump, a stale/failed sync, and spend
+    priced by a fallback tier. Each one click to the fix."""
     report = report or {}
     conn = conn or {}
     sp = report.get("spend", {}) or {}
@@ -1904,22 +1966,7 @@ def _eng_attention(report: dict | None, conn: dict | None, history: list[dict] |
                           f'<b>{money(s.get("projected_usd",0))}</b> vs {money(s.get("limit_usd",0))}.',
                           f'/app/outlay/budgets#budget-{s.get("id")}', "Adjust limit →"))
 
-    items.sort(key=lambda x: x[0], reverse=True)
-    n_fix = sum(1 for sev, _ in items if sev == 2)
-    if not items:
-        return ('<div class=ocard style="margin-bottom:16px;border-color:var(--grn);background:var(--grn-l)">'
-                '<div style="display:flex;align-items:center;gap:8px">'
-                '<span class=fa-dot style="background:var(--grn-d)"></span>'
-                '<b style="color:var(--grn-d)">Healthy — nothing to fix right now.</b>'
-                '<span class=muted style="font-size:12.5px">No runaway tickets, coverage is solid, '
-                'and the last sync succeeded.</span></div></div>')
-    rows = "".join(f'<div class=fa-row>{html}</div>' for _, html in items)
-    headline = (f'{n_fix} to fix' if n_fix else f'{len(items)} to keep an eye on')
-    accent = "var(--red)" if n_fix else "var(--amber)"
-    return (f'<div class=ocard style="margin-bottom:16px;border-color:{accent}">'
-            f'<div class=dh style="display:flex;align-items:center;gap:8px">Needs your attention '
-            f'<span class="otag {"over" if n_fix else "warn"}">{headline}</span></div>'
-            f'<div class=fa-list>{rows}</div></div>')
+    return items
 
 
 HOME_GROUPINGS = {
@@ -2115,8 +2162,7 @@ def overview_page(account: dict, report: dict | None, statuses: list[dict] | Non
     # "Needs your attention" for everyone — budget/program off-track (finance) AND
     # the operational signals (runaway tickets, coverage leaks, spend spikes, stale
     # sync, pricing gaps). Each panel renders only what it has to flag.
-    attention = (_finance_attention(report, statuses, program_statuses)
-                 + _eng_attention(report, conn, history, statuses))
+    attention = _attention_combined(report, conn, history, statuses, program_statuses)
     lens = lens or {}
     group_by = lens.get("group_by", "team")
     top_n = int(lens.get("top_n", 5))

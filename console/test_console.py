@@ -3696,6 +3696,30 @@ def test_finance_attention_panel_and_summary_view(env, client):
     assert "on track" in clear and "Needs your attention" not in clear
 
 
+def test_home_shows_one_deduped_attention_panel(env, client):
+    """The unified Home renders ONE 'Needs your attention' card — finance + eng signals
+    merged, with duplicates (same runaway ticket / same over-budget in both framings)
+    collapsed to a single actionable row."""
+    from console import store, web
+    _signup(client, email="onepanel@x.com")
+    client.post("/app/outlay/sample", follow_redirects=True)
+    ov = client.get("/app").text
+    assert ov.count("Needs your attention") == 1
+    # each runaway ticket appears once, not once per persona framing
+    import re
+    tickets = re.findall(r"Runaway ticket <b>([\w-]+)</b>", ov)
+    assert tickets and len(tickets) == len(set(tickets))
+    # direct-call combined helper dedupes a shared anomaly + budget
+    report = {"spend": {"total_usd": 1000.0, "ticket_coverage": 0.9}, "window_days": 30,
+              "anomalies": [{"ticket_id": "GH-42", "task_class": "bug", "cost_usd": 900.0, "ratio": 11.0}]}
+    budgets = [{"id": 7, "scope_type": "team", "scope_id": "growth", "limit_usd": 500.0,
+                "spent_usd": 600.0, "projected_usd": 600.0, "pct_used": 1.2, "status": "over", "period_days": 30}]
+    combined = web._attention_combined(report, {}, [], budgets, [])
+    assert combined.count("Needs your attention") == 1
+    assert combined.count("Runaway ticket") == 1          # deduped across panels
+    assert combined.count("budgets#budget-7") == 2        # one row: text link + action btn
+
+
 def test_alerts_deeplink_to_the_specific_item(env):
     """Each over/at-risk alert is clickable and deep-links to the exact program/budget
     /ticket that needs fixing — not a generic list — with an action-specific label."""
