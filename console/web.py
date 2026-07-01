@@ -32,8 +32,9 @@ _CSS = """
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --ease:cubic-bezier(.22,.61,.36,1);}
 *{box-sizing:border-box}
+html{background:var(--bg)}
 body{margin:0;font:16px/1.6 var(--sans);color:var(--body);-webkit-font-smoothing:antialiased;
-  background:var(--bg)}
+  background:transparent}
 a{color:var(--grn-d);text-decoration:none}a:hover{text-decoration:underline}
 p a,li a,td a,.note a,.dh a,.muted a,.ostrip a,.hintbox a,.sub a,small a,.ohead a,.dq a{text-decoration:underline}
 .top{background:rgba(252,252,250,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--ink);position:sticky;top:0;z-index:10}
@@ -250,6 +251,26 @@ a.fa-txt:hover{text-decoration:underline}
 .fa-row:hover{background:var(--paper)}
 .fa-dot{width:9px;height:9px;border-radius:999px;flex:none;display:inline-block}
 .fa-row .btn{flex:none}
+/* The Document, alive (2026-07): ambient ledger grid + quiet entrances + bars
+   that fill. Pure CSS/JS enhancement — server HTML unchanged; all of it gated
+   on prefers-reduced-motion. */
+@media (prefers-reduced-motion: no-preference){
+  body::before{content:"";position:fixed;inset:-64px;z-index:-1;pointer-events:none;
+    background:repeating-linear-gradient(180deg,rgba(16,16,16,.024) 0 1px,transparent 1px 32px),
+               repeating-linear-gradient(90deg,rgba(16,16,16,.016) 0 1px,transparent 1px 32px);
+    animation:gridpan 90s linear infinite}
+  @keyframes gridpan{to{transform:translateY(32px)}}
+  .ocard,.bcard,.kpi{animation:rise .45s cubic-bezier(.22,.61,.36,1) backwards}
+  .ocard:nth-of-type(2),.bcard:nth-of-type(2),.kpi:nth-of-type(2){animation-delay:.06s}
+  .ocard:nth-of-type(3),.bcard:nth-of-type(3),.kpi:nth-of-type(3){animation-delay:.12s}
+  .ocard:nth-of-type(4),.bcard:nth-of-type(4),.kpi:nth-of-type(4){animation-delay:.18s}
+  .ocard:nth-of-type(5),.bcard:nth-of-type(5),.kpi:nth-of-type(5){animation-delay:.24s}
+  .ocard:nth-of-type(n+6),.bcard:nth-of-type(n+6),.kpi:nth-of-type(n+6){animation-delay:.3s}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .track>span,.band>span,.mt span{transform-origin:left;
+    animation:fillx .9s cubic-bezier(.22,.61,.36,1) .2s backwards}
+  @keyframes fillx{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+}
 /* When an alert deep-links here, briefly ring the exact card that needs fixing. */
 .bcard:target{border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-l);scroll-margin-top:80px;animation:fa-flag 2s ease-out 1}
 @keyframes fa-flag{0%{box-shadow:0 0 0 7px var(--amber-l)}100%{box-shadow:0 0 0 3px var(--amber-l)}}
@@ -664,6 +685,16 @@ var els=[].slice.call(d.querySelectorAll('.card,.hero'));
 els.forEach(function(c,i){{c.classList.add('reveal');c.style.setProperty('--rd',Math.min(i*55,330)+'ms');}});
 var io=new IntersectionObserver(function(es){{es.forEach(function(e){{if(e.isIntersecting){{e.target.classList.add('in');io.unobserve(e.target);}}}});}},{{threshold:.06}});
 els.forEach(function(c){{io.observe(c);}});}})();</script>
+<script>(function(){{if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+document.querySelectorAll('.kpi .v,.bignum .v').forEach(function(el){{
+  if(el.dataset.c||el.children.length)return;var t=el.textContent.trim();
+  var m=t.match(/^(\$)?([\d,]+(?:\.\d+)?)(%)?$/);if(!m)return;
+  var target=parseFloat(m[2].replace(/,/g,''));if(!isFinite(target))return;
+  var pre=m[1]||'',suf=m[3]||'',dec=(m[2].split('.')[1]||'').length,t0=null,dur=750;el.dataset.c='1';
+  function fmt(v){{return pre+v.toLocaleString('en-US',{{minimumFractionDigits:dec,maximumFractionDigits:dec}})+suf}}
+  function step(ts){{if(!t0)t0=ts;var p=Math.min((ts-t0)/dur,1),e=1-Math.pow(1-p,3);
+    el.textContent=fmt(target*e);if(p<1)requestAnimationFrame(step);}}
+  requestAnimationFrame(step);}});}})();</script>
 <script>{_COACH_JS}</script>
 </body></html>"""
 
