@@ -98,27 +98,73 @@
     <div><h3>Every dollar finds its ticket.</h3>
       <p>Each AI call resolves to the ticket, epic, and person behind it — from branch, PR,
          and session metadata. Prompt content is never read.</p></div>
-    <div class="sample"><span class="c"># branch → ticket → epic</span><br>
-      fix/PROJ-123 → <span class="g">PROJ-123 → Q3 Stability</span><br>
-      <span class="c">fidelity: call · branch · session · team</span></div>
+    <div class="diagram">
+      <svg class="fig-svg" viewBox="0 0 360 96" role="img" aria-label="Attribution flow: an API call's cost resolves through its git branch to the ticket and epic.">
+        <g font-family="ui-monospace,Menlo,Consolas,monospace">
+          <rect x="2" y="32" width="64" height="32" fill="none" stroke="#101010" stroke-width="1.4"/>
+          <text x="34" y="47" font-size="9" fill="#84847c" text-anchor="middle">API CALL</text>
+          <text x="34" y="59" font-size="10" font-weight="700" fill="#101010" text-anchor="middle">$0.84</text>
+          <path d="M70 48h22" stroke="#84847c" stroke-width="1.2"/><path d="M92 48l-5 -3v6z" fill="#84847c"/>
+          <rect x="98" y="32" width="92" height="32" fill="none" stroke="#101010" stroke-width="1.4"/>
+          <text x="144" y="47" font-size="9" fill="#84847c" text-anchor="middle">BRANCH</text>
+          <text x="144" y="59" font-size="10" font-weight="700" fill="#101010" text-anchor="middle">fix/PROJ-123</text>
+          <path d="M194 48h22" stroke="#84847c" stroke-width="1.2"/><path d="M216 48l-5 -3v6z" fill="#84847c"/>
+          <rect x="222" y="32" width="70" height="32" fill="none" stroke="#0b6a4a" stroke-width="1.6"/>
+          <text x="257" y="47" font-size="9" fill="#0b6a4a" text-anchor="middle">TICKET</text>
+          <text x="257" y="59" font-size="10" font-weight="700" fill="#0b6a4a" text-anchor="middle">PROJ-123</text>
+          <path d="M296 48h20" stroke="#84847c" stroke-width="1.2"/><path d="M316 48l-5 -3v6z" fill="#84847c"/>
+          <rect x="322" y="32" width="36" height="32" fill="#101010"/>
+          <text x="340" y="47" font-size="8.5" fill="#b9b9af" text-anchor="middle">EPIC</text>
+          <text x="340" y="58" font-size="9" font-weight="700" fill="#fcfcfa" text-anchor="middle">Q3</text>
+          <text x="2" y="86" font-size="9" fill="#84847c">FIDELITY: CALL · BRANCH · SESSION · TEAM — SHOWN PER DOLLAR</text>
+        </g>
+      </svg>
+      <div class="fig-cap">Prompt content is never part of the join</div>
+    </div>
   </div>
   <div class="mrow">
     <span class="n">1.2 — FORECAST</span>
     <div><h3>Price the quarter before you build it.</h3>
       <p>Forecast from your open backlog, the way you estimate effort — back-tested on your own
          closed tickets, with the error shown. Never a vendor benchmark.</p></div>
-    <div class="sample"><span class="c"># open scope × learned cost/work-type</span><br>
-      Q3 forecast <span class="g">$48k ± $9k</span><br>
-      <span class="c">back-test on 188 closed tickets · error shown</span></div>
+    <div class="diagram">
+      <svg class="fig-svg" viewBox="0 0 360 96" role="img" aria-label="Forecast fan chart: realized spend history extends into a projected range of $48k plus or minus $9k for Q3.">
+        <g font-family="ui-monospace,Menlo,Consolas,monospace">
+          <line x1="2" y1="80" x2="358" y2="80" stroke="#dededa" stroke-width="1"/>
+          <polygon points="150,52 320,18 320,54" fill="#0b6a4a" opacity="0.12"/>
+          <polyline points="2,72 60,66 110,60 150,52" fill="none" stroke="#101010" stroke-width="1.8"/>
+          <polyline points="150,52 320,36" fill="none" stroke="#0b6a4a" stroke-width="1.8" stroke-dasharray="5 4"/>
+          <circle cx="150" cy="52" r="3" fill="#101010"/>
+          <circle cx="320" cy="36" r="3.5" fill="#0b6a4a"/>
+          <text x="328" y="30" font-size="10.5" font-weight="700" fill="#0b6a4a" text-anchor="end" transform="translate(0,-6)">$48k</text>
+          <text x="328" y="52" font-size="9" fill="#84847c" text-anchor="end">±$9k</text>
+          <text x="2" y="93" font-size="9" fill="#84847c">CLOSED TICKETS (188)</text>
+          <text x="358" y="93" font-size="9" fill="#0b6a4a" text-anchor="end">Q3 · FROM OPEN SCOPE</text>
+        </g>
+      </svg>
+      <div class="fig-cap">Back-tested on your own tickets · error always shown</div>
+    </div>
   </div>
   <div class="mrow">
     <span class="n">1.3 — GOVERN</span>
     <div><h3>Budgets that act, not just alert.</h3>
       <p>Set budgets per team, program, or epic. Pace-based alerts flag overspend before it lands —
          or set a hard cap the opt-in gateway enforces, blocking or routing down.</p></div>
-    <div class="sample"><span class="c"># program · hard cap · gateway-enforced</span><br>
-      Platform <span class="r">$61k / $50k · over</span> → route-down ×1,240<br>
-      Launch Q3 <span class="g">$28k / $40k · on track</span></div>
+    <div class="diagram">
+      <svg class="fig-svg" viewBox="0 0 360 96" role="img" aria-label="Budget cap chart: one program crosses its cap and is routed down; another stays under and untouched.">
+        <g font-family="ui-monospace,Menlo,Consolas,monospace">
+          <line x1="2" y1="34" x2="358" y2="34" stroke="#101010" stroke-width="1.4" stroke-dasharray="6 4"/>
+          <text x="2" y="26" font-size="9" fill="#101010" font-weight="700">HARD CAP $50k</text>
+          <polyline points="2,78 70,70 130,58 190,42 218,34" fill="none" stroke="#b23a2c" stroke-width="1.8"/>
+          <polyline points="218,34 300,33 358,33" fill="none" stroke="#b23a2c" stroke-width="1.8" stroke-dasharray="3 3"/>
+          <circle cx="218" cy="34" r="3.5" fill="#b23a2c"/>
+          <text x="214" y="22" font-size="9.5" font-weight="700" fill="#b23a2c">ROUTED DOWN ×1,240</text>
+          <polyline points="2,84 90,80 180,72 270,66 358,62" fill="none" stroke="#0b6a4a" stroke-width="1.8"/>
+          <text x="358" y="78" font-size="9.5" font-weight="700" fill="#0b6a4a" text-anchor="end">ON TRACK · UNTOUCHED</text>
+        </g>
+      </svg>
+      <div class="fig-cap">Enforced by the opt-in gateway · fails open</div>
+    </div>
   </div>
 </div></section>
 
@@ -132,10 +178,13 @@
          route down automatically — and budget moves where priorities move.</p>
       <a class="go" href="/tour">See governance →</a>
     </div>
-    <div class="cfig">
-      <div class="row"><span>Platform · hard cap</span><span class="r">$61k / $50k · enforced ×1,240</span></div>
-      <div class="row"><span>Launch — Q3 · hard cap</span><span class="g">$28k / $40k · on track</span></div>
-      <div class="row"><span>Growth experiments · alert-only</span><span class="f">$12k / $30k</span></div>
+    <div class="bars" role="img" aria-label="Program budgets: Platform over its hard cap and enforced; Launch Q3 on track; Growth experiments alert-only.">
+      <div class="row"><div class="lab"><span>Platform · hard cap</span><span class="r">$61k / $50k · ×1,240</span></div>
+        <div class="track"><span class="fill g" style="width:82%"></span><span class="fill r" style="left:82%;width:18%"></span><span class="cap" style="left:82%"></span></div></div>
+      <div class="row"><div class="lab"><span>Launch — Q3 · hard cap</span><span class="g">$28k / $40k · on track</span></div>
+        <div class="track"><span class="fill g" style="width:70%"></span><span class="cap" style="left:calc(100% - 2px)"></span></div></div>
+      <div class="row"><div class="lab"><span>Growth experiments · alert-only</span><span class="f">$12k / $30k</span></div>
+        <div class="track"><span class="fill f" style="width:40%"></span></div></div>
     </div>
   </div>
   <div class="crow" id="worktype">
@@ -145,10 +194,14 @@
          usage per team — without reading a single prompt.</p>
       <a class="go" href="/platform">How the split works →</a>
     </div>
-    <div class="cfig">
-      <div class="row"><span>Work · joined to tickets</span><span>$71,889 · 87%</span></div>
-      <div class="row"><span>Non-work · flagged key, stopped for growth</span><span class="r">$3,979</span></div>
-      <div class="row"><span>Unknown · never guessed</span><span class="f">$6,753</span></div>
+    <div class="bars" role="img" aria-label="Work versus non-work split: 87 percent work, non-work flagged and stopped, unknown never guessed.">
+      <div class="row"><div class="lab"><span>This month</span><span>$82,621</span></div>
+        <div class="track" style="height:16px"><span class="fill g" style="width:87%"></span><span class="fill r" style="left:87%;width:4.8%"></span><span class="fill f" style="left:91.8%;width:8.2%"></span></div></div>
+      <div class="legend">
+        <span class="g"><i></i>work · $71,889</span>
+        <span class="r"><i></i>non-work · stopped</span>
+        <span class="f"><i></i>unknown · never guessed</span>
+      </div>
     </div>
   </div>
   <div class="crow">
@@ -158,10 +211,12 @@
          Outlay computes the cheapest mix — analysis nobody buying blind can run.</p>
       <a class="go" href="/pricing">Procurement mix →</a>
     </div>
-    <div class="cfig">
-      <div class="row"><span>All-API status quo</span><span>$27.5k /mo</span></div>
-      <div class="row"><span>Optimal · 19 seats + 4 on API</span><span>$6.0k /mo</span></div>
-      <div class="row"><span>Saving</span><span class="g">$21.5k /mo · shown with assumptions</span></div>
+    <div class="bars" role="img" aria-label="Procurement comparison: buying API credits for everyone costs 27.5 thousand a month; the optimal seat and API mix costs 6 thousand.">
+      <div class="row"><div class="lab"><span>All-API status quo</span><span>$27.5k /mo</span></div>
+        <div class="track"><span class="fill f" style="width:100%"></span></div></div>
+      <div class="row"><div class="lab"><span>Optimal · 19 seats + 4 on API</span><span class="g">$6.0k /mo</span></div>
+        <div class="track"><span class="fill g" style="width:22%"></span></div></div>
+      <div class="legend"><span class="g"><i></i>save $21.5k /mo · shown with its assumptions</span></div>
     </div>
   </div>
 </div></section>
@@ -169,9 +224,35 @@
 <!-- 03 — SECURITY REVIEW (the divider band) -->
 <section class="band" id="security"><div class="wrap">
   <div class="sec-no"><span class="no">03 — SECURITY REVIEW</span><h2>Built to pass yours.</h2></div>
-  <p class="lede">Most spend tools see everything you send. Outlay is built so sensitive data
-    <b>physically can't reach us</b> — attribution runs on metadata: task categories, token counts,
-    ticket IDs, dollar figures.</p>
+  <div class="bgrid">
+    <p class="lede">Most spend tools see everything you send. Outlay is built so sensitive data
+      <b>physically can't reach us</b> — attribution runs on metadata: task categories, token counts,
+      ticket IDs, dollar figures.</p>
+    <svg class="fig-svg" viewBox="0 0 520 210" role="img" aria-label="Data boundary diagram: prompts, model outputs, and API keys stay inside your environment; only metadata — task category, token counts, ticket IDs, dollar figures — crosses to Outlay.">
+      <g font-family="ui-monospace,Menlo,Consolas,monospace">
+        <rect x="4" y="14" width="224" height="182" fill="none" stroke="#3a3a34" stroke-width="1.5"/>
+        <text x="16" y="36" font-size="10" letter-spacing="2" fill="#7ec9a4" font-weight="700">YOUR ENVIRONMENT</text>
+        <text x="16" y="62" font-size="11" fill="#f0f0e8">prompt content</text>
+        <text x="16" y="84" font-size="11" fill="#f0f0e8">model outputs</text>
+        <text x="16" y="106" font-size="11" fill="#f0f0e8">API keys</text>
+        <text x="16" y="128" font-size="11" fill="#f0f0e8">source code · customer data</text>
+        <text x="16" y="162" font-size="10" fill="#8f8f85">token counts · branch → ticket ids</text>
+        <text x="16" y="180" font-size="10" fill="#8f8f85">task categories · $ figures</text>
+        <line x1="252" y1="6" x2="252" y2="204" stroke="#fcfcfa" stroke-width="2.5"/>
+        <line x1="260" y1="6" x2="260" y2="204" stroke="#fcfcfa" stroke-width="1"/>
+        <path d="M232 171 h74" stroke="#7ec9a4" stroke-width="1.6"/><path d="M306 171l-6 -4v8z" fill="#7ec9a4"/>
+        <text x="284" y="151" font-size="9" fill="#7ec9a4" font-weight="700" text-anchor="middle">METADATA</text>
+        <text x="284" y="162" font-size="9" fill="#7ec9a4" font-weight="700" text-anchor="middle">ONLY</text>
+        <path d="M232 95 h14" stroke="#b23a2c" stroke-width="1.6"/>
+        <text x="242" y="88" font-size="13" fill="#e26d5c" font-weight="700" text-anchor="middle">×</text>
+        <text x="268" y="99" font-size="9.5" fill="#e26d5c" font-weight="700">NEVER CROSSES</text>
+        <rect x="316" y="112" width="200" height="84" fill="none" stroke="#3a3a34" stroke-width="1.5"/>
+        <text x="328" y="134" font-size="10" letter-spacing="2" fill="#7ec9a4" font-weight="700">OUTLAY</text>
+        <text x="328" y="158" font-size="11" fill="#f0f0e8">itemized statement · forecast</text>
+        <text x="328" y="178" font-size="11" fill="#f0f0e8">budgets · procurement mix</text>
+      </g>
+    </svg>
+  </div>
   <div class="specs">
     <div class="spec"><div class="k">Metadata only</div>
       <div class="v">Prompt content, model outputs, and your API keys never reach our servers. An architecture, not a policy.</div></div>

@@ -199,6 +199,33 @@ footer a:hover{color:var(--ink);text-decoration:underline}
 footer .sep{flex:1}
 footer .micro{letter-spacing:.14em}
 
+/* ---------- diagrams & charts (bespoke, in-brand — no stock art) ---------- */
+.fig-svg{width:100%;height:auto;display:block}
+.fig-cap{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--faint);
+  text-transform:uppercase;margin-top:10px}
+.diagram{background:#fff;border:1px solid var(--hair-soft);padding:22px 22px 16px}
+/* control bars */
+.bars{display:grid;gap:16px;border-top:2px solid var(--hair);padding-top:18px;
+  font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.bars .row{display:grid;gap:7px}
+.bars .lab{display:flex;justify-content:space-between;gap:12px}
+.bars .lab .g{color:var(--green);font-weight:600}
+.bars .lab .r{color:var(--red);font-weight:600}
+.bars .lab .f{color:var(--faint)}
+.bars .track{height:10px;background:#ecece7;position:relative;overflow:visible}
+.bars .track .fill{position:absolute;left:0;top:0;bottom:0}
+.bars .track .fill.g{background:var(--green)}
+.bars .track .fill.r{background:var(--red)}
+.bars .track .fill.f{background:#b9b9af}
+.bars .track .cap{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+.bars .legend{display:flex;gap:18px;color:var(--faint);font-size:11px}
+.bars .legend i{display:inline-block;width:9px;height:9px;margin-right:6px;vertical-align:-1px;font-style:normal}
+.bars .legend .g i{background:var(--green)} .bars .legend .r i{background:var(--red)}
+.bars .legend .f i{background:#b9b9af}
+/* boundary diagram sits on the dark band */
+.band .bgrid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;margin-top:8px}
+@media(max-width:980px){.band .bgrid{grid-template-columns:1fr}}
+
 /* ---------- seamless scroll experience ----------
    Children rise into place once as they enter the viewport (staggered via
    --d), figures count up, the masthead drifts at a slower rate, and the nav
