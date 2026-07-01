@@ -25,10 +25,21 @@
   --w:1200px;
 }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:var(--paper);color:var(--body-c);font-family:var(--sans);
+html{scroll-behavior:smooth;background:var(--paper)}
+body{margin:0;background:transparent;color:var(--body-c);font-family:var(--sans);
   font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
   overflow-x:clip}
+/* ambient layer: a subliminal ledger grid, drifting one cell every 90s */
+@media (prefers-reduced-motion: no-preference){
+  body::before{content:"";position:fixed;inset:-64px;z-index:-1;pointer-events:none;
+    background:
+      repeating-linear-gradient(180deg,rgba(16,16,16,.03) 0 1px,transparent 1px 32px),
+      repeating-linear-gradient(90deg,rgba(16,16,16,.02) 0 1px,transparent 1px 32px);
+    animation:gridpan 90s linear infinite}
+  @keyframes gridpan{to{transform:translateY(32px)}}
+}
+#readbar{position:fixed;top:0;left:0;right:0;height:2px;background:var(--green);
+  transform-origin:0 50%;transform:scaleX(0);z-index:60;pointer-events:none}
 .wrap{max-width:var(--w);margin:0 auto;padding:0 32px}
 a{color:var(--ink);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
 a:hover{color:var(--green)}
@@ -63,7 +74,19 @@ nav .wrap{display:flex;align-items:center;gap:28px;height:60px}
 .hamburger{display:none}
 
 /* ---------- masthead ---------- */
-.masthead{padding:64px 0 0}
+.masthead{padding:64px 0 0;position:relative;overflow:clip}
+.masthead .wrap{position:relative;z-index:1}
+/* watermark figures drifting behind the document (3.5% ink) */
+.wm{position:absolute;font-family:var(--mono);font-weight:700;color:var(--ink);opacity:.035;
+  line-height:1;pointer-events:none;user-select:none;z-index:0;font-variant-numeric:tabular-nums;
+  letter-spacing:-.04em;white-space:nowrap}
+.wm.a{font-size:clamp(120px,16vw,240px);right:-3%;top:4%}
+.wm.b{font-size:clamp(90px,11vw,170px);left:44%;bottom:26%}
+@media (prefers-reduced-motion: no-preference){
+  .wm.a{animation:wmfloat 26s ease-in-out infinite alternate}
+  .wm.b{animation:wmfloat 34s ease-in-out -12s infinite alternate-reverse}
+  @keyframes wmfloat{from{transform:translateY(-10px)}to{transform:translateY(14px)}}
+}
 .mast-rule{border-top:3px solid var(--hair)}
 .mast-meta{display:flex;justify-content:space-between;gap:16px;padding:12px 0 46px;flex-wrap:wrap}
 .display{font-size:clamp(58px,9.2vw,132px);line-height:.96;font-weight:640;letter-spacing:-.05em;
@@ -76,7 +99,14 @@ nav .wrap{display:flex;align-items:center;gap:28px;height:60px}
 .ctarow{display:flex;gap:18px;align-items:center;flex-wrap:wrap;flex:none}
 
 /* ---------- THE LEDGER (full-width hero table) ---------- */
-.ledger{border-top:3px solid var(--hair);font-variant-numeric:tabular-nums}
+.ledger{border-top:3px solid var(--hair);font-variant-numeric:tabular-nums;position:relative;overflow:clip}
+/* the audit scan: a faint green sweep reconciles the ledger every 9s */
+@media (prefers-reduced-motion: no-preference){
+  .ledger::after{content:"";position:absolute;left:0;right:0;height:56px;top:-64px;pointer-events:none;
+    background:linear-gradient(180deg,transparent,rgba(11,106,74,.05) 42%,rgba(11,106,74,.10) 50%,rgba(11,106,74,.05) 58%,transparent);
+    animation:scan 9s ease-in-out 3.2s infinite}
+  @keyframes scan{0%,10%{top:-64px;opacity:0}16%{opacity:1}52%{top:100%;opacity:1}58%,100%{top:100%;opacity:0}}
+}
 .lg-cols,.lg-row{display:grid;grid-template-columns:minmax(0,2.6fr) 1fr 1fr 1.2fr minmax(0,1.1fr);
   gap:20px;align-items:baseline}
 .lg-cols{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;color:var(--faint);
@@ -159,9 +189,19 @@ nav .wrap{display:flex;align-items:center;gap:28px;height:60px}
 /* ---------- the band (03 — security divider page) ----------
    The ink melts in and out of the paper (no hard section edge) — the seamless
    background transition, done in pure CSS so contrast is never at risk. */
-.band{color:#b9b9af;padding:200px 0 210px;margin:-40px 0;
+.band{color:#b9b9af;padding:200px 0 210px;margin:-40px 0;position:relative;
   background:linear-gradient(180deg,transparent 0,var(--band) 170px,
              var(--band) calc(100% - 170px),transparent 100%)}
+.band .wrap{position:relative;z-index:1}
+/* security-paper microprint, drifting like banknote engraving */
+@media (prefers-reduced-motion: no-preference){
+  .band::before{content:"";position:absolute;inset:-24px;pointer-events:none;
+    background:repeating-linear-gradient(45deg,rgba(252,252,250,.05) 0 1px,transparent 1px 8px);
+    -webkit-mask:linear-gradient(180deg,transparent 0,#000 200px,#000 calc(100% - 200px),transparent 100%);
+    mask:linear-gradient(180deg,transparent 0,#000 200px,#000 calc(100% - 200px),transparent 100%);
+    animation:bandpan 70s linear infinite}
+  @keyframes bandpan{to{transform:translate(-11.3px,-11.3px)}}
+}
 .band .sec-no{border-top-color:#3a3a34}
 .band .sec-no .no{color:#6e6e64}
 .band h2{color:var(--paper)}
@@ -240,6 +280,16 @@ footer .micro{letter-spacing:.14em}
                transform .65s cubic-bezier(.22,.61,.36,1) var(--d,0ms)}
   .rv.in{opacity:1;transform:none}
   .display,.mast-sub{will-change:transform}
+}
+/* charts draw themselves when revealed (solid strokes only; dashed lines fade) */
+@media (prefers-reduced-motion: no-preference){
+  .rv .fig-svg .draw{stroke-dasharray:1;stroke-dashoffset:1}
+  .rv.in .fig-svg .draw{animation:svgdraw 1.1s ease-out forwards}
+  .rv.in .fig-svg .draw.d2{animation-delay:.5s}
+  @keyframes svgdraw{to{stroke-dashoffset:0}}
+  .rv .fig-svg .fade{opacity:0}
+  .rv.in .fig-svg .fade{animation:svgfade .6s ease-out 1s forwards}
+  @keyframes svgfade{to{opacity:1}}
 }
 nav.overband{background:color-mix(in srgb,var(--band) 92%,transparent);border-bottom-color:#3a3a34}
 nav.overband .brand,nav.overband .navlinks a:hover{color:#fff}

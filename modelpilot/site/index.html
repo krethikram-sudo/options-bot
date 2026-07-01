@@ -20,7 +20,7 @@
 <meta name="twitter:image" content="https://outlay-ai.com/og-image.png">
 <meta name="twitter:title" content="Outlay — your AI bill, itemized">
 <meta name="twitter:description" content="Every AI dollar mapped to the ticket, team, and person that drove it. Budget it, forecast it, stop what isn't work.">
-<link rel="stylesheet" href="/landing.css?v=20260701-4">
+<link rel="stylesheet" href="/landing.css?v=20260701-5">
 <script src="/auth-nav.js?v=3" defer></script>
 </head>
 <body>
@@ -47,7 +47,7 @@
 <main id="main">
 
 <!-- MASTHEAD — the document opens -->
-<header class="masthead" id="proof"><div class="wrap">
+<header class="masthead" id="proof"><span class="wm a" aria-hidden="true">$84,604.77</span><span class="wm b" aria-hidden="true">94%</span><div class="wrap">
   <div class="mast-rule"></div>
   <div class="mast-meta">
     <span class="micro">AI spend statement · prepared by Outlay</span>
@@ -143,9 +143,9 @@
       <svg class="fig-svg" viewBox="0 0 360 96" role="img" aria-label="Forecast fan chart: realized spend history extends into a projected range of $48k plus or minus $9k for Q3.">
         <g font-family="ui-monospace,Menlo,Consolas,monospace">
           <line x1="2" y1="80" x2="358" y2="80" stroke="#dededa" stroke-width="1"/>
-          <polygon points="150,52 320,18 320,54" fill="#0b6a4a" opacity="0.12"/>
-          <polyline points="2,72 60,66 110,60 150,52" fill="none" stroke="#101010" stroke-width="1.8"/>
-          <polyline points="150,52 320,36" fill="none" stroke="#0b6a4a" stroke-width="1.8" stroke-dasharray="5 4"/>
+          <polygon class="fade" points="150,52 320,18 320,54" fill="#0b6a4a" opacity="0.12"/>
+          <polyline class="draw" pathLength="1" points="2,72 60,66 110,60 150,52" fill="none" stroke="#101010" stroke-width="1.8"/>
+          <polyline class="fade" points="150,52 320,36" fill="none" stroke="#0b6a4a" stroke-width="1.8" stroke-dasharray="5 4"/>
           <circle cx="150" cy="52" r="3" fill="#101010"/>
           <circle cx="320" cy="36" r="3.5" fill="#0b6a4a"/>
           <text x="328" y="30" font-size="10.5" font-weight="700" fill="#0b6a4a" text-anchor="end" transform="translate(0,-6)">$48k</text>
@@ -167,11 +167,11 @@
         <g font-family="ui-monospace,Menlo,Consolas,monospace">
           <line x1="2" y1="34" x2="358" y2="34" stroke="#101010" stroke-width="1.4" stroke-dasharray="6 4"/>
           <text x="2" y="26" font-size="9" fill="#101010" font-weight="700">HARD CAP $50k</text>
-          <polyline points="2,78 70,70 130,58 190,42 218,34" fill="none" stroke="#b23a2c" stroke-width="1.8"/>
-          <polyline points="218,34 300,33 358,33" fill="none" stroke="#b23a2c" stroke-width="1.8" stroke-dasharray="3 3"/>
+          <polyline class="draw" pathLength="1" points="2,78 70,70 130,58 190,42 218,34" fill="none" stroke="#b23a2c" stroke-width="1.8"/>
+          <polyline class="fade" points="218,34 300,33 358,33" fill="none" stroke="#b23a2c" stroke-width="1.8" stroke-dasharray="3 3"/>
           <circle cx="218" cy="34" r="3.5" fill="#b23a2c"/>
           <text x="214" y="22" font-size="9.5" font-weight="700" fill="#b23a2c">ROUTED DOWN ×1,240</text>
-          <polyline points="2,84 90,80 180,72 270,66 358,62" fill="none" stroke="#0b6a4a" stroke-width="1.8"/>
+          <polyline class="draw d2" pathLength="1" points="2,84 90,80 180,72 270,66 358,62" fill="none" stroke="#0b6a4a" stroke-width="1.8"/>
           <text x="358" y="78" font-size="9.5" font-weight="700" fill="#0b6a4a" text-anchor="end">ON TRACK · UNTOUCHED</text>
         </g>
       </svg>
@@ -392,11 +392,16 @@
   },{threshold:.6});
   d.querySelectorAll('.fig .v').forEach(function(el){ fio.observe(el); });
 
-  // 3. Masthead drift: headline scrolls at ~92% speed (a whisper of depth).
+  // 3. Masthead drift + reading-progress hairline.
   var head = d.querySelector('.display'), ticking = false;
+  var rb = d.createElement('div'); rb.id = 'readbar'; d.body.appendChild(rb);
   function drift(){ ticking = false;
-    var y = scrollY; if (y < innerHeight && head) head.style.transform = 'translateY(' + (y*0.08) + 'px)'; }
+    var y = scrollY;
+    if (y < innerHeight && head) head.style.transform = 'translateY(' + (y*0.08) + 'px)';
+    var max = d.documentElement.scrollHeight - innerHeight;
+    rb.style.transform = 'scaleX(' + (max > 0 ? y/max : 0) + ')'; }
   addEventListener('scroll', function(){ if(!ticking){ ticking = true; requestAnimationFrame(drift); } }, {passive:true});
+  drift();
 
   // 4. Nav re-inks itself while the dark band is beneath it.
   var band = d.querySelector('.band'), nav = d.querySelector('nav');
