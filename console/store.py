@@ -417,6 +417,12 @@ CREATE TABLE IF NOT EXISTS outlay_program_enforcement (
     count INTEGER NOT NULL DEFAULT 0, -- enforcement actions (block + route-down) that day
     PRIMARY KEY (program_id, day)
 );
+CREATE TABLE IF NOT EXISTS outlay_milestones (
+    account_id INTEGER NOT NULL,
+    milestone TEXT NOT NULL,          -- 'connected' | 'synced' | 'attributed'
+    at REAL NOT NULL,                 -- first time it happened (insert-once)
+    PRIMARY KEY (account_id, milestone)
+);
 """
 
 WEBHOOK_EVENTS = ("budget.warn", "budget.over", "program.warn", "program.over",
@@ -2251,6 +2257,76 @@ def get_work_enforce(account_id: int, path: str | None = None) -> dict:
         conn.close()
     return {r["team_id"]: {"block_non_work": bool(r["block_non_work"]),
                            "block_unknown": bool(r["block_unknown"])} for r in rows}
+
+
+# --------------------------------------------------------------------------- #
+# Time-to-value milestones — when did an account first reach each stage of the
+# Outlay value path (connected a source → synced → first attributed dollar)?
+# Insert-once per (account, milestone), so re-syncs never move the first time.
+# Powers the vendor-side funnel on /admin: where do pilots stall, and how many
+# reach the "first attributed dollar within 24h" target.
+# --------------------------------------------------------------------------- #
+
+OUTLAY_MILESTONES = ("connected", "synced", "attributed")
+
+
+def record_outlay_milestone(account_id: int, milestone: str, now: float | None = None,
+                            path: str | None = None) -> None:
+    """Stamp the FIRST time an account reaches `milestone` (no-op afterwards)."""
+    if milestone not in OUTLAY_MILESTONES:
+        return
+    conn = connect(path)
+    try:
+        conn.execute("INSERT OR IGNORE INTO outlay_milestones(account_id, milestone, at)"
+                     " VALUES(?,?,?)", (account_id, milestone, now or time.time()))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_outlay_milestones(account_id: int, path: str | None = None) -> dict:
+    """{milestone: first_reached_ts} for the account."""
+    conn = connect(path)
+    try:
+        rows = conn.execute("SELECT milestone, at FROM outlay_milestones WHERE account_id=?",
+                            (account_id,)).fetchall()
+    finally:
+        conn.close()
+    return {r["milestone"]: r["at"] for r in rows}
+
+
+def outlay_value_funnel(path: str | None = None) -> dict:
+    """The Outlay time-to-value funnel across customer accounts (vendor admin view).
+
+    Per account: signup + first connected/synced/attributed timestamps. Summary:
+    counts at each stage, median hours signup→attributed, and how many hit the
+    'first attributed dollar within 24h' target. Vendor-admin accounts are
+    excluded; demo accounts are included but flagged so the view can badge them."""
+    conn = connect(path)
+    try:
+        rows = conn.execute(
+            "SELECT a.id, a.email, a.company, a.created_at, a.demo_mode,"
+            " (SELECT at FROM outlay_milestones m WHERE m.account_id=a.id AND m.milestone='connected') AS connected_at,"
+            " (SELECT at FROM outlay_milestones m WHERE m.account_id=a.id AND m.milestone='synced') AS synced_at,"
+            " (SELECT at FROM outlay_milestones m WHERE m.account_id=a.id AND m.milestone='attributed') AS attributed_at"
+            " FROM accounts a WHERE a.role != 'admin' ORDER BY a.created_at DESC").fetchall()
+    finally:
+        conn.close()
+    out = [dict(r) for r in rows]
+    ttv = sorted((r["attributed_at"] - r["created_at"]) for r in out
+                 if r["attributed_at"] and r["created_at"])
+    within_24h = sum(1 for d in ttv if d <= 86400)
+    return {
+        "rows": out,
+        "summary": {
+            "signed_up": len(out),
+            "connected": sum(1 for r in out if r["connected_at"]),
+            "synced": sum(1 for r in out if r["synced_at"]),
+            "attributed": sum(1 for r in out if r["attributed_at"]),
+            "median_ttv_hours": round(ttv[len(ttv) // 2] / 3600.0, 1) if ttv else None,
+            "within_24h": within_24h,
+        },
+    }
 
 
 def set_outlay_program_status(program_id: int, status: str, path: str | None = None) -> None:

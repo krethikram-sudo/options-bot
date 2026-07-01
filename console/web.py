@@ -5250,6 +5250,55 @@ def _funnel_panel(funnel: dict | None) -> str:
             'willingness-to-pay signal — the question our whole model rests on.</p></div>')
 
 
+def _value_funnel_panel(vf: dict | None) -> str:
+    """Outlay time-to-value funnel: signed up → connected → synced → first attributed
+    dollar. The metric that matters is the last gap — the target is 'first attributed
+    dollar within 24h of signup'. Also lists stalled accounts so the founder knows who
+    to nudge (this is the pilot-conversion instrument, not vanity analytics)."""
+    if not vf:
+        return ""
+    import time as _time
+    s = vf.get("summary") or {}
+    su = s.get("signed_up") or 1
+    stages = [("Signed up", s.get("signed_up", 0)), ("Connected a source", s.get("connected", 0)),
+              ("Synced", s.get("synced", 0)), ("First attributed $", s.get("attributed", 0))]
+    cells = "".join(
+        f'<div style="text-align:center;min-width:96px"><div class=stat>{n}</div>'
+        f'<div class="small muted">{_e(lbl)}<br>{round(100*n/su)}%</div></div>'
+        for lbl, n in stages)
+    med = s.get("median_ttv_hours")
+    tgt = (f'<div style="text-align:center;min-width:120px"><div class=stat>'
+           f'{s.get("within_24h", 0)}/{s.get("attributed", 0)}</div>'
+           f'<div class="small muted">hit &lt;24h target'
+           + (f'<br>median {med}h' if med is not None else '') + '</div></div>')
+
+    # Who to nudge: signed up but never connected (>48h), or connected but no
+    # attributed dollar yet (>24h). Demo accounts are badged, not hidden.
+    now = _time.time()
+    stalled = []
+    for r in (vf.get("rows") or []):
+        created = r.get("created_at") or now
+        demo = ' <span class="badge trial">demo</span>' if r.get("demo_mode") else ""
+        if not r.get("connected_at") and now - created > 48 * 3600:
+            stalled.append(f'<li>{_e(r["email"])}{demo} — signed up '
+                           f'{(now - created) / 86400:.0f}d ago, <b>never connected a source</b></li>')
+        elif r.get("connected_at") and not r.get("attributed_at") \
+                and now - r["connected_at"] > 24 * 3600:
+            stalled.append(f'<li>{_e(r["email"])}{demo} — connected '
+                           f'{(now - r["connected_at"]) / 86400:.0f}d ago, '
+                           f'<b>no attributed dollar yet</b></li>')
+    stalled_html = (f'<p class="small" style="margin-top:10px;margin-bottom:4px"><b>Stalled — '
+                    f'worth a nudge:</b></p><ul class="small muted" style="margin:0 0 0 18px">'
+                    + "".join(stalled[:8]) + '</ul>') if stalled else \
+        '<p class="small muted" style="margin-top:10px">No stalled accounts right now.</p>'
+    return ('<h2>Time to value (Outlay)</h2><div class=card>'
+            f'<div class=row style="gap:24px;flex-wrap:wrap;align-items:flex-end">{cells}{tgt}</div>'
+            f'{stalled_html}'
+            '<p class="small muted" style="margin-top:10px">First-time milestones on the real '
+            'customer path (demo/sample data never counts). The whole onboarding goal: '
+            '<b>first attributed dollar &lt;24h</b> from signup.</p></div>')
+
+
 def _feedback_panel(feedback: list[dict] | None) -> str:
     if not feedback:
         return '<h2>Recent feedback</h2><div class=card><p class=muted>No feedback yet.</p></div>'
@@ -5292,7 +5341,7 @@ def _fleet_ktlo_card(fc: dict | None) -> str:
 
 def admin_overview(account: dict, rev: dict, rows: list[dict], pending: int = 0,
                    funnel: dict | None = None, feedback: list[dict] | None = None,
-                   fleet_cost: dict | None = None) -> str:
+                   fleet_cost: dict | None = None, value_funnel: dict | None = None) -> str:
     trs = ""
     for r in rows:
         badge = (f'<span class="badge {r["plan_badge"]}">{_e(r["plan_label"])}</span>')
@@ -5330,6 +5379,7 @@ def admin_overview(account: dict, rev: dict, rows: list[dict], pending: int = 0,
         <div class="small muted">{rev['n_paid']} paid · {rev['n_trial']} trial · {rev['n_suspended']} suspended</div></div>
       {pending_card}
     </div>
+    {_value_funnel_panel(value_funnel)}
     {_funnel_panel(funnel)}
     {_fleet_ktlo_card(fleet_cost)}
     <h2>Customers</h2>
