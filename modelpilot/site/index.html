@@ -48,8 +48,8 @@
 <header class="hero" id="proof"><div class="wrap">
   <div class="herogrid">
     <div>
-      <div class="eyebrow">AI spend, attributed</div>
-      <h1 class="display">Your AI bill,<br><em>itemized.</em></h1>
+      <div class="eyebrow" style="color:var(--green-bright)">AI spend, attributed</div>
+      <h1 class="display">Your AI bill,<br><span class="acc">itemized.</span></h1>
       <p class="lede">Outlay maps every AI dollar to the <b>ticket, team, and person</b> that drove it —
         so you can forecast it, budget it, and stop the spend that isn't work.
         Prompts and keys never leave your environment.</p>
@@ -61,20 +61,19 @@
         Google Vertex · Claude Code · Cursor · Jira · Linear · GitHub</p>
     </div>
 
-    <div class="receipt" role="img" aria-label="An itemized AI invoice: spend attributed to tickets and epics, with the unattributed remainder flagged, stamped 94% attributed.">
-      <div class="r-head"><span>ACME ENG · AI SPEND</span><span>JUN 2026</span></div>
-      <div class="r-row"><span class="nm">GH-241 · checkout refactor</span><span class="lead"></span><span class="amt">$1,204.33</span></div>
-      <div class="r-row"><span class="nm">GH-198 · payments retries</span><span class="lead"></span><span class="amt">$842.10</span></div>
-      <div class="r-row"><span class="nm">Q3 Stability <small>· epic, 34 tickets</small></span><span class="lead"></span><span class="amt">$18,913.02</span></div>
-      <div class="r-row"><span class="nm">Billing v2 <small>· epic, 21 tickets</small></span><span class="lead"></span><span class="amt">$11,406.55</span></div>
-      <div class="r-sub">
-        <div class="r-row"><span class="nm">by team · platform / growth / 6 more</span><span class="lead"></span><span class="amt">$71,889</span></div>
-        <div class="r-row"><span class="nm r-flag">personal key · flagged non-work</span><span class="lead"></span><span class="amt r-flag">$3,979</span></div>
-        <div class="r-row"><span class="nm">unknown · <small>never guessed</small></span><span class="lead"></span><span class="amt">$6,753</span></div>
-      </div>
-      <div class="r-total"><span>TOTAL · reconciled to invoice</span><span>$84,604.77</span></div>
-      <div class="r-note">FORECAST NEXT QTR $92K ± $11K · BACK-TESTED ON YOUR OWN TICKETS</div>
-      <div class="stamp">94% attributed</div>
+    <div class="statement" role="img" aria-label="An AI spend statement: every line attributed to a ticket, epic, or team; non-work flagged; the unknown remainder never guessed; total reconciled to the provider invoice; 94% attributed.">
+      <div class="s-head"><span class="t">AI SPEND STATEMENT</span><span class="d">JUN 2026 · ACME ENG</span></div>
+      <div class="s-cols"><span>ITEM</span><span>AMOUNT</span></div>
+      <div class="s-row"><span class="nm">GH-241 · checkout refactor</span><span class="sp"></span><span class="amt">$1,204.33</span></div>
+      <div class="s-row"><span class="nm">GH-198 · payments retries</span><span class="sp"></span><span class="amt">$842.10</span></div>
+      <div class="s-row"><span class="nm">Q3 Stability <small>· epic · 34 tickets</small></span><span class="sp"></span><span class="amt">$18,913.02</span></div>
+      <div class="s-row"><span class="nm">Billing v2 <small>· epic · 21 tickets</small></span><span class="sp"></span><span class="amt">$11,406.55</span></div>
+      <div class="s-row"><span class="nm">By team <small>· platform / growth / 6 more</small></span><span class="sp"></span><span class="amt">$71,889.11</span></div>
+      <div class="s-row flag"><span class="nm">Non-work · flagged personal key</span><span class="sp"></span><span class="amt">$3,979.03</span></div>
+      <div class="s-row dim"><span class="nm">Unknown · never guessed</span><span class="sp"></span><span class="amt">$6,753.00</span></div>
+      <div class="s-total"><span>TOTAL</span><span>$84,604.77</span></div>
+      <div class="s-verify"><span class="ok">✓ RECONCILED TO PROVIDER INVOICE</span><span class="s-badge">94% ATTRIBUTED</span></div>
+      <div class="s-note">FORECAST NEXT QTR $92K ± $11K · BACK-TESTED ON YOUR OWN CLOSED TICKETS</div>
     </div>
   </div>
 </div></header>
@@ -119,7 +118,7 @@
 </div></section>
 
 <!-- WHAT IT UNLOCKS -->
-<section class="section tight" style="background:var(--paper-2);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)"><div class="wrap">
+<section class="section tight alt"><div class="wrap">
   <div class="sec-head">
     <div class="eyebrow">What an itemized bill unlocks</div>
     <h2>Decisions no dashboard can make.</h2>
@@ -143,7 +142,7 @@
     </div>
     <div class="cap">
       <div class="mini">19 seats + 4 API<span class="lead"></span><b style="color:var(--green)">save $21k/mo</b><br>
-        <span style="color:var(--ink-faint)">seats for heavy users · API for the rest</span></div>
+        <span style="color:var(--faint)">seats for heavy users · API for the rest</span></div>
       <h3>Buy compute the cheap way</h3>
       <p>Per-person spend shows who belongs on a flat seat and who belongs on API credits.
          Outlay computes the cheapest mix — analysis nobody buying blind can run.</p>
@@ -154,19 +153,22 @@
 
 <!-- TRUST -->
 <section class="trust" id="security"><div class="wrap">
-  <div class="eyebrow" style="color:#7fc8a9">Privacy by architecture</div>
+  <div class="eyebrow">Privacy by architecture</div>
   <h2>Built to pass your security review.</h2>
   <p class="lede" style="margin-top:24px">Most spend tools see everything you send. Outlay is built so
-    sensitive data <b style="color:#e8e3d3">physically can't reach us</b> — attribution runs on metadata:
+    sensitive data <b>physically can't reach us</b> — attribution runs on metadata:
     task categories, token counts, ticket IDs, dollar figures.</p>
-  <div class="stamps">
-    <span class="stamp2">Metadata only</span>
-    <span class="stamp2">Prompts never leave</span>
-    <span class="stamp2">Measured, not asserted</span>
+  <div class="specs">
+    <div class="spec"><div class="k">Metadata only</div>
+      <div class="v">Prompt content, model outputs, and your API keys never reach our servers. An architecture, not a policy.</div></div>
+    <div class="spec"><div class="k">Read-only by default</div>
+      <div class="v">Read-only tokens; keys stay on your box. Enforcement is an explicit opt-in gateway that fails open.</div></div>
+    <div class="spec"><div class="k">Measured, not asserted</div>
+      <div class="v">Forecasts back-tested on your own tickets; every number shown with its error and sample size.</div></div>
   </div>
-  <p style="max-width:52em">Read-only tokens. Your API keys stay on your box. SSO/SAML &amp; SCIM,
-    phishing-resistant passkeys + MFA, full audit log with SIEM export, configurable retention,
-    self-serve erasure. Built to WCAG&nbsp;2.1&nbsp;AA. <a href="/security">Read the security overview</a></p>
+  <p class="row2">SSO/SAML &amp; SCIM · phishing-resistant passkeys + MFA · full audit log with SIEM export ·
+    configurable retention &amp; self-serve erasure · WCAG&nbsp;2.1&nbsp;AA ·
+    <a href="/security">read the security overview</a></p>
 </div></section>
 
 <!-- CLOSING -->
