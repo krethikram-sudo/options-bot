@@ -47,6 +47,18 @@
   .tier li{font-size:13.5px;color:var(--body);padding:5px 0 5px 22px;position:relative;line-height:1.45}
   .tier li:before{content:"✓";position:absolute;left:0;color:var(--grn);font-weight:700}
   .tier li b{color:var(--ink)}
+  /* the product mix IS the tier — four rows, included vs not */
+  .pmix{list-style:none;padding:10px 0 0;margin:auto 0 0;border-top:1px solid var(--line)}
+  .pmix li{display:flex;align-items:baseline;gap:9px;padding:8px 0;border-bottom:1px dashed var(--line)}
+  .pmix li:last-child{border-bottom:none}
+  .pmix .tick{flex:none;width:14px;font-weight:700;color:var(--grn)}
+  .pmix .pname{font-weight:640;color:var(--ink);font-size:15px;letter-spacing:-.01em}
+  .pmix .pdesc{font-size:12px;color:var(--mut);margin-left:auto;text-align:right}
+  .pmix li.no{opacity:.42}
+  .pmix li.no .tick{color:var(--line)}
+  .pmix li.no .pname{color:var(--mut);font-weight:520}
+  .also{font-size:12px;color:var(--mut);line-height:1.7;margin:12px 0 0}
+  .also b{color:var(--body);font-weight:600}
 
   .calc{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin-top:22px;
     display:grid;grid-template-columns:1.1fr 1fr;gap:28px;align-items:center}
@@ -120,13 +132,14 @@
       <div class="price"><span class="amt" id="track-amt">$15</span><span class="per">per tracked person<br>/ month</span></div>
       <div class="sub" id="track-sub">billed annually · $19 month-to-month</div>
       <div class="cta"><a class="btn" href="https://app.outlay-ai.com/pilot-request">Start 30-day trial →</a></div>
-      <ul>
-        <li><b>Ledger</b> — attribution + the itemized statement</li>
-        <li>Work / non-work flags, reconciliation</li>
-        <li>Alert-only budgets</li>
-        <li>SSO/OIDC, passkeys + MFA, audit log</li>
-        <li>Read-only, metadata-only connect</li>
+      <ul class="pmix" aria-label="Products included in Track">
+        <li><span class="tick">✓</span><span class="pname">Ledger</span><span class="pdesc">every dollar → its ticket</span></li>
+        <li class="no"><span class="tick">—</span><span class="pname">Forecast</span></li>
+        <li class="no"><span class="tick">—</span><span class="pname">Controls</span></li>
+        <li class="no"><span class="tick">—</span><span class="pname">Procure</span></li>
       </ul>
+      <p class="also">Plus: work/non-work flags · alert-only budgets · SSO/MFA · audit log ·
+        read-only metadata connect</p>
     </div>
 
     <div class="tier feat">
@@ -136,13 +149,14 @@
       <div class="price"><span class="amt" id="plan-amt">$29</span><span class="per">per tracked person<br>/ month</span></div>
       <div class="sub" id="plan-sub">billed annually · $36 month-to-month</div>
       <div class="cta"><a class="btn primary" href="https://app.outlay-ai.com/pilot-request">Start 30-day trial →</a></div>
-      <ul>
-        <li>Everything in Track</li>
-        <li><b>Forecast</b> — backlog pricing, back-tested with error shown</li>
-        <li><b>Procure</b> — the cheapest seat/API mix (one workspace)</li>
-        <li>Budget pacing + chargeback / showback exports</li>
-        <li>Outcome add-on eligible</li>
+      <ul class="pmix" aria-label="Products included in Plan">
+        <li><span class="tick">✓</span><span class="pname">Ledger</span><span class="pdesc">every dollar → its ticket</span></li>
+        <li><span class="tick">✓</span><span class="pname">Forecast</span><span class="pdesc">price the quarter</span></li>
+        <li class="no"><span class="tick">—</span><span class="pname">Controls</span></li>
+        <li><span class="tick">✓</span><span class="pname">Procure</span><span class="pdesc">one workspace</span></li>
       </ul>
+      <p class="also">Plus everything in Track · budget pacing · chargeback / showback exports ·
+        <b>outcome add-on eligible</b></p>
     </div>
 
     <div class="tier">
@@ -152,13 +166,14 @@
       <div class="price"><span class="amt">Custom</span></div>
       <div class="sub">volume pricing · annual</div>
       <div class="cta"><a class="btn" href="https://app.outlay-ai.com/pilot-request">Talk to us →</a></div>
-      <ul>
-        <li>Everything in Plan</li>
-        <li><b>Controls</b> enforcement — hard-cap gateway (opt-in, fails open)</li>
-        <li>Portfolio-wide Procure optimization</li>
-        <li>SCIM provisioning + SIEM export</li>
-        <li>SOC 2 / StateRAMP path, DPA, custom retention &amp; SLA</li>
+      <ul class="pmix" aria-label="Products included in Govern">
+        <li><span class="tick">✓</span><span class="pname">Ledger</span><span class="pdesc">every dollar → its ticket</span></li>
+        <li><span class="tick">✓</span><span class="pname">Forecast</span><span class="pdesc">price the quarter</span></li>
+        <li><span class="tick">✓</span><span class="pname">Controls</span><span class="pdesc">hard-cap enforcement</span></li>
+        <li><span class="tick">✓</span><span class="pname">Procure</span><span class="pdesc">portfolio-wide</span></li>
       </ul>
+      <p class="also">Plus everything in Plan · SCIM + SIEM export · SOC 2 / StateRAMP path ·
+        DPA · custom retention &amp; SLA</p>
     </div>
 
   </div>
