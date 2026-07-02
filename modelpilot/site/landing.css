@@ -193,7 +193,7 @@ nav .wrap{display:flex;align-items:center;gap:28px;height:60px}
    JS, arrow keys come free with the radio group. One pane is always open. */
 .suite{position:relative}
 .suite>input{position:absolute;opacity:0;pointer-events:none}
-.stabs{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:2px solid var(--hair)}
+.stabs{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border-top:2px solid var(--hair)}
 .stabs label{cursor:pointer;padding:18px 18px 16px 0;border-bottom:1px solid var(--hair-soft);
   position:relative;user-select:none}
 .stabs .pn{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--faint)}
@@ -204,14 +204,18 @@ nav .wrap{display:flex;align-items:center;gap:28px;height:60px}
   background:transparent;transition:background .15s ease}
 .stabs label:hover .pt{color:var(--ink)}
 #s1:checked~.stabs [for=s1] .pt,#s2:checked~.stabs [for=s2] .pt,
-#s3:checked~.stabs [for=s3] .pt,#s4:checked~.stabs [for=s4] .pt{color:var(--ink)}
+#s3:checked~.stabs [for=s3] .pt,#s4:checked~.stabs [for=s4] .pt,
+#s5:checked~.stabs [for=s5] .pt{color:var(--ink)}
 #s1:checked~.stabs [for=s1]::after,#s2:checked~.stabs [for=s2]::after,
-#s3:checked~.stabs [for=s3]::after,#s4:checked~.stabs [for=s4]::after{background:var(--ink)}
+#s3:checked~.stabs [for=s3]::after,#s4:checked~.stabs [for=s4]::after,
+#s5:checked~.stabs [for=s5]::after{background:var(--ink)}
 #s1:focus-visible~.stabs [for=s1],#s2:focus-visible~.stabs [for=s2],
-#s3:focus-visible~.stabs [for=s3],#s4:focus-visible~.stabs [for=s4]{outline:2px solid var(--green);outline-offset:2px}
+#s3:focus-visible~.stabs [for=s3],#s4:focus-visible~.stabs [for=s4],
+#s5:focus-visible~.stabs [for=s5]{outline:2px solid var(--green);outline-offset:2px}
 .spane{display:none;grid-template-columns:1.05fr 1fr;gap:56px;align-items:center;padding:46px 0 10px}
 #s1:checked~.spanes #p1,#s2:checked~.spanes #p2,
-#s3:checked~.spanes #p3,#s4:checked~.spanes #p4{display:grid}
+#s3:checked~.spanes #p3,#s4:checked~.spanes #p4,
+#s5:checked~.spanes #p5{display:grid}
 .spane h3{font-size:clamp(22px,2.4vw,30px);font-weight:600;letter-spacing:-.022em}
 .spane p{margin:12px 0 18px;max-width:32em;font-size:15.5px}
 .spane .go{font-size:14px;font-weight:560}
@@ -225,6 +229,17 @@ nav .wrap{display:flex;align-items:center;gap:28px;height:60px}
 .mixer .mixlab b{font-weight:700}
 .mixer input[type=range]{width:100%;accent-color:var(--green);margin:0;cursor:ew-resize}
 .mixer .note{font-size:11px;color:var(--faint);line-height:1.6;font-family:var(--mono)}
+/* the pricing tab's mini rate card — reads as a ledger of tiers */
+.plist{border-top:2px solid var(--hair);font-variant-numeric:tabular-nums}
+.plist .r{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
+  padding:15px 0;border-bottom:1px solid var(--hair-soft)}
+.plist .nm{font-weight:600;color:var(--ink);font-size:15.5px}
+.plist .nm small{display:block;font-weight:400;color:var(--faint);font-size:12px;margin-top:3px;
+  font-family:var(--mono);letter-spacing:.01em}
+.plist .pr{font-family:var(--mono);font-weight:700;color:var(--ink);font-size:18px;white-space:nowrap}
+.plist .pr small{font-weight:400;color:var(--faint);font-size:11.5px}
+.plist .pr.g{color:var(--green)}
+.plist .pnote{font-family:var(--mono);font-size:11px;color:var(--faint);line-height:1.6;padding-top:12px}
 
 /* ---------- the band (03 — security divider page) ----------
    The ink melts in and out of the paper (no hard section edge) — the seamless
