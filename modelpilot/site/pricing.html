@@ -3,11 +3,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pricing — Outlay</title>
-<meta name="description" content="Simple per-person pricing. Start free with a read-only pilot; Team is a flat price per tracked person with every product included; Enterprise adds SCIM, the hard-cap gateway, and compliance evidence. Optional outcome add-on: 20% of measured savings, no clawback.">
+<meta name="description" content="Simple per-person pricing in three tiers — Track, Plan, Govern — with a 30-day full-featured trial (no free tier, no card required). Optional outcome add-on: 20% of measured savings, no clawback.">
 <link rel="canonical" href="https://outlay-ai.com/pricing">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta property="og:title" content="Pricing — Outlay">
-<meta property="og:description" content="Simple per-person pricing. Free pilot, a flat price per tracked person with everything included, and Enterprise for scale. Optional outcome add-on billed only on measured savings.">
+<meta property="og:description" content="Three per-person tiers — Track, Plan, Govern — laddered by how directly a feature moves money. 30-day trial, no free tier. Optional outcome add-on billed only on measured savings.">
 <meta property="og:image" content="https://outlay-ai.com/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -99,9 +99,10 @@
 <div class="page"><div class="wrap">
   <div class="eyebrow">Pricing</div>
   <h1>Simple, per person.</h1>
-  <p class="lede">One flat price for every person whose AI spend we attribute — every product included.
-    Start free with a read-only pilot, and only pay once you've seen your own bill itemized. An optional
-    outcome add-on means we can bill purely on savings we <b>measure</b>.</p>
+  <p class="lede">One flat price for every person whose AI spend we attribute, in three tiers laddered
+    by how directly a feature moves money: <b>see it, plan it, enforce it</b>. Every tier starts with a
+    <b>30-day full-featured trial</b> — read-only connect, no card — so you see your own bill itemized
+    before you pay.</p>
 
   <div class="bill" role="radiogroup" aria-label="Billing period">
     <input type="radio" name="bill" id="bm"><label for="bm">Monthly</label>
@@ -114,52 +115,56 @@
 
     <div class="tier">
       <div class="flag">&nbsp;</div>
-      <h3>Pilot</h3>
-      <div class="who">See your real spend itemized before a dollar changes hands.</div>
-      <div class="price"><span class="amt">$0</span><span class="per">free<br>forever</span></div>
-      <div class="sub">Up to 25 tracked people</div>
-      <div class="cta"><a class="btn" href="https://app.outlay-ai.com/pilot-request">Start free →</a></div>
+      <h3>Track</h3>
+      <div class="who">See it. The itemized statement — every dollar mapped to its ticket, team, and person.</div>
+      <div class="price"><span class="amt" id="track-amt">$15</span><span class="per">per tracked person<br>/ month</span></div>
+      <div class="sub" id="track-sub">billed annually · $19 month-to-month</div>
+      <div class="cta"><a class="btn" href="https://app.outlay-ai.com/pilot-request">Start 30-day trial →</a></div>
       <ul>
+        <li><b>Ledger</b> — attribution + the itemized statement</li>
+        <li>Work / non-work flags, reconciliation</li>
+        <li>Alert-only budgets</li>
+        <li>SSO/OIDC, passkeys + MFA, audit log</li>
         <li>Read-only, metadata-only connect</li>
-        <li>Ledger: attribution + itemized statement</li>
-        <li>One workspace · 30-day history</li>
-        <li>Prompts &amp; keys never leave your box</li>
       </ul>
     </div>
 
     <div class="tier feat">
-      <div class="flag">Most teams start here</div>
-      <h3>Team</h3>
-      <div class="who">Every product, priced per person we attribute. No usage surprises.</div>
-      <div class="price"><span class="amt" id="team-amt">$15</span><span class="per">per tracked person<br>/ month</span></div>
-      <div class="sub" id="team-sub">billed annually · $19 month-to-month</div>
-      <div class="cta"><a class="btn primary" href="https://app.outlay-ai.com/pilot-request">Become a customer →</a></div>
+      <div class="flag">Most teams choose Plan</div>
+      <h3>Plan</h3>
+      <div class="who">Plan it. Price the quarter and buy compute the cheap way.</div>
+      <div class="price"><span class="amt" id="plan-amt">$29</span><span class="per">per tracked person<br>/ month</span></div>
+      <div class="sub" id="plan-sub">billed annually · $36 month-to-month</div>
+      <div class="cta"><a class="btn primary" href="https://app.outlay-ai.com/pilot-request">Start 30-day trial →</a></div>
       <ul>
-        <li><b>Everything</b> — Ledger, Forecast, Controls, Procure</li>
-        <li>Unlimited history &amp; workspaces</li>
-        <li>Program budgets, pacing &amp; alerts</li>
-        <li>SSO/OIDC, passkeys + MFA</li>
-        <li>Audit log with SIEM export</li>
+        <li>Everything in Track</li>
+        <li><b>Forecast</b> — backlog pricing, back-tested with error shown</li>
+        <li><b>Procure</b> — the cheapest seat/API mix (one workspace)</li>
+        <li>Budget pacing + chargeback / showback exports</li>
+        <li>Outcome add-on eligible</li>
       </ul>
     </div>
 
     <div class="tier">
       <div class="flag">&nbsp;</div>
-      <h3>Enterprise</h3>
-      <div class="who">Scale, procurement, and regulated buyers — including US state government.</div>
+      <h3>Govern</h3>
+      <div class="who">Enforce it. Hard caps, portfolio procurement, and compliance — incl. US state government.</div>
       <div class="price"><span class="amt">Custom</span></div>
       <div class="sub">volume pricing · annual</div>
       <div class="cta"><a class="btn" href="https://app.outlay-ai.com/pilot-request">Talk to us →</a></div>
       <ul>
-        <li>Everything in Team</li>
-        <li>SCIM provisioning + enforced MFA</li>
-        <li>Hard-cap gateway (opt-in, fails open)</li>
-        <li>Portfolio procurement optimization</li>
+        <li>Everything in Plan</li>
+        <li><b>Controls</b> enforcement — hard-cap gateway (opt-in, fails open)</li>
+        <li>Portfolio-wide Procure optimization</li>
+        <li>SCIM provisioning + SIEM export</li>
         <li>SOC 2 / StateRAMP path, DPA, custom retention &amp; SLA</li>
       </ul>
     </div>
 
   </div>
+
+  <p style="font-family:var(--mono,ui-monospace);font-size:12px;letter-spacing:.04em;color:var(--mut);margin:14px 2px 0">
+    EVERY TIER — 30-DAY FULL-FEATURED TRIAL · READ-ONLY CONNECT · NO CARD REQUIRED · PROMPTS &amp; KEYS NEVER LEAVE YOUR BOX</p>
 
   <!-- interactive estimate -->
   <div class="calc">
@@ -167,20 +172,20 @@
       <span class="plabel">Estimate your price</span>
       <div style="margin-top:10px">People whose AI spend you'd track: <b id="calc-n">25 people</b></div>
       <input type="range" id="calc-r" min="5" max="500" value="25" step="1"
-        aria-label="People whose AI spend you'd track — drag to estimate the Team price">
+        aria-label="People whose AI spend you'd track — drag to estimate the price">
       <div class="rowb"><span>5</span><span>500+</span></div>
     </div>
     <div class="out">
-      <div class="big" id="calc-price">$375<span style="font-size:16px;color:var(--mut);font-weight:400">/mo</span></div>
-      <div class="oc"><b id="calc-vs">$4,500</b> per year, everything included · <span id="calc-band">Team</span></div>
+      <div class="big" id="calc-price">$725<span style="font-size:16px;color:var(--mut);font-weight:400">/mo on Plan</span></div>
+      <div class="oc"><b id="calc-vs">$8,700</b> per year · <span id="calc-band">or $375/mo on Track</span></div>
     </div>
   </div>
 
   <div class="addon">
     <b>Optional: pay on outcomes, not seats.</b>
-    <p style="font-size:14px;color:var(--body);margin:8px 0 0">Turn on the hard-cap gateway or act on a
-      procurement mix we sized, and you can swap the per-person fee for <b>20% of the savings we can
-      prove</b> against a held-out control arm — billed in arrears, on realized savings only.
+    <p style="font-size:14px;color:var(--body);margin:8px 0 0">On Plan and Govern: turn on the hard-cap
+      gateway or act on a procurement mix we sized, and you can swap the per-person fee for <b>20% of the
+      savings we can prove</b> against a held-out control arm — billed in arrears, on realized savings only.
       <b>No clawback, no lock-in.</b> If we don't save you money, you don't pay the share. It's how we put
       our money where our mouth is.</p>
   </div>
@@ -193,9 +198,16 @@
         you only pay for the people actually driving AI spend. Nobody's prompts are ever read.</p>
     </details>
     <details>
+      <summary>What happens after the 30-day trial?</summary>
+      <p>You pick a tier or you walk away — there's no free plan to fall back to. The trial is
+        full-featured and read-only, so the only thing that happens in those 30 days is you seeing your
+        own bill itemized. Your data exports freely either way; there's nothing to migrate off.</p>
+    </details>
+    <details>
       <summary>Is there really no per-usage or per-token fee?</summary>
-      <p>Correct. Team is a flat price per tracked person, full stop — attribution volume, forecast runs,
-        and budget checks don't meter. Your bill is predictable no matter how much your teams build.</p>
+      <p>Correct. Track and Plan are a flat price per tracked person, full stop — attribution volume,
+        forecast runs, and budget checks don't meter. Your bill is predictable no matter how much your
+        teams build.</p>
     </details>
     <details>
       <summary>How does the outcome add-on get measured?</summary>
@@ -205,7 +217,7 @@
     </details>
     <details>
       <summary>Do you offer government / education pricing?</summary>
-      <p>Yes — Enterprise covers US state &amp; local government and education, with the compliance evidence
+      <p>Yes — Govern covers US state &amp; local government and education, with the compliance evidence
         (SOC 2 / StateRAMP path), a DPA, and the metadata-only, BYOK, read-only architecture that keeps
         citizen and customer data out of scope entirely. <a href="/security">See the security overview →</a></p>
     </details>
@@ -217,10 +229,10 @@
 
 <section class="final"><div class="wrap">
   <h2>See your number on your own spend.</h2>
-  <p>Start with a free, read-only pilot. We map your real AI spend and itemize it in days —
+  <p>Start the 30-day read-only trial. We map your real AI spend and itemize it in days —
     then the price is just people × a flat rate. Prompts and keys never leave your box.</p>
   <div class="center">
-    <a class="btn onnavy lg" href="https://app.outlay-ai.com/pilot-request">Start free →</a>
+    <a class="btn onnavy lg" href="https://app.outlay-ai.com/pilot-request">Start 30-day trial →</a>
   </div>
 </div></section>
 
@@ -242,27 +254,32 @@
 <script>
 (function(){var t=document.getElementById('nav-t'),h=document.querySelector('.hamburger'),m=document.getElementById('nav-menu');if(!t||!h)return;function sync(){var o=t.checked;h.setAttribute('aria-expanded',o?'true':'false');h.setAttribute('aria-label',o?'Close menu':'Open menu');}t.addEventListener('change',sync);h.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();t.checked=!t.checked;sync();}});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&t.checked){t.checked=false;sync();}});if(m)m.addEventListener('click',function(e){if(e.target.closest('a')){t.checked=false;sync();}});})();
 
-// Pricing interactivity — billing toggle drives the Team rate and the estimate.
-// Works as plain enhancement; the static defaults ($15 annual / 25 people) are
+// Pricing interactivity — the billing toggle drives both paid-tier rates and
+// the estimate. Plain enhancement; static defaults (annual, 25 people) are
 // already correct with JS off.
 (function(){
-  var d=document, RATE={by:15, bm:19}, LABEL={by:'billed annually · $19 month-to-month', bm:'month-to-month · save 20% annually'};
+  var d=document,
+      RATE={track:{by:15,bm:19}, plan:{by:29,bm:36}},
+      LABEL={track:{by:'billed annually · $19 month-to-month', bm:'month-to-month · save 20% annually'},
+             plan:{by:'billed annually · $36 month-to-month', bm:'month-to-month · save 20% annually'}};
   var bm=d.getElementById('bm'), by=d.getElementById('by'),
-      teamAmt=d.getElementById('team-amt'), teamSub=d.getElementById('team-sub'),
       rng=d.getElementById('calc-r'), nOut=d.getElementById('calc-n'),
       price=d.getElementById('calc-price'), vs=d.getElementById('calc-vs'), band=d.getElementById('calc-band');
-  function rate(){ return (bm && bm.checked) ? RATE.bm : RATE.by; }
+  function per(){ return (bm && bm.checked) ? 'bm' : 'by'; }
   function $(n){ return '$' + Math.round(n).toLocaleString('en-US'); }
+  function setCard(id, tier){
+    var amt=d.getElementById(id+'-amt'), sub=d.getElementById(id+'-sub');
+    if(amt) amt.textContent='$'+RATE[tier][per()];
+    if(sub) sub.textContent=LABEL[tier][per()];
+  }
   function draw(){
-    var r=rate();
-    if(teamAmt) teamAmt.textContent='$'+r;
-    if(teamSub) teamSub.textContent=(bm&&bm.checked)?LABEL.bm:LABEL.by;
+    setCard('track','track'); setCard('plan','plan');
     if(rng){
-      var n=+rng.value, mo=n*r;
+      var n=+rng.value, p=per(), moPlan=n*RATE.plan[p], moTrack=n*RATE.track[p];
       if(nOut) nOut.textContent=n+(n>=500?'+ people':' people');
-      if(price) price.innerHTML=$(mo)+'<span style="font-size:16px;color:var(--mut);font-weight:400">/mo</span>';
-      if(vs) vs.textContent=$(mo*12);
-      if(band) band.textContent = n>=200 ? 'Team → talk to us for volume' : 'Team';
+      if(price) price.innerHTML=$(moPlan)+'<span style="font-size:16px;color:var(--mut);font-weight:400">/mo on Plan</span>';
+      if(vs) vs.textContent=$(moPlan*12);
+      if(band) band.textContent = n>=200 ? 'volume pricing — talk to us' : 'or '+$(moTrack)+'/mo on Track';
     }
   }
   [bm,by].forEach(function(el){ if(el) el.addEventListener('change',draw); });
