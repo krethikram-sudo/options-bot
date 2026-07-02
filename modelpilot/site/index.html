@@ -20,7 +20,7 @@
 <meta name="twitter:image" content="https://outlay-ai.com/og-image.png">
 <meta name="twitter:title" content="Outlay — put AI compute on a budget">
 <meta name="twitter:description" content="Every AI dollar mapped to the ticket, team, and person that drove it. Budget it, forecast it, stop what isn't work.">
-<link rel="stylesheet" href="/landing.css?v=20260702-1">
+<link rel="stylesheet" href="/landing.css?v=20260701-9">
 <script src="/auth-nav.js?v=3" defer></script>
 </head>
 <body>
@@ -132,21 +132,19 @@
 
 <!-- 01 — THE SUITE: four products, one interactive index -->
 <section class="section" id="how"><span id="govern"></span><span id="worktype"></span><div class="wrap">
-  <div class="sec-no"><span class="no">01 — THE SUITE</span><h2>Four products. One price.</h2></div>
+  <div class="sec-no"><span class="no">01 — THE SUITE</span><h2>Four products. One statement.</h2></div>
   <p class="sec-intro">Connect the tracker and AI tools you already use — read-only, no app rewrite.
-     Each product answers one question a finance leader actually asks — and pricing is one flat rate.</p>
+     Each product answers one question a finance leader actually asks.</p>
   <div class="suite">
     <input type="radio" name="suite" id="s1" checked>
     <input type="radio" name="suite" id="s2">
     <input type="radio" name="suite" id="s3">
     <input type="radio" name="suite" id="s4">
-    <input type="radio" name="suite" id="s5">
     <div class="stabs">
       <label for="s1"><span class="pn">1.1</span><span class="pt">Ledger</span><span class="ps">every dollar → its ticket</span></label>
       <label for="s2"><span class="pn">1.2</span><span class="pt">Forecast</span><span class="ps">price the quarter</span></label>
       <label for="s3"><span class="pn">1.3</span><span class="pt">Controls</span><span class="ps">budgets that act</span></label>
       <label for="s4"><span class="pn">1.4</span><span class="pt">Procure</span><span class="ps">the cheapest mix</span></label>
-      <label for="s5"><span class="pn">＄</span><span class="pt">Pricing</span><span class="ps">simple, per person</span></label>
     </div>
     <div class="spanes">
 
@@ -241,20 +239,6 @@
       </div>
       <div class="note">Illustrative — assumes your heaviest users average ~$1,200/mo on credits vs a
         flat seat. In the app, Procure runs on your real per-person spend, assumptions shown.</div>
-    </div>
-    </div>
-
-    <div class="spane" id="p5">
-    <div><h3>Simple, per person.</h3>
-      <p>One flat price for every person whose AI spend we attribute — <b>every product included</b>.
-         Start free with a read-only pilot; you only pay once you've seen your own bill itemized.
-         Viewers, admins, and finance seats are always free.</p>
-      <a class="go" href="/pricing">See full pricing →</a></div>
-    <div class="plist" role="img" aria-label="Pricing: Pilot is free for up to 25 tracked people; Team is $15 per tracked person per month with everything included; Enterprise is custom for scale and government.">
-      <div class="r"><span class="nm">Pilot<small>read-only · up to 25 people</small></span><span class="pr g">$0</span></div>
-      <div class="r"><span class="nm">Team<small>everything included · Ledger → Procure</small></span><span class="pr">$15<small> /person/mo</small></span></div>
-      <div class="r"><span class="nm">Enterprise<small>scale · SCIM · government</small></span><span class="pr">Custom</span></div>
-      <div class="pnote">Billed annually · $19 month-to-month · or pay 20% of measured savings, no clawback.</div>
     </div>
     </div>
 
@@ -493,7 +477,7 @@
     rng.addEventListener('input', upd);
   }
   // Deep links open the right product tab (#govern/#worktype → Controls).
-  var hashTab = {'#govern':'s3','#worktype':'s3','#how':'s1','#pricing':'s5'};
+  var hashTab = {'#govern':'s3','#worktype':'s3','#how':'s1'};
   function syncTab(){ var t = hashTab[location.hash]; if(t) d.getElementById(t).checked = true; }
   addEventListener('hashchange', syncTab); syncTab();
 })();
